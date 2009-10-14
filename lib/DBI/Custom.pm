@@ -1,94 +1,75 @@
 package DBI::Custom;
 use Object::Simple;
 
-# Import
-sub setup {
-    my ($class, $setup) = @_;
+sub new {
+    my $self = shift->Object::Simple::new(@_);
+    my $class = ref $self;
+    return bless {%{$class->model}, %{$self}}, $class;
+}
+
+sub create_model {shift->Object::Simple::new(@_);
+
+sub initialize_model {
+    my ($class, $callback) = @_;
     
-    # Import function to caller class;
-    $class->_import_functions_to($class);
+    my $model = $class->create_model;
     
-    # Setup Caller class
-    $setup->();
+    $callback->($model);
     
-    # Remove function from caller class;
-    $class->_remove_imported_functions($class);
+    $class->model($model);
 }
-
-# Tempature import functions
-sub _temp_import_functions {
-    connect_info => sub {
-        my %options = @_;
-        my $class = caller;
-        $class->DBI::Custom::connect_info(%options);
-    },
-    create_table => sub {
-        my $table = shift;
-        my @row_infos = @_;
-        
-        my $class = caller;
-        $class->table_infos->{$table} = {};
-        
-        for (my $i = 0; $i < @columns; i++) {
-            my $column = $columns[$i];
-            
-            my $column_name = shift @$column;
-            my $column_type = shift @$column;
-            my %column_options = @$column;
-            
-            my $column_info
-              = $class->table_infos->{$table}{column}{$column_name} = {};
-            
-            $column_info->{pos}     = $i;
-            $column_info->{type}    = $column_type;
-            $column_info->{options} = \%column_options;
-        }
-    }
-}
-
-# Import functions to caller class
-sub _import_functions_to {
-    my ($self, $class) = @_;
-    no strict 'refs';
-    foreach my $import_function (keys %{$self->_temp_import_functions}) {
-        *{"${class}::$import_function"}
-          = $self->_temp_import_functions->{$import_function};
-    }
-}
-
-# Remove functions from caller class
-sub _remove_imported_functions {
-    my ($self, $class) = @_;
-    no strict 'refs';
-    foreach my $import_function (keys %{$self->_temp_import_functions}) {
-        delete ${$class . '::'}{"$import_function"};    
-    }
-}
-
 
 # Class attribute
-sub connect_info : ClassAttr { type => 'hash', default => sub { {} } }
-sub table_infos : ClassAttr { type => 'hash', default => sub { {} } }
+sub connect_info : Attr { type => 'hash' }
+sub table_infos  : Attr { type => 'hash' }
 
 sub column_info {
-    my ($class, $table, $column_name) = @_;
-    return $class->table_infos->{$table}{column}{$column_name};
+    my ($self, $table, $column_name, $column_info) = @_;
+    
+    if (@_ > 3) {
+        $self->table_infos->{$table}{column}{$column_name} = $column_info;
+        return $self;
+    }
+    return $self->table_infos->{$table}{column}{$column_name};
 }
 
 sub columns {
-    my ($class, $table) = @_;
+    my ($self, $table) = @_;
     
     return sort { 
-        $class->table_infos->{$table}{column}{$a}{pos} 
+        $self->table_infos->{$table}{column}{$a}{pos} 
         <=>
-        $class->table_infos->{$table}{column}{$b}{pos}
-    } keys %{$class->table_info->{$table}{column}}
+        $self->table_infos->{$table}{column}{$b}{pos}
+    } keys %{$self->table_info->{$table}{column}}
 }
 
 sub tables {
-    my $class = shift;
+    my $self = shift;
     return keys %{$self->table_info};
 }
+
+sub create_table {
+    my ($self, $table, @row_infos) = @_;
+    
+    $self->table_infos->{$table} = {};
+    
+    for (my $i = 0; $i < @columns; i++) {
+        my $column = $columns[$i];
+        
+        my $column_name = shift @$column;
+        my $column_type = shift @$column;
+        my %column_options = @$column;
+        
+        my $column_info = {};
+        
+        $column_info->{pos}     = $i;
+        $column_info->{type}    = $column_type;
+        $column_info->{options} = \%column_options;
+        
+        $self->column_info($table, $column_name, $column_info);
+    }
+}
+
 
 
 
@@ -103,7 +84,6 @@ sub insert {
 
 
 Object::Simple->build_class;
-
 
 =head1 NAME
 
