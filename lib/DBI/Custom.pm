@@ -1,5 +1,7 @@
 package DBI::Custom;
 use Object::Simple;
+use DBI;
+use SQL::Abstract;
 
 sub new {
     my $self = shift->Object::Simple::new(@_);
@@ -22,6 +24,8 @@ sub initialize_model {
 # Class attribute
 sub connect_info : Attr { type => 'hash' }
 sub table_infos  : Attr { type => 'hash' }
+sub dbh          : Attr {}
+sub sql_abstract : Attr { auto_build => sub { shift->sql_abstract(SQL::Abstract->new) }}
 
 sub column_info {
     my ($self, $table, $column_name, $column_info) = @_;
@@ -70,17 +74,121 @@ sub create_table {
     }
 }
 
+sub load_table_definitions {
+    my $self = shift;
+    my $dsn  = $self->connect_info->{dsn};
+}
 
+sub connect {
+    my $self = shift;
+    my $connect_info = $self->connect_info;
+    
+    my $dbh = DBI->connect(
+        $connect_info->{dsn},
+        $connect_info->{user},
+        $connect_info->{password},
+        {
+            RaiseError => 1,
+            PrintError => 0,
+            AutoCommit => 1,
+            %{$connect_info->{options} || {} }
+        }
+    );
+    
+    $self->dbh($dbh);
+}
 
+sub reconnect {
+    my $self = shift;
+    $self->dbh(undef);
+    $self->connect;
+}
 
+sub query {
+    my ($self, $query, @binds) = @_;
+    $self->{success} = 0;
 
+    $self->_replace_omniholder(\$query, \@binds);
+
+    my $st;
+    my $sth;
+
+    my $old = $old_statements{$self};
+
+    if (my $i = (grep $old->[$_][0] eq $query, 0..$#$old)[0]) {
+        $st = splice(@$old, $i, 1)->[1];
+        $sth = $st->{sth};
+    } else {
+        eval { $sth = $self->{dbh}->prepare($query) } or do {
+            if ($@) {
+                $@ =~ s/ at \S+ line \d+\.\n\z//;
+                Carp::croak($@);
+            }
+            $self->{reason} = "Prepare failed ($DBI::errstr)";
+            return _dummy;
+        };
+
+        # $self is quoted on purpose, to pass along the stringified version,
+        # and avoid increasing reference count.
+        $st = bless {
+            db    => "$self",
+            sth   => $sth,
+            query => $query
+        }, 'DBIx::Simple::Statement';
+        $statements{$self}{$st} = $st;
+    }
+
+    eval { $sth->execute(@binds) } or do {
+        if ($@) {
+            $@ =~ s/ at \S+ line \d+\.\n\z//;
+            Carp::croak($@);
+        }
+
+        $self->{reason} = "Execute failed ($DBI::errstr)";
+	return _dummy;
+    };
+
+    $self->{success} = 1;
+
+    return bless { st => $st, lc_columns => $self->{lc_columns} }, $self->{result_class};
+}
+
+sub query {
+    my ($self, $sql) = @_;
+    my $sth = $self->dbh->prepare($sql);
+    $sth->execute(@bind);
+}
+
+sub select {
+    my ($table, $column_names, $where, $order) = @_;
+    
+    my ($stmt, @bind) = $self->sql_abstract->select($table, $column_names, $where, $order);
+    my $sth = $self->dbh->prepare($stmt);
+    $sth->execute(@bind);
+}
 
 sub insert {
-    my $self = shift;
+    my ($self, $table, $values) = @_;
     
-    
-    
+    my ($stmt, @bind) = $self->sql_abstract->insert($table, $values);
+    my $sth = $self->dbh->prepare($stmt);
+    $sth->execute(@bind);
 }
+
+sub update {
+    my ($self, $values, $where) = @_;
+    my ($stmt, @bind) = $self->sql_abstract->update($table, $values, $where);
+    my $sth = $self->dbh->prepare($stmt);
+    $sth->execute(@bind);
+}
+
+sub delete {
+    my ($self, $where) = @_;
+    my ($stmt, @bind) = $self->sql_abstract->delete($table, $where);
+    my $sth = $self->dbh->prepare($stmt);
+    $sth->execute(@bind);
+}
+
 
 
 Object::Simple->build_class;
