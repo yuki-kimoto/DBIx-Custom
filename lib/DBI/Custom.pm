@@ -69,10 +69,22 @@ sub clone {
 
 # Attribute
 sub connect_info       : Attr { type => 'hash',  auto_build => sub { shift->connect_info({}) } }
+
 sub global_bind_rules  : Attr { type => 'array', auto_build => sub { shift->global_bind_rules([]) } }
+sub add_global_bind_rule { shift->global_bind_rules(@_) }
+
 sub global_fetch_rules : Attr { type => 'array', auto_build => sub { shift->global_fetch_rules([]) } }
-sub bind_rules         : Attr { type => 'hash',  auto_build => sub { shift->bind_rules({}) }
-sub fetch_rules        : Attr { type => 'hash',  auto_build => sub { shift->fetch_rules({}) }
+sub add_global_fetch_rules { shift->global_fetch_rules(@_) }
+
+sub bind_rules : Attr { type => 'hash',  auto_build => sub { shift->bind_rules({}) }
+sub add_bind_rule { shift->bind_rules(@_) }
+
+sub fetch_rules : Attr { type => 'hash',  auto_build => sub { shift->fetch_rules({}) }
+sub add_fetch_rule { shift->fetch_rules(@_) }
+
+sub filters : Attr { type => 'hash', deref => 1, default => sub { {} } }
+sub add_filter { shift->filters(@_) }
+
 
 sub dbh          : Attr { auto_build => sub { shift->connect } }
 sub sql_abstract : Attr { auto_build => sub { shift->sql_abstract(SQL::Abstract->new) }}
