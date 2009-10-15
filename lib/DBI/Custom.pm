@@ -3,81 +3,79 @@ use Object::Simple;
 use DBI;
 use SQL::Abstract;
 
-sub new {
-    my $self = shift->Object::Simple::new(@_);
-    my $class = ref $self;
-    return bless {%{$class->model}, %{$self}}, $class;
-}
+# Model
+sub model : ClassAttr { auto_build => \&_inherit_model }
 
-sub create_model {shift->Object::Simple::new(@_);
-
-sub initialize_model {
-    my ($class, $callback) = @_;
-    
-    my $model = $class->create_model;
-    
-    $callback->($model);
+# Inherit super class model
+sub _inherit_model {
+    $class = shict;
+    my $super = do {
+        no strict 'refs';
+        ${"${class}::ISA"}[0];
+    };
+    my $model = eval{$super->can('model')}
+                         ? $super->model->clone
+                         : $class->Object::Simple::new;
     
     $class->model($model);
 }
 
-# Class attribute
-sub connect_info : Attr { type => 'hash' }
-sub table_infos  : Attr { type => 'hash' }
-sub dbh          : Attr {}
+# New
+sub new {
+    my $self = shift->Object::Simple::new(@_);
+    my $class = ref $self;
+    return bless {%{$class->model->clone}, %{$self}}, $class;
+}
+
+# Initialize modle
+sub initialize_model {
+    my ($class, $callback) = @_;
+    
+    # Callback to initialize model
+    $callback->($class->model);
+}
+
+# Clone
+sub clone {
+    my $self = shift;
+    my $new = $self->Object::Simple::new;
+    $new->connect_infos(%{$self->connect_infos || {}});
+    $new->filters(%{$self->filters || {}});
+    
+    $new->global_bind_rules(@{$self->global_bind_rules || []});
+    $new->global_fetch_rules(@{$self->global_fetch_rules || []});
+    
+    foreach my $method (qw/bind_rules fetch_rules/) {
+        my $new_rules = [];
+        foreach my $rule (@{$self->method}) {
+            my $new_rule = {};
+            foreach my $key ($rule) {
+                if ($key eq 'filter') {
+                    my $new_filters = [];
+                    foreach my $filter (@{$rule->{$key} || []}) {
+                        push @$new_filters, $filter
+                    }
+                    $new_rule->{$key} = $new_filters;
+                }
+                else {
+                     $new_rule->{$key} = $rule->{$key};
+                }
+            }
+            push @$new_rules, $new_rule;
+        }
+        $self->$method($new_rules);
+    }
+}
+
+# Attribute
+sub connect_info       : Attr { type => 'hash',  auto_build => sub { shift->connect_info({}) } }
+sub global_bind_rules  : Attr { type => 'array', auto_build => sub { shift->global_bind_rules([]) } }
+sub global_fetch_rules : Attr { type => 'array', auto_build => sub { shift->global_fetch_rules([]) } }
+sub bind_rules         : Attr { type => 'hash',  auto_build => sub { shift->bind_rules({}) }
+sub fetch_rules        : Attr { type => 'hash',  auto_build => sub { shift->fetch_rules({}) }
+
+sub dbh          : Attr { auto_build => sub { shift->connect } }
 sub sql_abstract : Attr { auto_build => sub { shift->sql_abstract(SQL::Abstract->new) }}
-
-sub column_info {
-    my ($self, $table, $column_name, $column_info) = @_;
-    
-    if (@_ > 3) {
-        $self->table_infos->{$table}{column}{$column_name} = $column_info;
-        return $self;
-    }
-    return $self->table_infos->{$table}{column}{$column_name};
-}
-
-sub columns {
-    my ($self, $table) = @_;
-    
-    return sort { 
-        $self->table_infos->{$table}{column}{$a}{pos} 
-        <=>
-        $self->table_infos->{$table}{column}{$b}{pos}
-    } keys %{$self->table_info->{$table}{column}}
-}
-
-sub tables {
-    my $self = shift;
-    return keys %{$self->table_info};
-}
-
-sub create_table {
-    my ($self, $table, @row_infos) = @_;
-    
-    $self->table_infos->{$table} = {};
-    
-    for (my $i = 0; $i < @columns; i++) {
-        my $column = $columns[$i];
-        
-        my $column_name = shift @$column;
-        my $column_type = shift @$column;
-        my %column_options = @$column;
-        
-        my $column_info = {};
-        
-        $column_info->{pos}     = $i;
-        $column_info->{type}    = $column_type;
-        $column_info->{options} = \%column_options;
-        
-        $self->column_info($table, $column_name, $column_info);
-    }
-}
-
-sub load_table_definitions {
-    my $self = shift;
-    my $dsn  = $self->connect_info->{dsn};
-}
 
 sub connect {
     my $self = shift;
