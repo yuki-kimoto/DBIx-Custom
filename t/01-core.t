@@ -187,9 +187,69 @@ our ($U, $P, $D) = connect_info();
     my $tmpl   = "select * from table where {= k1} && {<> k2} && {< k3} && {> k4} && {>= k5} && {<= k6} && {like k7}";
     my $values = {k1 => 'a', k2 => 'b', k3 => 'c', k4 => 'd', k5 => 'e', k6 => 'f', k7 => 'g'};
     
-    my ($sql, @bind) = $dbi->create_sql($tmpl, $values);
+    $dbi->filters(filter => sub {
+        my ($key, $value) = @_;
+        if ($key eq 'k1' && $value eq 'a') {
+            return uc $value;
+        }
+        return $value;
+    });
+    
+    my ($sql, @bind) = $dbi->create_sql($tmpl, $values, $dbi->filters->{filter});
+    
     is($sql, "select * from table where k1 = ? && k2 <> ? && k3 < ? && k4 > ? && k5 >= ? && k6 <= ? && k7 like ?;", 'sql template2');
-    is_deeply(\@bind, ['a', 'b', 'c', 'd', 'e', 'f', 'g'], 'sql template bind2' );
+    is_deeply(\@bind, ['A', 'b', 'c', 'd', 'e', 'f', 'g'], 'sql template bind2' );
+}
+
+{
+    # Expand place holer upper case
+    my $dbi = DBI::Custom->new;
+    $dbi->sql_template->upper_case(1);
+    my $tmpl   = "select * from table where {like k7}";
+    my $values = {k7 => 'g'};
+    
+    my ($sql, @bind) = $dbi->create_sql($tmpl, $values);
+    is($sql, "select * from table where k7 LIKE ?;", 'sql template2');
+    is_deeply(\@bind, ['g'], 'sql template bind2' );
+}
+
+
+{
+    # Insert values
+    my $dbi = DBI::Custom->new;
+    my $tmpl   = "insert into table {insert_values}";
+    my $values = {insert_values => {k1 => 'a', k2 => 'b'}};
+    
+    $dbi->filters(filter => sub {
+        my ($key, $value) = @_;
+        if ($key eq 'k1' && $value eq 'a') {
+            return uc $value;
+        }
+        return $value;
+    });
+        
+    my ($sql, @bind) = $dbi->create_sql($tmpl, $values, $dbi->filters->{filter});
+    is($sql, "insert into table (k1, k2) values (?, ?);");
+    is_deeply(\@bind, ['A', 'b'], 'sql template bind' );
+}
+
+{
+    # Update set
+    my $dbi = DBI::Custom->new;
+    my $tmpl   = "update table {update_set}";
+    my $values = {update_set => {k1 => 'a', k2 => 'b'}};
+
+    $dbi->filters(filter => sub {
+        my ($key, $value) = @_;
+        if ($key eq 'k1' && $value eq 'a') {
+            return uc $value;
+        }
+        return $value;
+    });
+        
+    my ($sql, @bind) = $dbi->create_sql($tmpl, $values, $dbi->filters->{filter});
+    is($sql, "update table set k1 = ?, k2 = ?;");
+    is_deeply(\@bind, ['A', 'b'], 'sql template bind' );
 }
 
 sub connect_info {

@@ -154,7 +154,7 @@ our $TAG_SYNTAX = <<'EOS';
 {update_values}  set key1 = ?, key2 = ?, key3 = ?
 EOS
 
-our %VALID_TAG_NAMES = map {$_ => 1} qw/= <> < > >= <= like in insert_values update_values/;
+our %VALID_TAG_NAMES = map {$_ => 1} qw/= <> < > >= <= like in insert_values update_set/;
 sub parse {
     my ($self, $template) = @_;
     $self->template($template);
@@ -221,7 +221,7 @@ sub build_sql {
                 
                 # Filter Value
                 if ($bind_filter) {
-                    push @bind_values, scalar $bind_filter->($values->{$key});
+                    push @bind_values, scalar $bind_filter->($key, $values->{$key});
                 }
                 else {
                     push @bind_values, $values->{$key};
@@ -229,6 +229,52 @@ sub build_sql {
                 $tag_name = uc $tag_name if $self->upper_case;
                 my $place_holder = "$key $tag_name ?";
                 $sql .= $place_holder;
+            }
+            elsif ($tag_name eq 'insert_values') {
+                my $statement_keys          = '(';
+                my $statement_place_holders = '(';
+                
+                $values = $values->{insert_values};
+                
+                foreach my $key (sort keys %$values) {
+                    if ($bind_filter) {
+                        push @bind_values, scalar $bind_filter->($key, $values->{$key});
+                    }
+                    else {
+                        push @bind_values, $values->{$key};
+                    }
+                    
+                    $statement_keys          .= "$key, ";
+                    $statement_place_holders .= "?, ";
+                }
+                
+                $statement_keys =~ s/, $//;
+                $statement_keys .= ')';
+                
+                $statement_place_holders =~ s/, $//;
+                $statement_place_holders .= ')';
+                
+                $sql .= "$statement_keys values $statement_place_holders";
+            }
+            elsif ($tag_name eq 'update_set') {
+                my $statement          = 'set ';
+                
+                $values = $values->{update_set};
+                
+                foreach my $key (sort keys %$values) {
+                    if ($bind_filter) {
+                        push @bind_values, scalar $bind_filter->($key, $values->{$key});
+                    }
+                    else {
+                        push @bind_values, $values->{$key};
+                    }
+                    
+                    $statement          .= "$key = ?, ";
+                }
+                
+                $statement =~ s/, $//;
+                
+                $sql .= $statement;
             }
         }
     }
