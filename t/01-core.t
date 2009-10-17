@@ -159,8 +159,17 @@ our ($U, $P, $D) = connect_info();
     
     ok(blessed $dbi->dbh);
     can_ok($dbi->dbh, qw/prepare/);
+}
+
+{
+    my $dbi = DBI::Custom->new(
+        connect_info => {
+            no_exist => 1,
+        }
+    );
+    eval{$dbi->connect};
     
-    
+    like($@, qr/connect_info 'no_exist' is invald/, 'no exist');
 }
 
 sub connect_info {

@@ -58,6 +58,7 @@ sub filters : Attr { type => 'hash', deref => 1, auto_build => sub { shift->filt
 sub add_filter { shift->filters(@_) }
 
 sub dbh          : Attr { auto_build => sub { shift->connect } }
+sub sql_template : Attr { auto_build => sub { shift->sql_template(DBI::Custom::SQLTemplate->new) } }
 
 our %VALID_CONNECT_INFO = map {$_ => 1} qw/data_source user password options/;
 
@@ -66,7 +67,8 @@ sub connect {
     my $connect_info = $self->connect_info;
     
     foreach my $key (keys %{$self->connect_info}) {
-        
+        croak("connect_info '$key' is invald")
+          unless $VALID_CONNECT_INFO{$key};
     }
     
     my $dbh = DBI->connect(
@@ -84,15 +86,44 @@ sub connect {
     $self->dbh($dbh);
 }
 
+sub create_sql {
+    my $self = shift;
+    
+    my ($sql, @bind) = $self->sql_template->create_sql(@_);
+    
+    return ($sql, @bind);
+}
+
 sub query {
+    my $self = shift;
+    my ($sql, @bind) = $self->creqte_sql(@_);
+    $self->prepare($sql);
+    $self->execute(@bind);
+}
+
+sub query_raw_sql {
+    my ($self, $sql, @bind) = @_;
+    $self->prepare($sql);
+    $self->execute(@bind);
+}
+
+Object::Simple->build_class;
+
+package DBI::Custom::SQLTemplate;
+use Object::Simple;
+
+sub create_sql {
     
 }
+
+
+
 
 Object::Simple->build_class;
 
 =head1 NAME
 
-DBI::Custom - The great new DBI::Custom!
+DBI::Custom - Customizable simple DBI
 
 =head1 VERSION
 
@@ -129,6 +160,12 @@ Version 0.0101
 =head2 new
 
 =head2 query
+
+=head2 create_sql
+
+=head2 query_raw_sql
+
+=head2 sql_template
 
 =head1 AUTHOR
 
