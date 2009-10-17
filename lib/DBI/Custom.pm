@@ -95,8 +95,11 @@ sub create_sql {
 }
 
 sub query {
-    my $self = shift;
-    my ($sql, @bind) = $self->creqte_sql(@_);
+    my ($self, $template, $values, $filter)  = @_;
+    
+    $filter ||= $self->bind_filter;
+    
+    my ($sql, @bind) = $self->creqte_sql($template, $values, $filter);
     $self->prepare($sql);
     $self->execute(@bind);
 }
@@ -112,9 +115,89 @@ Object::Simple->build_class;
 package DBI::Custom::SQLTemplate;
 use Object::Simple;
 
+### Attributes;
+sub tag_start : Attr { default => '{' }
+sub tag_end   : Attr { default => '}' }
+sub template : Attr {};
+sub tree     : Attr { auto_build => sub { shift->tree([]) } }
+
+
 sub create_sql {
+    my ($self, $template, $values, $filter)  = @_;
     
+    $self->parse($template);
+    
+    my ($sql, @bind);
+    
+    return ($sql, @bind);
 }
+
+our $TAG_SYNTAX = <<'EOS';
+[tag]            [expand]
+{= name}         name = ?
+{!= name}        name != ?
+
+{< name}         name < ?
+{> name}         name > ?
+{>= name}        name >= ?
+{<= name}        name <= ?
+
+{like name}      name like ?
+{in name}        name in [?, ?, ..]
+
+{insert_values}  (key1, key2, key3) values (?, ?, ?)
+{update_values}  set key1 = ?, key2 = ?, key3 = ?
+EOS
+
+our %VALID_TAG_NAMES = map {$_ => 1} qw/=/;
+sub parse {
+    my ($self, $template) = @_;
+    $self->template($template);
+    
+    # Clean start;
+    delete $self->{tree};
+    
+    # Tags
+    my $tag_start = quotemeta $self->tag_start;
+    my $tag_end   = quotemeta $self->tag_end;
+    
+    # Tokenize
+    my $state = 'text';
+    
+    # Save original template
+    my $original_template = $template;
+    
+    # Text
+    while ($template =~ s/([^$tag_start]*?)$tag_start([^$tag_end].*?)$tag_end//sm) {
+        my $text          = $1;
+        my $tag  = $2;
+        
+        push @{$self->tree}, ['text', $text] if $text;
+        
+        if ($tag) {
+            
+            my ($tag_name, @params) = split /\s+/, $tag;
+            
+            croak("Tag name is empty in '$tag'.\n" .
+                  "Tag Syntax\n$TAG_SYNTAX.\n" .
+                  "Your SQL template is \n$original_template")
+              unless length $tag_name;
+            
+            croak("Tag name '$tag_name' in '$tag' is invalid.\n" .
+                  "Tag Syntax\n$TAG_SYNTAX.\n" .
+                  "Your SQL template is \n$original_template")
+              unless $VALID_TAG_NAMES{$tag_name}; 
+            
+            push @{$self->tree}, [$tag_name, @params];
+        }
+    }
+    
+    push @{$self->tree}, ['text', $template] if $template;
+}
+
+
+
+
 
 
 

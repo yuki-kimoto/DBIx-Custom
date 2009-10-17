@@ -172,6 +172,16 @@ our ($U, $P, $D) = connect_info();
     like($@, qr/connect_info 'no_exist' is invald/, 'no exist');
 }
 
+{
+    my $dbi = DBI::Custom->new;
+    my $tmpl   = "select * from table where {= title};";
+    my $values = {title => 'a'};
+    my ($sql, @bind) = $dbi->create_sql($tmpl, $values);
+    is($sql, "select * from table where title = ?;");
+    is_deeply(\@bind, ['a']);
+    
+}
+
 sub connect_info {
     my $file = 'password.tmp';
     open my $fh, '<', $file
