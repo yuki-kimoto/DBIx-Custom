@@ -114,20 +114,25 @@ Object::Simple->build_class;
 
 package DBI::Custom::SQLTemplate;
 use Object::Simple;
+use Carp 'croak';
 
 ### Attributes;
-sub tag_start : Attr { default => '{' }
-sub tag_end   : Attr { default => '}' }
-sub template : Attr {};
-sub tree     : Attr { auto_build => sub { shift->tree([]) } }
-
+sub tag_start   : Attr { default => '{' }
+sub tag_end     : Attr { default => '}' }
+sub template    : Attr {};
+sub tree        : Attr { auto_build => sub { shift->tree([]) } }
+sub bind_filter : Attr {}
+sub values      : Attr {}
+sub upper_case  : Attr {default => 0}
 
 sub create_sql {
     my ($self, $template, $values, $filter)  = @_;
     
+    $filter ||= $self->bind_filter;
+    
     $self->parse($template);
     
-    my ($sql, @bind);
+    my ($sql, @bind) = $self->build_sql({bind_filter => $filter, values => $values});
     
     return ($sql, @bind);
 }
@@ -135,7 +140,7 @@ sub create_sql {
 our $TAG_SYNTAX = <<'EOS';
 [tag]            [expand]
 {= name}         name = ?
-{!= name}        name != ?
+{<> name}        name <> ?
 
 {< name}         name < ?
 {> name}         name > ?
@@ -149,7 +154,7 @@ our $TAG_SYNTAX = <<'EOS';
 {update_values}  set key1 = ?, key2 = ?, key3 = ?
 EOS
 
-our %VALID_TAG_NAMES = map {$_ => 1} qw/=/;
+our %VALID_TAG_NAMES = map {$_ => 1} qw/= <> < > >= <= like in insert_values update_values/;
 sub parse {
     my ($self, $template) = @_;
     $self->template($template);
@@ -169,37 +174,67 @@ sub parse {
     
     # Text
     while ($template =~ s/([^$tag_start]*?)$tag_start([^$tag_end].*?)$tag_end//sm) {
-        my $text          = $1;
+        my $text = $1;
         my $tag  = $2;
         
-        push @{$self->tree}, ['text', $text] if $text;
+        push @{$self->tree}, {type => 'text', args => [$text]} if $text;
         
         if ($tag) {
             
-            my ($tag_name, @params) = split /\s+/, $tag;
+            my ($tag_name, @args) = split /\s+/, $tag;
             
-            croak("Tag name is empty in '$tag'.\n" .
-                  "Tag Syntax\n$TAG_SYNTAX.\n" .
-                  "Your SQL template is \n$original_template")
-              unless length $tag_name;
+            $tag ||= '';
+            croak("Tag '$tag' in SQL template is invalid.\n\n" .
+                  "SQL template tag syntax\n$TAG_SYNTAX\n\n" .
+                  "Your SQL template is \n$original_template\n\n")
+              unless $VALID_TAG_NAMES{$tag_name};
             
-            croak("Tag name '$tag_name' in '$tag' is invalid.\n" .
-                  "Tag Syntax\n$TAG_SYNTAX.\n" .
-                  "Your SQL template is \n$original_template")
-              unless $VALID_TAG_NAMES{$tag_name}; 
-            
-            push @{$self->tree}, [$tag_name, @params];
+            push @{$self->tree}, {type => 'tag', tag_name => $tag_name, args => [@args]};
         }
     }
     
-    push @{$self->tree}, ['text', $template] if $template;
+    push @{$self->tree}, {type => 'text', args => [$template]} if $template;
 }
 
-
-
-
-
-
+our %EXPAND_PLACE_HOLDER = map {$_ => 1} qw/= <> < > >= <= like/;
+sub build_sql {
+    my ($self, $args) = @_;
+    
+    my $tree        = $args->{tree} || $self->tree;
+    my $bind_filter = $args->{bind_filter} || $self->bind_filter;
+    my $values      = exists $args->{values} ? $args->{values} : $self->values;
+    
+    my @bind_values;
+    my $sql = '';
+    foreach my $node (@$tree) {
+        my $type     = $node->{type};
+        my $tag_name = $node->{tag_name};
+        my $args     = $node->{args};
+        
+        if ($type eq 'text') {
+            # Join text
+            $sql .= $args->[0];
+        }
+        elsif ($type eq 'tag') {
+            if ($EXPAND_PLACE_HOLDER{$tag_name}) {
+                my $key = $args->[0];
+                
+                # Filter Value
+                if ($bind_filter) {
+                    push @bind_values, scalar $bind_filter->($values->{$key});
+                }
+                else {
+                    push @bind_values, $values->{$key};
+                }
+                $tag_name = uc $tag_name if $self->upper_case;
+                my $place_holder = "$key $tag_name ?";
+                $sql .= $place_holder;
+            }
+        }
+    }
+    $sql .= ';' unless $sql =~ /;$/;
+    return ($sql, @bind_values);
+}
 
 
 Object::Simple->build_class;

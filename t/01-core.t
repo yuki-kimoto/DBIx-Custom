@@ -177,9 +177,19 @@ our ($U, $P, $D) = connect_info();
     my $tmpl   = "select * from table where {= title};";
     my $values = {title => 'a'};
     my ($sql, @bind) = $dbi->create_sql($tmpl, $values);
-    is($sql, "select * from table where title = ?;");
-    is_deeply(\@bind, ['a']);
+    is($sql, "select * from table where title = ?;", 'sql template');
+    is_deeply(\@bind, ['a'], 'sql template bind' );
+}
+
+{
+    # Expand place holer
+    my $dbi = DBI::Custom->new;
+    my $tmpl   = "select * from table where {= k1} && {<> k2} && {< k3} && {> k4} && {>= k5} && {<= k6} && {like k7}";
+    my $values = {k1 => 'a', k2 => 'b', k3 => 'c', k4 => 'd', k5 => 'e', k6 => 'f', k7 => 'g'};
     
+    my ($sql, @bind) = $dbi->create_sql($tmpl, $values);
+    is($sql, "select * from table where k1 = ? && k2 <> ? && k3 < ? && k4 > ? && k5 >= ? && k6 <= ? && k7 like ?;", 'sql template2');
+    is_deeply(\@bind, ['a', 'b', 'c', 'd', 'e', 'f', 'g'], 'sql template bind2' );
 }
 
 sub connect_info {
