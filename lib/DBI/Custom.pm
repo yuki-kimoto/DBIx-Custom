@@ -46,6 +46,7 @@ sub clone {
     $new->filters(%{$self->filters || {}});
     $new->bind_filter($self->bind_filter);
     $new->fetch_filter($self->fetch_filter);
+    $new->result_class($self->result_class);
 }
 
 # Attribute
@@ -56,12 +57,15 @@ sub fetch_filter : Attr {}
 
 sub filters : Attr { type => 'hash', deref => 1, auto_build => sub { shift->filters({}) } }
 sub add_filter { shift->filters(@_) }
+sub result_class : Attr { default => 'DBI::Custom::Result' }
 
 sub dbh          : Attr { auto_build => sub { shift->connect } }
 sub sql_template : Attr { auto_build => sub { shift->sql_template(DBI::Custom::SQLTemplate->new) } }
 
+
 our %VALID_CONNECT_INFO = map {$_ => 1} qw/data_source user password options/;
 
+# Connect
 sub connect {
     my $self = shift;
     my $connect_info = $self->connect_info;
@@ -83,8 +87,32 @@ sub connect {
         }
     );
     
+    $self->auto_commit($self->dbh->{AutoCommit});
     $self->dbh($dbh);
 }
+
+# Is connected?
+sub connected {
+    my $self = shift;
+    return exists $sefl->{dbh};
+}
+
+# Disconnect
+sub disconnect {
+    my $self = shift;
+    if ($self->conneced) {
+        $self->dbh->disconnect;
+        delete $self->{dbh};
+    }
+}
+
+# Reconnect
+sub reconnect {
+    my $self = shift;
+    $sefl->disconnect if $self->connected;
+    $self->connect;
+}
+
 
 sub create_sql {
     my $self = shift;
@@ -99,18 +127,54 @@ sub query {
     
     $filter ||= $self->bind_filter;
     
-    my ($sql, @bind) = $self->creqte_sql($template, $values, $filter);
-    $self->prepare($sql);
-    $self->execute(@bind);
+    my ($sql, @bind) = $self->create_sql($template, $values, $filter);
+    my (
+    my $sth = $self->dbh->prepare($sql);
+    $sth->execute(@bind);
+    
+    # Select
+    if ($sth->{NUM_OF_FIELDS}) {
+        my $result_class = $self->result_class;
+        my $result = $result_class->new({sth => $sth});
+        return $result;
+    }
+    return;
 }
 
 sub query_raw_sql {
     my ($self, $sql, @bind) = @_;
-    $self->prepare($sql);
-    $self->execute(@bind);
+    my $sth = $self->dbh->prepare($sql);
+    $sth->execute(@bind);
+    return $sth;
 }
 
+sub auto_commit : Attr {
+
 Object::Simple->build_class;
+
+package DBI::Custom::Result;
+use Object::Simple;
+
+sub sth : Attr {};
+
+sub fetchrow_arrayref {
+    my $self = shift;
+    $self->sth;
+    
+    
+}
+
+
+*fetch = \&fetchrow_arrayref;
+
+sub err    { shift->sth->err }
+sub errstr { shift->sth->errstr }
+sub finish { shift->sth->finish }
+sub rows   { shift->sth->rows }
+sub state  { shift->sth->state }
+
+Object::Simple->build_class;
+
 
 package DBI::Custom::SQLTemplate;
 use Object::Simple;
@@ -284,6 +348,9 @@ sub build_sql {
 
 
 Object::Simple->build_class;
+
+package DBI::Custom;
+1;
 
 =head1 NAME
 
