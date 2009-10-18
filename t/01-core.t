@@ -5,10 +5,6 @@ use warnings;
 use DBI::Custom;
 use Scalar::Util qw/blessed/;
 
-# user password database
-our ($U, $P, $D) = connect_info();
-
-
 {
     my $dbi = DBI::Custom->new(
         connect_info => {
@@ -159,19 +155,6 @@ our ($U, $P, $D) = connect_info();
     isa_ok($dbi, 'DBI::Custom');
 }
 
-{
-    my $dbi = DBI::Custom->new(
-        connect_info => {
-            user => $U,
-            password => $P,
-            data_source => "dbi:mysql:$D"
-        }
-    );
-    $dbi->connect;
-    
-    ok(blessed $dbi->dbh);
-    can_ok($dbi->dbh, qw/prepare/);
-}
 
 {
     my $dbi = DBI::Custom->new(
@@ -264,40 +247,3 @@ our ($U, $P, $D) = connect_info();
     is_deeply(\@bind, ['A', 'b'], 'sql template bind' );
 }
 
-{
-    my $dbi = DBI::Custom->new(
-        connect_info => {
-            user => $U,
-            password => $P,
-            data_source => "dbi:mysql:$D"
-        }
-    );
-    
-    $dbi->fetch_filter(sub {
-        my ($key, $value) = @_;
-        if ($key eq 'key1' && $value == 1 ) {
-            return $value * 3;
-        }
-        return $value;
-    });
-    
-    my $result = $dbi->query("select key1, key2 from test1");
-    
-    my $row = $result->fetchrow_arrayref;
-    my @values = @$row;
-    $result->finish;
-    
-    is_deeply(\@values, [3, 2]);
-}
-
-sub connect_info {
-    my $file = 'password.tmp';
-    open my $fh, '<', $file
-      or return;
-    
-    my ($user, $password, $database) = split(/\s/, (<$fh>)[0]);
-    
-    close $fh;
-    
-    return ($user, $password, $database);
-}

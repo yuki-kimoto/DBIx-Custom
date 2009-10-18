@@ -196,6 +196,7 @@ sub query_raw_sql {
     my ($self, $sql, @bind) = @_;
     
     $self->connect unless $self->connected;
+    $sql .= ';' unless $sql =~ /;$/;
     my $sth = $self->dbh->prepare($sql);
     $sth->execute(@bind);
     return $sth;
