@@ -23,9 +23,12 @@ our ($U, $P, $D) = connect_info();
         bind_filter => 'f',
         fetch_filter => 'g',
         dbh => 'e',
+        result_class => 'g'
     );
     
-    is_deeply($dbi,{connect_info => {user => 'a', password => 'b', data_source => 'c', options => {d => 1, e => 2}}                       ,filters => {f => 3}, bind_filter => 'f', fetch_filter => 'g', dbh => 'e'}, 'new');
+    is_deeply($dbi,{connect_info => {user => 'a', password => 'b', data_source => 'c', 
+                    options => {d => 1, e => 2}}, filters => {f => 3}, bind_filter => 'f',
+                    fetch_filter => 'g', dbh => 'e', result_class => 'g'}, 'new');
     
     isa_ok($dbi, 'DBI::Custom');
 }
@@ -65,9 +68,11 @@ our ($U, $P, $D) = connect_info();
         },
         bind_filter => 'fo',
         fetch_filter => 'go',
+        result_class => 'ho'
     );
     
-    is_deeply($dbi,{connect_info => {user => 'ao', password => 'bo', data_source => 'co', options => {do => 10, eo => 20}}                       ,filters => {fo => 30}, bind_filter => 'fo', fetch_filter => 'go'}, 'new arguments');
+    is_deeply($dbi,{connect_info => {user => 'ao', password => 'bo', data_source => 'co', options => {do => 10, eo => 20}}
+                    ,filters => {fo => 30}, bind_filter => 'fo', fetch_filter => 'go', result_class => 'ho'}, 'new arguments');
     
     isa_ok($dbi, 'DBI::Custom::T1');
 }
@@ -75,7 +80,8 @@ our ($U, $P, $D) = connect_info();
 {
     my $dbi = DBI::Custom::T1->new;
     
-    is_deeply($dbi,{connect_info => {user => 'a', password => 'b', data_source => 'c', options => {d => 1, e => 2}}                       ,filters => {f => 3}, bind_filter => 'f', fetch_filter => 'g'}, 'new custom class');
+    is_deeply($dbi,{connect_info => {user => 'a', password => 'b', data_source => 'c', options => {d => 1, e => 2}},
+                    filters => {f => 3}, bind_filter => 'f', fetch_filter => 'g', result_class => 'DBI::Custom::Result'}, 'new custom class');
     
     isa_ok($dbi, 'DBI::Custom::T1');
     
@@ -89,7 +95,8 @@ our ($U, $P, $D) = connect_info();
 {
     my $dbi = DBI::Custom::T1_2->new;
     
-    is_deeply($dbi,{connect_info => {user => 'a', password => 'b', data_source => 'c', options => {d => 1, e => 2}}                       ,filters => {f => 3}, bind_filter => 'f', fetch_filter => 'g'}, 'new custom class inherit');
+    is_deeply($dbi,{connect_info => {user => 'a', password => 'b', data_source => 'c', options => {d => 1, e => 2}},
+                    filters => {f => 3}, bind_filter => 'f', fetch_filter => 'g', result_class => 'DBI::Custom::Result'}, 'new custom class inherit');
     
     isa_ok($dbi, 'DBI::Custom::T1_2');
 }
@@ -114,6 +121,8 @@ our ($U, $P, $D) = connect_info();
           ->bind_filter('fo')
           ->fetch_filter('go')
           ->dbh('eo')
+          ->result_class('ho');
+       
     });
     
 }
@@ -121,7 +130,8 @@ our ($U, $P, $D) = connect_info();
 {
     my $dbi = DBI::Custom::T1_3->new;
     
-    is_deeply($dbi,{connect_info => {user => 'ao', password => 'bo', data_source => 'co', options => {do => 10, eo => 20}}                       ,filters => {fo => 30}, bind_filter => 'fo', fetch_filter => 'go'}, 'new custom class');
+    is_deeply($dbi,{connect_info => {user => 'ao', password => 'bo', data_source => 'co', options => {do => 10, eo => 20}},
+                    filters => {fo => 30}, bind_filter => 'fo', fetch_filter => 'go', result_class => 'ho'}, 'new custom class');
     
     isa_ok($dbi, 'DBI::Custom::T1_3');
 }
@@ -140,9 +150,11 @@ our ($U, $P, $D) = connect_info();
         bind_filter => 'f',
         fetch_filter => 'g',
         dbh => 'e',
+        result_class => 'h'
     );
     
-    is_deeply($dbi,{connect_info => {user => 'a', password => 'b', data_source => 'c', options => {d => 1, e => 2}}                       ,filters => {f => 3}, bind_filter => 'f', fetch_filter => 'g', dbh => 'e'}, 'new');
+    is_deeply($dbi,{connect_info => {user => 'a', password => 'b', data_source => 'c', options => {d => 1, e => 2}},
+                    filters => {f => 3}, bind_filter => 'f', fetch_filter => 'g', dbh => 'e', result_class => 'h'}, 'new');
     
     isa_ok($dbi, 'DBI::Custom');
 }

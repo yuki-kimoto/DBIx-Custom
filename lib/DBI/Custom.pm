@@ -52,13 +52,13 @@ sub clone {
 # Attribute
 sub connect_info       : Attr { type => 'hash',  auto_build => sub { shift->connect_info({}) } }
 
-sub bind_filter : Attr {}
+sub bind_filter  : Attr {}
 sub fetch_filter : Attr {}
 
 sub filters : Attr { type => 'hash', deref => 1, auto_build => sub { shift->filters({}) } }
 sub add_filter { shift->filters(@_) }
-sub result_class : Attr { default => 'DBI::Custom::Result' }
 
+sub result_class : Attr { auto_build => sub { shift->result_class('DBI::Custom::Result') }}
 sub dbh          : Attr { auto_build => sub { shift->connect } }
 sub sql_template : Attr { auto_build => sub { shift->sql_template(DBI::Custom::SQLTemplate->new) } }
 
@@ -87,20 +87,25 @@ sub connect {
         }
     );
     
-    $self->auto_commit($self->dbh->{AutoCommit});
+    $self->auto_commit($dbh->{AutoCommit});
     $self->dbh($dbh);
+}
+
+sub DESTROY {
+    my $self = shift;
+    $self->disconnect;
 }
 
 # Is connected?
 sub connected {
     my $self = shift;
-    return exists $sefl->{dbh};
+    return exists $self->{dbh} && eval {$self->dbh->can('prepare')};
 }
 
 # Disconnect
 sub disconnect {
     my $self = shift;
-    if ($self->conneced) {
+    if ($self->connected) {
         $self->dbh->disconnect;
         delete $self->{dbh};
     }
@@ -109,8 +114,19 @@ sub disconnect {
 # Reconnect
 sub reconnect {
     my $self = shift;
-    $sefl->disconnect if $self->connected;
+    $self->disconnect if $self->connected;
     $self->connect;
+}
+
+sub dbh_option {
+    my $self = shift;
+    croak("Not connected") unless $self->connected;
+    my $dbh = $self->dbh;
+    if (@_ > 1) {
+        $dbh->{$_[0]} = $_[1];
+        return $self;
+    }
+    return $dbh->{$_[0]}
 }
 
 
@@ -125,11 +141,26 @@ sub create_sql {
 sub query {
     my ($self, $template, $values, $filter)  = @_;
     
+    my $sth_options;
+    
+    # Rearrange when argumets is hash referecne 
+    if (ref $template eq 'HASH') {
+        my $args = $template;
+        ($template, $values, $filter, $sth_options)
+          = @{$args}{qw/template values filter sth_options/};
+    }
+    
     $filter ||= $self->bind_filter;
     
     my ($sql, @bind) = $self->create_sql($template, $values, $filter);
-    my (
     my $sth = $self->dbh->prepare($sql);
+    
+    if ($sth_options) {
+        foreach my $key (keys %$sth_options) {
+            $sth->{$key} = $sth_options->{$key};
+        }
+    }
+    
     $sth->execute(@bind);
     
     # Select
@@ -141,6 +172,7 @@ sub query {
     return;
 }
 
+
 sub query_raw_sql {
     my ($self, $sql, @bind) = @_;
     my $sth = $self->dbh->prepare($sql);
@@ -148,7 +180,8 @@ sub query_raw_sql {
     return $sth;
 }
 
-sub auto_commit : Attr {
+sub auto_commit : Attr {}
+
 
 Object::Simple->build_class;
 
@@ -397,6 +430,18 @@ Version 0.0101
 =head2 query_raw_sql
 
 =head2 sql_template
+
+=head2 auto_commit
+
+=head2 connected
+
+=head2 dbh_option
+
+=head2 disconnect
+
+=head2 reconnect
+
+=head2 result_class
 
 =head1 AUTHOR
 
