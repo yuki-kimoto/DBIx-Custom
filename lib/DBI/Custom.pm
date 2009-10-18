@@ -142,7 +142,7 @@ sub dbh_option {
     return $dbh->{$_[0]}
 }
 
-
+# Create SQL from SQL template
 sub create_sql {
     my $self = shift;
     
@@ -151,6 +151,7 @@ sub create_sql {
     return ($sql, @bind);
 }
 
+# Prepare and execute SQL
 sub query {
     my ($self, $template, $values, $filter)  = @_;
     
@@ -177,9 +178,10 @@ sub query {
         }
     }
     
+    # Execute
     my $ret_val = $sth->execute(@bind);
     
-    # Select
+    # Return resultset if select statement is executed
     if ($sth->{NUM_OF_FIELDS}) {
         my $result_class = $self->result_class;
         my $result = $result_class->new({
@@ -191,18 +193,24 @@ sub query {
     return $ret_val;
 }
 
-
+# Prepare and execute raw SQL
 sub query_raw_sql {
-    my ($self, $sql, @bind) = @_;
+    my ($self, $sql, @bind_values) = @_;
     
+    # Connect
     $self->connect unless $self->connected;
+    
+    # Add semicolon if not exist;
     $sql .= ';' unless $sql =~ /;$/;
+    
+    # Prepare
     my $sth = $self->dbh->prepare($sql);
-    $sth->execute(@bind);
+    
+    # Execute
+    $sth->execute(@bind_values);
+    
     return $sth;
 }
-
-
 
 Object::Simple->build_class;
 
@@ -216,7 +224,6 @@ sub fetchrow_arrayref {
     my $self = shift;
     my $sth = $self->{sth};
     
-    $DB::single = 1;
     my $array = $sth->fetchrow_arrayref;
     
     return $array unless $array;
