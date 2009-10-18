@@ -208,21 +208,24 @@ Object::Simple->build_class;
 package DBI::Custom::Result;
 use Object::Simple;
 
-sub sth : Attr {}
-sub fetch_filter {}
+sub sth          : Attr {}
+sub fetch_filter : Attr {}
 
 sub fetchrow_arrayref {
     my $self = shift;
     my $sth = $self->{sth};
     
+    $DB::single = 1;
     my $array = $sth->fetchrow_arrayref;
     
     return $array unless $array;
     
     my $keys = $sth->{NAME_lc};
-    
-    for (my $i = 0; $i < @$keys; $i++) {
-        $array->[$i] = $self->fetch_filter($keys->[$i], $array->[$i]);
+    my $fetch_filter = $self->fetch_filter;
+    if ($fetch_filter) {
+        for (my $i = 0; $i < @$keys; $i++) {
+            $array->[$i] = $fetch_filter->($keys->[$i], $array->[$i]);
+        }
     }
     return $array;
 }
@@ -237,8 +240,11 @@ sub fetchrow_array {
     
     my $keys = $sth->{NAME_lc};
     
-    for (my $i = 0; $i < @$keys; $i++) {
-        $array[$i] = $self->fetch_filter($keys->[$i], $array[$i]);
+    my $fetch_filter = $self->fetch_filter;
+    if ($fetch_filter) {
+        for (my $i = 0; $i < @$keys; $i++) {
+            $array[$i] = $fetch_filter->($keys->[$i], $array[$i]);
+        }
     }
     return @array;
 }
@@ -250,9 +256,12 @@ sub fetchrow_hashref {
     my $hash = $sth->fetchrow_hashref;
     
     return unless $hash;
+    my $fetch_filter = $self->fetch_filter;
     
-    foreach my $key (keys %$hash) {
-        $hash->{$key} = $self->fetch_filter($key, $hash->{$key});
+    if ($fetch_filter) {
+        foreach my $key (keys %$hash) {
+            $hash->{$key} = $fetch_filter->($key, $hash->{$key});
+        }
     }
     return $hash;
 }
