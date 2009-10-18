@@ -61,7 +61,20 @@ sub add_filter { shift->filters(@_) }
 sub result_class : Attr { auto_build => sub { shift->result_class('DBI::Custom::Result') }}
 sub dbh          : Attr {}
 sub sql_template : Attr { auto_build => sub { shift->sql_template(DBI::Custom::SQLTemplate->new) } }
-sub auto_commit  : Attr {}
+
+# Auto commit
+sub auto_commit {
+    my $self = shift;
+    
+    croak("Cannot change AutoCommit becouse of not connected")
+        unless $self->dbh;
+    
+    if (@_) {
+        $self->dbh->{AutoCommit} = $_[0];
+        return $self;
+    }
+    return $self->dbh->{AutoCommit};
+}
 
 
 our %VALID_CONNECT_INFO = map {$_ => 1} qw/data_source user password options/;
@@ -88,8 +101,8 @@ sub connect {
         }
     );
     
-    $self->auto_commit($dbh->{AutoCommit});
     $self->dbh($dbh);
+    return $self;
 }
 
 sub DESTROY {
@@ -122,12 +135,14 @@ sub reconnect {
 # Commit
 sub commit {
     my $self = shift;
+    croak("Connection is not established") unless $self->connected;
     return $self->dbh->commit;
 }
 
 # Rollback
 sub rollback {
     my $self = shift;
+    croak("Connection is not established") unless $self->connected;
     return $self->dbh->rollback;
 }
 
@@ -220,65 +235,59 @@ use Object::Simple;
 sub sth          : Attr {}
 sub fetch_filter : Attr {}
 
-sub fetchrow_arrayref {
-    my $self = shift;
-    my $sth = $self->{sth};
+sub fetch {
+    my ($self, $type) = @_;
+    my $sth = $self->sth;
+    $type ||= 'array';
     
-    my $array = $sth->fetchrow_arrayref;
-    
-    return $array unless $array;
-    
-    my $keys = $sth->{NAME_lc};
     my $fetch_filter = $self->fetch_filter;
-    if ($fetch_filter) {
-        for (my $i = 0; $i < @$keys; $i++) {
-            $array->[$i] = $fetch_filter->($keys->[$i], $array->[$i]);
+    if ($type eq 'hash') {
+        my $hash = $sth->fetchrow_hashref;
+        return unless $hash;
+        if ($fetch_filter) {
+            foreach my $key (keys %$hash) {
+                $hash->{$key} = $fetch_filter->($key, $hash->{$key});
+            }
         }
+        return wantarray ? %$hash : $hash;
     }
-    return $array;
+    else {
+        my $array = $sth->fetchrow_arrayref;
+        return unless $array;
+        if ($fetch_filter) {
+            my $keys = $sth->{NAME_lc};
+            for (my $i = 0; $i < @$keys; $i++) {
+                $array->[$i] = $fetch_filter->($keys->[$i], $array->[$i]);
+            }
+        }
+        return wantarray ? @$array : $array;
+    }
 }
 
-sub fetchrow_array {
-    my $self = shift;
-    my $sth = $self->{sth};
+sub fetch_all {
+    my ($self, $type) = @_;
+    $type ||= 'array';
     
-    my @array = $sth->fetchrow_array;
-    
-    return unless @array;
-    
-    my $keys = $sth->{NAME_lc};
-    
-    my $fetch_filter = $self->fetch_filter;
-    if ($fetch_filter) {
-        for (my $i = 0; $i < @$keys; $i++) {
-            $array[$i] = $fetch_filter->($keys->[$i], $array[$i]);
+    if ($type eq 'hash') {
+        my $array_of_hash = [];
+        while(my %hash = $self->fetch('hash')) {
+            push @$array_of_hash, {%hash};
         }
+        return wantarray ? @$array_of_hash : $array_of_hash;
     }
-    return @array;
-}
-
-sub fetchrow_hashref {
-    my $self = shift;
-    my $sth = $self->{sth};
-    
-    my $hash = $sth->fetchrow_hashref;
-    
-    return unless $hash;
-    my $fetch_filter = $self->fetch_filter;
-    
-    if ($fetch_filter) {
-        foreach my $key (keys %$hash) {
-            $hash->{$key} = $fetch_filter->($key, $hash->{$key});
+    else {
+        my $array_of_array = [];
+        while(my %array = $self->fetch('hash')) {
+            push @$array_of_array, {%array};
         }
+        return wantarray ? @$array_of_array : $array_of_array;
     }
-    return $hash;
 }
 
 sub err    { shift->sth->err }
 sub errstr { shift->sth->errstr }
-sub finish { shift->sth->finish }
-sub rows   { shift->sth->rows }
 sub state  { shift->sth->state }
+sub finish { shift->sth->finish }
 
 Object::Simple->build_class;
 

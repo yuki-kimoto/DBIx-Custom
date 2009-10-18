@@ -31,7 +31,7 @@ $dbi->query_raw_sql("create table t1 (k1 char(10), k2 char(10))");
     
     my $result = $dbi->query("select k1, k2 from t1");
     
-    my $row = $result->fetchrow_arrayref;
+    my $row = $result->fetch;
     my @values = @$row;
     $result->finish;
     
