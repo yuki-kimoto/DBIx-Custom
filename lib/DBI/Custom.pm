@@ -182,7 +182,10 @@ sub query {
     # Select
     if ($sth->{NUM_OF_FIELDS}) {
         my $result_class = $self->result_class;
-        my $result = $result_class->new({sth => $sth});
+        my $result = $result_class->new({
+            sth => $sth,
+            fetch_filter => $self->fetch_filter
+        });
         return $result;
     }
     return $ret_val;
@@ -192,7 +195,7 @@ sub query {
 sub query_raw_sql {
     my ($self, $sql, @bind) = @_;
     
-    $sefl->connect unless $self->connected;
+    $self->connect unless $self->connected;
     my $sth = $self->dbh->prepare($sql);
     $sth->execute(@bind);
     return $sth;
@@ -205,17 +208,54 @@ Object::Simple->build_class;
 package DBI::Custom::Result;
 use Object::Simple;
 
-sub sth : Attr {};
+sub sth : Attr {}
+sub fetch_filter {}
 
 sub fetchrow_arrayref {
     my $self = shift;
-    $self->sth;
+    my $sth = $self->{sth};
     
+    my $array = $sth->fetchrow_arrayref;
     
+    return $array unless $array;
+    
+    my $keys = $sth->{NAME_lc};
+    
+    for (my $i = 0; $i < @$keys; $i++) {
+        $array->[$i] = $self->fetch_filter($keys->[$i], $array->[$i]);
+    }
+    return $array;
 }
 
+sub fetchrow_array {
+    my $self = shift;
+    my $sth = $self->{sth};
+    
+    my @array = $sth->fetchrow_array;
+    
+    return unless @array;
+    
+    my $keys = $sth->{NAME_lc};
+    
+    for (my $i = 0; $i < @$keys; $i++) {
+        $array[$i] = $self->fetch_filter($keys->[$i], $array[$i]);
+    }
+    return @array;
+}
 
-*fetch = \&fetchrow_arrayref;
+sub fetchrow_hashref {
+    my $self = shift;
+    my $sth = $self->{sth};
+    
+    my $hash = $sth->fetchrow_hashref;
+    
+    return unless $hash;
+    
+    foreach my $key (keys %$hash) {
+        $hash->{$key} = $self->fetch_filter($key, $hash->{$key});
+    }
+    return $hash;
+}
 
 sub err    { shift->sth->err }
 sub errstr { shift->sth->errstr }
@@ -460,51 +500,14 @@ Version 0.0101
 
 =head2 result_class
 
+=head2 commit
+
+=head2 rollback
+
+
 =head1 AUTHOR
 
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
-
-=head1 BUGS
-
-Please report any bugs or feature requests to C<bug-dbi-custom at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=DBI-Custom>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
-
-
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc DBI::Custom
-
-
-You can also look for information at:
-
-=over 4
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=DBI-Custom>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/DBI-Custom>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/DBI-Custom>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/DBI-Custom/>
-
-=back
-
-
-=head1 ACKNOWLEDGEMENTS
-
 
 =head1 COPYRIGHT & LICENSE
 
