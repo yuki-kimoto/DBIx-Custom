@@ -59,8 +59,9 @@ sub filters : Attr { type => 'hash', deref => 1, auto_build => sub { shift->filt
 sub add_filter { shift->filters(@_) }
 
 sub result_class : Attr { auto_build => sub { shift->result_class('DBI::Custom::Result') }}
-sub dbh          : Attr { auto_build => sub { shift->connect } }
+sub dbh          : Attr {}
 sub sql_template : Attr { auto_build => sub { shift->sql_template(DBI::Custom::SQLTemplate->new) } }
+sub auto_commit  : Attr {}
 
 
 our %VALID_CONNECT_INFO = map {$_ => 1} qw/data_source user password options/;
@@ -93,13 +94,13 @@ sub connect {
 
 sub DESTROY {
     my $self = shift;
-    $self->disconnect;
+    $self->disconnect if $self->connected;
 }
 
 # Is connected?
 sub connected {
     my $self = shift;
-    return exists $self->{dbh} && eval {$self->dbh->can('prepare')};
+    return exists $self->{dbh} && eval {$self->{dbh}->can('prepare')};
 }
 
 # Disconnect
@@ -116,6 +117,18 @@ sub reconnect {
     my $self = shift;
     $self->disconnect if $self->connected;
     $self->connect;
+}
+
+# Commit
+sub commit {
+    my $self = shift;
+    return $self->dbh->commit;
+}
+
+# Rollback
+sub rollback {
+    my $self = shift;
+    return $self->dbh->rollback;
 }
 
 sub dbh_option {
@@ -153,6 +166,9 @@ sub query {
     $filter ||= $self->bind_filter;
     
     my ($sql, @bind) = $self->create_sql($template, $values, $filter);
+    
+    $self->connect unless $self->connected;
+    
     my $sth = $self->dbh->prepare($sql);
     
     if ($sth_options) {
@@ -161,7 +177,7 @@ sub query {
         }
     }
     
-    $sth->execute(@bind);
+    my $ret_val = $sth->execute(@bind);
     
     # Select
     if ($sth->{NUM_OF_FIELDS}) {
@@ -169,18 +185,19 @@ sub query {
         my $result = $result_class->new({sth => $sth});
         return $result;
     }
-    return;
+    return $ret_val;
 }
 
 
 sub query_raw_sql {
     my ($self, $sql, @bind) = @_;
+    
+    $sefl->connect unless $self->connected;
     my $sth = $self->dbh->prepare($sql);
     $sth->execute(@bind);
     return $sth;
 }
 
-sub auto_commit : Attr {}
 
 
 Object::Simple->build_class;
