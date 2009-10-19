@@ -235,53 +235,69 @@ use Object::Simple;
 sub sth          : Attr {}
 sub fetch_filter : Attr {}
 
+# Fetch (array)
 sub fetch {
     my ($self, $type) = @_;
     my $sth = $self->sth;
-    $type ||= 'array';
-    
     my $fetch_filter = $self->fetch_filter;
-    if ($type eq 'hash') {
-        my $hash = $sth->fetchrow_hashref;
-        return unless $hash;
-        if ($fetch_filter) {
-            foreach my $key (keys %$hash) {
-                $hash->{$key} = $fetch_filter->($key, $hash->{$key});
-            }
+    
+    # Fetch
+    my $row = $sth->fetchrow_arrayref;
+    
+    # Cannot fetch
+    return unless $row;
+    
+    # Filter
+    if ($fetch_filter) {
+        my $keys = $sth->{NAME_lc};
+        for (my $i = 0; $i < @$keys; $i++) {
+            $row->[$i] = $fetch_filter->($keys->[$i], $row->[$i]);
         }
-        return wantarray ? %$hash : $hash;
     }
-    else {
-        my $array = $sth->fetchrow_arrayref;
-        return unless $array;
-        if ($fetch_filter) {
-            my $keys = $sth->{NAME_lc};
-            for (my $i = 0; $i < @$keys; $i++) {
-                $array->[$i] = $fetch_filter->($keys->[$i], $array->[$i]);
-            }
-        }
-        return wantarray ? @$array : $array;
-    }
+    return wantarray ? @$row : $row;
 }
 
-sub fetch_all {
-    my ($self, $type) = @_;
-    $type ||= 'array';
+# Fetch (hash)
+sub fetch_hash {
+    my $self = shift;
+    my $sth = $self->sth;
+    my $fetch_filter = $self->fetch_filter;
     
-    if ($type eq 'hash') {
-        my $array_of_hash = [];
-        while(my %hash = $self->fetch('hash')) {
-            push @$array_of_hash, {%hash};
+    # Fetch
+    my $row = $sth->fetchrow_hashref;
+    
+    # Cannot fetch
+    return unless $row;
+    
+    # Filter
+    if ($fetch_filter) {
+        foreach my $key (keys %$row) {
+            $row->{$key} = $fetch_filter->($key, $row->{$key});
         }
-        return wantarray ? @$array_of_hash : $array_of_hash;
     }
-    else {
-        my $array_of_array = [];
-        while(my %array = $self->fetch('hash')) {
-            push @$array_of_array, {%array};
-        }
-        return wantarray ? @$array_of_array : $array_of_array;
+    return wantarray ? %$row : $row;
+}
+
+# Fetch all (array)
+sub fetch_all {
+    my $self = shift;
+    
+    my $rows = [];
+    while(my %row = $self->fetch) {
+        push @$rows, {%row};
     }
+    return wantarray ? @$rows : $rows;
+}
+
+# Fetch all (hash)
+sub fetch_all_hash {
+    my $self = shift;
+    
+    my $rows = [];
+    while(my %row = $self->fetch_hash) {
+        push @$rows, {%row};
+    }
+    return wantarray ? @$rows : $rows;
 }
 
 sub err    { shift->sth->err }

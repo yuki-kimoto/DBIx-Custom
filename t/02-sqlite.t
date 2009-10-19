@@ -65,6 +65,31 @@ my $t = Test::DBI::Custom->new;
 $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub {
     my $dbi = shift;
     
+    my $r;     # resultset
+    my @rows;
+    
+    # Simple query array
+    $r = $dbi->query("select k1, k2 from t1");
+    
+    @rows = ();
+    while (my $row = $r->fetch) {
+        push @rows, [@$row];
+    }
+    is_deeply(\@rows, [[1, 2], [3, 4]], 'Simple query array');
+    
+    # Simple query hash
+    $r = $dbi->query("select k1, k2 from t1;");
+    
+    @rows = ();
+    while (my $row = $r->fetch_hash) {
+        push @rows, {%$row};
+    }
+    is_deeply(\@rows, [{k1 => 1, k2 => 2}, {k1 => 3, k2 => 4}], 'Simple query array');
+    
+    
+    
+    
+    
     $dbi->fetch_filter(sub {
         my ($key, $value) = @_;
         if ($key eq 'k1' && $value == 1 ) {
@@ -73,11 +98,11 @@ $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub
         return $value;
     });
     
-    my $result = $dbi->query("select k1, k2 from t1");
+    $r = $dbi->query("select k1, k2 from t1");
     
-    my $row = $result->fetch;
+    my $row = $r->fetch;
     my @values = @$row;
-    $result->finish;
+    $r->finish;
     
     is_deeply(\@values, [3, 2]);
 });
