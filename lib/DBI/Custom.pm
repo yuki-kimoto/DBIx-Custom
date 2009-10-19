@@ -85,7 +85,7 @@ sub connect {
     my $connect_info = $self->connect_info;
     
     foreach my $key (keys %{$self->connect_info}) {
-        croak("connect_info '$key' is invald")
+        croak("connect_info '$key' is wrong name")
           unless $VALID_CONNECT_INFO{$key};
     }
     
@@ -319,6 +319,7 @@ sub create_sql {
 
 our $TAG_SYNTAX = <<'EOS';
 [tag]            [expand]
+{? name}         ?
 {= name}         name = ?
 {<> name}        name <> ?
 
@@ -364,7 +365,7 @@ sub parse {
             my ($tag_name, @args) = split /\s+/, $tag;
             
             $tag ||= '';
-            croak("Tag '$tag' in SQL template is invalid.\n\n" .
+            croak("Tag '$tag' in SQL template is not exist.\n\n" .
                   "SQL template tag syntax\n$TAG_SYNTAX\n\n" .
                   "Your SQL template is \n$original_template\n\n")
               unless $VALID_TAG_NAMES{$tag_name};
@@ -485,6 +486,8 @@ Version 0.0101
 =head1 METHODS
 
 =head2 add_filter
+
+    
 
 =head2 bind_filter
 

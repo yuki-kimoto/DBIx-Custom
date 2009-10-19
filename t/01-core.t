@@ -164,7 +164,7 @@ use Scalar::Util qw/blessed/;
     );
     eval{$dbi->connect};
     
-    like($@, qr/connect_info 'no_exist' is invald/, 'no exist');
+    like($@, qr/connect_info 'no_exist' is wrong name/, 'no exist');
 }
 
 {
