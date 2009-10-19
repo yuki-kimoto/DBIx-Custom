@@ -283,8 +283,8 @@ sub fetch_all {
     my $self = shift;
     
     my $rows = [];
-    while(my %row = $self->fetch) {
-        push @$rows, {%row};
+    while(my @row = $self->fetch) {
+        push @$rows, [@row];
     }
     return wantarray ? @$rows : $rows;
 }

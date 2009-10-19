@@ -69,55 +69,75 @@ $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub
     my @rows;
     my $rows;
     
-    # Simple query array ref
+    #----------
     $r = $dbi->query("select k1, k2 from t1");
     
     @rows = ();
     while (my $row = $r->fetch) {
         push @rows, [@$row];
     }
-    is_deeply(\@rows, [[1, 2], [3, 4]], 'Simple query array ref');
-
-
-    # Simple query array
+    is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch');
+    
+    
+    #----------
     $r = $dbi->query("select k1, k2 from t1");
     
     @rows = ();
     while (my @row = $r->fetch) {
         push @rows, [@row];
     }
-    is_deeply(\@rows, [[1, 2], [3, 4]], 'Simple query array');
+    is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch list context');
     
     
-    # Simple query hash ref
+    #-----------
     $r = $dbi->query("select k1, k2 from t1;");
     
     @rows = ();
     while (my $row = $r->fetch_hash) {
         push @rows, {%$row};
     }
-    is_deeply(\@rows, [{k1 => 1, k2 => 2}, {k1 => 3, k2 => 4}], 'Simple query hash ref');
+    is_deeply(\@rows, [{k1 => 1, k2 => 2}, {k1 => 3, k2 => 4}], 'fetch_hash');
     
-
-    # Simple query hash
+    
+    #-----------
     $r = $dbi->query("select k1, k2 from t1;");
     
     @rows = ();
     while (my %row = $r->fetch_hash) {
         push @rows, {%row};
     }
-    is_deeply(\@rows, [{k1 => 1, k2 => 2}, {k1 => 3, k2 => 4}], 'Simple query hash ref');
+    is_deeply(\@rows, [{k1 => 1, k2 => 2}, {k1 => 3, k2 => 4}], 'fetch hash list context');
     
     
-    # Simple query array ref all
+    #-----------
     $r = $dbi->query("select k1, k2 from t1");
     
     $rows = $r->fetch_all;
-    is_deeply($rows, [[1, 2], [3, 4]], 'Simple query array');
+    is_deeply($rows, [[1, 2], [3, 4]], 'fetch_all');
     
     
+    #------------
+    $r = $dbi->query("select k1, k2 from t1");
+    
+    @rows = $r->fetch_all;
+    is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch_all list context');
     
     
+    #------------
+    $r = $dbi->query("select k1, k2 from t1");
+    
+    @rows = $r->fetch_all_hash;
+    is_deeply($rows, [[1, 2], [3, 4]], 'fetch_all_hash');
+    
+    
+    #-------------
+    $r = $dbi->query("select k1, k2 from t1");
+    
+    @rows = $r->fetch_all;
+    is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch_all_hash list context');
+    
+    
+    #---------------------------------------------------------------------
     $dbi->fetch_filter(sub {
         my ($key, $value) = @_;
         if ($key eq 'k1' && $value == 1 ) {
@@ -126,12 +146,20 @@ $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub
         return $value;
     });
     
+    #-----------------------------------
     $r = $dbi->query("select k1, k2 from t1");
     
-    my $row = $r->fetch;
-    my @values = @$row;
-    $r->finish;
+    $rows = $r->fetch_all;
     
-    is_deeply(\@values, [3, 2]);
+    is_deeply($rows, [[3, 2], [3, 4]], 'fetch_filter array');
+    
+    
+    #----------------------------------
+    $r = $dbi->query("select k1, k2 from t1");
+    
+    $rows = $r->fetch_all_hash;
+    
+    is_deeply($rows, [{k1 => 3, k2 => 2}, {k1 => 3, k2 => 4}], 'fetch_filter hash');
+
 });
 
