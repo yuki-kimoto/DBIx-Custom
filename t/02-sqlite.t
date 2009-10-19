@@ -67,6 +67,7 @@ $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub
     
     my $r;     # resultset
     my @rows;
+    my $rows;
     
     # Simple query array ref
     $r = $dbi->query("select k1, k2 from t1");
@@ -106,6 +107,13 @@ $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub
         push @rows, {%row};
     }
     is_deeply(\@rows, [{k1 => 1, k2 => 2}, {k1 => 3, k2 => 4}], 'Simple query hash ref');
+    
+    
+    # Simple query array ref all
+    $r = $dbi->query("select k1, k2 from t1");
+    
+    $rows = $r->fetch_all;
+    is_deeply($rows, [[1, 2], [3, 4]], 'Simple query array');
     
     
     
