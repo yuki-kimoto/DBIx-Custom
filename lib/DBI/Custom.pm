@@ -249,9 +249,10 @@ sub fetch {
     
     # Filter
     if ($fetch_filter) {
-        my $keys = $sth->{NAME_lc};
+        my $keys  = $sth->{NAME_lc};
+        my $types = $sth->{TYPE};
         for (my $i = 0; $i < @$keys; $i++) {
-            $row->[$i] = $fetch_filter->($keys->[$i], $row->[$i]);
+            $row->[$i] = $fetch_filter->($keys->[$i], $row->[$i], $types->[$i], $sth, $i);
         }
     }
     return wantarray ? @$row : $row;
@@ -264,19 +265,51 @@ sub fetch_hash {
     my $fetch_filter = $self->fetch_filter;
     
     # Fetch
-    my $row = $sth->fetchrow_hashref;
+    my $row = $sth->fetchrow_arrayref;
     
     # Cannot fetch
     return unless $row;
     
+    # Keys
+    my $keys  = $sth->{NAME_lc};
+    
     # Filter
+    my $row_hash = {};
     if ($fetch_filter) {
-        foreach my $key (keys %$row) {
-            $row->{$key} = $fetch_filter->($key, $row->{$key});
+        my $types = $sth->{TYPE};
+        for (my $i = 0; $i < @$keys; $i++) {
+            $row_hash->{$keys->[$i]} = $fetch_filter->($keys->[$i], $row->[$i], $types->[$i], $sth, $i);
         }
     }
-    return wantarray ? %$row : $row;
+    else {
+        for (my $i = 0; $i < @$keys; $i++) {
+            $row_hash->{$keys->[$i]} = $row->[$i];
+        }
+    }
+    return wantarray ? %$row_hash : $row_hash;
 }
+
+# Fetch (hash)
+#sub fetch_hash {
+#    my $self = shift;
+#    my $sth = $self->sth;
+#    my $fetch_filter = $self->fetch_filter;
+#    
+#    # Fetch
+#    my $row = $sth->fetchrow_hashref;
+#    
+#    # Cannot fetch
+#    return unless $row;
+#    
+#    # Filter
+#    if ($fetch_filter) {
+#        foreach my $key (keys %$row) {
+#            $row->{$key} = $fetch_filter->($key, $row->{$key});
+#        }
+#    }
+#    return wantarray ? %$row : $row;
+#}
+
 
 # Fetch all (array)
 sub fetch_all {

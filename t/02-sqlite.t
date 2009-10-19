@@ -1,7 +1,7 @@
 use Test::More;
 use strict;
 use warnings;
-use DBI;
+use DBI qw/:sql_types/;
 
 BEGIN {
     eval { require DBD::SQLite; 1 }
@@ -139,8 +139,8 @@ $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub
     
     #---------------------------------------------------------------------
     $dbi->fetch_filter(sub {
-        my ($key, $value) = @_;
-        if ($key eq 'k1' && $value == 1 ) {
+        my ($key, $value, $type, $sth, $i) = @_;
+        if ($key eq 'k1' && $value == 1 && $type =~ /char/i && $i == 0 && $sth->{TYPE}->[$i] eq $type) {
             return $value * 3;
         }
         return $value;
