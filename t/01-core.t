@@ -34,9 +34,9 @@ use Scalar::Util qw/blessed/;
     use base 'DBI::Custom';
     
     __PACKAGE__->initialize_class(sub {
-        my $model = shift;
+        my $class = shift;
         
-        $model
+        $class
           ->connect_info(
             user => 'a',
             password => 'b',
@@ -102,9 +102,9 @@ use Scalar::Util qw/blessed/;
     use base 'DBI::Custom::T1';
     
     __PACKAGE__->initialize_class(sub {
-        my $model = shift;
+        my $class = shift;
         
-        $model
+        $class
           ->connect_info(
             user => 'ao',
             password => 'bo',

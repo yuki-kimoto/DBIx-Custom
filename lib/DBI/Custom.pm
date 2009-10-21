@@ -7,10 +7,7 @@ use Carp 'croak';
 use DBI;
 
 # Model
-sub prototype : ClassAttr { auto_build => \&_inherit_prototype }
-
-# Inherit super class prototype
-sub _inherit_prototype {
+sub prototype : ClassAttr { auto_build => sub {
     my $class = shift;
     my $super = do {
         no strict 'refs';
@@ -21,7 +18,7 @@ sub _inherit_prototype {
                          : $class->Object::Simple::new;
     
     $class->prototype($prototype);
-}
+}}
 
 # New
 sub new {
@@ -42,11 +39,16 @@ sub initialize_class {
 sub clone {
     my $self = shift;
     my $new = $self->Object::Simple::new;
+    
     $new->connect_info(%{$self->connect_info || {}});
+    $new->connect_info->{options} = \%{$self->connect_info->{options}};
+    
     $new->filters(%{$self->filters || {}});
     $new->bind_filter($self->bind_filter);
     $new->fetch_filter($self->fetch_filter);
     $new->result_class($self->result_class);
+    
+    $new->sql_template($self->sql_template->clone);
 }
 
 # Attribute
@@ -76,8 +78,9 @@ sub auto_commit {
     return $self->dbh->{AutoCommit};
 }
 
-
-our %VALID_CONNECT_INFO = map {$_ => 1} qw/data_source user password options/;
+sub valid_connect_info : Attr { default => sub {
+    {map {$_ => 1} qw/data_source user password options/}
+}}
 
 # Connect
 sub connect {
@@ -86,7 +89,7 @@ sub connect {
     
     foreach my $key (keys %{$self->connect_info}) {
         croak("connect_info '$key' is wrong name")
-          unless $VALID_CONNECT_INFO{$key};
+          unless $self->valid_connect_info->{$key};
     }
     
     my $dbh = DBI->connect(
@@ -132,18 +135,24 @@ sub reconnect {
     $self->connect;
 }
 
-# Commit
-sub commit {
-    my $self = shift;
-    croak("Connection is not established") unless $self->connected;
-    return $self->dbh->commit;
-}
-
-# Rollback
-sub rollback {
-    my $self = shift;
-    croak("Connection is not established") unless $self->connected;
-    return $self->dbh->rollback;
+# Run tranzaction
+sub run_tranzaction {
+    my ($self, $tranzaction) = @_;
+    
+    $self->auto_commit(0);
+    
+    eval {
+        $tranzaction->();
+        $self->dbh->commit;
+    };
+    
+    if ($@) {
+        my $tranzaction_error = $@;
+        
+        $self->dbh->rollback or croak("$@ and rollback also failed");
+        croak("$tranzaction_error");
+    }
+    $self->auto_commit(1);
 }
 
 sub dbh_option {
@@ -334,6 +343,17 @@ package DBI::Custom::SQL::Template;
 use Object::Simple;
 use Carp 'croak';
 
+sub clone {
+    my $self = shift;
+    my $new = $self->Object::Simple::new;
+    
+    $new->tag_start($self->tag_start);
+    $new->tag_end($self->tag_end);
+    $new->bind_filter($self->bind_filter);
+    $new->upper_case($self->upper_case);
+    $new->tag_syntax($self->tag_syntax);
+}
+
 ### Attributes;
 sub tag_start   : Attr { default => '{' }
 sub tag_end     : Attr { default => '}' }
@@ -355,8 +375,7 @@ sub create_sql {
     return ($sql, @bind);
 }
 
-our $TAG_SYNTAX = <<'EOS';
-[tag]            [expand]
+sub tag_syntax : Attr { default => <<'EOS' };
 {? name}         ?
 {= name}         name = ?
 {<> name}        name <> ?
@@ -373,7 +392,6 @@ our $TAG_SYNTAX = <<'EOS';
 {update_values}  set key1 = ?, key2 = ?, key3 = ?
 EOS
 
-our %VALID_TAG_NAMES = map {$_ => 1} qw/= <> < > >= <= like in insert_values update_set/;
 sub parse {
     my ($self, $template) = @_;
     $self->template($template);
@@ -403,10 +421,13 @@ sub parse {
             my ($tag_name, @args) = split /\s+/, $tag;
             
             $tag ||= '';
-            croak("Tag '$tag' in SQL template is not exist.\n\n" .
-                  "SQL template tag syntax\n$TAG_SYNTAX\n\n" .
-                  "Your SQL template is \n$original_template\n\n")
-              unless $VALID_TAG_NAMES{$tag_name};
+            unless ($self->tag_processors->{$tag_name}) {
+                my $tag_syntax = $self->tag_syntax;
+                croak("Tag '$tag' in SQL template is not exist.\n\n" .
+                      "SQL template tag syntax\n" .
+                      "$tag_syntax\n\n" .
+                      "Your SQL template is \n$original_template\n\n");
+            }
             
             push @{$self->tree}, {type => 'tag', tag_name => $tag_name, args => [@args]};
         }
@@ -415,7 +436,6 @@ sub parse {
     push @{$self->tree}, {type => 'text', args => [$template]} if $template;
 }
 
-our %EXPAND_PLACE_HOLDER = map {$_ => 1} qw/= <> < > >= <= like/;
 sub build_sql {
     my ($self, $args) = @_;
     
@@ -423,7 +443,7 @@ sub build_sql {
     my $bind_filter = $args->{bind_filter} || $self->bind_filter;
     my $values      = exists $args->{values} ? $args->{values} : $self->values;
     
-    my @bind_values;
+    my @bind_values_all;
     my $sql = '';
     foreach my $node (@$tree) {
         my $type     = $node->{type};
@@ -435,86 +455,65 @@ sub build_sql {
             $sql .= $args->[0];
         }
         elsif ($type eq 'tag') {
-            if ($EXPAND_PLACE_HOLDER{$tag_name}) {
-                my $key = $args->[0];
+            my $tag_processor = $self->tag_processors->{$type};
+            
+            croak("Tag processor '$type' must be code reference")
+              unless ref $tag_processor eq 'CODE';
+            
+            my ($expand, @bind_values)
+              = $self->tag_processors->{$type}->($tag_name, $args, $values,
+                                                 $bind_filter, $self);
+            
+            unless ($self->place_holder_count($expand) eq @bind_values) {
+                require Data::Dumper;
                 
-                # Filter Value
-                if ($bind_filter) {
-                    push @bind_values, scalar $bind_filter->($key, $values->{$key});
-                }
-                else {
-                    push @bind_values, $values->{$key};
-                }
-                $tag_name = uc $tag_name if $self->upper_case;
-                my $place_holder = "$key $tag_name ?";
-                $sql .= $place_holder;
+                my $bind_values_dump
+                  = Data::Dumper->Dump([\@bind_values], ['@bind_values']);
+                
+                croak("Place holder count must be same as bind value count\n" .
+                      "Tag        : $tag_name\n" .
+                      "Expand     : $expand\n" .
+                      "Bind values: $bind_values_dump\n");
             }
-            elsif ($tag_name eq 'insert_values') {
-                my $statement_keys          = '(';
-                my $statement_place_holders = '(';
-                
-                $values = $values->{insert_values};
-                
-                foreach my $key (sort keys %$values) {
-                    if ($bind_filter) {
-                        push @bind_values, scalar $bind_filter->($key, $values->{$key});
-                    }
-                    else {
-                        push @bind_values, $values->{$key};
-                    }
-                    
-                    $statement_keys          .= "$key, ";
-                    $statement_place_holders .= "?, ";
-                }
-                
-                $statement_keys =~ s/, $//;
-                $statement_keys .= ')';
-                
-                $statement_place_holders =~ s/, $//;
-                $statement_place_holders .= ')';
-                
-                $sql .= "$statement_keys values $statement_place_holders";
-            }
-            elsif ($tag_name eq 'update_set') {
-                my $statement          = 'set ';
-                
-                $values = $values->{update_set};
-                
-                foreach my $key (sort keys %$values) {
-                    if ($bind_filter) {
-                        push @bind_values, scalar $bind_filter->($key, $values->{$key});
-                    }
-                    else {
-                        push @bind_values, $values->{$key};
-                    }
-                    
-                    $statement          .= "$key = ?, ";
-                }
-                
-                $statement =~ s/, $//;
-                
-                $sql .= $statement;
-            }
+            push @bind_values_all, @bind_values;
+            $sql .= $expand;
         }
     }
     $sql .= ';' unless $sql =~ /;$/;
-    return ($sql, @bind_values);
+    return ($sql, @bind_values_all);
+}
+
+sub _placeholder_count {
+    my ($self, $expand) = @_;
+    $expand ||= '';
+    
+    my $count = 0;
+    my $pos   = 0;
+    while ((my $pos = index $expand, $pos) != -1) {
+        $count++;
+    }
+    return $count;
 }
 
 sub tag_processors : Attr {type => 'hash', deref => 1, auto_build => sub { 
     shift->tag_processors(
-        '='    => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        '<>'   => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        '<'    => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        '>='   => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        '<='   => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        'like' => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        'in'   => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder
+        '?'             => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '='             => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '<>'            => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '<'             => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '>='            => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '<='            => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        'like'          => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        'in'            => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        'insert_values' => \&DBI::Custom::SQL::Template::TagProcessor::expand_insert_values,
+        'update_set'    => \&DBI::Custom::SQL::Template::TagProcessor::expand_update_set
     );
 }}
 
 sub add_tag_processor {
-    
+    my $class = shift;
+    my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $class->tag_processor(%{$class->tag_processor}, %{$tag_processors});
 }
 
 Object::Simple->build_class;
@@ -550,6 +549,7 @@ sub expand_place_holder {
             push @bind_values, $values->{$key};
         }
     }
+    
     if ($bind_filter) {
         if ($tag_name eq 'in') {
             for (my $i = 0; $i < @$values; $i++) {
@@ -582,7 +582,53 @@ sub expand_place_holder {
         $expand = "$key $tag_name ?";
     }
     
-    return ($expand, \@bind_values);
+    return ($expand, @bind_values);
+}
+
+sub expand_insert_values {
+    my ($tag_name, $args, $values, $bind_filter, $sql_tmpl_obj) = @_;
+    
+    my $insert_keys = '(';
+    my $place_holders = '(';
+    
+    $values = $args->[0] ? $values->{$args->[0]} : $values->{insert_values};
+    
+    my @bind_values;
+    foreach my $key (sort keys %$values) {
+        $bind_filter ? push @bind_values, scalar $bind_filter->($key, $values->{$key})
+                     : push @bind_values, $values->{$key};
+        
+        $insert_keys   .= "$key, ";
+        $place_holders .= "?, ";
+    }
+    
+    $insert_keys =~ s/, $//;
+    $insert_keys .= ')';
+    
+    $place_holders =~ s/, $//;
+    $place_holders .= ')';
+    
+    my $expand = $sql_tmpl_obj->uppser_case ? "$insert_keys VALUES $place_holders"
+                                            : "$insert_keys values $place_holders";
+    
+    return ($expand, @bind_values);
+}
+
+sub expand_update_set {
+    my ($tag_name, $args, $values, $bind_filter, $sql_tmpl_obj) = @_;
+    
+    my $expand = $sql_tmpl_obj->uppser_case ? 'SET ' : 'set ';
+    $values = $args->[0] ? $values->{$args->[0]} : $values->{update_set};
+    
+    my @bind_values;
+    foreach my $key (sort keys %$values) {
+        $bind_filter ? push @bind_values, scalar $bind_filter->($key, $values->{$key})
+                     : push @bind_values, $values->{$key};
+        
+        $expand .= "$key = ?, ";
+    }
+    $expand =~ s/, $//;
+    return ($expand, @bind_values);
 }
 
 
@@ -606,8 +652,6 @@ Version 0.0101
 =head1 METHODS
 
 =head2 add_filter
-
-    
 
 =head2 bind_filter
 
