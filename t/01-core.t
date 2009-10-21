@@ -33,7 +33,7 @@ use Scalar::Util qw/blessed/;
     package DBI::Custom::T1;
     use base 'DBI::Custom';
     
-    __PACKAGE__->initialize_model(sub {
+    __PACKAGE__->initialize_class(sub {
         my $model = shift;
         
         $model
@@ -101,7 +101,7 @@ use Scalar::Util qw/blessed/;
     package DBI::Custom::T1_3;
     use base 'DBI::Custom::T1';
     
-    __PACKAGE__->initialize_model(sub {
+    __PACKAGE__->initialize_class(sub {
         my $model = shift;
         
         $model

@@ -7,35 +7,35 @@ use Carp 'croak';
 use DBI;
 
 # Model
-sub model : ClassAttr { auto_build => \&_inherit_model }
+sub prototype : ClassAttr { auto_build => \&_inherit_prototype }
 
-# Inherit super class model
-sub _inherit_model {
+# Inherit super class prototype
+sub _inherit_prototype {
     my $class = shift;
     my $super = do {
         no strict 'refs';
         ${"${class}::ISA"}[0];
     };
-    my $model = eval{$super->can('model')}
-                         ? $super->model->clone
+    my $prototype = eval{$super->can('prototype')}
+                         ? $super->prototype->clone
                          : $class->Object::Simple::new;
     
-    $class->model($model);
+    $class->prototype($prototype);
 }
 
 # New
 sub new {
     my $self = shift->Object::Simple::new(@_);
     my $class = ref $self;
-    return bless {%{$class->model->clone}, %{$self}}, $class;
+    return bless {%{$class->prototype->clone}, %{$self}}, $class;
 }
 
-# Initialize modle
-sub initialize_model {
+# Initialize class
+sub initialize_class {
     my ($class, $callback) = @_;
     
-    # Callback to initialize model
-    $callback->($class->model);
+    # Callback to initialize prototype
+    $callback->($class->prototype);
 }
 
 # Clone
@@ -60,7 +60,7 @@ sub add_filter { shift->filters(@_) }
 
 sub result_class : Attr { auto_build => sub { shift->result_class('DBI::Custom::Result') }}
 sub dbh          : Attr {}
-sub sql_template : Attr { auto_build => sub { shift->sql_template(DBI::Custom::SQLTemplate->new) } }
+sub sql_template : Attr { auto_build => sub { shift->sql_template(DBI::Custom::SQL::Template->new) } }
 
 # Auto commit
 sub auto_commit {
@@ -232,8 +232,10 @@ Object::Simple->build_class;
 package DBI::Custom::Result;
 use Object::Simple;
 
+# Attributes
 sub sth          : Attr {}
 sub fetch_filter : Attr {}
+
 
 # Fetch (array)
 sub fetch {
@@ -252,7 +254,8 @@ sub fetch {
         my $keys  = $sth->{NAME_lc};
         my $types = $sth->{TYPE};
         for (my $i = 0; $i < @$keys; $i++) {
-            $row->[$i] = $fetch_filter->($keys->[$i], $row->[$i], $types->[$i], $sth, $i);
+            $row->[$i]= $fetch_filter->($keys->[$i], $row->[$i], $types->[$i],
+                                        $sth, $i);
         }
     }
     return wantarray ? @$row : $row;
@@ -278,9 +281,12 @@ sub fetch_hash {
     if ($fetch_filter) {
         my $types = $sth->{TYPE};
         for (my $i = 0; $i < @$keys; $i++) {
-            $row_hash->{$keys->[$i]} = $fetch_filter->($keys->[$i], $row->[$i], $types->[$i], $sth, $i);
+            $row_hash->{$keys->[$i]} = $fetch_filter->($keys->[$i], $row->[$i],
+                                                       $types->[$i], $sth, $i);
         }
     }
+    
+    # No filter
     else {
         for (my $i = 0; $i < @$keys; $i++) {
             $row_hash->{$keys->[$i]} = $row->[$i];
@@ -288,28 +294,6 @@ sub fetch_hash {
     }
     return wantarray ? %$row_hash : $row_hash;
 }
-
-# Fetch (hash)
-#sub fetch_hash {
-#    my $self = shift;
-#    my $sth = $self->sth;
-#    my $fetch_filter = $self->fetch_filter;
-#    
-#    # Fetch
-#    my $row = $sth->fetchrow_hashref;
-#    
-#    # Cannot fetch
-#    return unless $row;
-#    
-#    # Filter
-#    if ($fetch_filter) {
-#        foreach my $key (keys %$row) {
-#            $row->{$key} = $fetch_filter->($key, $row->{$key});
-#        }
-#    }
-#    return wantarray ? %$row : $row;
-#}
-
 
 # Fetch all (array)
 sub fetch_all {
@@ -333,15 +317,20 @@ sub fetch_all_hash {
     return wantarray ? @$rows : $rows;
 }
 
-sub err    { shift->sth->err }
-sub errstr { shift->sth->errstr }
-sub state  { shift->sth->state }
+# Finish
 sub finish { shift->sth->finish }
+
+# Error
+sub error { 
+    my $self = shift;
+    my $sth  = $self->sth;
+    wantarray ? ($sth->errstr, $sth->err, $sth->state) : $sth->errstr;
+}
 
 Object::Simple->build_class;
 
 
-package DBI::Custom::SQLTemplate;
+package DBI::Custom::SQL::Template;
 use Object::Simple;
 use Carp 'croak';
 
@@ -512,8 +501,90 @@ sub build_sql {
     return ($sql, @bind_values);
 }
 
+sub tag_processors : Attr {type => 'hash', deref => 1, auto_build => sub { 
+    shift->tag_processors(
+        '='    => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '<>'   => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '<'    => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '>='   => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '<='   => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        'like' => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        'in'   => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder
+    );
+}}
+
+sub add_tag_processor {
+    
+}
 
 Object::Simple->build_class;
+
+
+package DBI::Custom::SQL::Template::TagProcessor;
+
+sub expand_place_holder {
+    my ($tag_name, $args, $values, $bind_filter, $sql_tmpl_obj) = @_;
+    
+    my $key = $args->[0];
+    
+    my @bind_values;
+    # Filter Value
+    if ($tag_name eq 'in') {
+        $values->{$key} = [$values->{$key}] unless ref $values->{$key} eq 'ARRAY';
+        if ($bind_filter) {
+            for (my $i = 0; $i < @$values; $i++) {
+                push @bind_values, scalar $bind_filter->($key, $values->{$key}->[$i]);
+            }
+        }
+        else {
+            for (my $i = 0; $i < @$values; $i++) {
+                push @bind_values, $values->{$key}->[$i];
+            }
+        }
+    }
+    else {
+        if ($bind_filter) {
+            push @bind_values, scalar $bind_filter->($key, $values->{$key});
+        }
+        else {
+            push @bind_values, $values->{$key};
+        }
+    }
+    if ($bind_filter) {
+        if ($tag_name eq 'in') {
+            for (my $i = 0; $i < @$values; $i++) {
+                push @bind_values, scalar $bind_filter->($key, $values->{$key}->[$i]);
+            }
+        }
+        else {
+            push @bind_values, scalar $bind_filter->($key, $values->{$key});
+        }
+    }
+    else {
+        push @bind_values, $values->{$key};
+    }
+    
+    $tag_name = uc $tag_name if $sql_tmpl_obj->upper_case;
+    
+    my $expand;
+    if ($tag_name eq '?') {
+        $expand = '?';
+    }
+    elsif ($tag_name eq 'in') {
+        $expand = '(';
+        for (my $i = 0; $i < @$values; $i++) {
+            $expand .= '?, ';
+        }
+        $expand =~ s/, $'//;
+        $expand .= ')';
+    }
+    else {
+        $expand = "$key $tag_name ?";
+    }
+    
+    return ($expand, \@bind_values);
+}
+
 
 package DBI::Custom;
 1;
@@ -552,9 +623,9 @@ Version 0.0101
 
 =head2 filters
 
-=head2 initialize_model
+=head2 initialize_class
 
-=head2 model
+=head2 prototype
 
 =head2 new
 
