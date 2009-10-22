@@ -5,13 +5,17 @@ use warnings;
 use DBI::Custom;
 use Scalar::Util qw/blessed/;
 
+my $sql_tmpl1 = DBI::Custom::SQL::Template->new->upper_case(0);
+my $sql_tmpl2 = DBI::Custom::SQL::Template->new->upper_case(1);
+my $sql_tmpl3 = DBI::Custom::SQL::Template->new->upper_case(2);
+
 {
     my $dbi = DBI::Custom->new(
         connect_info => {
-            user => 'a',
-            password => 'b',
-            data_source => 'c',
-            options => {d => 1, e => 2}
+          user => 'a',
+          password => 'b',
+          data_source => 'c',
+          options => {d => 1, e => 2}
         },
         filters => {
             f => 3,
@@ -19,37 +23,42 @@ use Scalar::Util qw/blessed/;
         bind_filter => 'f',
         fetch_filter => 'g',
         dbh => 'e',
-        result_class => 'g'
+        result_class => 'g',
+        sql_template => $sql_tmpl1,
+        valid_connect_info => {i => 1}
     );
-    
     is_deeply($dbi,{connect_info => {user => 'a', password => 'b', data_source => 'c', 
                     options => {d => 1, e => 2}}, filters => {f => 3}, bind_filter => 'f',
-                    fetch_filter => 'g', dbh => 'e', result_class => 'g'}, 'new');
+                    fetch_filter => 'g', dbh => 'e', result_class => 'g',
+                    sql_template => $sql_tmpl1, valid_connect_info => {i => 1}}, 'new');
     
     isa_ok($dbi, 'DBI::Custom');
 }
+
 
 {
     package DBI::Custom::T1;
     use base 'DBI::Custom';
     
-    __PACKAGE__->initialize_class(sub {
-        my $class = shift;
-        
-        $class
-          ->connect_info(
-            user => 'a',
-            password => 'b',
-            data_source => 'c',
-            options => {d => 1, e => 2}
-          )
-          ->filters(
-            f => 3
-          )
-          ->bind_filter('f')
-          ->fetch_filter('g')
-          ->dbh('e')
-    });
+    my $prototype = __PACKAGE__->prototype;
+    
+    $prototype
+      ->connect_info(
+          user => 'a',
+          password => 'b',
+          data_source => 'c',
+          options => {d => 1, e => 2}
+      )
+      ->filters(
+          f => 3
+      )
+      ->bind_filter('f')
+      ->fetch_filter('g')
+      ->dbh('e')
+      ->result_class('DBI::Custom::Result')
+      ->sql_template($sql_tmpl1)
+      ->valid_connect_info({p => 1})
+    ;
 }
 {
     my $dbi = DBI::Custom::T1->new(
@@ -64,11 +73,16 @@ use Scalar::Util qw/blessed/;
         },
         bind_filter => 'fo',
         fetch_filter => 'go',
-        result_class => 'ho'
+        result_class => 'ho',
+        sql_template => $sql_tmpl1,
+        valid_connect_info => {io => 1}
     );
-    
+    my $sql_tmpl = delete $dbi->{sql_template};
+    is($sql_tmpl->upper_case, 0);
     is_deeply($dbi,{connect_info => {user => 'ao', password => 'bo', data_source => 'co', options => {do => 10, eo => 20}}
-                    ,filters => {fo => 30}, bind_filter => 'fo', fetch_filter => 'go', result_class => 'ho'}, 'new arguments');
+                    ,filters => {fo => 30}, bind_filter => 'fo', fetch_filter => 'go', result_class => 'ho',
+                    ,valid_connect_info => {io => 1}
+                    }, 'new arguments');
     
     isa_ok($dbi, 'DBI::Custom::T1');
 }
@@ -76,8 +90,10 @@ use Scalar::Util qw/blessed/;
 {
     my $dbi = DBI::Custom::T1->new;
     
+    my $sql_tmpl = delete $dbi->{sql_template};
     is_deeply($dbi,{connect_info => {user => 'a', password => 'b', data_source => 'c', options => {d => 1, e => 2}},
-                    filters => {f => 3}, bind_filter => 'f', fetch_filter => 'g', result_class => 'DBI::Custom::Result'}, 'new custom class');
+                    filters => {f => 3}, bind_filter => 'f', fetch_filter => 'g', result_class => 'DBI::Custom::Result',
+                    valid_connect_info => {p => 1}}, 'new custom class');
     
     isa_ok($dbi, 'DBI::Custom::T1');
     
@@ -91,8 +107,11 @@ use Scalar::Util qw/blessed/;
 {
     my $dbi = DBI::Custom::T1_2->new;
     
+    my $sql_tmpl = delete $dbi->{sql_template};
+    is($sql_tmpl->upper_case, 0);
     is_deeply($dbi,{connect_info => {user => 'a', password => 'b', data_source => 'c', options => {d => 1, e => 2}},
-                    filters => {f => 3}, bind_filter => 'f', fetch_filter => 'g', result_class => 'DBI::Custom::Result'}, 'new custom class inherit');
+                    filters => {f => 3}, bind_filter => 'f', fetch_filter => 'g', result_class => 'DBI::Custom::Result',
+                    valid_connect_info => {p => 1}}, 'new custom class inherit');
     
     isa_ok($dbi, 'DBI::Custom::T1_2');
 }
@@ -101,33 +120,35 @@ use Scalar::Util qw/blessed/;
     package DBI::Custom::T1_3;
     use base 'DBI::Custom::T1';
     
-    __PACKAGE__->initialize_class(sub {
-        my $class = shift;
+    my $prototype = __PACKAGE__->prototype;
         
-        $class
-          ->connect_info(
-            user => 'ao',
-            password => 'bo',
-            data_source => 'co',
-            options => {do => 10, eo => 20}
-          )
-          ->filters(
-            fo => 30
-          )
-          ->bind_filter('fo')
-          ->fetch_filter('go')
-          ->dbh('eo')
-          ->result_class('ho');
-       
-    });
-    
+    $prototype
+      ->connect_info(
+        user => 'ao',
+        password => 'bo',
+        data_source => 'co',
+        options => {do => 10, eo => 20}
+      )
+      ->filters(
+        fo => 30
+      )
+      ->bind_filter('fo')
+      ->fetch_filter('go')
+      ->dbh('eo')
+      ->result_class('ho')
+      ->sql_template($sql_tmpl2)
+      ->valid_connect_info({p => 3})
+    ;
 }
 
 {
     my $dbi = DBI::Custom::T1_3->new;
     
+    my $sql_tmpl = delete $dbi->{sql_template};
+    is($sql_tmpl->upper_case, 1);
     is_deeply($dbi,{connect_info => {user => 'ao', password => 'bo', data_source => 'co', options => {do => 10, eo => 20}},
-                    filters => {fo => 30}, bind_filter => 'fo', fetch_filter => 'go', result_class => 'ho'}, 'new custom class');
+                    filters => {fo => 30}, bind_filter => 'fo', fetch_filter => 'go', result_class => 'ho',
+                    valid_connect_info => {p => 3}}, 'new custom class');
     
     isa_ok($dbi, 'DBI::Custom::T1_3');
 }
@@ -146,11 +167,16 @@ use Scalar::Util qw/blessed/;
         bind_filter => 'f',
         fetch_filter => 'g',
         dbh => 'e',
-        result_class => 'h'
+        result_class => 'h',
+        sql_template => $sql_tmpl3,
+        valid_connect_info => {p => 4}
     );
     
+    my $sql_tmpl = delete $dbi->{sql_template};
+    is($sql_tmpl->upper_case, 2);
     is_deeply($dbi,{connect_info => {user => 'a', password => 'b', data_source => 'c', options => {d => 1, e => 2}},
-                    filters => {f => 3}, bind_filter => 'f', fetch_filter => 'g', dbh => 'e', result_class => 'h'}, 'new');
+                    filters => {f => 3}, bind_filter => 'f', fetch_filter => 'g', dbh => 'e', result_class => 'h',
+                    valid_connect_info => {p => 4}}, 'new');
     
     isa_ok($dbi, 'DBI::Custom');
 }

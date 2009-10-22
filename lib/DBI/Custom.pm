@@ -17,22 +17,16 @@ sub prototype : ClassAttr { auto_build => sub {
                          ? $super->prototype->clone
                          : $class->Object::Simple::new;
     
-    $class->prototype($prototype);
+    $class->prototype(bless $prototype, $class);
 }}
 
 # New
 sub new {
-    my $self = shift->Object::Simple::new(@_);
-    my $class = ref $self;
-    return bless {%{$class->prototype->clone}, %{$self}}, $class;
-}
-
-# Initialize class
-sub initialize_class {
-    my ($class, $callback) = @_;
-    
-    # Callback to initialize prototype
-    $callback->($class->prototype);
+    my $invocant = shift;
+    my $class = ref $invocant || $invocant;
+    my $prototype = $class->prototype;
+    my $self = $class->Object::Simple::new(%{$prototype->clone}, @_);
+    return bless $self, $class;
 }
 
 # Clone
@@ -40,29 +34,35 @@ sub clone {
     my $self = shift;
     my $new = $self->Object::Simple::new;
     
-    $new->connect_info(%{$self->connect_info || {}});
+    # Scalar copy
+    foreach my $attr (qw/bind_filter fetch_filter result_class/) {
+        $new->$attr($self->$attr);
+    }
+    
+    # Hash ref copy
+    foreach my $attr (qw/connect_info filters valid_connect_info/) {
+        $new->$attr(\%{$self->$attr || {}});
+    }
+    
+    # Other
     $new->connect_info->{options} = \%{$self->connect_info->{options}};
-    
-    $new->filters(%{$self->filters || {}});
-    $new->bind_filter($self->bind_filter);
-    $new->fetch_filter($self->fetch_filter);
-    $new->result_class($self->result_class);
-    
     $new->sql_template($self->sql_template->clone);
 }
 
 # Attribute
-sub connect_info       : Attr { type => 'hash',  auto_build => sub { shift->connect_info({}) } }
-
+sub connect_info : Attr { type => 'hash',  default => sub { {} } }
 sub bind_filter  : Attr {}
 sub fetch_filter : Attr {}
 
-sub filters : Attr { type => 'hash', deref => 1, auto_build => sub { shift->filters({}) } }
+sub filters : Attr { type => 'hash', deref => 1, default => sub { {} } }
 sub add_filter { shift->filters(@_) }
 
-sub result_class : Attr { auto_build => sub { shift->result_class('DBI::Custom::Result') }}
+sub result_class : Attr { default => 'DBI::Custom::Result' }
 sub dbh          : Attr {}
-sub sql_template : Attr { auto_build => sub { shift->sql_template(DBI::Custom::SQL::Template->new) } }
+sub sql_template : Attr { default => sub { DBI::Custom::SQL::Template->new } }
+sub valid_connect_info : Attr { type => 'hash', deref => 1, default => sub {
+    return {map {$_ => 1} qw/data_source user password options/}
+}}
 
 # Auto commit
 sub auto_commit {
@@ -77,10 +77,6 @@ sub auto_commit {
     }
     return $self->dbh->{AutoCommit};
 }
-
-sub valid_connect_info : Attr { default => sub {
-    {map {$_ => 1} qw/data_source user password options/}
-}}
 
 # Connect
 sub connect {
@@ -155,17 +151,6 @@ sub run_tranzaction {
     $self->auto_commit(1);
 }
 
-sub dbh_option {
-    my $self = shift;
-    croak("Not connected") unless $self->connected;
-    my $dbh = $self->dbh;
-    if (@_ > 1) {
-        $dbh->{$_[0]} = $_[1];
-        return $self;
-    }
-    return $dbh->{$_[0]}
-}
-
 # Create SQL from SQL template
 sub create_sql {
     my $self = shift;
@@ -237,6 +222,7 @@ sub query_raw_sql {
 }
 
 Object::Simple->build_class;
+
 
 package DBI::Custom::Result;
 use Object::Simple;
@@ -333,7 +319,7 @@ sub finish { shift->sth->finish }
 sub error { 
     my $self = shift;
     my $sth  = $self->sth;
-    wantarray ? ($sth->errstr, $sth->err, $sth->state) : $sth->errstr;
+    return wantarray ? ($sth->errstr, $sth->err, $sth->state) : $sth->errstr;
 }
 
 Object::Simple->build_class;
@@ -343,37 +329,35 @@ package DBI::Custom::SQL::Template;
 use Object::Simple;
 use Carp 'croak';
 
+# Clone
 sub clone {
     my $self = shift;
     my $new = $self->Object::Simple::new;
     
-    $new->tag_start($self->tag_start);
-    $new->tag_end($self->tag_end);
-    $new->bind_filter($self->bind_filter);
-    $new->upper_case($self->upper_case);
-    $new->tag_syntax($self->tag_syntax);
+    # Scalar copy
+    foreach my $attr (qw/tag_start tag_end bind_filter upper_case tag_syntax template/) {
+        $new->$attr($self->$attr);
+    }
+    
+    # Hash ref copy
+    foreach my $attr (qw/tag_processors/) {
+        $new->$attr(\%{$self->$attr || {}});
+    }
+    
+    # Other
+    $new->tree([]);
+    
+    return $new;
 }
+
 
 ### Attributes;
 sub tag_start   : Attr { default => '{' }
 sub tag_end     : Attr { default => '}' }
 sub template    : Attr {};
-sub tree        : Attr { auto_build => sub { shift->tree([]) } }
+sub tree        : Attr { default => sub { [] } }
 sub bind_filter : Attr {}
-sub values      : Attr {}
 sub upper_case  : Attr {default => 0}
-
-sub create_sql {
-    my ($self, $template, $values, $filter)  = @_;
-    
-    $filter ||= $self->bind_filter;
-    
-    $self->parse($template);
-    
-    my ($sql, @bind) = $self->build_sql({bind_filter => $filter, values => $values});
-    
-    return ($sql, @bind);
-}
 
 sub tag_syntax : Attr { default => <<'EOS' };
 {? name}         ?
@@ -392,12 +376,46 @@ sub tag_syntax : Attr { default => <<'EOS' };
 {update_values}  set key1 = ?, key2 = ?, key3 = ?
 EOS
 
+sub tag_processors : Attr {type => 'hash', deref => 1, auto_build => sub { 
+    shift->tag_processors(
+        '?'             => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '='             => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '<>'            => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '>'             => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '<'             => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '>='            => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        '<='            => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        'like'          => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        'in'            => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
+        'insert_values' => \&DBI::Custom::SQL::Template::TagProcessor::expand_insert_values,
+        'update_set'    => \&DBI::Custom::SQL::Template::TagProcessor::expand_update_set
+    );
+}}
+
+sub add_tag_processor {
+    my $class = shift;
+    my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $class->tag_processor(%{$class->tag_processor}, %{$tag_processors});
+}
+
+sub create_sql {
+    my ($self, $template, $values, $filter)  = @_;
+    
+    $filter ||= $self->bind_filter;
+    
+    $self->parse($template);
+    
+    my ($sql, @bind) = $self->build_sql({bind_filter => $filter, values => $values});
+    
+    return ($sql, @bind);
+}
+
 sub parse {
     my ($self, $template) = @_;
     $self->template($template);
     
     # Clean start;
-    delete $self->{tree};
+    $self->tree([]);
     
     # Tags
     my $tag_start = quotemeta $self->tag_start;
@@ -423,7 +441,7 @@ sub parse {
             $tag ||= '';
             unless ($self->tag_processors->{$tag_name}) {
                 my $tag_syntax = $self->tag_syntax;
-                croak("Tag '$tag' in SQL template is not exist.\n\n" .
+                croak("Tag '{$tag}' in SQL template is not exist.\n\n" .
                       "SQL template tag syntax\n" .
                       "$tag_syntax\n\n" .
                       "Your SQL template is \n$original_template\n\n");
@@ -441,7 +459,7 @@ sub build_sql {
     
     my $tree        = $args->{tree} || $self->tree;
     my $bind_filter = $args->{bind_filter} || $self->bind_filter;
-    my $values      = exists $args->{values} ? $args->{values} : $self->values;
+    my $values      = $args->{values} || {};
     
     my @bind_values_all;
     my $sql = '';
@@ -455,20 +473,21 @@ sub build_sql {
             $sql .= $args->[0];
         }
         elsif ($type eq 'tag') {
-            my $tag_processor = $self->tag_processors->{$type};
+            my $tag_processor = $self->tag_processors->{$tag_name};
             
             croak("Tag processor '$type' must be code reference")
               unless ref $tag_processor eq 'CODE';
             
             my ($expand, @bind_values)
-              = $self->tag_processors->{$type}->($tag_name, $args, $values,
-                                                 $bind_filter, $self);
+              = $tag_processor->($tag_name, $args, $values,
+                                 $bind_filter, $self);
             
-            unless ($self->place_holder_count($expand) eq @bind_values) {
+            $DB::single = 1;
+            unless ($self->_placeholder_count($expand) == @bind_values) {
                 require Data::Dumper;
                 
                 my $bind_values_dump
-                  = Data::Dumper->Dump([\@bind_values], ['@bind_values']);
+                  = Data::Dumper->Dump([\@bind_values], ['*bind_values']);
                 
                 croak("Place holder count must be same as bind value count\n" .
                       "Tag        : $tag_name\n" .
@@ -488,38 +507,19 @@ sub _placeholder_count {
     $expand ||= '';
     
     my $count = 0;
-    my $pos   = 0;
-    while ((my $pos = index $expand, $pos) != -1) {
+    my $pos   = -1;
+    while (($pos = index($expand, '?', $pos + 1)) != -1) {
         $count++;
     }
     return $count;
-}
-
-sub tag_processors : Attr {type => 'hash', deref => 1, auto_build => sub { 
-    shift->tag_processors(
-        '?'             => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        '='             => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        '<>'            => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        '<'             => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        '>='            => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        '<='            => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        'like'          => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        'in'            => \&DBI::Custom::SQL::Template::TagProcessor::expand_place_holder,
-        'insert_values' => \&DBI::Custom::SQL::Template::TagProcessor::expand_insert_values,
-        'update_set'    => \&DBI::Custom::SQL::Template::TagProcessor::expand_update_set
-    );
-}}
-
-sub add_tag_processor {
-    my $class = shift;
-    my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $class->tag_processor(%{$class->tag_processor}, %{$tag_processors});
 }
 
 Object::Simple->build_class;
 
 
 package DBI::Custom::SQL::Template::TagProcessor;
+use strict;
+use warnings;
 
 sub expand_place_holder {
     my ($tag_name, $args, $values, $bind_filter, $sql_tmpl_obj) = @_;
@@ -548,20 +548,6 @@ sub expand_place_holder {
         else {
             push @bind_values, $values->{$key};
         }
-    }
-    
-    if ($bind_filter) {
-        if ($tag_name eq 'in') {
-            for (my $i = 0; $i < @$values; $i++) {
-                push @bind_values, scalar $bind_filter->($key, $values->{$key}->[$i]);
-            }
-        }
-        else {
-            push @bind_values, scalar $bind_filter->($key, $values->{$key});
-        }
-    }
-    else {
-        push @bind_values, $values->{$key};
     }
     
     $tag_name = uc $tag_name if $sql_tmpl_obj->upper_case;
@@ -608,8 +594,8 @@ sub expand_insert_values {
     $place_holders =~ s/, $//;
     $place_holders .= ')';
     
-    my $expand = $sql_tmpl_obj->uppser_case ? "$insert_keys VALUES $place_holders"
-                                            : "$insert_keys values $place_holders";
+    my $expand = $sql_tmpl_obj->upper_case ? "$insert_keys VALUES $place_holders"
+                                           : "$insert_keys values $place_holders";
     
     return ($expand, @bind_values);
 }
@@ -617,7 +603,7 @@ sub expand_insert_values {
 sub expand_update_set {
     my ($tag_name, $args, $values, $bind_filter, $sql_tmpl_obj) = @_;
     
-    my $expand = $sql_tmpl_obj->uppser_case ? 'SET ' : 'set ';
+    my $expand = $sql_tmpl_obj->upper_case ? 'SET ' : 'set ';
     $values = $args->[0] ? $values->{$args->[0]} : $values->{update_set};
     
     my @bind_values;
@@ -667,8 +653,6 @@ Version 0.0101
 
 =head2 filters
 
-=head2 initialize_class
-
 =head2 prototype
 
 =head2 new
@@ -685,17 +669,15 @@ Version 0.0101
 
 =head2 connected
 
-=head2 dbh_option
-
 =head2 disconnect
 
 =head2 reconnect
 
 =head2 result_class
 
-=head2 commit
+=head2 run_tranzaction
 
-=head2 rollback
+=head2 valid_connect_info
 
 
 =head1 AUTHOR
