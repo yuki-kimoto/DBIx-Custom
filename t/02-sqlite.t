@@ -69,7 +69,6 @@ $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub
     my @rows;
     my $rows;
     
-    #----------
     $r = $dbi->query("select k1, k2 from t1");
     
     @rows = ();
@@ -79,7 +78,6 @@ $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub
     is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch');
     
     
-    #----------
     $r = $dbi->query("select k1, k2 from t1");
     
     @rows = ();
@@ -89,7 +87,6 @@ $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub
     is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch list context');
     
     
-    #-----------
     $r = $dbi->query("select k1, k2 from t1;");
     
     @rows = ();
@@ -99,7 +96,6 @@ $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub
     is_deeply(\@rows, [{k1 => 1, k2 => 2}, {k1 => 3, k2 => 4}], 'fetch_hash');
     
     
-    #-----------
     $r = $dbi->query("select k1, k2 from t1;");
     
     @rows = ();
@@ -109,35 +105,30 @@ $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub
     is_deeply(\@rows, [{k1 => 1, k2 => 2}, {k1 => 3, k2 => 4}], 'fetch hash list context');
     
     
-    #-----------
     $r = $dbi->query("select k1, k2 from t1");
     
     $rows = $r->fetch_all;
     is_deeply($rows, [[1, 2], [3, 4]], 'fetch_all');
     
     
-    #------------
     $r = $dbi->query("select k1, k2 from t1");
     
     @rows = $r->fetch_all;
     is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch_all list context');
     
     
-    #------------
     $r = $dbi->query("select k1, k2 from t1");
     
     @rows = $r->fetch_all_hash;
     is_deeply($rows, [[1, 2], [3, 4]], 'fetch_all_hash');
     
     
-    #-------------
     $r = $dbi->query("select k1, k2 from t1");
     
     @rows = $r->fetch_all;
     is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch_all_hash list context');
     
     
-    #---------------------------------------------------------------------
     $dbi->fetch_filter(sub {
         my ($key, $value, $type, $sth, $i) = @_;
         if ($key eq 'k1' && $value == 1 && $type =~ /char/i && $i == 0 && $sth->{TYPE}->[$i] eq $type) {
@@ -146,7 +137,6 @@ $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub
         return $value;
     });
     
-    #-----------------------------------
     $r = $dbi->query("select k1, k2 from t1");
     
     $rows = $r->fetch_all;
@@ -154,7 +144,6 @@ $t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub
     is_deeply($rows, [[3, 2], [3, 4]], 'fetch_filter array');
     
     
-    #----------------------------------
     $r = $dbi->query("select k1, k2 from t1");
     
     $rows = $r->fetch_all_hash;
