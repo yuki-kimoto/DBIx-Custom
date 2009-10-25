@@ -10,6 +10,9 @@ my $builder = Module::Build->new(
     build_requires => {
         'Test::More' => 0,
     },
+    requires => {
+        'Object::Simple' => 0.0602,
+    },
     add_to_cleanup      => [ 'DBI-Custom-*' ],
     create_makefile_pl => 'traditional',
 );
