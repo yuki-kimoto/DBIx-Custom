@@ -9,8 +9,9 @@ use DBI::Custom::SQL::Template;
 use DBI::Custom::Result;
 
 ### Class-Object Accessors
-sub connect_info : ClassObjectAttr { type => 'hash',  auto_build => sub {
-    shift->Object::Simple::initialize_class_object_attr(
+sub connect_info : ClassObjectAttr {
+    type => 'hash',
+    initialize => {
         clone => sub {
             my $value = shift;
             my $new_value = \%{$value || {}};
@@ -18,43 +19,48 @@ sub connect_info : ClassObjectAttr { type => 'hash',  auto_build => sub {
             return $new_value;
         },
         default => sub { {} },
-    )
-}}
+    }
+}
 
-sub bind_filter  : ClassObjectAttr { auto_build => sub {
-    shift->Object::Simple::initialize_class_object_attr(clone => 'scalar')
-}}
-sub fetch_filter : ClassObjectAttr { auto_build => sub {
-    shift->Object::Simple::initialize_class_object_attr(clone => 'scalar')
-}}
+sub bind_filter  : ClassObjectAttr {
+    initialize => {clone => 'scalar'}
+}
 
-sub filters : ClassObjectAttr { type => 'hash', deref => 1, auto_build => sub {
-    shift->Object::Simple::initialize_class_object_attr(
+sub fetch_filter : ClassObjectAttr {
+    initialize => {clone => 'scalar'}
+}
+
+sub filters : ClassObjectAttr {
+    type => 'hash',
+    deref => 1,
+    initialize => {
         clone   => 'hash',
         default => sub { {} }
-    )
-}}
+    }
+}
 
-sub result_class : ClassObjectAttr { auto_build => sub {
-    shift->Object::Simple::initialize_class_object_attr(
+sub result_class : ClassObjectAttr {
+    initialize => {
         clone   => 'scalar',
         default => 'DBI::Custom::Result'
-    )
-}}
+    }
+}
 
-sub sql_template : ClassObjectAttr { auto_build => sub {
-    shift->Object::Simple::initialize_class_object_attr(
+sub sql_template : ClassObjectAttr {
+    initialize => {
         clone   => sub {my $value = shift; $value ? $value->clone : undef},
-        default => sub { DBI::Custom::SQL::Template->new }
-    )
-}}
+        default => sub {DBI::Custom::SQL::Template->new}
+    }
+}
 
-sub valid_connect_info : ClassObjectAttr { type => 'hash', deref => 1, auto_build => sub {
-    shift->Object::Simple::initialize_class_object_attr(
+sub valid_connect_info : ClassObjectAttr {
+    type => 'hash',
+    deref => 1,
+    initialize => {
         clone => 'hash',
         default => sub { return {map {$_ => 1} qw/data_source user password options/} },
-    )
-}}
+    }
+}
 
 ### Object Accessor
 sub dbh          : Attr {}
@@ -250,8 +256,6 @@ Version 0.0101
 
 =head2 bind_filter
 
-=head2 clone
-
 =head2 connect
 
 =head2 connect_info
@@ -261,8 +265,6 @@ Version 0.0101
 =head2 fetch_filter
 
 =head2 filters
-
-=head2 prototype
 
 =head2 new
 
