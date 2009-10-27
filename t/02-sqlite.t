@@ -20,7 +20,7 @@ sub dbi : Attr {}
 
 sub new {
     my $self = shift->SUPER::new;
-    my $dbi = DBI::Custom->new->connect_info(data_source => 'dbi:SQLite:dbname=:memory:');
+    my $dbi = DBI::Custom->new->data_source('dbi:SQLite:dbname=:memory:');
     
     $dbi->connect;
     $self->dbi($dbi);

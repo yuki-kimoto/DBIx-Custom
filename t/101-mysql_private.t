@@ -13,11 +13,9 @@ use DBI::Custom;
 use Scalar::Util 'blessed';
 {
     my $dbi = DBI::Custom->new(
-        connect_info => {
-            user => $U,
-            password => $P,
-            data_source => "dbi:mysql:$D"
-        }
+        user => $U,
+        password => $P,
+        data_source => "dbi:mysql:dbname=$D"
     );
     $dbi->connect;
     

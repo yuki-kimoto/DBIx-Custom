@@ -9,26 +9,15 @@ use DBI::Custom::SQL::Template;
 use DBI::Custom::Result;
 
 ### Class-Object Accessors
-sub connect_info : ClassObjectAttr {
-    type => 'hash',
-    initialize => {
-        clone => sub {
-            my $value = shift;
-            my $new_value = \%{$value || {}};
-            $new_value->{options} = $value->{options} if $value->{options};
-            return $new_value;
-        },
-        default => sub { {} },
-    }
-}
+sub user        : ClassObjectAttr { initialize => {clone => 'scalar'} }
+sub password    : ClassObjectAttr { initialize => {clone => 'scalar'} }
+sub data_source : ClassObjectAttr { initialize => {clone => 'scalar'} }
 
-sub bind_filter  : ClassObjectAttr {
-    initialize => {clone => 'scalar'}
-}
+sub dbi_option : ClassObjectAttr { initialize => {clone => 'hash', 
+                                                  default => sub { {} } } }
 
-sub fetch_filter : ClassObjectAttr {
-    initialize => {clone => 'scalar'}
-}
+sub bind_filter  : ClassObjectAttr { initialize => {clone => 'scalar'} }
+sub fetch_filter : ClassObjectAttr { initialize => {clone => 'scalar'} }
 
 sub filters : ClassObjectAttr {
     type => 'hash',
@@ -48,17 +37,8 @@ sub result_class : ClassObjectAttr {
 
 sub sql_template : ClassObjectAttr {
     initialize => {
-        clone   => sub {my $value = shift; $value ? $value->clone : undef},
+        clone   => sub {$_[0] ? $_[0]->clone : undef},
         default => sub {DBI::Custom::SQL::Template->new}
-    }
-}
-
-sub valid_connect_info : ClassObjectAttr {
-    type => 'hash',
-    deref => 1,
-    initialize => {
-        clone => 'hash',
-        default => sub { return {map {$_ => 1} qw/data_source user password options/} },
     }
 }
 
@@ -74,10 +54,11 @@ sub add_filter {
     my %old_filters = $invocant->filters;
     my %new_filters = ref $_[0] eq 'HASH' ? %{$_[0]} : @_;
     $invocant->filters(%old_filters, %new_filters);
+    return $invocant;
 }
 
 # Auto commit
-sub auto_commit {
+sub _auto_commit {
     my $self = shift;
     
     croak("Cannot change AutoCommit becouse of not connected")
@@ -93,22 +74,20 @@ sub auto_commit {
 # Connect
 sub connect {
     my $self = shift;
-    my $connect_info = $self->connect_info;
-    
-    foreach my $key (keys %{$self->connect_info}) {
-        croak("connect_info '$key' is wrong name")
-          unless $self->valid_connect_info->{$key};
-    }
+    my $data_source = $self->data_source;
+    my $user        = $self->user;
+    my $password    = $self->password;
+    my $dbi_option  = $self->dbi_option;
     
     my $dbh = DBI->connect(
-        $connect_info->{data_source},
-        $connect_info->{user},
-        $connect_info->{password},
+        $data_source,
+        $user,
+        $password,
         {
             RaiseError => 1,
             PrintError => 0,
             AutoCommit => 1,
-            %{$connect_info->{options} || {} }
+            %{$dbi_option || {} }
         }
     );
     
@@ -148,7 +127,7 @@ sub reconnect {
 sub run_tranzaction {
     my ($self, $tranzaction) = @_;
     
-    $self->auto_commit(0);
+    $self->_auto_commit(0);
     
     eval {
         $tranzaction->();
@@ -161,11 +140,11 @@ sub run_tranzaction {
         $self->dbh->rollback or croak("$@ and rollback also failed");
         croak("$tranzaction_error");
     }
-    $self->auto_commit(1);
+    $self->_auto_commit(1);
 }
 
 # Create SQL from SQL template
-sub create_sql {
+sub _create_sql {
     my $self = shift;
     
     my ($sql, @bind) = $self->sql_template->create_sql(@_);
@@ -188,7 +167,7 @@ sub query {
     
     $filter ||= $self->bind_filter;
     
-    my ($sql, @bind) = $self->create_sql($template, $values, $filter);
+    my ($sql, @bind_values) = $self->_create_sql($template, $values, $filter);
     
     $self->connect unless $self->connected;
     
@@ -201,7 +180,7 @@ sub query {
     }
     
     # Execute
-    my $ret_val = $sth->execute(@bind);
+    my $ret_val = $sth->execute(@bind_values);
     
     # Return resultset if select statement is executed
     if ($sth->{NUM_OF_FIELDS}) {
@@ -229,9 +208,18 @@ sub query_raw_sql {
     my $sth = $self->dbh->prepare($sql);
     
     # Execute
-    $sth->execute(@bind_values);
+    my $ret_val = $sth->execute(@bind_values);
     
-    return $sth;
+    # Return resultset if select statement is executed
+    if ($sth->{NUM_OF_FIELDS}) {
+        my $result_class = $self->result_class;
+        my $result = $result_class->new({
+            sth => $sth,
+            fetch_filter => $self->fetch_filter
+        });
+        return $result;
+    }
+    return $ret_val;
 }
 
 Object::Simple->build_class;
@@ -250,46 +238,216 @@ Version 0.0101
 
   my $dbi = DBI::Custom->new;
 
-=head1 METHODS
+=head1 CLASS-OBJECT ACCESSORS
 
-=head2 add_filter
+=head2 user
 
-=head2 bind_filter
+    # Set and get database user name
+    $self = $dbi->user($user);
+    $user = $dbi->user;
+    
+    # Sample
+    $dbi->user('taro');
 
-=head2 connect
+=head2 password
 
-=head2 connect_info
+    # Set and get database password
+    $self     = $dbi->password($password);
+    $password = $dbi->password;
+    
+    # Sample
+    $dbi->password('lkj&le`@s');
 
-=head2 dbh
+=head2 data_source
 
-=head2 fetch_filter
+    # Set and get database data source
+    $self        = $dbi->data_source($data_soruce);
+    $data_source = $dbi->data_source;
+    
+    # Sample(SQLite)
+    $dbi->data_source(dbi:SQLite:dbname=$database);
+    
+    # Sample(MySQL);
+    $dbi->data_source("dbi:mysql:dbname=$database");
+    
+    # Sample(PostgreSQL)
+    $dbi->data_source("dbi:Pg:dbname=$database");
 
-=head2 filters
+=head2 dbi_option
 
-=head2 new
+    # Set and get DBI option
+    $self       = $dbi->dbi_option({$options => $value, ...});
+    $dbi_option = $dbi->dbi_option;
 
-=head2 query
+    # Sample
+    $dbi->dbi_option({PrintError => 0, RaiseError => 1});
 
-=head2 create_sql
-
-=head2 query_raw_sql
+dbi_option is used when you connect database by using connect.
 
 =head2 sql_template
 
-=head2 auto_commit
+    # Set and get SQL::Template object
+    $self         = $dbi->sql_template($sql_template);
+    $sql_template = $dbi->sql_template;
+    
+    # Sample
+    $dbi->sql_template(DBI::Cutom::SQL::Template->new);
 
-=head2 connected
+=head2 filters
 
-=head2 disconnect
+    # Set and get filters
+    $self    = $dbi->filters($filters);
+    $filters = $dbi->filters;
 
-=head2 reconnect
+=head2 bind_filter
+
+    # Set and get binding filter
+    $self        = $dbi->bind_filter($bind_filter);
+    $bind_filter = $dbi->bind_filter
+
+    # Sample
+    $dbi->bind_filter($self->filters->{default_bind_filter});
+    
+
+you can get DBI database handle if you need.
+
+=head2 fetch_filter
+
+    # Set and get Fetch filter
+    $self         = $dbi->fetch_filter($fetch_filter);
+    $fetch_filter = $dbi->fetch_filter;
+
+    # Sample
+    $dbi->fetch_filter($self->filters->{default_fetch_filter});
 
 =head2 result_class
 
+    # Set and get resultset class
+    $self         = $dbi->result_class($result_class);
+    $result_class = $dbi->result_class;
+    
+    # Sample
+    $dbi->result_class('DBI::Custom::Result');
+
+=head2 dbh
+
+    # Get database handle
+    $dbh = $self->dbh;
+
+=head1 METHODS
+
+=head2 connect
+
+    # Connect to database
+    $self = $dbi->connect;
+    
+    # Sample
+    $dbi = DBI::Custom->new(user => 'taro', password => 'lji8(', 
+                            data_soruce => "dbi:mysql:dbname=$database");
+    $dbi->connect;
+
+=head2 disconnect
+
+    # Disconnect database
+    $dbi->disconnect;
+
+If database is already disconnected, this method do noting.
+
+=head2 reconnect
+
+    # Reconnect
+    $dbi->reconnect;
+
+=head2 connected
+
+    # Check connected
+    $dbi->connected
+
+=head2 add_filter
+
+    # Add filter (hash ref or hash can be recieve)
+    $self = $dbi->add_filter({$filter_name => $filter, ...});
+    $self = $dbi->add_filter($filetr_name => $filter, ...);
+    
+    # Sample
+    $dbi->add_filter(
+        decode_utf8 => sub {
+            my $value = shift;
+            return Encode::decode('UTF-8', $value);
+        },
+        datetime_to_string => sub {
+            my $value = shift;
+            return $value->strftime('%Y-%m-%d %H:%M:%S')
+        },
+        default_bind_filter => sub {
+            my ($value, $key, $filters) = @_;
+            if (ref $value eq 'Time::Piece') {
+                return $filters->{datetime_to_string}->($value);
+            }
+            else {
+                return $filters->{decode_utf8}->($value);
+            }
+        },
+        
+        encode_utf8 => sub {
+            my $value = shift;
+            return Encode::encode('UTF-8', $value);
+        },
+        string_to_datetime => sub {
+            my $value = shift;
+            return DateTime::Format::MySQL->parse_datetime($value);
+        },
+        default_fetch_filter => sub {
+            my ($value, $key, $filters, $type, $sth, $i) = @_;
+            if ($type eq 'DATETIME') {
+                return $self->filters->{string_to_datetime}->($value);
+            }
+            else {
+                return $self->filters->{encode_utf8}->($value);
+            }
+        }
+    );
+
+add_filter add filter to filters
+
+=head2 query
+
+    # Parse SQL template and execute SQL
+    $result = $dbi->query($sql_template, $param);
+    $result = $dbi->query($sql_template, $param, $bind_filter);
+    
+    # Sample
+    $result = $dbi->query("select * from authors where {= name} && {= age}", 
+                          {author => 'taro', age => 19});
+    
+    while (my @row = $result->fetch) {
+        # do something
+    }
+
+See also L<DBI::Custom::SQL::Template>
+
+=head2 query_raw_sql
+
+    # Execute SQL
+    $result = $dbi->query_raw_sql($sql, @bind_values);
+    
+    # Sample
+    $result = $dbi->query("select * from table where name = ?, 
+                          title = ?;", 'taro', 'perl');
+    
+    while (my @row = $result->fetch) {
+        # do something
+    }
+    
 =head2 run_tranzaction
 
-=head2 valid_connect_info
+    # Run tranzaction
+    $dbi->run_tranzaction(sub {
+        # do something
+    });
 
+If tranzaction is success, commit is execute. 
+If tranzation is died, rollback is execute.
 
 =head1 AUTHOR
 
