@@ -11,7 +11,7 @@ my $builder = Module::Build->new(
         'Test::More' => 0,
     },
     requires => {
-        'Object::Simple' => 2.0701,
+        'Object::Simple' => 2.0702,
         'DBI'            => 1.605,
     },
     add_to_cleanup      => [ 'DBI-Custom-*' ],

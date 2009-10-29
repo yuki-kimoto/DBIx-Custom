@@ -12,12 +12,15 @@ use DBI::Custom::Result;
 sub user        : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub password    : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub data_source : ClassObjectAttr { initialize => {clone => 'scalar'} }
+sub database    : ClassObjectAttr { initialize => {clone => 'scalar'} }
 
 sub dbi_option : ClassObjectAttr { initialize => {clone => 'hash', 
                                                   default => sub { {} } } }
 
 sub bind_filter  : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub fetch_filter : ClassObjectAttr { initialize => {clone => 'scalar'} }
+
+sub no_filters   : ClassObjectAttr { initialize => {clone => 'array'} }
 
 sub filters : ClassObjectAttr {
     type => 'hash',
@@ -47,6 +50,7 @@ sub dbh          : Attr {}
 
 
 ### Methods
+
 # Add filter
 sub add_filter {
     my $invocant = shift;
@@ -143,84 +147,119 @@ sub run_tranzaction {
     $self->_auto_commit(1);
 }
 
-# Create SQL from SQL template
-sub _create_sql {
-    my $self = shift;
+sub create_query {
+    my ($self, $template) = @_;
     
-    my ($sql, @bind) = $self->sql_template->create_sql(@_);
+    # Create query from SQL template
+    my $query = $self->sql_template->create_query($template);
     
-    return ($sql, @bind);
-}
-
-# Prepare and execute SQL
-sub query {
-    my ($self, $template, $values, $filter)  = @_;
+    # Create Query object;
+    my $query = DBI::Custom::Query->new($query);
     
-    my $sth_options;
-    
-    # Rearrange when argumets is hash referecne 
-    if (ref $template eq 'HASH') {
-        my $args = $template;
-        ($template, $values, $filter, $sth_options)
-          = @{$args}{qw/template values filter sth_options/};
-    }
-    
-    $filter ||= $self->bind_filter;
-    
-    my ($sql, @bind_values) = $self->_create_sql($template, $values, $filter);
-    
+    # connect if not
     $self->connect unless $self->connected;
     
-    my $sth = $self->dbh->prepare($sql);
+    # Prepare statement handle
+    my $sth = $self->dbh->prepare($query->{sql});
     
-    if ($sth_options) {
-        foreach my $key (keys %$sth_options) {
-            $sth->{$key} = $sth_options->{$key};
+    $query->sth($sth);
+    
+    return $query;
+}
+
+sub execute {
+    my ($self, $query, $params)  = @_;
+    
+    # Create query if First argument is template
+    if (!ref $query) {
+        my $template = $query;
+        $query = $sefl->create_query($tempalte);
+    }
+    
+    # Set bind filter
+    $query->bind_filter($self->bind_filter) unless $query->bind_filter;
+    
+    # Set no filter keys
+    $query->no_filters($self->no_filters) unless $query->no_filters;
+    
+    # Create bind value
+    my $bind_values = $self->_build_bind_values($query, $params);
+    
+    # Execute
+    my $ret_val = $query->sth->execute(@$bind_values);
+    
+    # Return resultset if select statement is executed
+    if ($sth->{NUM_OF_FIELDS}) {
+        my $result_class = $self->result_class;
+        my $result = $result_class->new({
+            sth => $sth,
+            fetch_filter => $self->fetch_filter
+        });
+        return $result;
+    }
+    return $ret_val;
+}
+
+sub _build_bind_values {
+    my ($self, $query, $params) = @_;
+    my $bind_filter = $query->bind_filter;
+    my $no_filters_map  = $query->_no_filters_map || {};
+    
+    # binding values
+    my @bind_values;
+    
+    # Filter and sdd bind values
+    foreach my $param_key_info (@$param_key_infos) {
+        my $filtering_key = $param_key_info->{key};
+        my $access_keys = $param_key_info->{access_keys};
+        
+        my $original_key = $param_key_info->{original_key} || '';
+        my $table        = $param_key_info->{table}        || '';
+        my $column       = $param_key_info->{column}       || '';
+        
+        ACCESS_KEYS :
+        foreach my $access_key (@$access_keys) {
+            my $root_params = $params;
+            for (my $i = 0; $i < @$access_key; $i++) {
+                my $key = $access_key->[$i];
+                
+                croak("'access_keys' each value must be string or array reference")
+                  unless (ref $key eq 'ARRAY' || ($key && !ref $key));
+                
+                if ($i == @$access_key - 1) {
+                    if (ref $key eq 'ARRAY') {
+                        if ($bind_filter && !$no_filters_map->{$original_key}) {
+                            push @bind_values, $bind_filter->($root_params->[$key->[0]], $original_key, $table, $column);
+                        }
+                        else {
+                            push @bind_values, scalar $root_params->[$key->[0]];
+                        }
+                    }
+                    else {
+                        next ACCESS_KEYS unless exists $root_params->{$key};
+                        if ($bind_filter && !$no_filters_map->{$original_key}) {
+                            push @bind_values, scalar $bind_filter->($root_params->{$key}, $original_key, $table, $column);
+                        }
+                        else {
+                            push @bind_values, scalar $root_params->{$key};
+                        }
+                    }
+                    return @bind_values;
+                }
+                
+                if ($key eq 'ARRAY') {
+                    $root_params = $root_params->[$key->[0]];
+                }
+                else {
+                    next ACCESS_KEYS unless exists $root_params->{$key};
+                    $root_params = $root_params->{$key};
+                }
+            }
         }
+        croak("Cannot find key");
     }
-    
-    # Execute
-    my $ret_val = $sth->execute(@bind_values);
-    
-    # Return resultset if select statement is executed
-    if ($sth->{NUM_OF_FIELDS}) {
-        my $result_class = $self->result_class;
-        my $result = $result_class->new({
-            sth => $sth,
-            fetch_filter => $self->fetch_filter
-        });
-        return $result;
-    }
-    return $ret_val;
 }
 
-# Prepare and execute raw SQL
-sub query_raw_sql {
-    my ($self, $sql, @bind_values) = @_;
-    
-    # Connect
-    $self->connect unless $self->connected;
-    
-    # Add semicolon if not exist;
-    $sql .= ';' unless $sql =~ /;$/;
-    
-    # Prepare
-    my $sth = $self->dbh->prepare($sql);
-    
-    # Execute
-    my $ret_val = $sth->execute(@bind_values);
-    
-    # Return resultset if select statement is executed
-    if ($sth->{NUM_OF_FIELDS}) {
-        my $result_class = $self->result_class;
-        my $result = $result_class->new({
-            sth => $sth,
-            fetch_filter => $self->fetch_filter
-        });
-        return $result;
-    }
-    return $ret_val;
-}
 
 Object::Simple->build_class;
 
@@ -237,6 +276,9 @@ Version 0.0101
 =head1 SYNOPSIS
 
   my $dbi = DBI::Custom->new;
+  
+  my $query = $dbi->create_query($template);
+  $dbi->execute($query);
 
 =head1 CLASS-OBJECT ACCESSORS
 
