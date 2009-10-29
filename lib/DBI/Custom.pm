@@ -170,6 +170,7 @@ sub create_query {
 
 sub execute {
     my ($self, $query, $params)  = @_;
+    $params ||= {};
     
     # Create query if First argument is template
     if (!ref $query) {

@@ -28,6 +28,7 @@ my $sql;
 my $result;
 my @rows;
 my $rows;
+my $query;
 
 
 # Prepare table
@@ -39,66 +40,62 @@ $sth->execute(1, 2);
 $sth->execute(3, 4);
 
 
-__END__
-$result = $dbi->execute("select key1, key2 from table1");
+test 'DBI::Custom::Result test';
+$tmpl = "select key1, key2 from table1";
+$query = $dbi->create_query($tmpl);
+$result = $dbi->execute($query);
 
 @rows = ();
 while (my $row = $result->fetch) {
     push @rows, [@$row];
 }
-is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch');
+is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch scalar context");
 
 
-$result = $dbi->execute("select key1, key2 from table1");
-
+$result = $dbi->execute($query);
 @rows = ();
 while (my @row = $result->fetch) {
     push @rows, [@row];
 }
-is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch list context');
+is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch list context");
 
 
-$result = $dbi->execute("select key1, key2 from table1;");
-
+$result = $dbi->execute($query);
 @rows = ();
 while (my $row = $result->fetch_hash) {
     push @rows, {%$row};
 }
-is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'fetch_hash');
+is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : fetch_hash scalar context");
 
 
-$result = $dbi->execute("select key1, key2 from table1;");
-
+$result = $dbi->execute($query);
 @rows = ();
 while (my %row = $result->fetch_hash) {
     push @rows, {%row};
 }
-is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'fetch hash list context');
+is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : fetch hash list context");
 
 
-$result = $dbi->execute("select key1, key2 from table1");
-
+$result = $dbi->execute($query);
 $rows = $result->fetch_all;
-is_deeply($rows, [[1, 2], [3, 4]], 'fetch_all');
+is_deeply($rows, [[1, 2], [3, 4]], "$test : fetch_all scalar context");
 
 
-$result = $dbi->execute("select key1, key2 from table1");
-
+$result = $dbi->execute($query);
 @rows = $result->fetch_all;
-is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch_all list context');
+is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch_all list context");
 
 
-$result = $dbi->execute("select key1, key2 from table1");
-
+$result = $dbi->execute($query);
 @rows = $result->fetch_all_hash;
-is_deeply($rows, [[1, 2], [3, 4]], 'fetch_all_hash');
+is_deeply($rows, [[1, 2], [3, 4]], "$test : fetch_all_hash scalar context");
 
 
-$result = $dbi->execute("select key1, key2 from table1");
-
+$result = $dbi->execute($query);
 @rows = $result->fetch_all;
-is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch_all_hash list context');
+is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch_all_hash list context");
 
+__END__
 
 $dbi->fetch_filter(sub {
     my ($key, $value, $type, $sth, $i) = @_;
