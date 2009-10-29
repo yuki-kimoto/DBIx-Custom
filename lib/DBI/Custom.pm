@@ -7,6 +7,7 @@ use Carp 'croak';
 use DBI;
 use DBI::Custom::SQL::Template;
 use DBI::Custom::Result;
+use DBI::Custom::Query;
 
 ### Class-Object Accessors
 sub user        : ClassObjectAttr { initialize => {clone => 'scalar'} }
@@ -14,7 +15,7 @@ sub password    : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub data_source : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub database    : ClassObjectAttr { initialize => {clone => 'scalar'} }
 
-sub dbi_option : ClassObjectAttr { initialize => {clone => 'hash', 
+sub dbi_options : ClassObjectAttr { initialize => {clone => 'hash', 
                                                   default => sub { {} } } }
 
 sub bind_filter  : ClassObjectAttr { initialize => {clone => 'scalar'} }
@@ -81,7 +82,7 @@ sub connect {
     my $data_source = $self->data_source;
     my $user        = $self->user;
     my $password    = $self->password;
-    my $dbi_option  = $self->dbi_option;
+    my $dbi_options  = $self->dbi_options;
     
     my $dbh = DBI->connect(
         $data_source,
@@ -91,7 +92,7 @@ sub connect {
             RaiseError => 1,
             PrintError => 0,
             AutoCommit => 1,
-            %{$dbi_option || {} }
+            %{$dbi_options || {} }
         }
     );
     
@@ -154,7 +155,7 @@ sub create_query {
     my $query = $self->sql_template->create_query($template);
     
     # Create Query object;
-    my $query = DBI::Custom::Query->new($query);
+    $query = DBI::Custom::Query->new($query);
     
     # connect if not
     $self->connect unless $self->connected;
@@ -173,7 +174,7 @@ sub execute {
     # Create query if First argument is template
     if (!ref $query) {
         my $template = $query;
-        $query = $sefl->create_query($tempalte);
+        $query = $self->create_query($template);
     }
     
     # Set bind filter
@@ -186,7 +187,8 @@ sub execute {
     my $bind_values = $self->_build_bind_values($query, $params);
     
     # Execute
-    my $ret_val = $query->sth->execute(@$bind_values);
+    my $sth = $query->sth;
+    my $ret_val = $sth->execute(@$bind_values);
     
     # Return resultset if select statement is executed
     if ($sth->{NUM_OF_FIELDS}) {
@@ -202,20 +204,22 @@ sub execute {
 
 sub _build_bind_values {
     my ($self, $query, $params) = @_;
-    my $bind_filter = $query->bind_filter;
-    my $no_filters_map  = $query->_no_filters_map || {};
+    
+    my $key_infos      = $query->key_infos;
+    my $bind_filter    = $query->bind_filter;
+    my $no_filters_map = $query->_no_filters_map || {};
     
     # binding values
     my @bind_values;
     
     # Filter and sdd bind values
-    foreach my $param_key_info (@$param_key_infos) {
-        my $filtering_key = $param_key_info->{key};
-        my $access_keys = $param_key_info->{access_keys};
+    foreach my $key_info (@$key_infos) {
+        my $filtering_key = $key_info->{key};
+        my $access_keys = $key_info->{access_keys};
         
-        my $original_key = $param_key_info->{original_key} || '';
-        my $table        = $param_key_info->{table}        || '';
-        my $column       = $param_key_info->{column}       || '';
+        my $original_key = $key_info->{original_key} || '';
+        my $table        = $key_info->{table}        || '';
+        my $column       = $key_info->{column}       || '';
         
         ACCESS_KEYS :
         foreach my $access_key (@$access_keys) {
@@ -314,17 +318,23 @@ Version 0.0101
     
     # Sample(PostgreSQL)
     $dbi->data_source("dbi:Pg:dbname=$database");
+    
+=head2 database
 
-=head2 dbi_option
+    # Set and get database name
+    $self     = $dbi->database($database);
+    $database = $dbi->database;
+
+=head2 dbi_options
 
     # Set and get DBI option
-    $self       = $dbi->dbi_option({$options => $value, ...});
-    $dbi_option = $dbi->dbi_option;
+    $self       = $dbi->dbi_options({$options => $value, ...});
+    $dbi_options = $dbi->dbi_options;
 
     # Sample
-    $dbi->dbi_option({PrintError => 0, RaiseError => 1});
+    $dbi->dbi_options({PrintError => 0, RaiseError => 1});
 
-dbi_option is used when you connect database by using connect.
+dbi_options is used when you connect database by using connect.
 
 =head2 sql_template
 
@@ -361,6 +371,12 @@ you can get DBI database handle if you need.
 
     # Sample
     $dbi->fetch_filter($self->filters->{default_fetch_filter});
+
+=head2 no_filters
+
+    # Set and get no filter keys
+    $self       = $dbi->no_filters($no_filters);
+    $no_filters = $dbi->no_filters;
 
 =head2 result_class
 
@@ -452,11 +468,16 @@ If database is already disconnected, this method do noting.
 
 add_filter add filter to filters
 
-=head2 query
+=head2 create_query
+    
+    # Create Query object from SQL template
+    my $query = $dbi->create_query($template);
+    
+=head2 execute
 
     # Parse SQL template and execute SQL
-    $result = $dbi->query($sql_template, $param);
-    $result = $dbi->query($sql_template, $param, $bind_filter);
+    $result = $dbi->query($query, $params);
+    $result = $dbi->query($template, $params); # Shorcut
     
     # Sample
     $result = $dbi->query("select * from authors where {= name} && {= age}", 
@@ -468,19 +489,6 @@ add_filter add filter to filters
 
 See also L<DBI::Custom::SQL::Template>
 
-=head2 query_raw_sql
-
-    # Execute SQL
-    $result = $dbi->query_raw_sql($sql, @bind_values);
-    
-    # Sample
-    $result = $dbi->query("select * from table where name = ?, 
-                          title = ?;", 'taro', 'perl');
-    
-    while (my @row = $result->fetch) {
-        # do something
-    }
-    
 =head2 run_tranzaction
 
     # Run tranzaction
@@ -490,6 +498,8 @@ See also L<DBI::Custom::SQL::Template>
 
 If tranzaction is success, commit is execute. 
 If tranzation is died, rollback is execute.
+
+
 
 =head1 AUTHOR
 

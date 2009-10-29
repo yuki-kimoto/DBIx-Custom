@@ -13,142 +13,176 @@ BEGIN {
     use_ok('DBI::Custom');
 }
 
-package Test::DBI::Custom;
-use Object::Simple;
-
-sub dbi : Attr {}
-
-sub new {
-    my $self = shift->SUPER::new;
-    my $dbi = DBI::Custom->new->data_source('dbi:SQLite:dbname=:memory:');
-    
-    $dbi->connect;
-    $self->dbi($dbi);
-    return $self;
-}
-
-sub create_table {
-    my ($self, $create_table) = @_;
-    $self->dbi->query_raw_sql($create_table);
-    return $self;
-}
-
-sub create_table1 {
-    my $self = shift;
-    $self->create_table("create table t1 (k1 char(255), k2 char(255), k3 char(255), k4 char(255), k5 char(255));");
-    return $self;
-}
-
-sub insert {
-    my ($self, @values_list) = @_;
-    my $table = ref $params_list[0] ? '' : shift;
-    $table ||= 't1';
-    
-    foreach my $params (@values_list) {
-        my $sql = $self->dbi->execute(
-            "insert into $table {insert_values}", {insert_values => $params}
-        );
-    }
-    return $self;
-}
-
+# Function for test name
+my $test;
 sub test {
-    my ($self, $code) = @_;
-    $code->($self->dbi);
+    $test = shift;
 }
 
-Object::Simple->build_class;
+# Varialbe for test
+my $dbi;
+my $sth;
+my $tmpl;
+my $params;
+my $sql;
+my $result;
+my @rows;
+my $rows;
 
-package main;
-my $t = Test::DBI::Custom->new;
 
-$t->new->create_table1->insert({k1 => 1, k2 => 2}, {k1 => 3, k2 => 4})->test(sub {
-    my $dbi = shift;
-    
-    my $r;     # resultset
-    my @rows;
-    my $rows;
-    
-    $r = $dbi->execute("select k1, k2 from t1");
-    
-    @rows = ();
-    while (my $row = $r->fetch) {
-        push @rows, [@$row];
-    }
-    is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch');
-    
-    
-    $r = $dbi->execute("select k1, k2 from t1");
-    
-    @rows = ();
-    while (my @row = $r->fetch) {
-        push @rows, [@row];
-    }
-    is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch list context');
-    
-    
-    $r = $dbi->execute("select k1, k2 from t1;");
-    
-    @rows = ();
-    while (my $row = $r->fetch_hash) {
-        push @rows, {%$row};
-    }
-    is_deeply(\@rows, [{k1 => 1, k2 => 2}, {k1 => 3, k2 => 4}], 'fetch_hash');
-    
-    
-    $r = $dbi->execute("select k1, k2 from t1;");
-    
-    @rows = ();
-    while (my %row = $r->fetch_hash) {
-        push @rows, {%row};
-    }
-    is_deeply(\@rows, [{k1 => 1, k2 => 2}, {k1 => 3, k2 => 4}], 'fetch hash list context');
-    
-    
-    $r = $dbi->execute("select k1, k2 from t1");
-    
-    $rows = $r->fetch_all;
-    is_deeply($rows, [[1, 2], [3, 4]], 'fetch_all');
-    
-    
-    $r = $dbi->execute("select k1, k2 from t1");
-    
-    @rows = $r->fetch_all;
-    is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch_all list context');
-    
-    
-    $r = $dbi->execute("select k1, k2 from t1");
-    
-    @rows = $r->fetch_all_hash;
-    is_deeply($rows, [[1, 2], [3, 4]], 'fetch_all_hash');
-    
-    
-    $r = $dbi->execute("select k1, k2 from t1");
-    
-    @rows = $r->fetch_all;
-    is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch_all_hash list context');
-    
-    
-    $dbi->fetch_filter(sub {
-        my ($key, $value, $type, $sth, $i) = @_;
-        if ($key eq 'k1' && $value == 1 && $type =~ /char/i && $i == 0 && $sth->{TYPE}->[$i] eq $type) {
-            return $value * 3;
-        }
-        return $value;
-    });
-    
-    $r = $dbi->execute("select k1, k2 from t1");
-    
-    $rows = $r->fetch_all;
-    
-    is_deeply($rows, [[3, 2], [3, 4]], 'fetch_filter array');
-    
-    
-    $r = $dbi->execute("select k1, k2 from t1");
-    
-    $rows = $r->fetch_all_hash;
-    
-    is_deeply($rows, [{k1 => 3, k2 => 2}, {k1 => 3, k2 => 4}], 'fetch_filter hash');
+# Prepare table
+$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi->connect;
+$dbi->dbh->do("create table table1 (key1 char(255), key2 char(255))");
+$sth = $dbi->dbh->prepare("insert into table1 (key1, key2) values (?, ?);");
+$sth->execute(1, 2);
+$sth->execute(3, 4);
 
+
+__END__
+$result = $dbi->execute("select key1, key2 from table1");
+
+@rows = ();
+while (my $row = $result->fetch) {
+    push @rows, [@$row];
+}
+is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch');
+
+
+$result = $dbi->execute("select key1, key2 from table1");
+
+@rows = ();
+while (my @row = $result->fetch) {
+    push @rows, [@row];
+}
+is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch list context');
+
+
+$result = $dbi->execute("select key1, key2 from table1;");
+
+@rows = ();
+while (my $row = $result->fetch_hash) {
+    push @rows, {%$row};
+}
+is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'fetch_hash');
+
+
+$result = $dbi->execute("select key1, key2 from table1;");
+
+@rows = ();
+while (my %row = $result->fetch_hash) {
+    push @rows, {%row};
+}
+is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'fetch hash list context');
+
+
+$result = $dbi->execute("select key1, key2 from table1");
+
+$rows = $result->fetch_all;
+is_deeply($rows, [[1, 2], [3, 4]], 'fetch_all');
+
+
+$result = $dbi->execute("select key1, key2 from table1");
+
+@rows = $result->fetch_all;
+is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch_all list context');
+
+
+$result = $dbi->execute("select key1, key2 from table1");
+
+@rows = $result->fetch_all_hash;
+is_deeply($rows, [[1, 2], [3, 4]], 'fetch_all_hash');
+
+
+$result = $dbi->execute("select key1, key2 from table1");
+
+@rows = $result->fetch_all;
+is_deeply(\@rows, [[1, 2], [3, 4]], 'fetch_all_hash list context');
+
+
+$dbi->fetch_filter(sub {
+    my ($key, $value, $type, $sth, $i) = @_;
+    if ($key eq 'key1' && $value == 1 && $type =~ /char/i && $i == 0 && $sth->{TYPE}->[$i] eq $type) {
+        return $value * 3;
+    }
+    return $value;
 });
+
+$result = $dbi->execute("select key1, key2 from table1");
+
+$rows = $result->fetch_all;
+
+is_deeply($rows, [[3, 2], [3, 4]], 'fetch_filter array');
+
+
+$result = $dbi->execute("select key1, key2 from table1");
+
+$rows = $result->fetch_all_hash;
+
+is_deeply($rows, [{key1 => 3, key2 => 2}, {key1 => 3, key2 => 4}], 'fetch_filter hash');
+
+
+
+# Expand place holer
+my $dbi = DBI::Custom->new;
+my $tmpl   = "select * from table where {= key1} && {<> key2} && {< k3} && {> k4} && {>= k5} && {<= k6} && {like k7}";
+my $params = {key1 => 'a', key2 => 'b', k3 => 'c', k4 => 'd', k5 => 'e', k6 => 'f', k7 => 'g'};
+
+$dbi->filters(filter => sub {
+    my ($key, $value) = @_;
+    if ($key eq 'key1' && $value eq 'a') {
+        return uc $value;
+    }
+    return $value;
+});
+
+my ($sql, @bind_values) = $dbi->_create_sql($tmpl, $params, $dbi->filters->{filter});
+
+is($sql, "select * from table where key1 = ? && key2 <> ? && k3 < ? && k4 > ? && k5 >= ? && k6 <= ? && k7 like ?;", 'sql template2');
+is_deeply(\@bind, ['A', 'b', 'c', 'd', 'e', 'f', 'g'], 'sql template bind2' );
+
+# Expand place holer upper case
+my $dbi = DBI::Custom->new;
+$dbi->sql_template->upper_case(1);
+my $tmpl   = "select * from table where {like k7}";
+my $params = {k7 => 'g'};
+
+($sql, @bind_values) = $dbi->_create_sql($tmpl, $params);
+is($sql, "select * from table where k7 LIKE ?;", 'sql template2');
+is_deeply(\@bind, ['g'], 'sql template bind2' );
+
+# Insert values
+$dbi = DBI::Custom->new;
+$tmpl   = "insert into table {insert_values}";
+$params = {insert_values => {key1 => 'a', key2 => 'b'}};
+
+$dbi->filters(filter => sub {
+    my ($key, $value) = @_;
+    if ($key eq 'key1' && $value eq 'a') {
+        return uc $value;
+    }
+    return $value;
+});
+    
+($sql, @bind_values) = $dbi->_create_sql($tmpl, $params, $dbi->filters->{filter});
+is($sql, "insert into table (key1, key2) values (?, ?);");
+is_deeply(\@bind, ['A', 'b'], 'sql template bind' );
+
+# Update set
+$dbi = DBI::Custom->new;
+$tmpl   = "update table {update_set}";
+$params = {update_set => {key1 => 'a', key2 => 'b'}};
+
+$dbi->filters(filter => sub {
+    my ($key, $value) = @_;
+    if ($key eq 'key1' && $value eq 'a') {
+        return uc $value;
+    }
+    return $value;
+});
+    
+($sql, @bind_values) = $dbi->_create_sql($tmpl, $params, $dbi->filters->{filter});
+is($sql, "update table set key1 = ?, key2 = ?;");
+is_deeply(\@bind, ['A', 'b'], 'sql template bind' );
+
 
