@@ -238,8 +238,8 @@ sub _build_bind_values {
                     if (ref $key eq 'ARRAY') {
                         if ($bind_filter && !$no_bind_filters_map->{$original_key}) {
                             push @bind_values, 
-                                 $bind_filter->($root_params->[$key->[0]],
-                                                $original_key, $table, $column);
+                                 $bind_filter->($original_key, $root_params->[$key->[0]],
+                                                $table, $column);
                         }
                         else {
                             push @bind_values, scalar $root_params->[$key->[0]];
@@ -249,8 +249,8 @@ sub _build_bind_values {
                         next ACCESS_KEYS unless exists $root_params->{$key};
                         if ($bind_filter && !$no_bind_filters_map->{$original_key}) {
                             push @bind_values,
-                                 $bind_filter->($root_params->{$key}, 
-                                                $original_key, $table, $column);
+                                 $bind_filter->($original_key, $root_params->{$key}, 
+                                                $table, $column);
                         }
                         else {
                             push @bind_values, scalar $root_params->{$key};
@@ -444,38 +444,38 @@ If database is already disconnected, this method do noting.
     # Sample
     $dbi->add_filter(
         decode_utf8 => sub {
-            my $value = shift;
+            my ($key, $value, $table, $column) = @_;
             return Encode::decode('UTF-8', $value);
         },
         datetime_to_string => sub {
-            my $value = shift;
+            my ($key, $value, $table, $column) = @_;
             return $value->strftime('%Y-%m-%d %H:%M:%S')
         },
         default_bind_filter => sub {
-            my ($value, $key, $filters) = @_;
+            my ($key, $value, $table, $column) = @_;
             if (ref $value eq 'Time::Piece') {
-                return $filters->{datetime_to_string}->($value);
+                return $dbi->filters->{datetime_to_string}->($value);
             }
             else {
-                return $filters->{decode_utf8}->($value);
+                return $dbi->filters->{decode_utf8}->($value);
             }
         },
         
         encode_utf8 => sub {
-            my $value = shift;
+            my ($key, $value) = @_;
             return Encode::encode('UTF-8', $value);
         },
         string_to_datetime => sub {
-            my $value = shift;
+            my ($key, $value) = @_;
             return DateTime::Format::MySQL->parse_datetime($value);
         },
         default_fetch_filter => sub {
-            my ($value, $key, $filters, $type, $sth, $i) = @_;
+            my ($key, $value, $type, $sth, $i) = @_;
             if ($type eq 'DATETIME') {
-                return $self->filters->{string_to_datetime}->($value);
+                return $dbi->filters->{string_to_datetime}->($value);
             }
             else {
-                return $self->filters->{encode_utf8}->($value);
+                return $dbi->filters->{encode_utf8}->($value);
             }
         }
     );
