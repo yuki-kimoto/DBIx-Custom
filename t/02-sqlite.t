@@ -19,16 +19,21 @@ sub test {
     $test = shift;
 }
 
-# Varialbe for test
+# Varialbes for test
 my $dbi;
 my $sth;
 my $tmpl;
+my $select_tmpl;
+my $insert_tmpl;
 my $params;
 my $sql;
 my $result;
 my @rows;
 my $rows;
 my $query;
+my $select_query;
+my $insert_query;
+
 
 
 # Prepare table
@@ -96,6 +101,25 @@ $result = $dbi->execute($query);
 is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch_all_hash list context");
 
 __END__
+
+test 'Filter';
+$dbi->reconnect;
+$dbi->dbh->do("create table table1 (key1 char(255), key2 char(255));");
+
+$tmpl = "insert into {insert_values key1 key2};";
+$query = $dbi->create_query($tmpl);
+$query->bind_filter(sub {
+    my ($key, $value) = @_;
+    if ($key eq 'k1') {
+        return "$value-$key-$column";
+    }
+    return $value;
+});
+
+
+$query->fetch_filter(sub {
+    my ($key, $value)
+});
 
 $dbi->fetch_filter(sub {
     my ($key, $value, $type, $sth, $i) = @_;
@@ -182,4 +206,5 @@ $dbi->filters(filter => sub {
 is($sql, "update table set key1 = ?, key2 = ?;");
 is_deeply(\@bind, ['A', 'b'], 'sql template bind' );
 
+$dbi->disconnnect;
 
