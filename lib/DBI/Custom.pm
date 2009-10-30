@@ -21,7 +21,8 @@ sub dbi_options : ClassObjectAttr { initialize => {clone => 'hash',
 sub bind_filter  : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub fetch_filter : ClassObjectAttr { initialize => {clone => 'scalar'} }
 
-sub no_filters   : ClassObjectAttr { initialize => {clone => 'array'} }
+sub no_bind_filters   : ClassObjectAttr { initialize => {clone => 'array'} }
+sub no_fetch_filters  : ClassObjectAttr { initialize => {clone => 'array'} }
 
 sub filters : ClassObjectAttr {
     type => 'hash',
@@ -163,7 +164,20 @@ sub create_query {
     # Prepare statement handle
     my $sth = $self->dbh->prepare($query->{sql});
     
+    # Set statement handle
     $query->sth($sth);
+    
+    # Set bind filter
+    $query->bind_filter($self->bind_filter);
+    
+    # Set no filter keys when binding
+    $query->no_bind_filters($self->no_bind_filters);
+
+    # Set fetch filter
+    $query->fetch_filter($self->fetch_filter);
+    
+    # Set no filter keys when fetching
+    $query->no_fetch_filters($self->no_fetch_filters);
     
     return $query;
 }
@@ -171,18 +185,6 @@ sub create_query {
 sub execute {
     my ($self, $query, $params)  = @_;
     $params ||= {};
-    
-    # Create query if First argument is template
-    if (!ref $query) {
-        my $template = $query;
-        $query = $self->create_query($template);
-    }
-    
-    # Set bind filter
-    $query->bind_filter($self->bind_filter) unless $query->bind_filter;
-    
-    # Set no filter keys
-    $query->no_filters($self->no_filters) unless $query->no_filters;
     
     # Create bind value
     my $bind_values = $self->_build_bind_values($query, $params);
@@ -195,8 +197,9 @@ sub execute {
     if ($sth->{NUM_OF_FIELDS}) {
         my $result_class = $self->result_class;
         my $result = $result_class->new({
-            sth => $sth,
-            fetch_filter => $self->fetch_filter
+            sth              => $sth,
+            fetch_filter     => $query->fetch_filter,
+            no_fetch_filters => $query->no_fetch_filters
         });
         return $result;
     }
@@ -206,9 +209,9 @@ sub execute {
 sub _build_bind_values {
     my ($self, $query, $params) = @_;
     
-    my $key_infos      = $query->key_infos;
-    my $bind_filter    = $query->bind_filter;
-    my $no_filters_map = $query->_no_filters_map || {};
+    my $key_infos           = $query->key_infos;
+    my $bind_filter         = $query->bind_filter;
+    my $no_bind_filters_map = $query->_no_bind_filters_map || {};
     
     # binding values
     my @bind_values;
@@ -233,8 +236,10 @@ sub _build_bind_values {
                 
                 if ($i == @$access_key - 1) {
                     if (ref $key eq 'ARRAY') {
-                        if ($bind_filter && !$no_filters_map->{$original_key}) {
-                            push @bind_values, $bind_filter->($root_params->[$key->[0]], $original_key, $table, $column);
+                        if ($bind_filter && !$no_bind_filters_map->{$original_key}) {
+                            push @bind_values, 
+                                 $bind_filter->($root_params->[$key->[0]],
+                                                $original_key, $table, $column);
                         }
                         else {
                             push @bind_values, scalar $root_params->[$key->[0]];
@@ -242,8 +247,10 @@ sub _build_bind_values {
                     }
                     else {
                         next ACCESS_KEYS unless exists $root_params->{$key};
-                        if ($bind_filter && !$no_filters_map->{$original_key}) {
-                            push @bind_values, scalar $bind_filter->($root_params->{$key}, $original_key, $table, $column);
+                        if ($bind_filter && !$no_bind_filters_map->{$original_key}) {
+                            push @bind_values,
+                                 $bind_filter->($root_params->{$key}, 
+                                                $original_key, $table, $column);
                         }
                         else {
                             push @bind_values, scalar $root_params->{$key};
@@ -373,11 +380,17 @@ you can get DBI database handle if you need.
     # Sample
     $dbi->fetch_filter($self->filters->{default_fetch_filter});
 
-=head2 no_filters
+=head2 no_bind_filters
 
-    # Set and get no filter keys
-    $self       = $dbi->no_filters($no_filters);
-    $no_filters = $dbi->no_filters;
+    # Set and get no filter keys when binding
+    $self            = $dbi->no_bind_filters($no_bind_filters);
+    $no_bind_filters = $dbi->no_bind_filters;
+
+=head2 no_fetch_filters
+
+    # Set and get no filter keys when fetching
+    $self             = $dbi->no_fetch_filters($no_fetch_filters);
+    $no_fetch_filters = $dbi->no_fetch_filters;
 
 =head2 result_class
 
