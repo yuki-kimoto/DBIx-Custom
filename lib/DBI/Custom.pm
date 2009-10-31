@@ -149,11 +149,32 @@ sub run_tranzaction {
     $self->_auto_commit(1);
 }
 
+sub prepare {
+    my ($self, $sql) = @_;
+    eval{$self->connect unless $self->connected};
+    croak($@) if $@;
+    
+    my $sth = eval{$self->dbh->prepare($sql)};
+    croak($@) if $@;
+    return $sth;
+}
+
+sub do{
+    my ($self, $sql, @bind_values) = @_;
+    eval{$self->connect unless $self->connected};
+    croak($@) if $@;
+    
+    eval{$self->dbh->do($sql, @bind_values)};
+    croak($@) if $@;
+}
+
 sub create_query {
     my ($self, $template) = @_;
     
     # Create query from SQL template
-    my $query = $self->sql_template->create_query($template);
+    my $sql_template = $self->sql_template;
+    my $query = eval{$sql_template->create_query($template)};
+    croak($@) if $@;
     
     # Create Query object;
     $query = DBI::Custom::Query->new($query);
@@ -162,7 +183,8 @@ sub create_query {
     $self->connect unless $self->connected;
     
     # Prepare statement handle
-    my $sth = $self->dbh->prepare($query->{sql});
+    my $sth = eval{$self->dbh->prepare($query->{sql})};
+    croak($@) if $@;
     
     # Set statement handle
     $query->sth($sth);
@@ -343,6 +365,18 @@ Version 0.0101
     $dbi->dbi_options({PrintError => 0, RaiseError => 1});
 
 dbi_options is used when you connect database by using connect.
+
+=head2 prepare
+
+    $sth = $dbi->prepare($sql);
+
+This method is same as DBI::prepare
+
+=head2 do
+
+    $dbi->do($sql, @bind_values);
+
+This method is same as DBI::do
 
 =head2 sql_template
 

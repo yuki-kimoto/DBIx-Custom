@@ -20,6 +20,10 @@ sub test {
 }
 
 # Varialbes for test
+our $CREATE_TABLE = {
+    0 => 'create table table1 (key1 char(255), key2 char(255));'
+};
+
 my $dbi;
 my $sth;
 my $tmpl;
@@ -33,14 +37,15 @@ my $rows;
 my $query;
 my $select_query;
 my $insert_query;
+my $ret_val;
 
 
 
 # Prepare table
 $dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
 $dbi->connect;
-$dbi->dbh->do("create table table1 (key1 char(255), key2 char(255))");
-$sth = $dbi->dbh->prepare("insert into table1 (key1, key2) values (?, ?);");
+$dbi->do($CREATE_TABLE->{0});
+$sth = $dbi->prepare("insert into table1 (key1, key2) values (?, ?);");
 $sth->execute(1, 2);
 $sth->execute(3, 4);
 
@@ -104,22 +109,36 @@ __END__
 
 test 'Filter';
 $dbi->reconnect;
-$dbi->dbh->do("create table table1 (key1 char(255), key2 char(255));");
+$dbi->dbh->do($CREATE_TABLE->{0});
 
-$tmpl = "insert into {insert_values key1 key2};";
-$query = $dbi->create_query($tmpl);
-$query->bind_filter(sub {
+$insert_tmpl  = "insert into table1 {insert_values key1 key2};";
+$insert_query = $dbi->create_query($insert_tmpl);
+$insert_query->bind_filter(sub {
     my ($key, $value) = @_;
-    if ($key eq 'k1') {
-        return "$value-$key-$column";
+    if ($key eq 'key1') {
+        return $value * 2;
     }
     return $value;
 });
+$DB::single = 1;
+$ret_val = $dbi->execute($insert_query, {key1 => 1, key2 => 2});
+ok($ret_val, "Insert success return value");
 
-
-$query->fetch_filter(sub {
-    my ($key, $value)
+$select_tmpl  = "select k1, k2 from table1";
+$select_query = $dbi->create_query($select_query);
+$select_query->fetch_filter(sub {
+    my ($key, $value);
+    if ($key eq 'key2') {
+        return $value * 3;
+    }
+    return $value;
 });
+$result = $dbi->execute($select_query);
+
+$rows = $result->fetch_all_hash;
+is_deeply($rows, {k1 => 2, k2 => 6}, "$test : bind_filter fetch_filter");
+
+__END__
 
 $dbi->fetch_filter(sub {
     my ($key, $value, $type, $sth, $i) = @_;
