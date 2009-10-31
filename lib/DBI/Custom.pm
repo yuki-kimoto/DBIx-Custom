@@ -225,7 +225,14 @@ sub execute {
     # Execute
     my $sth = $query->sth;
     my $ret_val = eval{$sth->execute(@$bind_values)};
-    croak($@) if $@;
+    if ($@) {
+        require Data::Dumper;
+        my $sql         = $query->{sql} || '';
+        my $params_dump = Data::Dumper->Dump([$params], ['*params']);
+        
+        my $message = "<Created SQL>\n$sql\n<Your parameters>$params_dump";
+        croak("$@$message");
+    }
     
     # Return resultset if select statement is executed
     if ($sth->{NUM_OF_FIELDS}) {
