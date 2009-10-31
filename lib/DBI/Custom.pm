@@ -301,7 +301,7 @@ sub _build_bind_values {
                     $found = 1;
                 }
                 
-                if ($key eq 'ARRAY') {
+                if (ref $key eq 'ARRAY') {
                     $root_params = $root_params->[$key->[0]];
                 }
                 else {

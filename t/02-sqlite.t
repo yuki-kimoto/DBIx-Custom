@@ -208,6 +208,7 @@ $result       = $dbi->execute($select_query);
 $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 3, key2 => 2}], "$test : insert with table name");
 
+
 test 'DBI::Custom::SQL::Template basic tag';
 $dbi->reconnect;
 $dbi->do($CREATE_TABLE->{1});
@@ -252,8 +253,30 @@ $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag2 with table dot");
 
 
+test 'DIB::Custom::SQL::Template in tag';
+$dbi->reconnect;
+$dbi->do($CREATE_TABLE->{1});
+$sth = $dbi->prepare("insert into table1 (key1, key2, key3, key4, key5) values (?, ?, ?, ?, ?);");
+$sth->execute(1, 2, 3, 4, 5);
+$sth->execute(6, 7, 8, 9, 10);
 
-test 'DIB::Custom::SQL::Template';
+$tmpl = "select * from table1 where {in key1 2};";
+$query = $dbi->create_query($tmpl);
+$result = $dbi->execute($query, {key1 => [9, 1]});
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic");
+
+$tmpl = "select * from table1 where {in table1.key1 2};";
+$query = $dbi->create_query($tmpl);
+$result = $dbi->execute($query, {table1 => {key1 => [9, 1]}});
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : with table");
+
+$tmpl = "select * from table1 where {in table1.key1 2};";
+$query = $dbi->create_query($tmpl);
+$result = $dbi->execute($query, {'table1.key1' => [9, 1]});
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : with table dot");
 
 
 test 'DBI::Custom::SQL::Template insert tag';
