@@ -105,30 +105,28 @@ $result = $dbi->execute($query);
 @rows = $result->fetch_all;
 is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch_all_hash list context");
 
-__END__
-
 test 'Filter';
 $dbi->reconnect;
-$dbi->dbh->do($CREATE_TABLE->{0});
+$dbi->do($CREATE_TABLE->{0});
 
 $insert_tmpl  = "insert into table1 {insert_values key1 key2};";
 $insert_query = $dbi->create_query($insert_tmpl);
 $insert_query->bind_filter(sub {
-    my ($key, $value) = @_;
-    if ($key eq 'key1') {
+    my ($key, $value, $table, $column) = @_;
+    if ($key eq 'key1' && $table eq '' && $column eq 'key1') {
         return $value * 2;
     }
     return $value;
 });
-$DB::single = 1;
+
 $ret_val = $dbi->execute($insert_query, {key1 => 1, key2 => 2});
 ok($ret_val, "Insert success return value");
 
-$select_tmpl  = "select k1, k2 from table1";
-$select_query = $dbi->create_query($select_query);
+$select_tmpl  = "select key1, key2 from table1";
+$select_query = $dbi->create_query($select_tmpl);
 $select_query->fetch_filter(sub {
-    my ($key, $value);
-    if ($key eq 'key2') {
+    my ($key, $value, $type, $sth, $i) = @_;
+    if ($key eq 'key2' && $type =~ /char/ && $sth->can('execute') && $i == 1) {
         return $value * 3;
     }
     return $value;
@@ -136,7 +134,7 @@ $select_query->fetch_filter(sub {
 $result = $dbi->execute($select_query);
 
 $rows = $result->fetch_all_hash;
-is_deeply($rows, {k1 => 2, k2 => 6}, "$test : bind_filter fetch_filter");
+is_deeply($rows, [{key1 => 2, key2 => 6}], "$test : bind_filter fetch_filter");
 
 __END__
 

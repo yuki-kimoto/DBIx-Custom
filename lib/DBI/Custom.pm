@@ -14,9 +14,8 @@ sub user        : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub password    : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub data_source : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub database    : ClassObjectAttr { initialize => {clone => 'scalar'} }
-
 sub dbi_options : ClassObjectAttr { initialize => {clone => 'hash', 
-                                                  default => sub { {} } } }
+                                                   default => sub { {} } } }
 
 sub bind_filter  : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub fetch_filter : ClassObjectAttr { initialize => {clone => 'scalar'} }
@@ -213,7 +212,8 @@ sub execute {
     
     # Execute
     my $sth = $query->sth;
-    my $ret_val = $sth->execute(@$bind_values);
+    my $ret_val = eval{$sth->execute(@$bind_values)};
+    croak($@) if $@;
     
     # Return resultset if select statement is executed
     if ($sth->{NUM_OF_FIELDS}) {
@@ -238,7 +238,7 @@ sub _build_bind_values {
     # binding values
     my @bind_values;
     
-    # Filter and sdd bind values
+    # Create bind values
     foreach my $key_info (@$key_infos) {
         my $filtering_key = $key_info->{key};
         my $access_keys = $key_info->{access_keys};
@@ -247,6 +247,7 @@ sub _build_bind_values {
         my $table        = $key_info->{table}        || '';
         my $column       = $key_info->{column}       || '';
         
+        my $found;
         ACCESS_KEYS :
         foreach my $access_key (@$access_keys) {
             my $root_params = $params;
@@ -278,7 +279,7 @@ sub _build_bind_values {
                             push @bind_values, scalar $root_params->{$key};
                         }
                     }
-                    return @bind_values;
+                    $found = 1;
                 }
                 
                 if ($key eq 'ARRAY') {
@@ -290,8 +291,17 @@ sub _build_bind_values {
                 }
             }
         }
-        croak("Cannot find key");
+        
+        unless ($found) {
+            require Data::Dumper;
+            my $key_info_dump = Data::Dumper->Dump([$key_info], ['*key_info']);
+            my $params_dump    = Data::Dumper->Dump([$params], ['*params']);
+            croak("Key not found\n\n" . 
+                  "<Key information>\n$key_info_dump\n\n" .
+                  "<Your parameters>\n$params_dump\n");
+        }
     }
+    return \@bind_values;
 }
 
 
@@ -552,6 +562,8 @@ If tranzation is died, rollback is execute.
 =head1 AUTHOR
 
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
+
+Github L<http://github.com/yuki-kimoto>
 
 =head1 COPYRIGHT & LICENSE
 
