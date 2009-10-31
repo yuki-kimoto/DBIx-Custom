@@ -203,7 +203,7 @@ $result       = $dbi->execute($select_query);
 $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 3, key2 => 2}], "$test : insert with table name");
 
-test 'DBI::Custom::SQL::Template';
+test 'DBI::Custom::SQL::Template basic tag';
 $dbi->reconnect;
 $dbi->do($CREATE_TABLE->{1});
 $sth = $dbi->prepare("insert into table1 (key1, key2, key3, key4, key5) values (?, ?, ?, ?, ?);");
@@ -223,19 +223,20 @@ $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag2");
 
 
+test 'DBI::Custom::SQL::Template insert tag';
 $dbi->do("delete from table1");
 $insert_tmpl = 'insert into table1 {insert key1 key2 key3 key4 key5}';
 $dbi->execute($insert_tmpl, {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 
 $result = $dbi->execute($SELECT_TMPL->{0});
 $rows = $result->fetch_all_hash;
-is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test insert tag");
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic");
 
 $dbi->do("delete from table1");
 $dbi->execute($insert_tmpl, {'#insert' => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}});
 $result = $dbi->execute($SELECT_TMPL->{0});
 $rows = $result->fetch_all_hash;
-is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test insert tag #insert");
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : #insert");
 
 
 $dbi->do("delete from table1");
@@ -244,17 +245,17 @@ $dbi->execute($insert_tmpl, {table1 => {key1 => 1, key2 => 2, key3 => 3, key4 =>
 
 $result = $dbi->execute($SELECT_TMPL->{0});
 $rows = $result->fetch_all_hash;
-is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test insert tag with table name");
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : with table name");
+
 
 $dbi->do("delete from table1");
 $dbi->execute($insert_tmpl, {'#insert' => {table1 => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}}});
 $result = $dbi->execute($SELECT_TMPL->{0});
 $rows = $result->fetch_all_hash;
-is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test insert tag #insert with table name");
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : #insert with table name");
 
 
-
-
+test 'DBI::Custom::SQL::Template update tag';
 $dbi->do("delete from table1");
 $insert_tmpl = "insert into table1 {insert key1 key2 key3 key4 key5}";
 $dbi->execute($insert_tmpl, {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
@@ -266,68 +267,31 @@ $dbi->execute($update_tmpl, {key1 => 1, key2 => 1, key3 => 1, key4 => 1, key5 =>
 $result = $dbi->execute($SELECT_TMPL->{0});
 $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 1, key2 => 1, key3 => 1, key4 => 1, key5 => 5},
-                  {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test update tag");
+                  {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test : basic");
 
-__END__
-
-$dbi->do("delete from table1");
-$dbi->execute($update_tmpl, {'#update' => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}});
+$dbi->execute($update_tmpl, {'#update' => {key1 => 2, key2 => 2, key3 => 2, key4 => 2}, key5 => 5});
 $result = $dbi->execute($SELECT_TMPL->{0});
 $rows = $result->fetch_all_hash;
-is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test update tag #update");
+is_deeply($rows, [{key1 => 2, key2 => 2, key3 => 2, key4 => 2, key5 => 5},
+                  {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test : #update");
 
-
-$dbi->do("delete from table1");
-$update_tmpl = 'update table1 {update table1.key1 table1.key2 table1.key3 table1.key4 table1.key5}';
-$dbi->execute($update_tmpl, {table1 => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}});
-
+$update_tmpl = 'update table1 {update table1.key1 table1.key2 table1.key3 table1.key4} where {= table1.key5}';
+$dbi->execute($update_tmpl, {table1 => {key1 => 3, key2 => 3, key3 => 3, key4 => 3, key5 => 5}});
 $result = $dbi->execute($SELECT_TMPL->{0});
 $rows = $result->fetch_all_hash;
-is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test update tag with table name");
+is_deeply($rows, [{key1 => 3, key2 => 3, key3 => 3, key4 => 3, key5 => 5},
+                  {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test : with table name");
 
-$dbi->do("delete from table1");
-$dbi->execute($update_tmpl, {'#update' => {table1 => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}}});
+$dbi->execute($update_tmpl, {'#update' => {table1 => {key1 => 4, key2 => 4, key3 => 4, key4 => 4}}, table1 => {key5 => 5}});
 $result = $dbi->execute($SELECT_TMPL->{0});
 $rows = $result->fetch_all_hash;
-is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test update tag #update with table name");
-
+is_deeply($rows, [{key1 => 4, key2 => 4, key3 => 4, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test update tag #update with table name");
 
 
 __END__
 
-# Insert values
-$dbi = DBI::Custom->new;
-$tmpl   = "insert into table {insert}";
-$params = {insert => {key1 => 'a', key2 => 'b'}};
 
-$dbi->filters(filter => sub {
-    my ($key, $value) = @_;
-    if ($key eq 'key1' && $value eq 'a') {
-        return uc $value;
-    }
-    return $value;
-});
-    
-($sql, @bind_values) = $dbi->_create_sql($tmpl, $params, $dbi->filters->{filter});
-is($sql, "insert into table (key1, key2) values (?, ?);");
-is_deeply(\@bind, ['A', 'b'], 'sql template bind' );
-
-# Update set
-$dbi = DBI::Custom->new;
-$tmpl   = "update table {update}";
-$params = {update => {key1 => 'a', key2 => 'b'}};
-
-$dbi->filters(filter => sub {
-    my ($key, $value) = @_;
-    if ($key eq 'key1' && $value eq 'a') {
-        return uc $value;
-    }
-    return $value;
-});
-    
-($sql, @bind_values) = $dbi->_create_sql($tmpl, $params, $dbi->filters->{filter});
-is($sql, "update table set key1 = ?, key2 = ?;");
-is_deeply(\@bind, ['A', 'b'], 'sql template bind' );
 
 $dbi->disconnnect;
 
