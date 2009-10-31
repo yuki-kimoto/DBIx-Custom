@@ -47,6 +47,11 @@ my $ret_val;
 
 
 
+test 'Disconnect';
+$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi->connect;
+$dbi->disconnect;
+ok(!$dbi->dbh, $test);
 
 # Prepare table
 $dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
@@ -216,11 +221,39 @@ $result = $dbi->execute($query, {key1 => 1, key2 => 3, key3 => 4, key4 => 3, key
 $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag1");
 
+$tmpl = "select * from table1 where {= table1.key1} and {<> table1.key2} and {< table1.key3} and {> table1.key4} and {>= table1.key5};";
+$query = $dbi->create_query($tmpl);
+$result = $dbi->execute($query, {table1 => {key1 => 1, key2 => 3, key3 => 4, key4 => 3, key5 => 5}});
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag1 with table");
+
+$tmpl = "select * from table1 where {= table1.key1} and {<> table1.key2} and {< table1.key3} and {> table1.key4} and {>= table1.key5};";
+$query = $dbi->create_query($tmpl);
+$result = $dbi->execute($query, {'table1.key1' => 1, 'table1.key2' => 3, 'table1.key3' => 4, 'table1.key4' => 3, 'table1.key5' => 5});
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag1 with table dot");
+
 $tmpl = "select * from table1 where {<= key1} and {like key2};";
 $query = $dbi->create_query($tmpl);
 $result = $dbi->execute($query, {key1 => 1, key2 => '%2%'});
 $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag2");
+
+$tmpl = "select * from table1 where {<= table1.key1} and {like table1.key2};";
+$query = $dbi->create_query($tmpl);
+$result = $dbi->execute($query, {table1 => {key1 => 1, key2 => '%2%'}});
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag2 with table");
+
+$tmpl = "select * from table1 where {<= table1.key1} and {like table1.key2};";
+$query = $dbi->create_query($tmpl);
+$result = $dbi->execute($query, {'table1.key1' => 1, 'table1.key2' => '%2%'});
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag2 with table dot");
+
+
+
+test 'DIB::Custom::SQL::Template';
 
 
 test 'DBI::Custom::SQL::Template insert tag';
@@ -242,17 +275,28 @@ is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$te
 $dbi->do("delete from table1");
 $insert_tmpl = 'insert into table1 {insert table1.key1 table1.key2 table1.key3 table1.key4 table1.key5}';
 $dbi->execute($insert_tmpl, {table1 => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}});
-
 $result = $dbi->execute($SELECT_TMPL->{0});
 $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : with table name");
 
+$dbi->do("delete from table1");
+$insert_tmpl = 'insert into table1 {insert table1.key1 table1.key2 table1.key3 table1.key4 table1.key5}';
+$dbi->execute($insert_tmpl, {'table1.key1' => 1, 'table1.key2' => 2, 'table1.key3' => 3, 'table1.key4' => 4, 'table1.key5' => 5});
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : with table name dot");
 
 $dbi->do("delete from table1");
 $dbi->execute($insert_tmpl, {'#insert' => {table1 => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}}});
 $result = $dbi->execute($SELECT_TMPL->{0});
 $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : #insert with table name");
+
+$dbi->do("delete from table1");
+$dbi->execute($insert_tmpl, {'#insert' => {'table1.key1' => 1, 'table1.key2' => 2, 'table1.key3' => 3, 'table1.key4' => 4, 'table1.key5' => 5}});
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : #insert with table name dot");
 
 
 test 'DBI::Custom::SQL::Template update tag';
@@ -282,18 +326,24 @@ $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 3, key2 => 3, key3 => 3, key4 => 3, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test : with table name");
 
-$dbi->execute($update_tmpl, {'#update' => {table1 => {key1 => 4, key2 => 4, key3 => 4, key4 => 4}}, table1 => {key5 => 5}});
+$update_tmpl = 'update table1 {update table1.key1 table1.key2 table1.key3 table1.key4} where {= table1.key5}';
+$dbi->execute($update_tmpl, {'table1.key1' => 4, 'table1.key2' => 4, 'table1.key3' => 4, 'table1.key4' => 4, 'table1.key5' => 5});
 $result = $dbi->execute($SELECT_TMPL->{0});
 $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 4, key2 => 4, key3 => 4, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test : with table name dot");
+
+$dbi->execute($update_tmpl, {'#update' => {table1 => {key1 => 5, key2 => 5, key3 => 5, key4 => 5}}, table1 => {key5 => 5}});
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 5, key2 => 5, key3 => 5, key4 => 5, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test update tag #update with table name");
 
+$dbi->execute($update_tmpl, {'#update' => {'table1.key1' => 6, 'table1.key2' => 6, 'table1.key3' => 6, 'table1.key4' => 6}, 'table1.key5' => 5});
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 6, key2 => 6, key3 => 6, key4 => 6, key5 => 5},
+                  {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test update tag #update with table name dot");
 
-__END__
 
-
-
-$dbi->disconnnect;
-
-# Tag 'in' is easy to wrong
 
