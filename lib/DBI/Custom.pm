@@ -5,9 +5,10 @@ our $VERSION = '0.0101';
 
 use Carp 'croak';
 use DBI;
-use DBI::Custom::SQL::Template;
-use DBI::Custom::Result;
 use DBI::Custom::Query;
+use DBI::Custom::Result;
+use DBI::Custom::SQL::Template;
+
 
 ### Class-Object Accessors
 sub user        : ClassObjectAttr { initialize => {clone => 'scalar'} }
@@ -65,8 +66,7 @@ sub add_filter {
 sub _auto_commit {
     my $self = shift;
     
-    croak("Cannot change AutoCommit becouse of not connected")
-      unless $self->dbh;
+    croak("Not yet connect to database") unless $self->dbh;
     
     if (@_) {
         $self->dbh->{AutoCommit} = $_[0];
@@ -83,7 +83,7 @@ sub connect {
     my $password    = $self->password;
     my $dbi_options  = $self->dbi_options;
     
-    my $dbh = DBI->connect(
+    my $dbh = eval{DBI->connect(
         $data_source,
         $user,
         $password,
@@ -93,7 +93,9 @@ sub connect {
             AutoCommit => 1,
             %{$dbi_options || {} }
         }
-    );
+    )};
+    
+    croak $@ if $@;
     
     $self->dbh($dbh);
     return $self;
@@ -127,74 +129,19 @@ sub reconnect {
     $self->connect;
 }
 
-# Run tranzaction
-sub run_tranzaction {
-    my ($self, $tranzaction) = @_;
-    
-    # Auto commit off
-    $self->_auto_commit(0);
-    
-    # Run tranzaction
-    eval {$tranzaction->()};
-    
-    # Tranzaction error
-    my $tranzaction_error = $@;
-    
-    # RaiseError on
-    my $old_raise_error = $self->dbh->{RaiseError};
-    $self->dbh->{RaiseError} = 1;
-    
-    # Tranzaction is failed.
-    if ($tranzaction_error) {
-        # Rollback
-        eval{$self->dbh->rollback};
-        
-        # Rollback error
-        my $rollback_error = $@;
-        
-        # Auto commit on
-        $self->_auto_commit(1);
-        
-        # Restore RaiseError value
-        $self->dbh->{RaiseError} = $old_raise_error;
-        
-        if ($rollback_error) {
-            # Rollback is failed
-            croak("${tranzaction_error}Rollback is failed : $rollback_error");
-        }
-        else {
-            # Rollback is success
-            croak("${tranzaction_error}Rollback is success");
-        }
-    }
-    # Tranzaction is success
-    else {
-        # Commit
-        eval{$self->dbh->commit};
-        my $commit_error = $@;
-        
-        # Auto commit on
-        $self->_auto_commit(1);
-        
-        # Restore RaiseError value
-        $self->dbh->{RaiseError} = $old_raise_error;
-        
-        # Commit is failed
-        croak($commit_error) if $commit_error;
-    }
-}
-
 # Prepare statement handle
 sub prepare {
     my ($self, $sql) = @_;
     
     # Connect if not
-    eval{$self->connect unless $self->connected};
-    croak($@) if $@;
+    $self->connect unless $self->connected;
     
     # Prepare
     my $sth = eval{$self->dbh->prepare($sql)};
-    croak($@) if $@;
+    
+    # Error
+    croak("$@<Your SQL>\n$sql") if $@;
+    
     return $sth;
 }
 
@@ -203,12 +150,21 @@ sub do{
     my ($self, $sql, @bind_values) = @_;
     
     # Connect if not
-    eval{$self->connect unless $self->connected};
-    croak($@) if $@;
+    $self->connect unless $self->connected;
     
     # Do
-    eval{$self->dbh->do($sql, @bind_values)};
-    croak($@) if $@;
+    my $ret_val = eval{$self->dbh->do($sql, @bind_values)};
+    
+    # Error
+    if ($@) {
+        my $error = $@;
+        require Data::Dumper;
+        
+        my $bind_value_dump
+          = Data::Dumper->Dump([\@bind_values], ['*bind_valuds']);
+        
+        croak("$error<Your SQL>\n$sql\n<Your bind values>\n$bind_value_dump\n");
+    }
 }
 
 # Create query
@@ -224,16 +180,10 @@ sub create_query {
     $query = DBI::Custom::Query->new($query);
     
     # Connect if not
-    eval{$self->connect unless $self->connected};
-    croak($@) if $@;
+    $self->connect unless $self->connected;
     
     # Prepare statement handle
-    my $sth = eval{$self->dbh->prepare($query->{sql})};
-    if ($@) {
-        my $sql = $query->{sql} || '';
-        my $message = "<Created SQL>\n$sql\n";
-        croak("$@$message");
-    }
+    my $sth = $self->prepare($query->{sql});
     
     # Set statement handle
     $query->sth($sth);
@@ -274,13 +224,12 @@ sub execute {
     my $ret_val = eval{$sth->execute(@$bind_values)};
     
     # Execute error
-    if ($@) {
+    if (my $execute_error = $@) {
         require Data::Dumper;
         my $sql         = $query->{sql} || '';
         my $params_dump = Data::Dumper->Dump([$params], ['*params']);
         
-        my $message = "<Created SQL>\n$sql\n<Your parameters>$params_dump";
-        croak("$@$message");
+        croak("$execute_error<Your SQL>\n$sql\n<Your parameters>\n$params_dump");
     }
     
     # Return resultset if select statement is executed
@@ -331,11 +280,6 @@ sub _build_bind_values {
             for (my $i = 0; $i < @$access_key; $i++) {
                 # Current key
                 my $current_key = $access_key->[$i];
-                
-                # Each access key must be string or array reference
-                croak("'access_keys' each value must be string or array reference")
-                  unless (ref $current_key eq 'ARRAY' ||
-                          ($current_key && !ref $current_key));
                 
                 # Last key
                 if ($i == @$access_key - 1) {
@@ -406,7 +350,7 @@ sub _build_bind_values {
             require Data::Dumper;
             my $key_info_dump  = Data::Dumper->Dump([$key_info], ['*key_info']);
             my $params_dump    = Data::Dumper->Dump([$params], ['*params']);
-            croak("Key not found in your parameters\n" . 
+            croak("Corresponding key is not found in your parameters\n" . 
                   "<Key information>\n$key_info_dump\n\n" .
                   "<Your parameters>\n$params_dump\n");
         }
@@ -414,6 +358,56 @@ sub _build_bind_values {
     return \@bind_values;
 }
 
+# Run tranzaction
+sub run_tranzaction {
+    my ($self, $tranzaction) = @_;
+    
+    # Check auto commit
+    croak("AutoCommit must be true before tranzaction start")
+      unless $self->_auto_commit;
+    
+    # Auto commit off
+    $self->_auto_commit(0);
+    
+    # Run tranzaction
+    eval {$tranzaction->()};
+    
+    # Tranzaction error
+    my $tranzaction_error = $@;
+    
+    # Tranzaction is failed.
+    if ($tranzaction_error) {
+        # Rollback
+        eval{$self->dbh->rollback};
+        
+        # Rollback error
+        my $rollback_error = $@;
+        
+        # Auto commit on
+        $self->_auto_commit(1);
+        
+        if ($rollback_error) {
+            # Rollback is failed
+            croak("${tranzaction_error}Rollback is failed : $rollback_error");
+        }
+        else {
+            # Rollback is success
+            croak("${tranzaction_error}Rollback is success");
+        }
+    }
+    # Tranzaction is success
+    else {
+        # Commit
+        eval{$self->dbh->commit};
+        my $commit_error = $@;
+        
+        # Auto commit on
+        $self->_auto_commit(1);
+        
+        # Commit is failed
+        croak($commit_error) if $commit_error;
+    }
+}
 
 Object::Simple->build_class;
 
@@ -673,6 +667,21 @@ See also L<DBI::Custom::SQL::Template>
 
 If tranzaction is success, commit is execute. 
 If tranzation is died, rollback is execute.
+
+=head1 CAUTION
+
+DBI::Custom have DIB object internal.
+This module is work well in the following DBI condition.
+
+    1. AutoCommit is true
+    2. RaiseError is true
+
+By default, Both AutoCommit and RaiseError is true.
+You must not change these mode not to damage your data.
+
+If you change these mode, 
+you cannot get correct error message, 
+or run_tranzaction may fail.
 
 =head1 AUTHOR
 

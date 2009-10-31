@@ -58,11 +58,30 @@ $dbi->connect;
 $dbi->disconnect;
 ok(!$dbi->dbh, $test);
 
+
 test 'connected';
 $dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
 ok(!$dbi->connected, "$test : not connected");
 $dbi->connect;
 ok($dbi->connected, "$test : connected");
+
+
+test 'preapare';
+$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$sth = $dbi->prepare($CREATE_TABLE->{0});
+ok($sth, "$test : auto connect");
+$sth->execute;
+$sth = $dbi->prepare($DROP_TABLE->{0});
+ok($sth, "$test : basic");
+
+
+test 'do';
+$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$ret_val = $dbi->do($CREATE_TABLE->{0});
+ok(defined $ret_val, "$test : auto connect");
+$ret_val = $dbi->do($DROP_TABLE->{0});
+ok(defined $ret_val, "$test : basic");
+
 
 # Prepare table
 $dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
@@ -407,4 +426,41 @@ $result = $dbi->execute($SELECT_TMPL->{0});
 $rows   = $result->fetch_all_hash;
 is_deeply($rows, [], "$test : rollback");
 
+
+test 'Error case';
+$dbi = DBI::Custom->new;
+eval{$dbi->run_tranzaction};
+like($@, qr/Not yet connect to database/, "$test : Yet Connected");
+
+$dbi = DBI::Custom->new(data_source => 'dbi:SQLit');
+eval{$dbi->connect;};
+ok($@, "$test : connect error");
+
+$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi->connect;
+$dbi->dbh->{AutoCommit} = 0;
+eval{$dbi->run_tranzaction()};
+like($@, qr/AutoCommit must be true before tranzaction start/,
+         "$test : run_tranzaction auto commit is false");
+
+$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$sql = 'laksjdf';
+eval{$dbi->prepare($sql)};
+like($@, qr/$sql/, "$test : prepare fail");
+
+$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$sql = 'laksjdf';
+eval{$dbi->do($sql, qw/1 2 3/)};
+like($@, qr/$sql/, "$test : do fail");
+
+$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+eval{$dbi->create_query("{p }")};
+ok($@, "$test : create_query invalid SQL template");
+
+$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi->do($CREATE_TABLE->{0});
+$query = $dbi->create_query("select * from table1 where {= key1}");
+eval{$dbi->execute($query, {key2 => 1})};
+like($@, qr/Corresponding key is not found in your parameters/, 
+        "$test : execute corresponding key not found");
 
