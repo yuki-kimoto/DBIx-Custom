@@ -18,6 +18,8 @@ sub test {
     $test = shift;
 }
 
+
+
 # Varialbes for test
 our $CREATE_TABLE = {
     0 => 'create table table1 (key1 char(255), key2 char(255));',
@@ -26,6 +28,10 @@ our $CREATE_TABLE = {
 
 our $SELECT_TMPL = {
     0 => 'select * from table1;'
+};
+
+our $DROP_TABLE = {
+    0 => 'drop table table1'
 };
 
 my $dbi;
@@ -46,12 +52,17 @@ my $update_query;
 my $ret_val;
 
 
-
-test 'Disconnect';
+test 'disconnect';
 $dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
 $dbi->connect;
 $dbi->disconnect;
 ok(!$dbi->dbh, $test);
+
+test 'connected';
+$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+ok(!$dbi->connected, "$test : not connected");
+$dbi->connect;
+ok($dbi->connected, "$test : connected");
 
 # Prepare table
 $dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
@@ -112,7 +123,7 @@ is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch_all_hash list context");
 
 
 test 'Insert query return value';
-$dbi->reconnect;
+$dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{0});
 $tmpl = "insert into table1 {insert key1 key2}";
 $query = $dbi->create_query($tmpl);
@@ -121,7 +132,7 @@ ok($ret_val, $test);
 
 
 test 'Direct execute';
-$dbi->reconnect;
+$dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{0});
 $insert_tmpl = "insert into table1 {insert key1 key2}";
 $dbi->execute($insert_tmpl, {key1 => 1, key2 => 2}, sub {
@@ -140,7 +151,7 @@ is_deeply($rows, [{key1 => 1, key2 => 3}], $test);
 
 
 test 'Filter basic';
-$dbi->reconnect;
+$dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{0});
 
 $insert_tmpl  = "insert into table1 {insert key1 key2};";
@@ -173,7 +184,7 @@ $result = $dbi->execute($select_query);
 $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : no_fetch_filters no_bind_filters");
 
-$dbi->reconnect;
+$dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{0});
 $insert_tmpl  = "insert into table1 {insert table1.key1 table1.key2}";
 $insert_query = $dbi->create_query($insert_tmpl);
@@ -209,7 +220,7 @@ is_deeply($rows, [{key1 => 2, key2 => 4}], "$test : bind_filter");
 
 
 test 'DBI::Custom::SQL::Template basic tag';
-$dbi->reconnect;
+$dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{1});
 $sth = $dbi->prepare("insert into table1 (key1, key2, key3, key4, key5) values (?, ?, ?, ?, ?);");
 $sth->execute(1, 2, 3, 4, 5);
@@ -253,7 +264,7 @@ is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$te
 
 
 test 'DIB::Custom::SQL::Template in tag';
-$dbi->reconnect;
+$dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{1});
 $sth = $dbi->prepare("insert into table1 (key1, key2, key3, key4, key5) values (?, ?, ?, ?, ?);");
 $sth->execute(1, 2, 3, 4, 5);
@@ -365,4 +376,35 @@ $result = $dbi->execute($SELECT_TMPL->{0});
 $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 6, key2 => 6, key3 => 6, key4 => 6, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test : update tag #update with table name dot");
+
+
+test 'run_tansaction';
+$dbi->do($DROP_TABLE->{0});
+$dbi->do($CREATE_TABLE->{0});
+$dbi->run_tranzaction(sub {
+    $insert_tmpl = 'insert into table1 {insert key1 key2}';
+    $dbi->execute($insert_tmpl, {key1 => 1, key2 => 2});
+    $dbi->execute($insert_tmpl, {key1 => 3, key2 => 4});
+});
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows   = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : commit");
+
+$dbi->do($DROP_TABLE->{0});
+$dbi->do($CREATE_TABLE->{0});
+$dbi->dbh->{RaiseError} = 0;
+eval{
+    $dbi->run_tranzaction(sub {
+        $insert_tmpl = 'insert into table1 {insert key1 key2}';
+        $dbi->execute($insert_tmpl, {key1 => 1, key2 => 2});
+        die "Fatal Error";
+        $dbi->execute($insert_tmpl, {key1 => 3, key2 => 4});
+    })
+};
+like($@, qr/Fatal Error.*Rollback is success/ms, "$test : Rollback success message");
+ok(!$dbi->dbh->{RaiseError}, "$test : restore RaiseError value");
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows   = $result->fetch_all_hash;
+is_deeply($rows, [], "$test : rollback");
+
 

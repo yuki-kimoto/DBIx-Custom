@@ -13,7 +13,6 @@ use DBI::Custom::Query;
 sub user        : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub password    : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub data_source : ClassObjectAttr { initialize => {clone => 'scalar'} }
-sub database    : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub dbi_options : ClassObjectAttr { initialize => {clone => 'hash', 
                                                    default => sub { {} } } }
 
@@ -67,7 +66,7 @@ sub _auto_commit {
     my $self = shift;
     
     croak("Cannot change AutoCommit becouse of not connected")
-        unless $self->dbh;
+      unless $self->dbh;
     
     if (@_) {
         $self->dbh->{AutoCommit} = $_[0];
@@ -109,7 +108,7 @@ sub DESTROY {
 # Is connected?
 sub connected {
     my $self = shift;
-    return exists $self->{dbh} && eval {$self->{dbh}->can('prepare')};
+    return ref $self->{dbh} eq 'DBI::db';
 }
 
 # Disconnect
@@ -132,41 +131,87 @@ sub reconnect {
 sub run_tranzaction {
     my ($self, $tranzaction) = @_;
     
+    # Auto commit off
     $self->_auto_commit(0);
     
-    eval {
-        $tranzaction->();
-        $self->dbh->commit;
-    };
+    # Run tranzaction
+    eval {$tranzaction->()};
     
-    if ($@) {
-        my $tranzaction_error = $@;
+    # Tranzaction error
+    my $tranzaction_error = $@;
+    
+    # RaiseError on
+    my $old_raise_error = $self->dbh->{RaiseError};
+    $self->dbh->{RaiseError} = 1;
+    
+    # Tranzaction is failed.
+    if ($tranzaction_error) {
+        # Rollback
+        eval{$self->dbh->rollback};
         
-        $self->dbh->rollback or croak("$@ and rollback also failed");
-        croak("$tranzaction_error");
+        # Rollback error
+        my $rollback_error = $@;
+        
+        # Auto commit on
+        $self->_auto_commit(1);
+        
+        # Restore RaiseError value
+        $self->dbh->{RaiseError} = $old_raise_error;
+        
+        if ($rollback_error) {
+            # Rollback is failed
+            croak("${tranzaction_error}Rollback is failed : $rollback_error");
+        }
+        else {
+            # Rollback is success
+            croak("${tranzaction_error}Rollback is success");
+        }
     }
-    $self->_auto_commit(1);
+    # Tranzaction is success
+    else {
+        # Commit
+        eval{$self->dbh->commit};
+        my $commit_error = $@;
+        
+        # Auto commit on
+        $self->_auto_commit(1);
+        
+        # Restore RaiseError value
+        $self->dbh->{RaiseError} = $old_raise_error;
+        
+        # Commit is failed
+        croak($commit_error) if $commit_error;
+    }
 }
 
+# Prepare statement handle
 sub prepare {
     my ($self, $sql) = @_;
+    
+    # Connect if not
     eval{$self->connect unless $self->connected};
     croak($@) if $@;
     
+    # Prepare
     my $sth = eval{$self->dbh->prepare($sql)};
     croak($@) if $@;
     return $sth;
 }
 
+# Execute SQL directly
 sub do{
     my ($self, $sql, @bind_values) = @_;
+    
+    # Connect if not
     eval{$self->connect unless $self->connected};
     croak($@) if $@;
     
+    # Do
     eval{$self->dbh->do($sql, @bind_values)};
     croak($@) if $@;
 }
 
+# Create query
 sub create_query {
     my ($self, $template) = @_;
     
@@ -178,8 +223,9 @@ sub create_query {
     # Create Query object;
     $query = DBI::Custom::Query->new($query);
     
-    # connect if not
-    $self->connect unless $self->connected;
+    # Connect if not
+    eval{$self->connect unless $self->connected};
+    croak($@) if $@;
     
     # Prepare statement handle
     my $sth = eval{$self->dbh->prepare($query->{sql})};
@@ -207,6 +253,7 @@ sub create_query {
     return $query;
 }
 
+# Execute query
 sub execute {
     my ($self, $query, $params)  = @_;
     $params ||= {};
@@ -225,6 +272,8 @@ sub execute {
     # Execute
     my $sth = $query->sth;
     my $ret_val = eval{$sth->execute(@$bind_values)};
+    
+    # Execute error
     if ($@) {
         require Data::Dumper;
         my $sql         = $query->{sql} || '';
@@ -236,7 +285,11 @@ sub execute {
     
     # Return resultset if select statement is executed
     if ($sth->{NUM_OF_FIELDS}) {
+        
+        # Get result class
         my $result_class = $self->result_class;
+        
+        # Create result
         my $result = $result_class->new({
             sth              => $sth,
             fetch_filter     => $query->fetch_filter,
@@ -247,9 +300,9 @@ sub execute {
     return $ret_val;
 }
 
+# Build binding values
 sub _build_bind_values {
     my ($self, $query, $params) = @_;
-    
     my $key_infos           = $query->key_infos;
     my $bind_filter         = $query->bind_filter;
     my $no_bind_filters_map = $query->_no_bind_filters_map || {};
@@ -259,58 +312,96 @@ sub _build_bind_values {
     
     # Create bind values
     foreach my $key_info (@$key_infos) {
-        my $filtering_key = $key_info->{key};
-        my $access_keys = $key_info->{access_keys};
-        
+        # Set variable
+        my $access_keys  = $key_info->{access_keys};
         my $original_key = $key_info->{original_key} || '';
         my $table        = $key_info->{table}        || '';
         my $column       = $key_info->{column}       || '';
         
+        # Key is found?
         my $found;
+        
+        # Build bind values
         ACCESS_KEYS :
         foreach my $access_key (@$access_keys) {
+            # Root parameter
             my $root_params = $params;
+            
+            # Search corresponding value
             for (my $i = 0; $i < @$access_key; $i++) {
-                my $key = $access_key->[$i];
+                # Current key
+                my $current_key = $access_key->[$i];
                 
+                # Each access key must be string or array reference
                 croak("'access_keys' each value must be string or array reference")
-                  unless (ref $key eq 'ARRAY' || ($key && !ref $key));
+                  unless (ref $current_key eq 'ARRAY' ||
+                          ($current_key && !ref $current_key));
                 
+                # Last key
                 if ($i == @$access_key - 1) {
-                    if (ref $key eq 'ARRAY') {
-                        if ($bind_filter && !$no_bind_filters_map->{$original_key}) {
+                    # Key is array reference
+                    if (ref $current_key eq 'ARRAY') {
+                        # Filtering 
+                        if ($bind_filter &&
+                            !$no_bind_filters_map->{$original_key})
+                        {
                             push @bind_values, 
-                                 $bind_filter->($original_key, $root_params->[$key->[0]],
+                                 $bind_filter->($original_key, 
+                                                $root_params->[$current_key->[0]],
                                                 $table, $column);
                         }
+                        # Not filtering
                         else {
-                            push @bind_values, scalar $root_params->[$key->[0]];
-                        }
-                    }
-                    else {
-                        next ACCESS_KEYS unless exists $root_params->{$key};
-                        if ($bind_filter && !$no_bind_filters_map->{$original_key}) {
                             push @bind_values,
-                                 $bind_filter->($original_key, $root_params->{$key}, 
-                                                $table, $column);
-                        }
-                        else {
-                            push @bind_values, scalar $root_params->{$key};
+                                 scalar $root_params->[$current_key->[0]];
                         }
                     }
+                    # Key is string
+                    else {
+                        # Key is not found
+                        next ACCESS_KEYS
+                          unless exists $root_params->{$current_key};
+                        
+                        # Filtering
+                        if ($bind_filter &&
+                            !$no_bind_filters_map->{$original_key}) 
+                        {
+                            push @bind_values,
+                                 $bind_filter->($original_key,
+                                                $root_params->{$current_key}, 
+                                                $table, $column);
+                        }
+                        # Not filtering
+                        else {
+                            push @bind_values,
+                                 scalar $root_params->{$current_key};
+                        }
+                    }
+                    
+                    # Key is found
                     $found = 1;
                 }
-                
-                if (ref $key eq 'ARRAY') {
-                    $root_params = $root_params->[$key->[0]];
-                }
+                # First or middle key
                 else {
-                    next ACCESS_KEYS unless exists $root_params->{$key};
-                    $root_params = $root_params->{$key};
+                    # Key is array reference
+                    if (ref $current_key eq 'ARRAY') {
+                        # Go next key
+                        $root_params = $root_params->[$current_key->[0]];
+                    }
+                    # Key is string
+                    else {
+                        # Not found
+                        next ACCESS_KEYS
+                          unless exists $root_params->{$current_key};
+                        
+                        # Go next key
+                        $root_params = $root_params->{$current_key};
+                    }
                 }
             }
         }
         
+        # Key is not found
         unless ($found) {
             require Data::Dumper;
             my $key_info_dump  = Data::Dumper->Dump([$key_info], ['*key_info']);
@@ -334,7 +425,14 @@ DBI::Custom - Customizable simple DBI
 
 Version 0.0101
 
-=cut
+=head1 CAUTION
+
+This module is now experimental stage.
+
+I want you to try this module
+because I want this module stable, and not to damage your DB data by this module bug.
+
+Please tell me bug if you find
 
 =head1 SYNOPSIS
 
@@ -576,8 +674,6 @@ See also L<DBI::Custom::SQL::Template>
 If tranzaction is success, commit is execute. 
 If tranzation is died, rollback is execute.
 
-
-
 =head1 AUTHOR
 
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
@@ -591,7 +687,4 @@ Copyright 2009 Yuki Kimoto, all rights reserved.
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
 
-
 =cut
-
-1; # End of DBI::Custom

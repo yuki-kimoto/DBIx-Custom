@@ -3,9 +3,9 @@ use strict;
 use warnings;
 
 # user password database
-our ($U, $P, $D) = connect_info();
+our ($USER, $PASSWORD, $DATABASE) = connect_info();
 
-plan skip_all => 'private MySQL test' unless $U;
+plan skip_all => 'private MySQL test' unless $USER;
 
 plan 'no_plan';
 
@@ -13,9 +13,9 @@ use DBI::Custom;
 use Scalar::Util 'blessed';
 {
     my $dbi = DBI::Custom->new(
-        user => $U,
-        password => $P,
-        data_source => "dbi:mysql:dbname=$D"
+        user => $USER,
+        password => $PASSWORD,
+        data_source => "dbi:mysql:dbname=$DATABASE"
     );
     $dbi->connect;
     

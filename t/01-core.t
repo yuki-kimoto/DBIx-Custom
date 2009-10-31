@@ -3,7 +3,6 @@ use strict;
 use warnings;
 
 use DBI::Custom;
-use Scalar::Util qw/blessed/;
 use DBI::Custom::SQL::Template;
 
 # Function for test name
@@ -12,15 +11,16 @@ sub test {
     $test = shift;
 }
 
-# Varialbes for test
+# Variables for test
+our $SQL_TMPL = {
+    0 => DBI::Custom::SQL::Template->new->tag_start(0),
+    1 => DBI::Custom::SQL::Template->new->tag_start(1),
+    2 => DBI::Custom::SQL::Template->new->tag_start(2)
+};
 my $dbi;
-my $sql_tmpl;
 
-my $sql_tmpl1 = DBI::Custom::SQL::Template->new->tag_start(0);
-my $sql_tmpl2 = DBI::Custom::SQL::Template->new->tag_start(1);
-my $sql_tmpl3 = DBI::Custom::SQL::Template->new->tag_start(2);
 
-test 'constructor';
+test 'Constructor';
 $dbi = DBI::Custom->new(
     user => 'a',
     password => 'b',
@@ -32,12 +32,12 @@ $dbi = DBI::Custom->new(
     bind_filter => 'f',
     fetch_filter => 'g',
     result_class => 'g',
-    sql_template => $sql_tmpl1,
+    sql_template => $SQL_TMPL->{0},
 );
 is_deeply($dbi,{user => 'a', password => 'b', data_source => 'c', 
                 dbi_options => {d => 1, e => 2}, filters => {f => 3}, bind_filter => 'f',
                 fetch_filter => 'g', result_class => 'g',
-                sql_template => $sql_tmpl1}, $test);
+                sql_template => $SQL_TMPL->{0}}, $test);
 isa_ok($dbi, 'DBI::Custom');
 
 
@@ -57,7 +57,7 @@ test 'Sub class constructor';
       ->bind_filter('f')
       ->fetch_filter('g')
       ->result_class('DBI::Custom::Result')
-      ->sql_template($sql_tmpl1)
+      ->sql_template($SQL_TMPL->{0})
     ;
 }
 $dbi = DBI::Custom::T1->new(
@@ -71,7 +71,7 @@ $dbi = DBI::Custom::T1->new(
     bind_filter => 'fo',
     fetch_filter => 'go',
     result_class => 'ho',
-    sql_template => $sql_tmpl1,
+    sql_template => $SQL_TMPL->{0},
 );
 is($dbi->user, 'ao', "$test : user");
 is($dbi->password, 'bo', "$test : passowr");
@@ -97,12 +97,12 @@ is($dbi->result_class, 'DBI::Custom::Result', "$test : result_class");
 is($dbi->sql_template->tag_start, 0, "$test : sql_template");
 isa_ok($dbi, 'DBI::Custom::T1');
 
+
 test 'Sub sub class constructor default';
 {
     package DBI::Custom::T1_2;
     use base 'DBI::Custom::T1';
 }
-
 $dbi = DBI::Custom::T1_2->new;
 is($dbi->user, 'a', "$test : user");
 is($dbi->password, 'b', "$test : passowrd");
@@ -132,7 +132,7 @@ test 'Customized sub class constructor default';
       ->bind_filter('fo')
       ->fetch_filter('go')
       ->result_class('ho')
-      ->sql_template($sql_tmpl2)
+      ->sql_template($SQL_TMPL->{1})
     ;
 }
 $dbi = DBI::Custom::T1_3->new;
@@ -160,7 +160,7 @@ $dbi = DBI::Custom::T1_3->new(
     bind_filter => 'f',
     fetch_filter => 'g',
     result_class => 'h',
-    sql_template => $sql_tmpl3,
+    sql_template => $SQL_TMPL->{2},
 );
 is($dbi->user, 'a', "$test : user");
 is($dbi->password, 'b', "$test : password");
@@ -172,4 +172,10 @@ is($dbi->fetch_filter, 'g', "$test : fetch_filter");
 is($dbi->result_class, 'h', "$test : result_class");
 is($dbi->sql_template->tag_start, 2, "$test : sql_template");
 isa_ok($dbi, 'DBI::Custom');
+
+
+test 'add_filters';
+$dbi = DBI::Custom->new;
+$dbi->add_filter(a => sub {1});
+is($dbi->filters->{a}->(), 1, $test);
 
