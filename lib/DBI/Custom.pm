@@ -183,7 +183,11 @@ sub create_query {
     
     # Prepare statement handle
     my $sth = eval{$self->dbh->prepare($query->{sql})};
-    croak($@) if $@;
+    if ($@) {
+        my $sql = $query->{sql} || '';
+        my $message = "<Created SQL>\n$sql\n";
+        croak("$@$message");
+    }
     
     # Set statement handle
     $query->sth($sth);
@@ -193,7 +197,7 @@ sub create_query {
     
     # Set no filter keys when binding
     $query->no_bind_filters($self->no_bind_filters);
-
+    
     # Set fetch filter
     $query->fetch_filter($self->fetch_filter);
     
@@ -206,6 +210,14 @@ sub create_query {
 sub execute {
     my ($self, $query, $params)  = @_;
     $params ||= {};
+    
+    # First argument is SQL template
+    if (!ref $query) {
+        my $template = $query;
+        $query = $self->create_query($template);
+        my $query_edit_cb = $_[3];
+        $query_edit_cb->($query) if ref $query_edit_cb eq 'CODE';
+    }
     
     # Create bind value
     my $bind_values = $self->_build_bind_values($query, $params);
@@ -294,9 +306,9 @@ sub _build_bind_values {
         
         unless ($found) {
             require Data::Dumper;
-            my $key_info_dump = Data::Dumper->Dump([$key_info], ['*key_info']);
+            my $key_info_dump  = Data::Dumper->Dump([$key_info], ['*key_info']);
             my $params_dump    = Data::Dumper->Dump([$params], ['*params']);
-            croak("Key not found\n\n" . 
+            croak("Key not found in your parameters\n" . 
                   "<Key information>\n$key_info_dump\n\n" .
                   "<Your parameters>\n$params_dump\n");
         }

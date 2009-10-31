@@ -20,7 +20,8 @@ sub test {
 
 # Varialbes for test
 our $CREATE_TABLE = {
-    0 => 'create table table1 (key1 char(255), key2 char(255));'
+    0 => 'create table table1 (key1 char(255), key2 char(255));',
+    1 => 'create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));'
 };
 
 our $SELECT_TMPL = {
@@ -111,6 +112,7 @@ $result = $dbi->execute($query);
 @rows = $result->fetch_all;
 is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch_all_hash list context");
 
+
 test 'Insert query return value';
 $dbi->reconnect;
 $dbi->do($CREATE_TABLE->{0});
@@ -118,6 +120,28 @@ $tmpl = "insert into table1 {insert key1 key2}";
 $query = $dbi->create_query($tmpl);
 $ret_val = $dbi->execute($query, {key1 => 1, key2 => 2});
 ok($ret_val, $test);
+
+
+test 'Direct execute';
+$dbi->reconnect;
+$dbi->do($CREATE_TABLE->{0});
+$insert_tmpl = "insert into table1 {insert key1 key2}";
+$dbi->execute($insert_tmpl, {key1 => 1, key2 => 2}, sub {
+    my $query = shift;
+    $query->bind_filter(sub {
+        my ($key, $value) = @_;
+        if ($key eq 'key2') {
+            return $value + 1;
+        }
+        return $value;
+    });
+});
+
+$result = $dbi->execute($SELECT_TMPL->{0});
+
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 3}], $test);
+
 
 test 'Filter';
 $dbi->reconnect;
@@ -148,6 +172,17 @@ $result = $dbi->execute($select_query);
 $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 2, key2 => 6}], "$test : bind_filter fetch_filter");
 
+
+$dbi->do("delete from table1;");
+$insert_query->no_bind_filters('key1');
+$select_query->no_fetch_filters('key2');
+
+$dbi->execute($insert_query, {key1 => 1, key2 => 2});
+$result = $dbi->execute($select_query);
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2}], 'no_fetch_filters no_bind_filters');
+
+
 $dbi->reconnect;
 $dbi->do($CREATE_TABLE->{0});
 $insert_tmpl  = "insert into table1 {insert table1.key1 table1.key2}";
@@ -168,59 +203,37 @@ $result       = $dbi->execute($select_query);
 $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 3, key2 => 2}], "$test : insert with table name");
 
+test 'DBI::Custom::SQL::Template';
+$dbi->reconnect;
+$dbi->do($CREATE_TABLE->{1});
+$sth = $dbi->prepare("insert into table1 (key1, key2, key3, key4, key5) values (?, ?, ?, ?, ?);");
+$sth->execute(1, 2, 3, 4, 5);
+$sth->execute(6, 7, 8, 9, 10);
+
+$tmpl = "select * from table1 where {= key1} and {<> key2} and {< key3} and {> key4} and {>= key5};";
+$query = $dbi->create_query($tmpl);
+$result = $dbi->execute($query, {key1 => 1, key2 => 3, key3 => 4, key4 => 3, key5 => 5});
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag1");
+
+$tmpl = "select * from table1 where {<= key1} and {like key2};";
+$query = $dbi->create_query($tmpl);
+$result = $dbi->execute($query, {key1 => 1, key2 => '%2%'});
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag2");
+
+
+$dbi->do("delete from table1");
+$insert_tmpl = 'insert into table1 {insert key1 key2 key3 key4 key5}';
+$dbi->execute($insert_tmpl, {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+
+$select_tmpl = 'select * from table1';
+$result = $dbi->execute($select_tmpl);
+$rows = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test insert tag");
+
 
 __END__
-
-$dbi->fetch_filter(sub {
-    my ($key, $value, $type, $sth, $i) = @_;
-    if ($key eq 'key1' && $value == 1 && $type =~ /char/i && $i == 0 && $sth->{TYPE}->[$i] eq $type) {
-        return $value * 3;
-    }
-    return $value;
-});
-
-$result = $dbi->execute("select key1, key2 from table1");
-
-$rows = $result->fetch_all;
-
-is_deeply($rows, [[3, 2], [3, 4]], 'fetch_filter array');
-
-
-$result = $dbi->execute("select key1, key2 from table1");
-
-$rows = $result->fetch_all_hash;
-
-is_deeply($rows, [{key1 => 3, key2 => 2}, {key1 => 3, key2 => 4}], 'fetch_filter hash');
-
-
-
-# Expand place holer
-my $dbi = DBI::Custom->new;
-my $tmpl   = "select * from table where {= key1} && {<> key2} && {< k3} && {> k4} && {>= k5} && {<= k6} && {like k7}";
-my $params = {key1 => 'a', key2 => 'b', k3 => 'c', k4 => 'd', k5 => 'e', k6 => 'f', k7 => 'g'};
-
-$dbi->filters(filter => sub {
-    my ($key, $value) = @_;
-    if ($key eq 'key1' && $value eq 'a') {
-        return uc $value;
-    }
-    return $value;
-});
-
-my ($sql, @bind_values) = $dbi->_create_sql($tmpl, $params, $dbi->filters->{filter});
-
-is($sql, "select * from table where key1 = ? && key2 <> ? && k3 < ? && k4 > ? && k5 >= ? && k6 <= ? && k7 like ?;", 'sql template2');
-is_deeply(\@bind, ['A', 'b', 'c', 'd', 'e', 'f', 'g'], 'sql template bind2' );
-
-# Expand place holer upper case
-my $dbi = DBI::Custom->new;
-$dbi->sql_template->upper_case(1);
-my $tmpl   = "select * from table where {like k7}";
-my $params = {k7 => 'g'};
-
-($sql, @bind_values) = $dbi->_create_sql($tmpl, $params);
-is($sql, "select * from table where k7 LIKE ?;", 'sql template2');
-is_deeply(\@bind, ['g'], 'sql template bind2' );
 
 # Insert values
 $dbi = DBI::Custom->new;
@@ -257,4 +270,6 @@ is($sql, "update table set key1 = ?, key2 = ?;");
 is_deeply(\@bind, ['A', 'b'], 'sql template bind' );
 
 $dbi->disconnnect;
+
+# Tag 'in' is easy to wrong
 
