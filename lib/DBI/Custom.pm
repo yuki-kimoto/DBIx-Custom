@@ -170,14 +170,23 @@ sub do{
 # Create query
 sub create_query {
     my ($self, $template) = @_;
+    my $class = ref $self;
     
     # Create query from SQL template
     my $sql_template = $self->sql_template;
-    my $query = eval{$sql_template->create_query($template)};
-    croak($@) if $@;
     
-    # Create Query object;
-    $query = DBI::Custom::Query->new($query);
+    # Try to get cached query
+    my $query = $class->_query_caches->{$template};
+    
+    # Create query
+    unless ($query) {
+        $query = eval{$sql_template->create_query($template)};
+        croak($@) if $@;
+        
+        $query = DBI::Custom::Query->new($query);
+        
+        $class->_add_query_cache($template, $query);
+    }
     
     # Connect if not
     $self->connect unless $self->connected;
@@ -556,6 +565,34 @@ sub delete_all {
     return $self->delete($table, {}, $edit_query_cb, {allow_delete_all => 1});
 }
 
+sub _query_caches     : ClassAttr { type => 'hash',
+                                    auto_build => sub {shift->_query_caches({}) } }
+                                    
+sub _query_cache_keys : ClassAttr { type => 'array',
+                                    auto_build => sub {shift->_query_cache_keys([])} }
+                                    
+sub query_cache_max   : ClassAttr { auto_build => sub {shift->query_cache_max(50)} }
+
+# Add query cahce
+sub _add_query_cache {
+    my ($class, $template, $query) = @_;
+    my $query_cache_keys = $class->_query_cache_keys;
+    my $query_caches     = $class->_query_caches;
+    
+    return $class if $query_caches->{$template};
+    
+    $query_caches->{$template} = $query;
+    push @$query_cache_keys, $template;
+    
+    my $overflow = @$query_cache_keys - $class->query_cache_max;
+    
+    for (my $i = 0; $i < $overflow; $i++) {
+        my $template = shift @$query_cache_keys;
+        delete $query_caches->{$template};
+    }
+    
+    return $class;
+}
 
 Object::Simple->build_class;
 
@@ -856,6 +893,17 @@ If tranzation is died, rollback is execute.
     $last_insert_id = $dbi->last_insert_id;
     
 This method is same as DBI last_insert_id;
+
+=head1 Class Accessors
+
+=head2 query_cache_max
+
+    # Max query cache count
+    $class           = $class->query_cache_max($query_cache_max);
+    $query_cache_max = $class->query_cache_max;
+    
+    # Sample
+    DBI::Custom->query_cache_max(50);
 
 =head1 CAUTION
 
