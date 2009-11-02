@@ -409,6 +409,154 @@ sub run_tranzaction {
     }
 }
 
+# Get last insert id
+sub last_insert_id {
+    my $self = shift;
+    
+    # Not connected
+    croak("Not yet connect to database")
+      unless $self->connected;
+    
+    return $self->dbh->last_insert_id(@_);
+}
+
+# Insert
+sub insert {
+    my ($self, $table, $insert_params, $edit_query_cb) = @_;
+    $insert_params ||= {};
+    
+    # Insert keys
+    my @insert_keys = keys %$insert_params;
+    
+    # Not exists insert keys
+    croak("Insert key must be specified")
+      unless @insert_keys;
+    
+    # Templte for insert
+    my $template = "insert into $table {insert " . join(' ', @insert_keys) . '}';
+    
+    # Create query
+    my $query = $self->create_query($template);
+    
+    # Edit query callback must be code reference
+    croak("Edit query callback must be code reference")
+      if $edit_query_cb && !ref $edit_query_cb eq 'CODE';
+    
+    # Edit query if need
+    $edit_query_cb->($query) if ref $edit_query_cb eq 'CODE';
+    
+    # Execute query
+    my $ret_val = $self->execute($query, $insert_params);
+    
+    return $ret_val;
+}
+
+sub update {
+    my ($self, $table, $update_params,
+        $where_params, $edit_query_cb, $options) = @_;
+    
+    $update_params ||= {};
+    $where_params  ||= {};
+    
+    # Update keys
+    my @update_keys = keys %$where_params;
+    
+    # Not exists update kyes
+    croak("Update key must be specified")
+      unless @update_keys;
+    
+    # Where keys
+    my @where_keys = keys %$where_params;
+    
+    # Not exists where keys
+    croak("Where key must be specified")
+      if !@where_keys && !$options->{allow_update_all};
+    
+    # Update clause
+    my $update_clause = '{update ' . join(' ', @update_keys) . '}';
+    
+    # Where clause
+    my $where_clause = 'where ';
+    foreach my $where_key (@where_keys) {
+        $where_clause .= "{= $where_key} && ";
+    }
+    $where_clause =~ s/ && $//;
+    
+    # Template for update
+    my $template = "update $table $update_clause $where_clause";
+    
+    # Create query
+    my $query = $self->create_query($template);
+    
+    # Edit query callback must be code reference
+    croak("Edit query callback must be code reference")
+      if $edit_query_cb && !ref $edit_query_cb eq 'CODE';
+    
+    # Edit query if need
+    $edit_query_cb->($query) if $edit_query_cb;
+    
+    # Rearrange parammeters
+    my $params = {'#update' => $update_params, %$where_params};
+    
+    # Execute query
+    my $ret_val = $self->execute($query, $params);
+    
+    return $ret_val;
+}
+
+# Update all rows
+sub update_all {
+    my ($self, $table, $update_params, $edit_query_cb) = @_;
+    
+    return $self->update($table, $update_params, {}, $edit_query_cb,
+                         {allow_update_all => 1});
+}
+
+# Delete
+sub delete {
+    my ($self, $table, $where_params, $edit_query_cb, $options) = @_;
+    $where_params ||= {};
+    
+    # Where keys
+    my @where_keys = keys %$where_params;
+    
+    # Not exists where keys
+    croak("Where key must be specified")
+      if !@where_keys && !$options->{allow_update_all};
+    
+    # Where clause
+    my $where_clause = 'where ';
+    foreach my $where_key (@where_keys) {
+        $where_clause .= "{= $where_key} && ";
+    }
+    $where_clause =~ s/ && $//;
+    
+    # Template for delete
+    my $template = "delete from $table $where_clause";
+    
+    # Create query
+    my $query = $self->create_query($template);
+    
+    # Edit query callback must be code reference
+    croak("Edit query callback must be code reference")
+      if $edit_query_cb && !ref $edit_query_cb eq 'CODE';
+    
+    # Edit query if need
+    $edit_query_cb->($query) if $edit_query_cb;
+    
+    # Execute query
+    my $ret_val = $self->execute($query, $where_params);
+    
+    return $ret_val;
+}
+
+# Delete all rows
+sub delete_all {
+    my ($self, $table, $edit_query_cb) = @_;
+    return $self->delete($table, {}, $edit_query_cb, {allow_delete_all => 1});
+}
+
+
 Object::Simple->build_class;
 
 =head1 NAME
@@ -667,6 +815,47 @@ See also L<DBI::Custom::SQL::Template>
 
 If tranzaction is success, commit is execute. 
 If tranzation is died, rollback is execute.
+
+=head2 insert
+
+    # Insert
+    $dbi->insert($table, $insert_values);
+    
+    # Sample
+    $dbi->insert('books', {title => 'Perl', author => 'Taro'});
+
+=head2 update
+
+    # Update
+    $dbi->update($table, $update_values, $where);
+    
+    # Sample
+    $dbi->update('books', {title => 'Perl', author => 'Taro'}, {id => 5});
+
+=head2 update_all
+
+    # Update all rows
+    $dbi->update($table, $updat_values);
+
+=head2 delete
+
+    # Delete
+    $dbi->delete($table, $where);
+    
+    # Sample
+    $dbi->delete('Books', {id => 5});
+
+=head2 delete_all
+
+    # Delete all rows
+    $dbi->delete_all($table);
+
+=head2 last_insert_id
+
+    # Get last insert id
+    $last_insert_id = $dbi->last_insert_id;
+    
+This method is same as DBI last_insert_id;
 
 =head1 CAUTION
 
