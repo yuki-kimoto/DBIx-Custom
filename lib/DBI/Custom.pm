@@ -431,14 +431,14 @@ sub last_insert_id {
 
 # Insert
 sub insert {
-    my ($self, $table, $insert_params, $edit_query_cb) = @_;
+    my ($self, $table, $insert_params, $query_edit_cb) = @_;
     $insert_params ||= {};
     
     # Insert keys
     my @insert_keys = keys %$insert_params;
     
     # Not exists insert keys
-    croak("Insert key must be specified")
+    croak("key-value pairs must be specified to 'insert' second argument")
       unless @insert_keys;
     
     # Templte for insert
@@ -447,12 +447,12 @@ sub insert {
     # Create query
     my $query = $self->create_query($template);
     
-    # Edit query callback must be code reference
-    croak("Edit query callback must be code reference")
-      if $edit_query_cb && !ref $edit_query_cb eq 'CODE';
+    # Query edit callback must be code reference
+    croak("Query edit callback must be code reference")
+      if $query_edit_cb && ref $query_edit_cb ne 'CODE';
     
-    # Edit query if need
-    $edit_query_cb->($query) if ref $edit_query_cb eq 'CODE';
+    # Query edit if need
+    $query_edit_cb->($query) if $query_edit_cb;
     
     # Execute query
     my $ret_val = $self->execute($query, $insert_params);
@@ -462,7 +462,7 @@ sub insert {
 
 sub update {
     my ($self, $table, $update_params,
-        $where_params, $edit_query_cb, $options) = @_;
+        $where_params, $query_edit_cb, $options) = @_;
     
     $update_params ||= {};
     $where_params  ||= {};
@@ -497,12 +497,12 @@ sub update {
     # Create query
     my $query = $self->create_query($template);
     
-    # Edit query callback must be code reference
-    croak("Edit query callback must be code reference")
-      if $edit_query_cb && !ref $edit_query_cb eq 'CODE';
+    # Query edit callback must be code reference
+    croak("Query edit callback must be code reference")
+      if $query_edit_cb && ref $query_edit_cb ne 'CODE';
     
-    # Edit query if need
-    $edit_query_cb->($query) if $edit_query_cb;
+    # Query edit if need
+    $query_edit_cb->($query) if $query_edit_cb;
     
     # Rearrange parammeters
     my $params = {'#update' => $update_params, %$where_params};
@@ -515,15 +515,15 @@ sub update {
 
 # Update all rows
 sub update_all {
-    my ($self, $table, $update_params, $edit_query_cb) = @_;
+    my ($self, $table, $update_params, $query_edit_cb) = @_;
     
-    return $self->update($table, $update_params, {}, $edit_query_cb,
+    return $self->update($table, $update_params, {}, $query_edit_cb,
                          {allow_update_all => 1});
 }
 
 # Delete
 sub delete {
-    my ($self, $table, $where_params, $edit_query_cb, $options) = @_;
+    my ($self, $table, $where_params, $query_edit_cb, $options) = @_;
     $where_params ||= {};
     
     # Where keys
@@ -546,12 +546,12 @@ sub delete {
     # Create query
     my $query = $self->create_query($template);
     
-    # Edit query callback must be code reference
-    croak("Edit query callback must be code reference")
-      if $edit_query_cb && !ref $edit_query_cb eq 'CODE';
+    # Query edit callback must be code reference
+    croak("Query edit callback must be code reference")
+      if $query_edit_cb && ref $query_edit_cb ne 'CODE';
     
-    # Edit query if need
-    $edit_query_cb->($query) if $edit_query_cb;
+    # Query edit if need
+    $query_edit_cb->($query) if $query_edit_cb;
     
     # Execute query
     my $ret_val = $self->execute($query, $where_params);
@@ -561,8 +561,8 @@ sub delete {
 
 # Delete all rows
 sub delete_all {
-    my ($self, $table, $edit_query_cb) = @_;
-    return $self->delete($table, {}, $edit_query_cb, {allow_delete_all => 1});
+    my ($self, $table, $query_edit_cb) = @_;
+    return $self->delete($table, {}, $query_edit_cb, {allow_delete_all => 1});
 }
 
 sub _query_caches     : ClassAttr { type => 'hash',

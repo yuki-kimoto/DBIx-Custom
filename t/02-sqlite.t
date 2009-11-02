@@ -20,20 +20,25 @@ sub test {
 
 
 
-# Varialbes for test
-our $CREATE_TABLE = {
+# Constant varialbes for test
+my $CREATE_TABLE = {
     0 => 'create table table1 (key1 char(255), key2 char(255));',
     1 => 'create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));'
 };
 
-our $SELECT_TMPL = {
+my $SELECT_TMPL = {
     0 => 'select * from table1;'
 };
 
-our $DROP_TABLE = {
+my $DROP_TABLE = {
     0 => 'drop table table1'
 };
 
+my $NEW_ARGS = {
+    0 => {data_source => 'dbi:SQLite:dbname=:memory:'}
+};
+
+# Variables for test
 my $dbi;
 my $sth;
 my $tmpl;
@@ -53,21 +58,21 @@ my $ret_val;
 
 
 test 'disconnect';
-$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
 $dbi->connect;
 $dbi->disconnect;
 ok(!$dbi->dbh, $test);
 
 
 test 'connected';
-$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
 ok(!$dbi->connected, "$test : not connected");
 $dbi->connect;
 ok($dbi->connected, "$test : connected");
 
 
 test 'preapare';
-$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
 $sth = $dbi->prepare($CREATE_TABLE->{0});
 ok($sth, "$test : auto connect");
 $sth->execute;
@@ -76,7 +81,7 @@ ok($sth, "$test : basic");
 
 
 test 'do';
-$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
 $ret_val = $dbi->do($CREATE_TABLE->{0});
 ok(defined $ret_val, "$test : auto connect");
 $ret_val = $dbi->do($DROP_TABLE->{0});
@@ -84,7 +89,7 @@ ok(defined $ret_val, "$test : basic");
 
 
 # Prepare table
-$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
 $dbi->connect;
 $dbi->do($CREATE_TABLE->{0});
 $sth = $dbi->prepare("insert into table1 (key1, key2) values (?, ?);");
@@ -436,31 +441,61 @@ $dbi = DBI::Custom->new(data_source => 'dbi:SQLit');
 eval{$dbi->connect;};
 ok($@, "$test : connect error");
 
-$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
 $dbi->connect;
 $dbi->dbh->{AutoCommit} = 0;
 eval{$dbi->run_tranzaction()};
 like($@, qr/AutoCommit must be true before tranzaction start/,
          "$test : run_tranzaction auto commit is false");
 
-$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
 $sql = 'laksjdf';
 eval{$dbi->prepare($sql)};
 like($@, qr/$sql/, "$test : prepare fail");
 
-$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
 $sql = 'laksjdf';
 eval{$dbi->do($sql, qw/1 2 3/)};
 like($@, qr/$sql/, "$test : do fail");
 
-$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
 eval{$dbi->create_query("{p }")};
 ok($@, "$test : create_query invalid SQL template");
 
-$dbi = DBI::Custom->new(data_source => 'dbi:SQLite:dbname=:memory:');
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{0});
 $query = $dbi->create_query("select * from table1 where {= key1}");
 eval{$dbi->execute($query, {key2 => 1})};
 like($@, qr/Corresponding key is not found in your parameters/, 
         "$test : execute corresponding key not found");
 
+
+test 'insert';
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi->do($CREATE_TABLE->{0});
+$dbi->insert('table1', {key1 => 1, key2 => 2});
+$dbi->insert('table1', {key1 => 3, key2 => 4});
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows   = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : basic");
+
+$dbi->do('delete from table1');
+$dbi->insert('table1', {key1 => 1, key2 => 2}, sub {
+    my $query = shift;
+    $query->bind_filter(sub {
+        my ($key, $value) = @_;
+        if ($key eq 'key1') {
+            return $value * 3;
+        }
+        return $value;
+    });
+});
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows   = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 3, key2 => 2}], "$test : edit_query_callback");
+
+eval{$dbi->insert('table1')};
+like($@, qr/key-value pairs must be specified to 'insert' second argument/, "$test : insert key-value not specifed");
+
+eval{$dbi->insert('table1', {key1 => 1, key2 => 2}, 'aaa')};
+like($@, qr/Query edit callback must be code reference/, "$test : query edit callback not code ref");
