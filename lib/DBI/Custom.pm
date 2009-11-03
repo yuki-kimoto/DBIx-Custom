@@ -235,10 +235,13 @@ sub execute {
     # Execute error
     if (my $execute_error = $@) {
         require Data::Dumper;
-        my $sql         = $query->{sql} || '';
-        my $params_dump = Data::Dumper->Dump([$params], ['*params']);
+        my $sql              = $query->{sql} || '';
+        my $key_infos_dump   = Data::Dumper->Dump([$query->key_infos], ['*key_infos']);
+        my $params_dump      = Data::Dumper->Dump([$params], ['*params']);
         
-        croak("$execute_error<Your SQL>\n$sql\n<Your parameters>\n$params_dump");
+        croak("$execute_error" . 
+              "<Your SQL>\n$sql\n" . 
+              "<Your parameters>\n$params_dump");
     }
     
     # Return resultset if select statement is executed
@@ -269,6 +272,7 @@ sub _build_bind_values {
     my @bind_values;
     
     # Create bind values
+    KEY_INFOS :
     foreach my $key_info (@$key_infos) {
         # Set variable
         my $access_keys  = $key_info->{access_keys};
@@ -333,6 +337,7 @@ sub _build_bind_values {
                     
                     # Key is found
                     $found = 1;
+                    next KEY_INFOS;
                 }
                 # First or middle key
                 else {
@@ -432,13 +437,14 @@ sub last_insert_id {
 # Insert
 sub insert {
     my ($self, $table, $insert_params, $query_edit_cb) = @_;
+    $table         ||= '';
     $insert_params ||= {};
     
     # Insert keys
     my @insert_keys = keys %$insert_params;
     
     # Not exists insert keys
-    croak("key-value pairs must be specified to 'insert' second argument")
+    croak("Key-value pairs for insert must be specified to 'insert' second argument")
       unless @insert_keys;
     
     # Templte for insert
@@ -460,36 +466,41 @@ sub insert {
     return $ret_val;
 }
 
+# Update
 sub update {
     my ($self, $table, $update_params,
         $where_params, $query_edit_cb, $options) = @_;
     
+    $table         ||= '';
     $update_params ||= {};
     $where_params  ||= {};
     
     # Update keys
-    my @update_keys = keys %$where_params;
+    my @update_keys = keys %$update_params;
     
     # Not exists update kyes
-    croak("Update key must be specified")
+    croak("Key-value pairs for update must be specified to 'update' second argument")
       unless @update_keys;
     
     # Where keys
     my @where_keys = keys %$where_params;
     
     # Not exists where keys
-    croak("Where key must be specified")
+    croak("Key-value pairs for where clause must be specified to 'update' third argument")
       if !@where_keys && !$options->{allow_update_all};
     
     # Update clause
     my $update_clause = '{update ' . join(' ', @update_keys) . '}';
     
     # Where clause
-    my $where_clause = 'where ';
-    foreach my $where_key (@where_keys) {
-        $where_clause .= "{= $where_key} && ";
+    my $where_clause = '';
+    if (@where_keys) {
+        $where_clause = 'where ';
+        foreach my $where_key (@where_keys) {
+            $where_clause .= "{= $where_key} && ";
+        }
+        $where_clause =~ s/ && $//;
     }
-    $where_clause =~ s/ && $//;
     
     # Template for update
     my $template = "update $table $update_clause $where_clause";
@@ -524,21 +535,25 @@ sub update_all {
 # Delete
 sub delete {
     my ($self, $table, $where_params, $query_edit_cb, $options) = @_;
+    $table        ||= '';
     $where_params ||= {};
     
     # Where keys
     my @where_keys = keys %$where_params;
     
     # Not exists where keys
-    croak("Where key must be specified")
-      if !@where_keys && !$options->{allow_update_all};
+    croak("Key-value pairs for where clause must be specified to 'delete' second argument")
+      if !@where_keys && !$options->{allow_delete_all};
     
     # Where clause
-    my $where_clause = 'where ';
-    foreach my $where_key (@where_keys) {
-        $where_clause .= "{= $where_key} && ";
+    my $where_clause = '';
+    if (@where_keys) {
+        $where_clause = 'where ';
+        foreach my $where_key (@where_keys) {
+            $where_clause .= "{= $where_key} && ";
+        }
+        $where_clause =~ s/ && $//;
     }
-    $where_clause =~ s/ && $//;
     
     # Template for delete
     my $template = "delete from $table $where_clause";
@@ -561,8 +576,8 @@ sub delete {
 
 # Delete all rows
 sub delete_all {
-    my ($self, $table, $query_edit_cb) = @_;
-    return $self->delete($table, {}, $query_edit_cb, {allow_delete_all => 1});
+    my ($self, $table) = @_;
+    return $self->delete($table, {}, undef, {allow_delete_all => 1});
 }
 
 sub _query_caches     : ClassAttr { type => 'hash',

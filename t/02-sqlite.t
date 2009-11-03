@@ -494,8 +494,136 @@ $result = $dbi->execute($SELECT_TMPL->{0});
 $rows   = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 3, key2 => 2}], "$test : edit_query_callback");
 
+
+test 'insert error';
 eval{$dbi->insert('table1')};
-like($@, qr/key-value pairs must be specified to 'insert' second argument/, "$test : insert key-value not specifed");
+like($@, qr/Key-value pairs for insert must be specified to 'insert' second argument/, "$test : insert key-value not specifed");
 
 eval{$dbi->insert('table1', {key1 => 1, key2 => 2}, 'aaa')};
 like($@, qr/Query edit callback must be code reference/, "$test : query edit callback not code ref");
+
+
+test 'update';
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi->do($CREATE_TABLE->{1});
+$dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+$dbi->update('table1', {key2 => 11}, {key1 => 1});
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows   = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
+                  "$test : basic");
+                  
+$dbi->do("delete from table1");
+$dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+$dbi->update('table1', {key2 => 12}, {key2 => 2});
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows   = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 12, key3 => 3, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
+                  "$test : update key same as search key");
+
+$dbi->do("delete from table1");
+$dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+$dbi->update('table1', {key2 => 11}, {key1 => 1}, sub {
+    my $query = shift;
+    $query->bind_filter(sub {
+        my ($key, $value) = @_;
+        if ($key eq 'key2') {
+            return $value * 2;
+        }
+        return $value;
+    });
+});
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows   = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 22, key3 => 3, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
+                  "$test : query edit callback");
+
+
+test 'update error';
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi->do($CREATE_TABLE->{1});
+eval{$dbi->update('table1')};
+like($@, qr/Key-value pairs for update must be specified to 'update' second argument/,
+         "$test : update key-value pairs not specified");
+
+eval{$dbi->update('table1', {key2 => 1})};
+like($@, qr/Key-value pairs for where clause must be specified to 'update' third argument/,
+         "$test : where key-value pairs not specified");
+
+eval{$dbi->update('table1', {key2 => 1}, {key2 => 3}, 'aaa')};
+like($@, qr/Query edit callback must be code reference/, 
+         "$test : query edit callback not code reference");
+
+
+test 'update_all';
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi->do($CREATE_TABLE->{1});
+$dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+$dbi->update_all('table1', {key2 => 10}, sub {
+    my $query = shift;
+    $query->bind_filter(sub {
+        my ($key, $value) = @_;
+        return $value * 2;
+    })
+});
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows   = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 20, key3 => 3, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 20, key3 => 8, key4 => 9, key5 => 10}],
+                  "$test : query edit callback");
+
+
+test 'delete';
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi->do($CREATE_TABLE->{0});
+$dbi->insert('table1', {key1 => 1, key2 => 2});
+$dbi->insert('table1', {key1 => 3, key2 => 4});
+$dbi->delete('table1', {key1 => 1});
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows   = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : basic");
+
+$dbi->do("delete from table1;");
+$dbi->insert('table1', {key1 => 1, key2 => 2});
+$dbi->insert('table1', {key1 => 3, key2 => 4});
+$dbi->delete('table1', {key2 => 1}, sub {
+    my $query = shift;
+    $query->bind_filter(sub {
+        my ($key, $value) = @_;
+        return $value * 2;
+    });
+});
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows   = $result->fetch_all_hash;
+is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : query edit callback");
+
+test 'delete error';
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi->do($CREATE_TABLE->{0});
+eval{$dbi->delete('table1')};
+like($@, qr/Key-value pairs for where clause must be specified to 'delete' second argument/,
+         "$test : where key-value pairs not specified");
+
+eval{$dbi->delete('table1', {key1 => 1}, 'aaa')};
+like($@, qr/Query edit callback must be code reference/, 
+         "$test : query edit callback not code ref");
+
+
+test 'delete_all';
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi->do($CREATE_TABLE->{0});
+$dbi->insert('table1', {key1 => 1, key2 => 2});
+$dbi->insert('table1', {key1 => 3, key2 => 4});
+$dbi->delete_all('table1');
+$result = $dbi->execute($SELECT_TMPL->{0});
+$rows   = $result->fetch_all_hash;
+is_deeply($rows, [], "$test : basic");
+
+
