@@ -581,9 +581,10 @@ sub delete_all {
 }
 
 sub _select_usage { return << 'EOS' }
-Usage select :
+Your select arguments is wrong.
+select usage:
 $dbi->select(
-    $table,                # must be string
+    $table,                # must be string or array ref
     [@$columns],           # must be array reference. this is optional
     {%$where_params},      # must be hash reference.  this is optional
     $append_statement,     # must be string.          this is optional
