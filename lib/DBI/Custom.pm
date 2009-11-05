@@ -580,6 +580,92 @@ sub delete_all {
     return $self->delete($table, {}, undef, {allow_delete_all => 1});
 }
 
+sub _select_usage { return << 'EOS' }
+Usage select :
+$dbi->select(
+    $table,                # must be string
+    [@$columns],           # must be array reference. this is optional
+    {%$where_params},      # must be hash reference.  this is optional
+    $append_statement,     # must be string.          this is optional
+    $query_edit_callback   # must be code reference.  this is optional
+);
+EOS
+
+sub select {
+    my $self = shift;
+    
+    # Check argument
+    croak($self->_select_usage) unless @_;
+    
+    # Arguments
+    my $tables = shift || '';
+    $tables    = [$tables] unless ref $tables;
+    
+    my $columns          = ref $_[0] eq 'ARRAY' ? shift : [];
+    my $where_params     = ref $_[0] eq 'HASH'  ? shift : {};
+    my $append_statement = shift unless ref $_[0] || '';
+    my $query_edit_cb    = shift if ref $_[0] eq 'CODE';
+    
+    # Check rest argument
+    croak($self->_select_usage) unless @_;
+    
+    # SQL template for select statement
+    my $template = 'select ';
+    
+    # Join column clause
+    if (@$columns) {
+        foreach my $column (@$columns) {
+            $template .= "$column, ";
+        }
+        $template .= s/, $/ /;
+    }
+    else {
+        $template .= '* ';
+    }
+    
+    # Join table
+    foreach my $table (@$tables) {
+        $template .= "$table, ";
+    }
+    $template =~ s/, / /;
+    
+    # Where clause keys
+    my @where_keys = keys %$where_params;
+    
+    # Join where clause
+    if (@where_keys) {
+        $template .= 'where ';
+        foreach my $where_key (@where_keys) {
+            $template .= "{= $where_key} && ";
+        }
+    }
+    $template =~ s/ && $//;
+    
+    # Append something to last of statement
+    if ($append_statement =~ s/^where //) {
+        if (@where_keys) {
+            $template .= " && $append_statement";
+        }
+        else {
+            $template .= " where $append_statement";
+        }
+    }
+    else {
+        $template .= " $append_statement";
+    }
+    
+    # Create query
+    my $query = $self->create_query($template);
+    
+    # Query edit
+    $query_edit_cb->($query) if $query_edit_cb;
+    
+    # Execute query
+    my $result = $self->execute($query, $where_params);
+    
+    return $result;
+}
+
 sub _query_caches     : ClassAttr { type => 'hash',
                                     auto_build => sub {shift->_query_caches({}) } }
                                     
@@ -908,6 +994,39 @@ If tranzation is died, rollback is execute.
     $last_insert_id = $dbi->last_insert_id;
     
 This method is same as DBI last_insert_id;
+
+=head2 select
+    
+    # Select
+    $dbi->select(
+        $table,                # must be string or array;
+        [@$columns],           # must be array reference. this is optional
+        {%$where_params},      # must be hash reference.  this is optional
+        $append_statement,     # must be string.          this is optional
+        $query_edit_callback   # must be code reference.  this is optional
+    );
+    
+    # Sample
+    $dbi->select(
+        'Books',
+        ['title', 'author'],
+        {id => 1},
+        "for update",
+        sub {
+            my $query = shift;
+            $query->bind_filter(sub {
+                # ...
+            });
+        }
+    );
+    
+    # The way to join multi tables
+    $dbi->select(
+        ['table1', 'table2'],
+        ['table1.id as table1_id', 'title'],
+        {table1.id => 1},
+        "where table1.id = table2.id",
+    );
 
 =head1 Class Accessors
 
