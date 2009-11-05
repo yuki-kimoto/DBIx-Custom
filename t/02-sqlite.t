@@ -632,8 +632,15 @@ $dbi = DBI::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{0});
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
-
-$rows = $dbi->select('table1')->fetch_hash_all;
+$rows = $dbi->select('table1')->fetch_all_hash;
 is_deeply($rows, [{key1 => 1, key2 => 2},
                   {key1 => 3, key2 => 4}], "$test : table");
 
+$rows = $dbi->select('table1', ['key1'])->fetch_all_hash;
+is_deeply($rows, [{key1 => 1}, {key1 => 3}], "$test : table and columns and where key");
+
+$rows = $dbi->select('table1', {key1 => 1})->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : table and columns and where key");
+
+$rows = $dbi->select('table1', ['key1'], {key1 => 3})->fetch_all_hash;
+is_deeply($rows, [{key1 => 3}], "$test : table and columns and where key");

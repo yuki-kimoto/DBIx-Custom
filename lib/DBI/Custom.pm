@@ -604,11 +604,11 @@ sub select {
     
     my $columns          = ref $_[0] eq 'ARRAY' ? shift : [];
     my $where_params     = ref $_[0] eq 'HASH'  ? shift : {};
-    my $append_statement = shift unless ref $_[0] || '';
+    my $append_statement = $_[0] && !ref $_[0]  ? shift : '';
     my $query_edit_cb    = shift if ref $_[0] eq 'CODE';
     
     # Check rest argument
-    croak($self->_select_usage) unless @_;
+    croak($self->_select_usage) if @_;
     
     # SQL template for select statement
     my $template = 'select ';
@@ -618,13 +618,14 @@ sub select {
         foreach my $column (@$columns) {
             $template .= "$column, ";
         }
-        $template .= s/, $/ /;
+        $template =~ s/, $/ /;
     }
     else {
         $template .= '* ';
     }
     
     # Join table
+    $template .= 'from ';
     foreach my $table (@$tables) {
         $template .= "$table, ";
     }
