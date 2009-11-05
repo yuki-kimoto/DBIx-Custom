@@ -497,9 +497,9 @@ sub update {
     if (@where_keys) {
         $where_clause = 'where ';
         foreach my $where_key (@where_keys) {
-            $where_clause .= "{= $where_key} && ";
+            $where_clause .= "{= $where_key} and ";
         }
-        $where_clause =~ s/ && $//;
+        $where_clause =~ s/ and $//;
     }
     
     # Template for update
@@ -550,9 +550,9 @@ sub delete {
     if (@where_keys) {
         $where_clause = 'where ';
         foreach my $where_key (@where_keys) {
-            $where_clause .= "{= $where_key} && ";
+            $where_clause .= "{= $where_key} and ";
         }
-        $where_clause =~ s/ && $//;
+        $where_clause =~ s/ and $//;
     }
     
     # Template for delete
@@ -629,7 +629,7 @@ sub select {
     foreach my $table (@$tables) {
         $template .= "$table, ";
     }
-    $template =~ s/, / /;
+    $template =~ s/, $/ /;
     
     # Where clause keys
     my @where_keys = keys %$where_params;
@@ -638,15 +638,15 @@ sub select {
     if (@where_keys) {
         $template .= 'where ';
         foreach my $where_key (@where_keys) {
-            $template .= "{= $where_key} && ";
+            $template .= "{= $where_key} and ";
         }
     }
-    $template =~ s/ && $//;
+    $template =~ s/ and $//;
     
     # Append something to last of statement
     if ($append_statement =~ s/^where //) {
         if (@where_keys) {
-            $template .= " && $append_statement";
+            $template .= " and $append_statement";
         }
         else {
             $template .= " where $append_statement";
@@ -937,7 +937,7 @@ add_filter add filter to filters
     $result = $dbi->query($template, $params); # Shorcut
     
     # Sample
-    $result = $dbi->query("select * from authors where {= name} && {= age}", 
+    $result = $dbi->query("select * from authors where {= name} and {= age}", 
                           {author => 'taro', age => 19});
     
     while (my @row = $result->fetch) {

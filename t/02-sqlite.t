@@ -23,7 +23,8 @@ sub test {
 # Constant varialbes for test
 my $CREATE_TABLE = {
     0 => 'create table table1 (key1 char(255), key2 char(255));',
-    1 => 'create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));'
+    1 => 'create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));',
+    2 => 'create table table2 (key1 char(255), key3 char(255));'
 };
 
 my $SELECT_TMPL = {
@@ -518,7 +519,7 @@ is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
 $dbi->do("delete from table1");
 $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
-$dbi->update('table1', {key2 => 12}, {key2 => 2});
+$dbi->update('table1', {key2 => 12}, {key2 => 2, key3 => 3});
 $result = $dbi->execute($SELECT_TMPL->{0});
 $rows   = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 1, key2 => 12, key3 => 3, key4 => 4, key5 => 5},
@@ -604,6 +605,14 @@ $result = $dbi->execute($SELECT_TMPL->{0});
 $rows   = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : query edit callback");
 
+$dbi->delete_all('table1');
+$dbi->insert('table1', {key1 => 1, key2 => 2});
+$dbi->insert('table1', {key1 => 3, key2 => 4});
+$dbi->delete('table1', {key1 => 1, key2 => 2});
+$rows = $dbi->select('table1')->fetch_all_hash;
+is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : delete multi key");
+
+
 test 'delete error';
 $dbi = DBI::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{0});
@@ -644,3 +653,26 @@ is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : table and columns and where 
 
 $rows = $dbi->select('table1', ['key1'], {key1 => 3})->fetch_all_hash;
 is_deeply($rows, [{key1 => 3}], "$test : table and columns and where key");
+
+$rows = $dbi->select('table1', "order by key1 desc limit 1")->fetch_all_hash;
+is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : append statement");
+
+$rows = $dbi->select('table1', {key1 => 2}, sub {
+    my $query = shift;
+    $query->bind_filter(sub {
+        my ($key, $value) = @_;
+        if ($key eq 'key1') {
+            return $value - 1;
+        }
+        return $value;
+    });
+})->fetch_all_hash;
+is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : query edit call back");
+
+$dbi->do($CREATE_TABLE->{2});
+$dbi->insert('table2', {key1 => 1, key3 => 5});
+$rows = $dbi->select([qw/table1 table2/],
+                     ['table1.key1 as table1_key1', 'table2.key1 as table2_key1', 'key2', 'key3'],
+                     {'table1.key2' => 2},
+                     "where table1.key1 = table2.key1")->fetch_all_hash;
+is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "$test : join");
