@@ -32,6 +32,15 @@ sub filters : ClassObjectAttr {
     }
 }
 
+sub formats : ClassObjectAttr {
+    type => 'hash',
+    deref => 1,
+    initialize => {
+        clone   => 'hash',
+        default => sub { {} }
+    }
+}
+
 sub result_class : ClassObjectAttr {
     initialize => {
         clone   => 'scalar',
@@ -59,6 +68,16 @@ sub add_filter {
     my %old_filters = $invocant->filters;
     my %new_filters = ref $_[0] eq 'HASH' ? %{$_[0]} : @_;
     $invocant->filters(%old_filters, %new_filters);
+    return $invocant;
+}
+
+# Add format
+sub add_format{
+    my $invocant = shift;
+    
+    my %old_formats = $invocant->formats;
+    my %new_formats = ref $_[0] eq 'HASH' ? %{$_[0]} : @_;
+    $invocant->formats(%old_formats, %new_formats);
     return $invocant;
 }
 
@@ -802,6 +821,12 @@ This method is same as DBI::do
     $self    = $dbi->filters($filters);
     $filters = $dbi->filters;
 
+=head2 formats
+
+    # Set and get formats
+    $self    = $dbi->formats($formats);
+    $formats = $dbi->formats;
+    
 =head2 bind_filter
 
     # Set and get binding filter
@@ -924,6 +949,10 @@ If database is already disconnected, this method do noting.
     );
 
 add_filter add filter to filters
+
+=head2 add_format
+
+    $dbi->add_format(date => '%Y:%m:%d');
 
 =head2 create_query
     

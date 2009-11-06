@@ -54,6 +54,9 @@ test 'Sub class constructor';
       ->filters(
           f => 3
       )
+      ->formats(
+          f => 3
+      )
       ->bind_filter('f')
       ->fetch_filter('g')
       ->result_class('DBI::Custom::Result')
@@ -68,6 +71,9 @@ $dbi = DBI::Custom::T1->new(
     filters => {
         fo => 30,
     },
+    formats => {
+        fo => 30,
+    },
     bind_filter => 'fo',
     fetch_filter => 'go',
     result_class => 'ho',
@@ -78,6 +84,7 @@ is($dbi->password, 'bo', "$test : passowr");
 is($dbi->data_source, 'co', "$test : data_source");
 is_deeply($dbi->dbi_options, {do => 10, eo => 20}, "$test : dbi_options");
 is_deeply(scalar $dbi->filters, {fo => 30}, "$test : filters");
+is_deeply(scalar $dbi->formats, {fo => 30}, "$test : formats");
 is($dbi->bind_filter, 'fo', "$test : bind_filter");
 is($dbi->fetch_filter, 'go', "$test : fetch_filter");
 is($dbi->result_class, 'ho', "$test : result_class");
@@ -91,6 +98,7 @@ is($dbi->password, 'b', "$test : password");
 is($dbi->data_source, 'c', "$test : data_source");
 is_deeply($dbi->dbi_options, {d => 1, e => 2}, "$test : dbi_options");
 is_deeply({$dbi->filters}, {f => 3}, "$test : filters");
+is_deeply({$dbi->formats}, {f => 3}, "$test : formats");
 is($dbi->bind_filter, 'f', "$test : bind_filter");
 is($dbi->fetch_filter, 'g', "$test : fetch_filter");
 is($dbi->result_class, 'DBI::Custom::Result', "$test : result_class");
@@ -109,6 +117,7 @@ is($dbi->password, 'b', "$test : passowrd");
 is($dbi->data_source, 'c', "$test : data_source");
 is_deeply($dbi->dbi_options, {d => 1, e => 2}, "$test : dbi_options");
 is_deeply(scalar $dbi->filters, {f => 3}, "$test : filters");
+is_deeply(scalar $dbi->formats, {f => 3}, "$test : formats");
 is($dbi->bind_filter, 'f', "$test : bind_filter");
 is($dbi->fetch_filter, 'g', "$test : fetch_filter");
 is($dbi->result_class, 'DBI::Custom::Result', "$test : result_class");
@@ -129,6 +138,9 @@ test 'Customized sub class constructor default';
       ->filters(
         fo => 30
       )
+      ->formats(
+        fo => 30
+      )
       ->bind_filter('fo')
       ->fetch_filter('go')
       ->result_class('ho')
@@ -141,6 +153,7 @@ is($dbi->password, 'bo', "$test : password");
 is($dbi->data_source, 'co', "$test : data_source");
 is_deeply($dbi->dbi_options, {do => 10, eo => 20}, "$test : dbi_options");
 is_deeply(scalar $dbi->filters, {fo => 30}, "$test : filters");
+is_deeply(scalar $dbi->formats, {fo => 30}, "$test : formats");
 is($dbi->bind_filter, 'fo', "$test : bind_filter");
 is($dbi->fetch_filter, 'go', "$test : fetch_filter");
 is($dbi->result_class, 'ho', "$test : result_class");
@@ -157,6 +170,9 @@ $dbi = DBI::Custom::T1_3->new(
     filters => {
         f => 3,
     },
+    formats => {
+        f => 3,
+    },
     bind_filter => 'f',
     fetch_filter => 'g',
     result_class => 'h',
@@ -167,6 +183,7 @@ is($dbi->password, 'b', "$test : password");
 is($dbi->data_source, 'c', "$test : data_source");
 is_deeply($dbi->dbi_options, {d => 1, e => 2}, "$test : dbi_options");
 is_deeply({$dbi->filters}, {f => 3}, "$test : filters");
+is_deeply({$dbi->formats}, {f => 3}, "$test : formats");
 is($dbi->bind_filter, 'f', "$test : bind_filter");
 is($dbi->fetch_filter, 'g', "$test : fetch_filter");
 is($dbi->result_class, 'h', "$test : result_class");
@@ -178,4 +195,9 @@ test 'add_filters';
 $dbi = DBI::Custom->new;
 $dbi->add_filter(a => sub {1});
 is($dbi->filters->{a}->(), 1, $test);
+
+test 'add_formats';
+$dbi = DBI::Custom->new;
+$dbi->add_format(a => sub {1});
+is($dbi->formats->{a}->(), 1, $test);
 
