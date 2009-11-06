@@ -16,6 +16,7 @@ sub password    : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub data_source : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub dbi_options : ClassObjectAttr { initialize => {clone => 'hash', 
                                                    default => sub { {} } } }
+sub database    : ClassObjectAttr { initialize => {clone => 'scalar'} }
 
 sub bind_filter  : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub fetch_filter : ClassObjectAttr { initialize => {clone => 'scalar'} }
@@ -782,6 +783,8 @@ Please tell me bug if you find
     # Set and get database name
     $self     = $dbi->database($database);
     $database = $dbi->database;
+
+This method will be used in subclass connect method.
 
 =head2 dbi_options
 
