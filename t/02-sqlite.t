@@ -18,8 +18,6 @@ sub test {
     $test = shift;
 }
 
-
-
 # Constant varialbes for test
 my $CREATE_TABLE = {
     0 => 'create table table1 (key1 char(255), key2 char(255));',
@@ -43,6 +41,7 @@ my $NEW_ARGS = {
 my $dbi;
 my $sth;
 my $tmpl;
+my @tmpls;
 my $select_tmpl;
 my $insert_tmpl;
 my $update_tmpl;
@@ -52,6 +51,7 @@ my $result;
 my @rows;
 my $rows;
 my $query;
+my @queries;
 my $select_query;
 my $insert_query;
 my $update_query;
@@ -676,3 +676,41 @@ $rows = $dbi->select([qw/table1 table2/],
                      {'table1.key2' => 2},
                      "where table1.key1 = table2.key1")->fetch_all_hash;
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "$test : join");
+
+test 'Cache';
+$dbi = DBI::Custom->new($NEW_ARGS->{0});
+DBI::Custom->query_cache_max(2);
+$dbi->do($CREATE_TABLE->{0});
+DBI::Custom->delete_class_attr('_query_caches');
+DBI::Custom->delete_class_attr('_query_cache_keys');
+$tmpls[0] = "insert into table1 {insert key1 key2}";
+$queries[0] = $dbi->create_query($tmpls[0]);
+is(DBI::Custom->_query_caches->{$tmpls[0]}{sql}, $queries[0]->sql, "$test : sql first");
+is(DBI::Custom->_query_caches->{$tmpls[0]}{key_infos}, $queries[0]->key_infos, "$test : key_infos first");
+is_deeply(DBI::Custom->_query_cache_keys, [@tmpls], "$test : cache key first");
+
+$tmpls[1] = "select * from table1";
+$queries[1] = $dbi->create_query($tmpls[1]);
+is(DBI::Custom->_query_caches->{$tmpls[0]}{sql}, $queries[0]->sql, "$test : sql first");
+is(DBI::Custom->_query_caches->{$tmpls[0]}{key_infos}, $queries[0]->key_infos, "$test : key_infos first");
+is(DBI::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql second");
+is(DBI::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos second");
+is_deeply(DBI::Custom->_query_cache_keys, [@tmpls], "$test : cache key second");
+
+$tmpls[2] = "select key1, key2 from table1";
+$queries[2] = $dbi->create_query($tmpls[2]);
+ok(!exists DBI::Custom->_query_caches->{$tmpls[0]}, "$test : cache overflow deleted key");
+is(DBI::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql cache overflow deleted key");
+is(DBI::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos cache overflow deleted key");
+is(DBI::Custom->_query_caches->{$tmpls[2]}{sql}, $queries[2]->sql, "$test : sql cache overflow deleted key");
+is(DBI::Custom->_query_caches->{$tmpls[2]}{key_infos}, $queries[2]->key_infos, "$test : key_infos cache overflow deleted key");
+is_deeply(DBI::Custom->_query_cache_keys, [@tmpls[1, 2]], "$test : cache key third");
+
+$queries[1] = $dbi->create_query($tmpls[1]);
+ok(!exists DBI::Custom->_query_caches->{$tmpls[0]}, "$test : cache overflow deleted key");
+is(DBI::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql cache overflow deleted key");
+is(DBI::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos cache overflow deleted key");
+is(DBI::Custom->_query_caches->{$tmpls[2]}{sql}, $queries[2]->sql, "$test : sql cache overflow deleted key");
+is(DBI::Custom->_query_caches->{$tmpls[2]}{key_infos}, $queries[2]->key_infos, "$test : key_infos cache overflow deleted key");
+is_deeply(DBI::Custom->_query_cache_keys, [@tmpls[1, 2]], "$test : cache key third");
+
