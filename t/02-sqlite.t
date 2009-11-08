@@ -9,7 +9,7 @@ BEGIN {
         or plan skip_all => 'DBD::SQLite >= 1.00 required';
 
     plan 'no_plan';
-    use_ok('DBI::Custom');
+    use_ok('DBIx::Custom');
 }
 
 # Function for test name
@@ -59,21 +59,21 @@ my $ret_val;
 
 
 test 'disconnect';
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->connect;
 $dbi->disconnect;
 ok(!$dbi->dbh, $test);
 
 
 test 'connected';
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 ok(!$dbi->connected, "$test : not connected");
 $dbi->connect;
 ok($dbi->connected, "$test : connected");
 
 
 test 'preapare';
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $sth = $dbi->prepare($CREATE_TABLE->{0});
 ok($sth, "$test : auto connect");
 $sth->execute;
@@ -82,7 +82,7 @@ ok($sth, "$test : basic");
 
 
 test 'do';
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $ret_val = $dbi->do($CREATE_TABLE->{0});
 ok(defined $ret_val, "$test : auto connect");
 $ret_val = $dbi->do($DROP_TABLE->{0});
@@ -90,7 +90,7 @@ ok(defined $ret_val, "$test : basic");
 
 
 # Prepare table
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->connect;
 $dbi->do($CREATE_TABLE->{0});
 $sth = $dbi->prepare("insert into table1 (key1, key2) values (?, ?);");
@@ -98,7 +98,7 @@ $sth->execute(1, 2);
 $sth->execute(3, 4);
 
 
-test 'DBI::Custom::Result test';
+test 'DBIx::Custom::Result test';
 $tmpl = "select key1, key2 from table1";
 $query = $dbi->create_query($tmpl);
 $result = $dbi->execute($query);
@@ -244,7 +244,7 @@ $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 2, key2 => 4}], "$test : bind_filter");
 
 
-test 'DBI::Custom::SQL::Template basic tag';
+test 'DBIx::Custom::SQL::Template basic tag';
 $dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{1});
 $sth = $dbi->prepare("insert into table1 (key1, key2, key3, key4, key5) values (?, ?, ?, ?, ?);");
@@ -314,7 +314,7 @@ $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : with table dot");
 
 
-test 'DBI::Custom::SQL::Template insert tag';
+test 'DBIx::Custom::SQL::Template insert tag';
 $dbi->do("delete from table1");
 $insert_tmpl = 'insert into table1 {insert key1 key2 key3 key4 key5}';
 $dbi->execute($insert_tmpl, {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
@@ -356,7 +356,7 @@ $rows = $result->fetch_all_hash;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : #insert with table name dot");
 
 
-test 'DBI::Custom::SQL::Template update tag';
+test 'DBIx::Custom::SQL::Template update tag';
 $dbi->do("delete from table1");
 $insert_tmpl = "insert into table1 {insert key1 key2 key3 key4 key5}";
 $dbi->execute($insert_tmpl, {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
@@ -434,36 +434,36 @@ is_deeply($rows, [], "$test : rollback");
 
 
 test 'Error case';
-$dbi = DBI::Custom->new;
+$dbi = DBIx::Custom->new;
 eval{$dbi->run_tranzaction};
 like($@, qr/Not yet connect to database/, "$test : Yet Connected");
 
-$dbi = DBI::Custom->new(data_source => 'dbi:SQLit');
+$dbi = DBIx::Custom->new(data_source => 'dbi:SQLit');
 eval{$dbi->connect;};
 ok($@, "$test : connect error");
 
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->connect;
 $dbi->dbh->{AutoCommit} = 0;
 eval{$dbi->run_tranzaction()};
 like($@, qr/AutoCommit must be true before tranzaction start/,
          "$test : run_tranzaction auto commit is false");
 
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $sql = 'laksjdf';
 eval{$dbi->prepare($sql)};
 like($@, qr/$sql/, "$test : prepare fail");
 
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $sql = 'laksjdf';
 eval{$dbi->do($sql, qw/1 2 3/)};
 like($@, qr/$sql/, "$test : do fail");
 
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 eval{$dbi->create_query("{p }")};
 ok($@, "$test : create_query invalid SQL template");
 
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{0});
 $query = $dbi->create_query("select * from table1 where {= key1}");
 eval{$dbi->execute($query, {key2 => 1})};
@@ -472,7 +472,7 @@ like($@, qr/Corresponding key is not found in your parameters/,
 
 
 test 'insert';
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{0});
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
@@ -505,7 +505,7 @@ like($@, qr/Query edit callback must be code reference/, "$test : query edit cal
 
 
 test 'update';
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{1});
 $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -547,7 +547,7 @@ is_deeply($rows, [{key1 => 1, key2 => 22, key3 => 3, key4 => 4, key5 => 5},
 
 
 test 'update error';
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{1});
 eval{$dbi->update('table1')};
 like($@, qr/Key-value pairs for update must be specified to 'update' second argument/,
@@ -563,7 +563,7 @@ like($@, qr/Query edit callback must be code reference/,
 
 
 test 'update_all';
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{1});
 $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -582,7 +582,7 @@ is_deeply($rows, [{key1 => 1, key2 => 20, key3 => 3, key4 => 4, key5 => 5},
 
 
 test 'delete';
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{0});
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
@@ -614,7 +614,7 @@ is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : delete multi key");
 
 
 test 'delete error';
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{0});
 eval{$dbi->delete('table1')};
 like($@, qr/Key-value pairs for where clause must be specified to 'delete' second argument/,
@@ -626,7 +626,7 @@ like($@, qr/Query edit callback must be code reference/,
 
 
 test 'delete_all';
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{0});
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
@@ -637,7 +637,7 @@ is_deeply($rows, [], "$test : basic");
 
 
 test 'select';
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{0});
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
@@ -678,39 +678,39 @@ $rows = $dbi->select([qw/table1 table2/],
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "$test : join");
 
 test 'Cache';
-$dbi = DBI::Custom->new($NEW_ARGS->{0});
-DBI::Custom->query_cache_max(2);
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
+DBIx::Custom->query_cache_max(2);
 $dbi->do($CREATE_TABLE->{0});
-DBI::Custom->delete_class_attr('_query_caches');
-DBI::Custom->delete_class_attr('_query_cache_keys');
+DBIx::Custom->delete_class_attr('_query_caches');
+DBIx::Custom->delete_class_attr('_query_cache_keys');
 $tmpls[0] = "insert into table1 {insert key1 key2}";
 $queries[0] = $dbi->create_query($tmpls[0]);
-is(DBI::Custom->_query_caches->{$tmpls[0]}{sql}, $queries[0]->sql, "$test : sql first");
-is(DBI::Custom->_query_caches->{$tmpls[0]}{key_infos}, $queries[0]->key_infos, "$test : key_infos first");
-is_deeply(DBI::Custom->_query_cache_keys, [@tmpls], "$test : cache key first");
+is(DBIx::Custom->_query_caches->{$tmpls[0]}{sql}, $queries[0]->sql, "$test : sql first");
+is(DBIx::Custom->_query_caches->{$tmpls[0]}{key_infos}, $queries[0]->key_infos, "$test : key_infos first");
+is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls], "$test : cache key first");
 
 $tmpls[1] = "select * from table1";
 $queries[1] = $dbi->create_query($tmpls[1]);
-is(DBI::Custom->_query_caches->{$tmpls[0]}{sql}, $queries[0]->sql, "$test : sql first");
-is(DBI::Custom->_query_caches->{$tmpls[0]}{key_infos}, $queries[0]->key_infos, "$test : key_infos first");
-is(DBI::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql second");
-is(DBI::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos second");
-is_deeply(DBI::Custom->_query_cache_keys, [@tmpls], "$test : cache key second");
+is(DBIx::Custom->_query_caches->{$tmpls[0]}{sql}, $queries[0]->sql, "$test : sql first");
+is(DBIx::Custom->_query_caches->{$tmpls[0]}{key_infos}, $queries[0]->key_infos, "$test : key_infos first");
+is(DBIx::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql second");
+is(DBIx::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos second");
+is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls], "$test : cache key second");
 
 $tmpls[2] = "select key1, key2 from table1";
 $queries[2] = $dbi->create_query($tmpls[2]);
-ok(!exists DBI::Custom->_query_caches->{$tmpls[0]}, "$test : cache overflow deleted key");
-is(DBI::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql cache overflow deleted key");
-is(DBI::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos cache overflow deleted key");
-is(DBI::Custom->_query_caches->{$tmpls[2]}{sql}, $queries[2]->sql, "$test : sql cache overflow deleted key");
-is(DBI::Custom->_query_caches->{$tmpls[2]}{key_infos}, $queries[2]->key_infos, "$test : key_infos cache overflow deleted key");
-is_deeply(DBI::Custom->_query_cache_keys, [@tmpls[1, 2]], "$test : cache key third");
+ok(!exists DBIx::Custom->_query_caches->{$tmpls[0]}, "$test : cache overflow deleted key");
+is(DBIx::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql cache overflow deleted key");
+is(DBIx::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos cache overflow deleted key");
+is(DBIx::Custom->_query_caches->{$tmpls[2]}{sql}, $queries[2]->sql, "$test : sql cache overflow deleted key");
+is(DBIx::Custom->_query_caches->{$tmpls[2]}{key_infos}, $queries[2]->key_infos, "$test : key_infos cache overflow deleted key");
+is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls[1, 2]], "$test : cache key third");
 
 $queries[1] = $dbi->create_query($tmpls[1]);
-ok(!exists DBI::Custom->_query_caches->{$tmpls[0]}, "$test : cache overflow deleted key");
-is(DBI::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql cache overflow deleted key");
-is(DBI::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos cache overflow deleted key");
-is(DBI::Custom->_query_caches->{$tmpls[2]}{sql}, $queries[2]->sql, "$test : sql cache overflow deleted key");
-is(DBI::Custom->_query_caches->{$tmpls[2]}{key_infos}, $queries[2]->key_infos, "$test : key_infos cache overflow deleted key");
-is_deeply(DBI::Custom->_query_cache_keys, [@tmpls[1, 2]], "$test : cache key third");
+ok(!exists DBIx::Custom->_query_caches->{$tmpls[0]}, "$test : cache overflow deleted key");
+is(DBIx::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql cache overflow deleted key");
+is(DBIx::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos cache overflow deleted key");
+is(DBIx::Custom->_query_caches->{$tmpls[2]}{sql}, $queries[2]->sql, "$test : sql cache overflow deleted key");
+is(DBIx::Custom->_query_caches->{$tmpls[2]}{key_infos}, $queries[2]->key_infos, "$test : key_infos cache overflow deleted key");
+is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls[1, 2]], "$test : cache key third");
 

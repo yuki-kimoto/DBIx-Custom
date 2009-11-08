@@ -1,13 +1,13 @@
-package DBI::Custom;
+package DBIx::Custom;
 use Object::Simple;
 
 our $VERSION = '0.0101';
 
 use Carp 'croak';
 use DBI;
-use DBI::Custom::Query;
-use DBI::Custom::Result;
-use DBI::Custom::SQL::Template;
+use DBIx::Custom::Query;
+use DBIx::Custom::Result;
+use DBIx::Custom::SQL::Template;
 
 
 ### Class-Object Accessors
@@ -45,14 +45,14 @@ sub formats : ClassObjectAttr {
 sub result_class : ClassObjectAttr {
     initialize => {
         clone   => 'scalar',
-        default => 'DBI::Custom::Result'
+        default => 'DBIx::Custom::Result'
     }
 }
 
 sub sql_template : ClassObjectAttr {
     initialize => {
         clone   => sub {$_[0] ? $_[0]->clone : undef},
-        default => sub {DBI::Custom::SQL::Template->new}
+        default => sub {DBIx::Custom::SQL::Template->new}
     }
 }
 
@@ -203,7 +203,7 @@ sub create_query {
         $query = eval{$sql_template->create_query($template)};
         croak($@) if $@;
         
-        $query = DBI::Custom::Query->new($query);
+        $query = DBIx::Custom::Query->new($query);
         
         $class->_add_query_cache($template, $query);
     }
@@ -721,7 +721,7 @@ Object::Simple->build_class;
 
 =head1 NAME
 
-DBI::Custom - Customizable simple DBI
+DBIx::Custom - Customizable simple DBI
 
 =head1 VERSION
 
@@ -738,7 +738,7 @@ Please tell me bug if you find
 
 =head1 SYNOPSIS
 
-  my $dbi = DBI::Custom->new;
+  my $dbi = DBIx::Custom->new;
   
   my $query = $dbi->create_query($template);
   $dbi->execute($query);
@@ -870,7 +870,7 @@ you can get DBI database handle if you need.
     $result_class = $dbi->result_class;
     
     # Sample
-    $dbi->result_class('DBI::Custom::Result');
+    $dbi->result_class('DBIx::Custom::Result');
 
 =head2 dbh
 
@@ -885,7 +885,7 @@ you can get DBI database handle if you need.
     $self = $dbi->connect;
     
     # Sample
-    $dbi = DBI::Custom->new(user => 'taro', password => 'lji8(', 
+    $dbi = DBIx::Custom->new(user => 'taro', password => 'lji8(', 
                             data_soruce => "dbi:mysql:dbname=$database");
     $dbi->connect;
 
@@ -976,7 +976,7 @@ add_filter add filter to filters
         # do something
     }
 
-See also L<DBI::Custom::SQL::Template>
+See also L<DBIx::Custom::SQL::Template>
 
 =head2 run_tranzaction
 
@@ -1071,11 +1071,11 @@ This method is same as DBI last_insert_id;
     $query_cache_max = $class->query_cache_max;
     
     # Sample
-    DBI::Custom->query_cache_max(50);
+    DBIx::Custom->query_cache_max(50);
 
 =head1 CAUTION
 
-DBI::Custom have DIB object internal.
+DBIx::Custom have DIB object internal.
 This module is work well in the following DBI condition.
 
     1. AutoCommit is true

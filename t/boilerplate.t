@@ -46,6 +46,6 @@ sub module_boilerplate_ok {
     "placeholder date/time"       => qr(Date/time)
   );
 
-  module_boilerplate_ok('lib/DBI/Custom.pm');
+  module_boilerplate_ok('lib/DBIx/Custom.pm');
 
 

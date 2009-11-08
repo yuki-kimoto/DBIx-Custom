@@ -3,7 +3,7 @@
 use Test::More tests => 1;
 
 BEGIN {
-	use_ok( 'DBI::Custom' );
+	use_ok( 'DBIx::Custom' );
 }
 
-diag( "Testing DBI::Custom $DBI::Custom::VERSION, Perl $], $^X" );
+diag( "Testing DBIx::Custom $DBIx::Custom::VERSION, Perl $], $^X" );

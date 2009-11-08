@@ -1,10 +1,10 @@
-DBI-Custom
+DBIx-Custom
 
 Custamizable DBI
 
 INSTALLATION
 
-cpan DBI::Custom
+cpan DBIx::Custom
 
 COPYRIGHT AND LICENCE
 

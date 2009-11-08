@@ -9,10 +9,10 @@ plan skip_all => 'private MySQL test' unless $USER;
 
 plan 'no_plan';
 
-use DBI::Custom;
+use DBIx::Custom;
 use Scalar::Util 'blessed';
 {
-    my $dbi = DBI::Custom->new(
+    my $dbi = DBIx::Custom->new(
         user => $USER,
         password => $PASSWORD,
         data_source => "dbi:mysql:dbname=$DATABASE"
