@@ -211,3 +211,10 @@ $dbi = DBIx::Custom->new;
 $dbi->add_format(a => sub {1});
 is($dbi->formats->{a}->(), 1, $test);
 
+test 'filter_off';
+$dbi = DBIx::Custom->new;
+$dbi->bind_filter('a');
+$dbi->fetch_filter('b');
+$dbi->filter_off;
+ok(!$dbi->bind_filter,  "$test : bind_filter  off");
+ok(!$dbi->fetch_filter, "$test : fetch_filter off");

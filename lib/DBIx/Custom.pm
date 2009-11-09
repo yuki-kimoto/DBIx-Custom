@@ -392,25 +392,25 @@ sub _build_bind_values {
     return \@bind_values;
 }
 
-# Run tranzaction
-sub run_tranzaction {
-    my ($self, $tranzaction) = @_;
+# Run transaction
+sub run_transaction {
+    my ($self, $transaction) = @_;
     
     # Check auto commit
-    croak("AutoCommit must be true before tranzaction start")
+    croak("AutoCommit must be true before transaction start")
       unless $self->_auto_commit;
     
     # Auto commit off
     $self->_auto_commit(0);
     
-    # Run tranzaction
-    eval {$tranzaction->()};
+    # Run transaction
+    eval {$transaction->()};
     
     # Tranzaction error
-    my $tranzaction_error = $@;
+    my $transaction_error = $@;
     
     # Tranzaction is failed.
-    if ($tranzaction_error) {
+    if ($transaction_error) {
         # Rollback
         eval{$self->dbh->rollback};
         
@@ -422,11 +422,11 @@ sub run_tranzaction {
         
         if ($rollback_error) {
             # Rollback is failed
-            croak("${tranzaction_error}Rollback is failed : $rollback_error");
+            croak("${transaction_error}Rollback is failed : $rollback_error");
         }
         else {
             # Rollback is success
-            croak("${tranzaction_error}Rollback is success");
+            croak("${transaction_error}Rollback is success");
         }
     }
     # Tranzaction is success
@@ -717,6 +717,17 @@ sub _add_query_cache {
     return $class;
 }
 
+# Both bind_filter and fetch_filter off
+sub filter_off {
+    my $self = shift;
+    
+    # filter off
+    $self->bind_filter(undef);
+    $self->fetch_filter(undef);
+    
+    return $self;
+}
+
 Object::Simple->build_class;
 
 =head1 NAME
@@ -905,6 +916,16 @@ If database is already disconnected, this method do noting.
 
     # Check connected
     $dbi->connected
+    
+=head2 filter_off
+
+    # bind_filter and fitch_filter off
+    $self->filter_off;
+    
+This is equeal to
+    
+    $self->bind_filter(undef);
+    $self->fetch_filter(undef);
 
 =head2 add_filter
 
@@ -978,14 +999,14 @@ add_filter add filter to filters
 
 See also L<DBIx::Custom::SQL::Template>
 
-=head2 run_tranzaction
+=head2 run_transaction
 
-    # Run tranzaction
-    $dbi->run_tranzaction(sub {
+    # Run transaction
+    $dbi->run_transaction(sub {
         # do something
     });
 
-If tranzaction is success, commit is execute. 
+If transaction is success, commit is execute. 
 If tranzation is died, rollback is execute.
 
 =head2 insert
@@ -1086,7 +1107,7 @@ You must not change these mode not to damage your data.
 
 If you change these mode, 
 you cannot get correct error message, 
-or run_tranzaction may fail.
+or run_transaction may fail.
 
 =head1 AUTHOR
 
