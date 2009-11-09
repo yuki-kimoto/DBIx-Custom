@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple;
 
-our $VERSION = '0.0101';
+our $VERSION = '0.0201';
 
 use Carp 'croak';
 use DBI;
@@ -736,7 +736,7 @@ DBIx::Custom - Customizable simple DBI
 
 =head1 VERSION
 
-Version 0.0101
+Version 0.0201
 
 =head1 CAUTION
 
