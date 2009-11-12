@@ -12,6 +12,7 @@ my $builder = Module::Build->new(
     },
     requires => {
         'Object::Simple' => 2.0702,
+        'DBI'            => 1.605,
     },
     add_to_cleanup      => [ 'DBIx-Custom-Result-*' ],
     create_makefile_pl => 'traditional',

@@ -5,7 +5,7 @@ use warnings;
 use strict;
 use Carp 'croak';
 
-our $VERSION = '0.0101';
+our $VERSION = '0.0102';
 
 my $class = __PACKAGE__;
 
@@ -57,11 +57,11 @@ sub reconnect_memory {
 
 DBIx::Custom::SQLite - DBIx::Custom SQLite implementation
 
-=head1 VERSION
+=head1 Version
 
-Version 0.0101
+Version 0.0102
 
-=head1 SYNOPSYS
+=head1 Synopsys
 
     use DBIx::Custom::SQLite;
     
@@ -91,22 +91,25 @@ Version 0.0101
     # select author, title from books where author = 'taro' order by id limit 1;
     $dbi->select('books', [qw/author title/], {author => 'taro'},
                  'order by id limit 1');
-    
-=head1 CAUTION
 
-This module automatically encode_utf8 or decode_utf8
-If you do not want to this, you set 
-    
-    $dbi->bind_filter(undef);
-    $dbi->fetch_filter(undef);
+=head1 See DBIx::Custom and DBI::Custom::Basic documentation
 
-=head1 OBJECT METHOD
+This class is L<DBIx::Custom::Basic> subclass.
+and L<DBIx::Custom::Basic> is L<DBIx::Custom> subclass
+
+You can use all methods of L<DBIx::Custom::Basic> and <DBIx::Custom>
+Please see L<DBIx::Custom::Basic> and <DBIx::Custom> documentation
+
+=head1 Object methods
 
 =head2 connect
 
-    This method override DBIx::Custom::connect
-    
-    If database is set, automatically data source is created and connect
+This override L<DBIx::Custom> connect.
+
+    # Connect to database
+    $dbi->connect;
+
+If database attribute is set, automatically data source is created and connect
 
 =head2 connect_memory
 
@@ -118,13 +121,15 @@ If you do not want to this, you set
     # Reconnect memory database
     $self = $dbi->reconnect_memory;
 
-=head1 AUTHOR
+=head1 Author
 
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 
 Github L<http://github.com/yuki-kimoto>
 
-=head1 COPYRIGHT & LICENSE
+I develope this module L<http://github.com/yuki-kimoto/DBIx-Custom>
+
+=head1 Copyright & lisence
 
 Copyright 2009 Yuki Kimoto, all rights reserved.
 

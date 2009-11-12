@@ -3,7 +3,7 @@ use base 'DBIx::Custom::Basic';
 
 use warnings;
 use strict;
-our $VERSION = '0.0101';
+our $VERSION = '0.0102';
 
 my $class = __PACKAGE__;
 
@@ -28,11 +28,11 @@ sub connect {
 
 DBIx::Custom::MySQL - DBIx::Custom MySQL implementation
 
-=head1 VERSION
+=head1 Version
 
-Version 0.0101
+Version 0.0102
 
-=head1 SYNOPSIS
+=head1 Synopsys
 
     # New
     my $dbi = DBIx::Custom::MySQL->new(user => 'taro', $password => 'kliej&@K',
@@ -53,29 +53,31 @@ Version 0.0101
     # select * from books where ahthor = 'taro'; 
     $dbi->select('books', {author => 'taro'});
 
-=head1 CAUTION
+=head1 See DBIx::Custom and DBI::Custom::Basic documentation
 
-This module automatically encode_utf8 or decode_utf8
-If you do not want to this, you set 
-    
-    $dbi->bind_filter(undef);
-    $dbi->fetch_filter(undef);
+This class is L<DBIx::Custom::Basic> subclass,
+and L<DBIx::Custom::Basic> is L<DBIx::Custom> subclass.
 
-=head1 OBJECT METHOD
+You can use all methods of L<DBIx::Custom::Basic> and <DBIx::Custom>
+Please see L<DBIx::Custom::Basic> and <DBIx::Custom> documentation.
+
+=head1 Object methods
 
 =head2 connect
 
     This method override DBIx::Custom::connect
     
-    If database is set, automatically data source is created and connect
+    If database attribute is set, automatically data source is created and connect
 
-=head1 AUTHOR
+=head1 Author
 
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 
 Github L<http://github.com/yuki-kimoto>
 
-=head1 COPYRIGHT & LICENSE
+I develope this module L<http://github.com/yuki-kimoto/DBIx-Custom>
+
+=head1 Copyright & license
 
 Copyright 2009 Yuki Kimoto, all rights reserved.
 

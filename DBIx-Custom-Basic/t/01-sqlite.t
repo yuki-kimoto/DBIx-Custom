@@ -58,5 +58,10 @@ is($dbi->fetch_filter, $dbi->filters->{decode_utf8}, 'default fetch filter');
 
 $decoded_str = 'あ';
 $encoded_str = $dbi->bind_filter->($decoded_str);
-is($encoded_str, encode('UTF-8', $decoded_str), 'encode utf8');
-is($decoded_str, $dbi->fetch_filter->('', $encoded_str), "$test : fetch_filter");
+is($encoded_str, encode('UTF-8', $decoded_str), "$test : encode utf8");
+is($decoded_str, $dbi->fetch_filter->($encoded_str), "$test : fetch_filter");
+
+$decoded_str = 'a';
+$encoded_str = $dbi->bind_filter->($decoded_str);
+is($encoded_str, encode('UTF-8', $decoded_str), "$test : upgrade and encode utf8");
+is($decoded_str, $dbi->fetch_filter->($encoded_str), "$test : fetch_filter");

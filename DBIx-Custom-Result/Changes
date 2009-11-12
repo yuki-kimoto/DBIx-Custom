@@ -1,2 +1,6 @@
+0.0202
+  add build requires 'DBI'
+0.0201
+  Exchange filter argument 'key', 'value' (not backword compatible)
 0.0101
   First release

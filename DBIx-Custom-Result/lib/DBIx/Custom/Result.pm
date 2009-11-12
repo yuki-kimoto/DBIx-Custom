@@ -1,7 +1,7 @@
 package DBIx::Custom::Result;
 use Object::Simple;
 
-our $VERSION = '0.0201';
+our $VERSION = '0.0202';
 
 use Carp 'croak';
 
@@ -198,7 +198,7 @@ DBIx::Custom::Result - Resultset for DBIx::Custom
 
 =head1 VERSION
 
-Version 0.0201
+Version 0.0202
 
 =head1 SYNOPSIS
 

@@ -1,2 +1,8 @@
+0.0201
+  delete default_bind_filter
+  delete default_fetch_filter
+  add filter encode_utf8
+  add filter decode_utf8
+  add method utf8_filter_on
 0.0101
   First release
