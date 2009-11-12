@@ -1,0 +1,15 @@
+DBIx-Custom-SQL-Template
+
+SQL Template for DBIx::Custom
+
+INSTALLATION
+
+cpan DBIx::Custom::SQL::Template
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2009 Yuki Kimoto
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+

@@ -1,0 +1,15 @@
+DBIx-Custom-Basic
+
+DBIx::Custom basic implementation
+
+INSTALLATION
+
+cpan DBIx::Custom::Basic
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2009 Yuki Kimoto
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+

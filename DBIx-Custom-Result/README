@@ -1,0 +1,15 @@
+DBIx-Custom-Result
+
+Resultset for DBIx::Custom
+
+INSTALLATION
+
+cpan DBIx::Custom::Result
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2009 Yuki Kimoto
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
