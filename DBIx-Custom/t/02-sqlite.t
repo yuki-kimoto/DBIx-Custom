@@ -163,7 +163,7 @@ $insert_tmpl = "insert into table1 {insert key1 key2}";
 $dbi->execute($insert_tmpl, {key1 => 1, key2 => 2}, sub {
     my $query = shift;
     $query->bind_filter(sub {
-        my ($key, $value) = @_;
+        my ($value, $key) = @_;
         if ($key eq 'key2') {
             return $value + 1;
         }
@@ -182,7 +182,7 @@ $dbi->do($CREATE_TABLE->{0});
 $insert_tmpl  = "insert into table1 {insert key1 key2};";
 $insert_query = $dbi->create_query($insert_tmpl);
 $insert_query->bind_filter(sub {
-    my ($key, $value, $table, $column) = @_;
+    my ($value, $key, $table, $column) = @_;
     if ($key eq 'key1' && $table eq '' && $column eq 'key1') {
         return $value * 2;
     }
@@ -191,7 +191,7 @@ $insert_query->bind_filter(sub {
 $dbi->execute($insert_query, {key1 => 1, key2 => 2});
 $select_query = $dbi->create_query($SELECT_TMPL->{0});
 $select_query->fetch_filter(sub {
-    my ($key, $value, $type, $sth, $i) = @_;
+    my ($value, $key, $type, $sth, $i) = @_;
     if ($key eq 'key2' && $type =~ /char/ && $sth->can('execute') && $i == 1) {
         return $value * 3;
     }
@@ -214,7 +214,7 @@ $dbi->do($CREATE_TABLE->{0});
 $insert_tmpl  = "insert into table1 {insert table1.key1 table1.key2}";
 $insert_query = $dbi->create_query($insert_tmpl);
 $insert_query->bind_filter(sub {
-    my ($key, $value, $table, $column) = @_;
+    my ($value, $key, $table, $column) = @_;
     if ($key eq 'table1.key1' && $table eq 'table1' && $column eq 'key1') {
         return $value * 3;
     }
@@ -233,7 +233,7 @@ $dbi->execute($insert_query, {key1 => 2, key2 => 4});
 $select_tmpl = "select * from table1 where {in table1.key1 2} and {in table1.key2 2}";
 $select_query = $dbi->create_query($select_tmpl);
 $select_query->bind_filter(sub {
-    my ($key, $value, $table, $column) = @_;
+    my ($value, $key, $table, $column) = @_;
     if ($key eq 'table1.key1' && $table eq 'table1' && $column eq 'key1' || $key eq 'table1.key2') {
         return $value * 2;
     }
@@ -484,7 +484,7 @@ $dbi->do('delete from table1');
 $dbi->insert('table1', {key1 => 1, key2 => 2}, sub {
     my $query = shift;
     $query->bind_filter(sub {
-        my ($key, $value) = @_;
+        my ($value, $key) = @_;
         if ($key eq 'key1') {
             return $value * 3;
         }
@@ -532,7 +532,7 @@ $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10})
 $dbi->update('table1', {key2 => 11}, {key1 => 1}, sub {
     my $query = shift;
     $query->bind_filter(sub {
-        my ($key, $value) = @_;
+        my ($value, $key) = @_;
         if ($key eq 'key2') {
             return $value * 2;
         }
@@ -570,7 +570,7 @@ $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10})
 $dbi->update_all('table1', {key2 => 10}, sub {
     my $query = shift;
     $query->bind_filter(sub {
-        my ($key, $value) = @_;
+        my ($value, $key) = @_;
         return $value * 2;
     })
 });
@@ -597,7 +597,7 @@ $dbi->insert('table1', {key1 => 3, key2 => 4});
 $dbi->delete('table1', {key2 => 1}, sub {
     my $query = shift;
     $query->bind_filter(sub {
-        my ($key, $value) = @_;
+        my ($value, $key) = @_;
         return $value * 2;
     });
 });
@@ -660,7 +660,7 @@ is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : append statement");
 $rows = $dbi->select('table1', {key1 => 2}, sub {
     my $query = shift;
     $query->bind_filter(sub {
-        my ($key, $value) = @_;
+        my ($value, $key) = @_;
         if ($key eq 'key1') {
             return $value - 1;
         }

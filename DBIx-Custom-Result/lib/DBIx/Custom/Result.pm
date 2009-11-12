@@ -1,7 +1,7 @@
 package DBIx::Custom::Result;
 use Object::Simple;
 
-our $VERSION = '0.0101';
+our $VERSION = '0.0201';
 
 use Carp 'croak';
 
@@ -34,7 +34,7 @@ sub fetch {
         my $types = $sth->{TYPE};
         for (my $i = 0; $i < @$keys; $i++) {
             next if $self->_no_fetch_filters_map->{$keys->[$i]};
-            $row->[$i]= $fetch_filter->($keys->[$i], $row->[$i], $types->[$i],
+            $row->[$i]= $fetch_filter->($row->[$i], $keys->[$i], $types->[$i],
                                         $sth, $i);
         }
     }
@@ -66,7 +66,7 @@ sub fetch_hash {
             }
             else {
                 $row_hash->{$keys->[$i]}
-                  = $fetch_filter->($keys->[$i], $row->[$i],
+                  = $fetch_filter->($row->[$i], $keys->[$i],
                                     $types->[$i], $sth, $i);
             }
         }
@@ -198,7 +198,7 @@ DBIx::Custom::Result - Resultset for DBIx::Custom
 
 =head1 VERSION
 
-Version 0.0101
+Version 0.0201
 
 =head1 SYNOPSIS
 

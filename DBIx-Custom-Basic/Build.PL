@@ -11,6 +11,7 @@ my $builder = Module::Build->new(
         'Test::More' => 0,
     },
     requires => {
+        'Encode'       => 0,
         'DBIx::Custom' => 0.0101
     },
     recommends => {

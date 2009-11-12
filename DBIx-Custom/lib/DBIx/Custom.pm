@@ -323,8 +323,8 @@ sub _build_bind_values {
                             !$no_bind_filters_map->{$original_key})
                         {
                             push @bind_values, 
-                                 $bind_filter->($original_key, 
-                                                $root_params->[$current_key->[0]],
+                                 $bind_filter->($root_params->[$current_key->[0]], 
+                                                $original_key,
                                                 $table, $column);
                         }
                         # Not filtering
@@ -344,8 +344,8 @@ sub _build_bind_values {
                             !$no_bind_filters_map->{$original_key}) 
                         {
                             push @bind_values,
-                                 $bind_filter->($original_key,
-                                                $root_params->{$current_key}, 
+                                 $bind_filter->($root_params->{$current_key},
+                                                $original_key,
                                                 $table, $column);
                         }
                         # Not filtering

@@ -49,12 +49,14 @@ use DBIx::Custom::Basic;
 
 test 'Filter';
 $dbi = DBIx::Custom::Basic->new($NEW_ARGS->{0});
-ok($dbi->filters->{default_bind_filter}, "$test : exists default_bind_filter");
-ok($dbi->filters->{default_fetch_filter}, "$test : exists default_fetch_filter");
-is($dbi->bind_filter, $dbi->filters->{default_bind_filter}, 'default bind filter');
-is($dbi->fetch_filter, $dbi->filters->{default_fetch_filter}, 'default fetch filter');
+ok($dbi->filters->{encode_utf8}, "$test : exists default_bind_filter");
+ok($dbi->filters->{decode_utf8}, "$test : exists default_fetch_filter");
+
+$dbi->utf8_filter_on;
+is($dbi->bind_filter, $dbi->filters->{encode_utf8}, 'default bind filter');
+is($dbi->fetch_filter, $dbi->filters->{decode_utf8}, 'default fetch filter');
 
 $decoded_str = 'あ';
-$encoded_str = $dbi->bind_filter->('', $decoded_str);
+$encoded_str = $dbi->bind_filter->($decoded_str);
 is($encoded_str, encode('UTF-8', $decoded_str), 'encode utf8');
 is($decoded_str, $dbi->fetch_filter->('', $encoded_str), "$test : fetch_filter");
