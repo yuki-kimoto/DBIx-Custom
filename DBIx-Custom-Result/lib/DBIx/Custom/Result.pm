@@ -1,9 +1,10 @@
 package DBIx::Custom::Result;
 use Object::Simple;
-
-our $VERSION = '0.0202';
-
+use strict;
+use warnings;
 use Carp 'croak';
+
+our $VERSION = '0.0301';
 
 # Attributes
 sub sth              : Attr {}
@@ -98,7 +99,7 @@ sub fetch_first {
 }
 
 # Fetch only first (hash)
-sub fetch_first_hash {
+sub fetch_hash_first {
     my $self = shift;
     
     # Fetch hash
@@ -136,7 +137,7 @@ sub fetch_rows {
 }
 
 # Fetch multi rows (hash)
-sub fetch_rows_hash {
+sub fetch_hash_rows {
     my ($self, $count) = @_;
     
     # Not specified Row count
@@ -170,7 +171,7 @@ sub fetch_all {
 }
 
 # Fetch all (hash)
-sub fetch_all_hash {
+sub fetch_hash_all {
     my $self = shift;
     
     my $rows = [];
@@ -198,7 +199,7 @@ DBIx::Custom::Result - Resultset for DBIx::Custom
 
 =head1 VERSION
 
-Version 0.0202
+Version 0.0301
 
 =head1 SYNOPSIS
 
@@ -284,13 +285,13 @@ fetch_hash method is fetch resultset and get row as hash or hash reference.
     
 This method fetch only first and finish statement handle
 
-=head2 fetch_first_hash
+=head2 fetch_hash_first
     
     # Fetch only first as hash (Scalar context)
-    $row = $result->fetch_first_hash;
+    $row = $result->fetch_hash_first;
     
     # Fetch only first as hash (Scalar context)
-    @row = $result->fetch_first_hash;
+    @row = $result->fetch_hash_first;
     
 This method fetch only first and finish statement handle
 
@@ -305,16 +306,16 @@ This method fetch only first and finish statement handle
     # Sapmle 
     $rows = $result->fetch_rows(10);
 
-=head2 fetch_rows_hash
+=head2 fetch_hash_rows
 
     # Fetch multi rows as hash (Scalar context)
-    $rows = $result->fetch_rows_hash($row_count);
+    $rows = $result->fetch_hash_rows($row_count);
     
     # Fetch multi rows as hash (List context)
-    @rows = $result->fetch_rows_hash($row_count);
+    @rows = $result->fetch_hash_rows($row_count);
     
     # Sapmle 
-    $rows = $result->fetch_rows_hash(10);
+    $rows = $result->fetch_hash_rows(10);
 
 =head2 fetch_all
 
@@ -331,16 +332,16 @@ This method fetch only first and finish statement handle
 
 fetch_all method is fetch resultset and get all rows as array or array reference.
 
-=head2 fetch_all_hash
+=head2 fetch_hash_all
 
     # Fetch all row as array ref of hash ref (Scalar context)
-    $rows = $result->fetch_all_hash;
+    $rows = $result->fetch_hash_all;
     
     # Fetch all row as array of hash ref (List context)
     @rows = $result->fecth_all_hash;
 
     # Sample
-    my $rows = $result->fetch_all_hash;
+    my $rows = $result->fetch_hash_all;
     my $val0_key1 = $rows->[0]{key1};
     my $val1_key2 = $rows->[1]{key2};
 

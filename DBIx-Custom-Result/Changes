@@ -1,3 +1,7 @@
+0.0301
+  rename fetch_all_hash to fetch_hash_all (not backword compatible)
+  rename fetch_rows_hash to fetch_hash_rows (not backword compatible)
+  rename fetch_first_hash to fetch_hash_first (not backword compatible)
 0.0202
   add build requires 'DBI'
 0.0201

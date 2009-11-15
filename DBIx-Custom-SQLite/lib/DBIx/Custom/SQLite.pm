@@ -5,7 +5,7 @@ use warnings;
 use strict;
 use Carp 'croak';
 
-our $VERSION = '0.0102';
+our $VERSION = '0.0201';
 
 my $class = __PACKAGE__;
 
@@ -59,7 +59,7 @@ DBIx::Custom::SQLite - DBIx::Custom SQLite implementation
 
 =head1 Version
 
-Version 0.0102
+Version 0.0201
 
 =head1 Synopsys
 

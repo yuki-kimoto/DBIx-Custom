@@ -95,17 +95,17 @@ is_deeply([@row], [1, 2], "$test : row");
 ok(!@row, "$test : finished");
 
 
-test 'fetch_first_hash';
+test 'fetch_hash_first';
 $result = query($dbh, $sql);
-$row = $result->fetch_first_hash;
+$row = $result->fetch_hash_first;
 is_deeply($row, {key1 => 1, key2 => 2}, "$test : row");
 $row = $result->fetch_hash;
 ok(!$row, "$test : finished");
 
 
-test 'fetch_first_hash list context';
+test 'fetch_hash_first list context';
 $result = query($dbh, $sql);
-@row = $result->fetch_first_hash;
+@row = $result->fetch_hash_first;
 is_deeply({@row}, {key1 => 1, key2 => 2}, "$test : row");
 @row = $result->fetch_hash;
 ok(!@row, "$test : finished");
@@ -148,38 +148,38 @@ eval {$result->fetch_rows};
 like($@, qr/Row count must be specified/, "$test : Not specified row count");
 
 
-test 'fetch_rows_hash';
+test 'fetch_hash_rows';
 $result = query($dbh, $sql);
-$rows = $result->fetch_rows_hash(2);
+$rows = $result->fetch_hash_rows(2);
 is_deeply($rows, [{key1 => 1, key2 => 2},
                   {key1 => 3, key2 => 4}], "$test : fetch_rows first");
-$rows = $result->fetch_rows_hash(2);
+$rows = $result->fetch_hash_rows(2);
 is_deeply($rows, [{key1 => 5, key2 => 6},
                   {key1 => 7, key2 => 8}], "$test : fetch_rows secound");
-$rows = $result->fetch_rows_hash(2);
+$rows = $result->fetch_hash_rows(2);
 is_deeply($rows, [{key1 => 9, key2 => 10}], "$test : fetch_rows third");
-$rows = $result->fetch_rows_hash(2);
+$rows = $result->fetch_hash_rows(2);
 ok(!$rows);
 
 
 test 'fetch_rows list context';
 $result = query($dbh, $sql);
-@rows = $result->fetch_rows_hash(2);
+@rows = $result->fetch_hash_rows(2);
 is_deeply([@rows], [{key1 => 1, key2 => 2},
                     {key1 => 3, key2 => 4}], "$test : fetch_rows first");
-@rows = $result->fetch_rows_hash(2);
+@rows = $result->fetch_hash_rows(2);
 is_deeply([@rows], [{key1 => 5, key2 => 6},
                     {key1 => 7, key2 => 8}], "$test : fetch_rows secound");
-@rows = $result->fetch_rows_hash(2);
+@rows = $result->fetch_hash_rows(2);
 is_deeply([@rows], [{key1 => 9, key2 => 10}], "$test : fetch_rows third");
-@rows = $result->fetch_rows_hash(2);
+@rows = $result->fetch_hash_rows(2);
 ok(!@rows);
 $dbh->do("delete from table1 where key1 = 5 or key1 = 7 or key1 = 9");
 
 
 test 'fetch_rows error';
 $result = query($dbh, $sql);
-eval {$result->fetch_rows_hash};
+eval {$result->fetch_hash_rows};
 like($@, qr/Row count must be specified/, "$test : Not specified row count");
 
 
@@ -194,13 +194,13 @@ $result = query($dbh, $sql);
 is_deeply(\@rows, [[1, 2], [3, 4]], $test);
 
 
-test 'fetch_all_hash';
+test 'fetch_hash_all';
 $result = query($dbh, $sql);
-@rows = $result->fetch_all_hash;
+@rows = $result->fetch_hash_all;
 is_deeply($rows, [[1, 2], [3, 4]], $test);
 
 
-test 'fetch_all_hash list context';
+test 'fetch_hash_all list context';
 $result = query($dbh, $sql);
 @rows = $result->fetch_all;
 is_deeply(\@rows, [[1, 2], [3, 4]], $test);
@@ -222,7 +222,7 @@ is_deeply($rows, [[3, 2], [3, 4]], "$test array");
 
 $result = query($dbh, $sql);
 $result->fetch_filter($fetch_filter);
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 2}, {key1 => 3, key2 => 4}], "$test hash");
 
 $result = query($dbh, $sql);
@@ -232,7 +232,7 @@ is_deeply($rows, [[1, 2], [3, 4]], "$test array no filter keys");
 
 $result = query($dbh, $sql);
 $result->no_fetch_filters(['key1']);
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test hash no filter keys");
 
 

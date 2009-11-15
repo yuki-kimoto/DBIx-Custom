@@ -139,12 +139,12 @@ $result = $dbi->execute($query);
 is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch_all list context");
 
 $result = $dbi->execute($query);
-@rows = $result->fetch_all_hash;
-is_deeply($rows, [[1, 2], [3, 4]], "$test : fetch_all_hash scalar context");
+@rows = $result->fetch_hash_all;
+is_deeply($rows, [[1, 2], [3, 4]], "$test : fetch_hash_all scalar context");
 
 $result = $dbi->execute($query);
 @rows = $result->fetch_all;
-is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch_all_hash list context");
+is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch_hash_all list context");
 
 
 test 'Insert query return value';
@@ -171,7 +171,7 @@ $dbi->execute($insert_tmpl, {key1 => 1, key2 => 2}, sub {
     });
 });
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 3}], $test);
 
 
@@ -198,7 +198,7 @@ $select_query->fetch_filter(sub {
     return $value;
 });
 $result = $dbi->execute($select_query);
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 2, key2 => 6}], "$test : bind_filter fetch_filter");
 
 $dbi->do("delete from table1;");
@@ -206,7 +206,7 @@ $insert_query->no_bind_filters('key1');
 $select_query->no_fetch_filters('key2');
 $dbi->execute($insert_query, {key1 => 1, key2 => 2});
 $result = $dbi->execute($select_query);
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : no_fetch_filters no_bind_filters");
 
 $dbi->do($DROP_TABLE->{0});
@@ -223,7 +223,7 @@ $insert_query->bind_filter(sub {
 $dbi->execute($insert_query, {table1 => {key1 => 1, key2 => 2}});
 $select_query = $dbi->create_query($SELECT_TMPL->{0});
 $result       = $dbi->execute($select_query);
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 2}], "$test : insert with table name");
 
 test 'Filter in';
@@ -240,7 +240,7 @@ $select_query->bind_filter(sub {
     return $value;
 });
 $result = $dbi->execute($select_query, {table1 => {key1 => [1,5], key2 => [2,5]}});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 2, key2 => 4}], "$test : bind_filter");
 
 
@@ -254,37 +254,37 @@ $sth->execute(6, 7, 8, 9, 10);
 $tmpl = "select * from table1 where {= key1} and {<> key2} and {< key3} and {> key4} and {>= key5};";
 $query = $dbi->create_query($tmpl);
 $result = $dbi->execute($query, {key1 => 1, key2 => 3, key3 => 4, key4 => 3, key5 => 5});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag1");
 
 $tmpl = "select * from table1 where {= table1.key1} and {<> table1.key2} and {< table1.key3} and {> table1.key4} and {>= table1.key5};";
 $query = $dbi->create_query($tmpl);
 $result = $dbi->execute($query, {table1 => {key1 => 1, key2 => 3, key3 => 4, key4 => 3, key5 => 5}});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag1 with table");
 
 $tmpl = "select * from table1 where {= table1.key1} and {<> table1.key2} and {< table1.key3} and {> table1.key4} and {>= table1.key5};";
 $query = $dbi->create_query($tmpl);
 $result = $dbi->execute($query, {'table1.key1' => 1, 'table1.key2' => 3, 'table1.key3' => 4, 'table1.key4' => 3, 'table1.key5' => 5});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag1 with table dot");
 
 $tmpl = "select * from table1 where {<= key1} and {like key2};";
 $query = $dbi->create_query($tmpl);
 $result = $dbi->execute($query, {key1 => 1, key2 => '%2%'});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag2");
 
 $tmpl = "select * from table1 where {<= table1.key1} and {like table1.key2};";
 $query = $dbi->create_query($tmpl);
 $result = $dbi->execute($query, {table1 => {key1 => 1, key2 => '%2%'}});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag2 with table");
 
 $tmpl = "select * from table1 where {<= table1.key1} and {like table1.key2};";
 $query = $dbi->create_query($tmpl);
 $result = $dbi->execute($query, {'table1.key1' => 1, 'table1.key2' => '%2%'});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag2 with table dot");
 
 
@@ -298,19 +298,19 @@ $sth->execute(6, 7, 8, 9, 10);
 $tmpl = "select * from table1 where {in key1 2};";
 $query = $dbi->create_query($tmpl);
 $result = $dbi->execute($query, {key1 => [9, 1]});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic");
 
 $tmpl = "select * from table1 where {in table1.key1 2};";
 $query = $dbi->create_query($tmpl);
 $result = $dbi->execute($query, {table1 => {key1 => [9, 1]}});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : with table");
 
 $tmpl = "select * from table1 where {in table1.key1 2};";
 $query = $dbi->create_query($tmpl);
 $result = $dbi->execute($query, {'table1.key1' => [9, 1]});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : with table dot");
 
 
@@ -320,39 +320,39 @@ $insert_tmpl = 'insert into table1 {insert key1 key2 key3 key4 key5}';
 $dbi->execute($insert_tmpl, {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic");
 
 $dbi->do("delete from table1");
 $dbi->execute($insert_tmpl, {'#insert' => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : #insert");
 
 $dbi->do("delete from table1");
 $insert_tmpl = 'insert into table1 {insert table1.key1 table1.key2 table1.key3 table1.key4 table1.key5}';
 $dbi->execute($insert_tmpl, {table1 => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : with table name");
 
 $dbi->do("delete from table1");
 $insert_tmpl = 'insert into table1 {insert table1.key1 table1.key2 table1.key3 table1.key4 table1.key5}';
 $dbi->execute($insert_tmpl, {'table1.key1' => 1, 'table1.key2' => 2, 'table1.key3' => 3, 'table1.key4' => 4, 'table1.key5' => 5});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : with table name dot");
 
 $dbi->do("delete from table1");
 $dbi->execute($insert_tmpl, {'#insert' => {table1 => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}}});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : #insert with table name");
 
 $dbi->do("delete from table1");
 $dbi->execute($insert_tmpl, {'#insert' => {'table1.key1' => 1, 'table1.key2' => 2, 'table1.key3' => 3, 'table1.key4' => 4, 'table1.key5' => 5}});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : #insert with table name dot");
 
 
@@ -366,39 +366,39 @@ $update_tmpl = 'update table1 {update key1 key2 key3 key4} where {= key5}';
 $dbi->execute($update_tmpl, {key1 => 1, key2 => 1, key3 => 1, key4 => 1, key5 => 5});
 
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 1, key3 => 1, key4 => 1, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test : basic");
 
 $dbi->execute($update_tmpl, {'#update' => {key1 => 2, key2 => 2, key3 => 2, key4 => 2}, key5 => 5});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 2, key2 => 2, key3 => 2, key4 => 2, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test : #update");
 
 $update_tmpl = 'update table1 {update table1.key1 table1.key2 table1.key3 table1.key4} where {= table1.key5}';
 $dbi->execute($update_tmpl, {table1 => {key1 => 3, key2 => 3, key3 => 3, key4 => 3, key5 => 5}});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 3, key3 => 3, key4 => 3, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test : with table name");
 
 $update_tmpl = 'update table1 {update table1.key1 table1.key2 table1.key3 table1.key4} where {= table1.key5}';
 $dbi->execute($update_tmpl, {'table1.key1' => 4, 'table1.key2' => 4, 'table1.key3' => 4, 'table1.key4' => 4, 'table1.key5' => 5});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 4, key2 => 4, key3 => 4, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test : with table name dot");
 
 $dbi->execute($update_tmpl, {'#update' => {table1 => {key1 => 5, key2 => 5, key3 => 5, key4 => 5}}, table1 => {key5 => 5}});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 5, key2 => 5, key3 => 5, key4 => 5, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test : update tag #update with table name");
 
 $dbi->execute($update_tmpl, {'#update' => {'table1.key1' => 6, 'table1.key2' => 6, 'table1.key3' => 6, 'table1.key4' => 6}, 'table1.key5' => 5});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows = $result->fetch_all_hash;
+$rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 6, key2 => 6, key3 => 6, key4 => 6, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test : update tag #update with table name dot");
 
@@ -412,7 +412,7 @@ $dbi->run_transaction(sub {
     $dbi->execute($insert_tmpl, {key1 => 3, key2 => 4});
 });
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows   = $result->fetch_all_hash;
+$rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : commit");
 
 $dbi->do($DROP_TABLE->{0});
@@ -429,7 +429,7 @@ eval{
 like($@, qr/Fatal Error.*Rollback is success/ms, "$test : Rollback success message");
 ok(!$dbi->dbh->{RaiseError}, "$test : restore RaiseError value");
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows   = $result->fetch_all_hash;
+$rows   = $result->fetch_hash_all;
 is_deeply($rows, [], "$test : rollback");
 
 
@@ -477,7 +477,7 @@ $dbi->do($CREATE_TABLE->{0});
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows   = $result->fetch_all_hash;
+$rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : basic");
 
 $dbi->do('delete from table1');
@@ -492,7 +492,7 @@ $dbi->insert('table1', {key1 => 1, key2 => 2}, sub {
     });
 });
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows   = $result->fetch_all_hash;
+$rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 2}], "$test : edit_query_callback");
 
 
@@ -511,7 +511,7 @@ $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 $dbi->update('table1', {key2 => 11}, {key1 => 1});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows   = $result->fetch_all_hash;
+$rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "$test : basic");
@@ -521,7 +521,7 @@ $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 $dbi->update('table1', {key2 => 12}, {key2 => 2, key3 => 3});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows   = $result->fetch_all_hash;
+$rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 12, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "$test : update key same as search key");
@@ -540,7 +540,7 @@ $dbi->update('table1', {key2 => 11}, {key1 => 1}, sub {
     });
 });
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows   = $result->fetch_all_hash;
+$rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 22, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "$test : query edit callback");
@@ -575,7 +575,7 @@ $dbi->update_all('table1', {key2 => 10}, sub {
     })
 });
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows   = $result->fetch_all_hash;
+$rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 20, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 20, key3 => 8, key4 => 9, key5 => 10}],
                   "$test : query edit callback");
@@ -588,7 +588,7 @@ $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
 $dbi->delete('table1', {key1 => 1});
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows   = $result->fetch_all_hash;
+$rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : basic");
 
 $dbi->do("delete from table1;");
@@ -602,14 +602,14 @@ $dbi->delete('table1', {key2 => 1}, sub {
     });
 });
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows   = $result->fetch_all_hash;
+$rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : query edit callback");
 
 $dbi->delete_all('table1');
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
 $dbi->delete('table1', {key1 => 1, key2 => 2});
-$rows = $dbi->select('table1')->fetch_all_hash;
+$rows = $dbi->select('table1')->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : delete multi key");
 
 
@@ -632,7 +632,7 @@ $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
 $dbi->delete_all('table1');
 $result = $dbi->execute($SELECT_TMPL->{0});
-$rows   = $result->fetch_all_hash;
+$rows   = $result->fetch_hash_all;
 is_deeply($rows, [], "$test : basic");
 
 
@@ -641,20 +641,20 @@ $dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{0});
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
-$rows = $dbi->select('table1')->fetch_all_hash;
+$rows = $dbi->select('table1')->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2},
                   {key1 => 3, key2 => 4}], "$test : table");
 
-$rows = $dbi->select('table1', ['key1'])->fetch_all_hash;
+$rows = $dbi->select('table1', ['key1'])->fetch_hash_all;
 is_deeply($rows, [{key1 => 1}, {key1 => 3}], "$test : table and columns and where key");
 
-$rows = $dbi->select('table1', {key1 => 1})->fetch_all_hash;
+$rows = $dbi->select('table1', {key1 => 1})->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : table and columns and where key");
 
-$rows = $dbi->select('table1', ['key1'], {key1 => 3})->fetch_all_hash;
+$rows = $dbi->select('table1', ['key1'], {key1 => 3})->fetch_hash_all;
 is_deeply($rows, [{key1 => 3}], "$test : table and columns and where key");
 
-$rows = $dbi->select('table1', "order by key1 desc limit 1")->fetch_all_hash;
+$rows = $dbi->select('table1', "order by key1 desc limit 1")->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : append statement");
 
 $rows = $dbi->select('table1', {key1 => 2}, sub {
@@ -666,7 +666,7 @@ $rows = $dbi->select('table1', {key1 => 2}, sub {
         }
         return $value;
     });
-})->fetch_all_hash;
+})->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : query edit call back");
 
 $dbi->do($CREATE_TABLE->{2});
@@ -674,7 +674,7 @@ $dbi->insert('table2', {key1 => 1, key3 => 5});
 $rows = $dbi->select([qw/table1 table2/],
                      ['table1.key1 as table1_key1', 'table2.key1 as table2_key1', 'key2', 'key3'],
                      {'table1.key2' => 2},
-                     "where table1.key1 = table2.key1")->fetch_all_hash;
+                     "where table1.key1 = table2.key1")->fetch_hash_all;
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "$test : join");
 
 test 'Cache';
