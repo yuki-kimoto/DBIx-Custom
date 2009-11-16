@@ -454,9 +454,11 @@ sub last_insert_id {
 
 # Insert
 sub insert {
-    my ($self, $table, $insert_params, $query_edit_cb) = @_;
-    $table         ||= '';
-    $insert_params ||= {};
+    my $self             = shift;
+    my $table            = shift || '';
+    my $insert_params    = shift || {};
+    my $append_statement = shift unless ref $_[0];
+    my $query_edit_cb    = shift;
     
     # Insert keys
     my @insert_keys = keys %$insert_params;
@@ -467,7 +469,7 @@ sub insert {
     
     # Templte for insert
     my $template = "insert into $table {insert " . join(' ', @insert_keys) . '}';
-    
+    $template .= " $append_statement" if $append_statement;
     # Create query
     my $query = $self->create_query($template);
     
@@ -486,12 +488,13 @@ sub insert {
 
 # Update
 sub update {
-    my ($self, $table, $update_params,
-        $where_params, $query_edit_cb, $options) = @_;
-    
-    $table         ||= '';
-    $update_params ||= {};
-    $where_params  ||= {};
+    my $self             = shift;
+    my $table            = shift || '';
+    my $update_params    = shift || {};
+    my $where_params     = shift || {};
+    my $append_statement = shift unless ref $_[0];
+    my $query_edit_cb    = shift;
+    my $options          = shift;
     
     # Update keys
     my @update_keys = keys %$update_params;
@@ -522,6 +525,7 @@ sub update {
     
     # Template for update
     my $template = "update $table $update_clause $where_clause";
+    $template .= " $append_statement" if $append_statement;
     
     # Create query
     my $query = $self->create_query($template);
@@ -544,17 +548,25 @@ sub update {
 
 # Update all rows
 sub update_all {
-    my ($self, $table, $update_params, $query_edit_cb) = @_;
+    my $self             = shift;
+    my $table            = shift || '';
+    my $update_params    = shift || {};
+    my $append_statement = shift unless ref $_[0];
+    my $query_edit_cb    = shift;
+    my $options          = {allow_update_all => 1};
     
-    return $self->update($table, $update_params, {}, $query_edit_cb,
-                         {allow_update_all => 1});
+    return $self->update($table, $update_params, {}, $append_statement,
+                         $query_edit_cb, $options);
 }
 
 # Delete
 sub delete {
-    my ($self, $table, $where_params, $query_edit_cb, $options) = @_;
-    $table        ||= '';
-    $where_params ||= {};
+    my $self             = shift;
+    my $table            = shift || '';
+    my $where_params     = shift || {};
+    my $append_statement = shift unless ref $_[0];
+    my $query_edit_cb    = shift;
+    my $options          = shift;
     
     # Where keys
     my @where_keys = keys %$where_params;
@@ -575,6 +587,7 @@ sub delete {
     
     # Template for delete
     my $template = "delete from $table $where_clause";
+    $template .= " $append_statement" if $append_statement;
     
     # Create query
     my $query = $self->create_query($template);
@@ -594,8 +607,14 @@ sub delete {
 
 # Delete all rows
 sub delete_all {
-    my ($self, $table) = @_;
-    return $self->delete($table, {}, undef, {allow_delete_all => 1});
+    my $self             = shift;
+    my $table            = shift || '';
+    my $append_statement = shift unless ref $_[0];
+    my $query_edit_cb    = shift;
+    my $options          = {allow_delete_all => 1};
+    
+    return $self->delete($table, {}, $append_statement, $query_edit_cb,
+                         $options);
 }
 
 sub _select_usage { return << 'EOS' }

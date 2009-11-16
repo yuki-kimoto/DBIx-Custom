@@ -495,12 +495,17 @@ $result = $dbi->execute($SELECT_TMPL->{0});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 2}], "$test : edit_query_callback");
 
+$dbi->insert('table1', {key1 => 1, key2 => 2}, '   ', sub {
+    my $query = shift;
+    like($query->sql, qr/insert into table1 \(.+\) values \(\?, \?\)    ;/, 
+        "$test: append statement");
+});
 
 test 'insert error';
 eval{$dbi->insert('table1')};
 like($@, qr/Key-value pairs for insert must be specified to 'insert' second argument/, "$test : insert key-value not specifed");
 
-eval{$dbi->insert('table1', {key1 => 1, key2 => 2}, 'aaa')};
+eval{$dbi->insert('table1', {key1 => 1, key2 => 2}, '', 'aaa')};
 like($@, qr/Query edit callback must be code reference/, "$test : query edit callback not code ref");
 
 
@@ -545,6 +550,12 @@ is_deeply($rows, [{key1 => 1, key2 => 22, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "$test : query edit callback");
 
+$dbi->update('table1', {key2 => 11}, {key1 => 1}, '   ', sub {
+    my $query = shift;
+    is($query->sql, 'update table1 set key2 = ? where key1 = ?    ;',
+       "$test: append statement");
+});
+
 
 test 'update error';
 $dbi = DBIx::Custom->new($NEW_ARGS->{0});
@@ -557,7 +568,7 @@ eval{$dbi->update('table1', {key2 => 1})};
 like($@, qr/Key-value pairs for where clause must be specified to 'update' third argument/,
          "$test : where key-value pairs not specified");
 
-eval{$dbi->update('table1', {key2 => 1}, {key2 => 3}, 'aaa')};
+eval{$dbi->update('table1', {key2 => 1}, {key2 => 3}, '', 'aaa')};
 like($@, qr/Query edit callback must be code reference/, 
          "$test : query edit callback not code reference");
 
@@ -605,6 +616,13 @@ $result = $dbi->execute($SELECT_TMPL->{0});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : query edit callback");
 
+$dbi->delete('table1', {key1 => 1}, '   ', sub {
+    my $query = shift;
+    is($query->sql, 'delete from table1 where key1 = ?    ;',
+       "$test: append statement");
+});
+
+
 $dbi->delete_all('table1');
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
@@ -620,7 +638,7 @@ eval{$dbi->delete('table1')};
 like($@, qr/Key-value pairs for where clause must be specified to 'delete' second argument/,
          "$test : where key-value pairs not specified");
 
-eval{$dbi->delete('table1', {key1 => 1}, 'aaa')};
+eval{$dbi->delete('table1', {key1 => 1}, '', 'aaa')};
 like($@, qr/Query edit callback must be code reference/, 
          "$test : query edit callback not code ref");
 
