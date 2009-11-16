@@ -1,0 +1,11 @@
+0.0501
+  packaging DBIx::Custom::Result DBIx::Custom::Query DBIx::Custom::MySQL DBIx::Custom::SQLite DBIx::Custom::SQL::Template 
+0.0401
+  catch up with DBIx::Custom::Result version up
+0.0301
+  exchange filter argument 'key', 'value' (not backword compatible)
+0.0201
+  rename tranzaction to transaction
+  add filter_off
+0.0101
+  First release
