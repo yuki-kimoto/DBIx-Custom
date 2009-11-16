@@ -10,8 +10,19 @@ my $class = __PACKAGE__;
 sub connect {
     my $self = shift;
     
-    if (!$self->data_source && (my $database = $self->database)) {
-        $self->data_source("dbi:Pg:dbname=$database");
+    if (!$self->data_source) {
+        my $database = $self->database;
+        my $host     = $self->host;
+        my $port     = $self->port;
+        
+        my $data_source = "dbi:Pg:";
+        my $data_source_original = $data_source;
+        $data_source .= "dbname=$database;" if $database;
+        $data_source .= "host=$host;"       if $host;
+        $data_source .= "port=$port;"       if $port;
+        
+        $data_source =~ s/:$// if $data_source eq $data_source_original;
+        $self->data_source($data_source);
     }
     
     return $self->SUPER::connect;

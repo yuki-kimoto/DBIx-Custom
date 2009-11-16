@@ -19,6 +19,8 @@ sub data_source : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub dbi_options : ClassObjectAttr { initialize => {clone => 'hash', 
                                                    default => sub { {} } } }
 sub database    : ClassObjectAttr { initialize => {clone => 'scalar'} }
+sub host        : ClassObjectAttr { initialize => {clone => 'scalar'} }
+sub port        : ClassObjectAttr { initialize => {clone => 'scalar'} }
 
 sub bind_filter  : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub fetch_filter : ClassObjectAttr { initialize => {clone => 'scalar'} }
@@ -811,6 +813,18 @@ Please tell me bug if you find
     # Set and get database name
     $self     = $dbi->database($database);
     $database = $dbi->database;
+
+=head2 host
+
+    # Set and get host name
+    $self = $dbi->host($host);
+    $host = $dbi->host;
+
+=head2 port
+
+    # Set and get port
+    $self = $dbi->port($port);
+    $port = $dbi->port;
 
 This method will be used in subclass connect method.
 
