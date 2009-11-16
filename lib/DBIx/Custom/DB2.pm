@@ -1,9 +1,8 @@
-package DBIx::Custom::MySQL;
+package DBIx::Custom::DB2;
 use base 'DBIx::Custom::Basic';
 
 use warnings;
 use strict;
-use Carp 'croak';
 
 my $class = __PACKAGE__;
 
@@ -18,30 +17,24 @@ sub connect {
     my $self = shift;
     
     if (!$self->data_source && (my $database = $self->database)) {
-        $self->data_source("dbi:mysql:dbname=$database");
+        $self->data_source("dbi:DB2:dbname=$database");
     }
     
     return $self->SUPER::connect;
 }
 
-sub last_insert_id {
-    my $self = shift;
-    
-    croak "Not yet connected" unless $self->connected;
-    
-    my $last_insert_id = $self->dbh->{mysql_insertid};
-    
-    return $last_insert_id;
-}
-
 =head1 NAME
 
-DBIx::Custom::MySQL - DBIx::Custom MySQL implementation
+DBIx::Custom::DB2 - DBIx::Custom DB2 implementation
+
+=head1 Version
+
+Version 0.0102
 
 =head1 Synopsys
 
     # New
-    my $dbi = DBIx::Custom::MySQL->new(user => 'taro', $password => 'kliej&@K',
+    my $dbi = DBIx::Custom::DB2->new(user => 'taro', $password => 'kliej&@K',
                                       database => 'sample_db');
     # Insert 
     $dbi->insert('books', {title => 'perl', author => 'taro'});
@@ -75,15 +68,6 @@ Please see L<DBIx::Custom::Basic> and <DBIx::Custom> documentation.
     
     If database attribute is set, automatically data source is created and connect
 
-=head2 last_insert_id
-
-    # Get last insert id
-    $last_insert_id = $self->last_insert_id;
-
-This is equal to MySQL function
-
-    last_insert_id()
-    
 =head1 Author
 
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>

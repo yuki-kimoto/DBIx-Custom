@@ -39,10 +39,6 @@ sub utf8_filter_on {
 
 DBIx::Custom::Basic - DBIx::Custom basic implementation
 
-=head1 Version
-
-Version 0.0201
-
 =head1 See DBIx::Custom documentation
 
 This class is L<DBIx::Custom> subclass.

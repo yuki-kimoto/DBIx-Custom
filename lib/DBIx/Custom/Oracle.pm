@@ -1,4 +1,4 @@
-package DBIx::Custom::MySQL;
+package DBIx::Custom::Oracle;
 use base 'DBIx::Custom::Basic';
 
 use warnings;
@@ -6,18 +6,11 @@ use strict;
 
 my $class = __PACKAGE__;
 
-$class->add_format(
-    datetime => $class->formats->{SQL99_datetime},
-    date     => $class->formats->{SQL99_date},
-    time     => $class->formats->{SQL99_time},
-);
-
-
 sub connect {
     my $self = shift;
     
     if (!$self->data_source && (my $database = $self->database)) {
-        $self->data_source("dbi:mysql:dbname=$database");
+        $self->data_source("dbi:Oracle:dbname=$database");
     }
     
     return $self->SUPER::connect;
@@ -25,17 +18,13 @@ sub connect {
 
 =head1 NAME
 
-DBIx::Custom::MySQL - DBIx::Custom MySQL implementation
-
-=head1 Version
-
-Version 0.0102
+DBIx::Custom::Oracle - DBIx::Custom Oracle implementation
 
 =head1 Synopsys
 
     # New
-    my $dbi = DBIx::Custom::MySQL->new(user => 'taro', $password => 'kliej&@K',
-                                      database => 'sample_db');
+    my $dbi = DBIx::Custom::Oracle->new(user => 'taro', $password => 'kliej&@K',
+                                        database => 'sample_db');
     # Insert 
     $dbi->insert('books', {title => 'perl', author => 'taro'});
     

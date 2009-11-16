@@ -1,5 +1,0 @@
-do{ my $x = {
-       'blib' => 1,
-       'DBIx-Custom-*' => 1
-     };
-$x; }

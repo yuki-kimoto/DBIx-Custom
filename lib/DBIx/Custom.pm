@@ -448,12 +448,8 @@ sub run_transaction {
 # Get last insert id
 sub last_insert_id {
     my $self = shift;
-    
-    # Not connected
-    croak("Not yet connect to database")
-      unless $self->connected;
-    
-    return $self->dbh->last_insert_id(@_);
+    my $class = ref $self;
+    croak "'$class' do not suppert 'last_insert_id'";
 }
 
 # Insert

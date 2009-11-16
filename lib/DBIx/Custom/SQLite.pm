@@ -50,6 +50,15 @@ sub reconnect_memory {
     return $self;
 }
 
+sub last_insert_id {
+    my $self = shift;
+    
+    croak "Not yet connected" unless $self->connected;
+    
+    my $last_insert_id = $self->dbh->func('last_insert_rowid');
+    
+    return $last_insert_id;
+}
 
 =head1 NAME
 
@@ -118,6 +127,15 @@ If database attribute is set, automatically data source is created and connect
 
     # Reconnect memory database
     $self = $dbi->reconnect_memory;
+
+=head2 last_insert_id
+
+    # Get last insert id
+    $last_insert_id = $self->last_insert_id;
+
+This is equal to SQLite function
+
+    last_insert_rowid()
 
 =head1 Author
 
