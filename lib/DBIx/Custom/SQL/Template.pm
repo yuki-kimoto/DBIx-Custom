@@ -1,6 +1,8 @@
 package DBIx::Custom::SQL::Template;
 use Object::Simple;
 
+use strict;
+use warnings;
 use Carp 'croak';
 
 # Accessor is created by Object::Simple. Please read Object::Simple document
@@ -471,13 +473,7 @@ sub expand_update_tag {
 
 =head1 NAME
 
-DBIx::Custom::SQL::Template - Custamizable SQL Template for DBIx::Custom
-
-=head1 VERSION
-
-Version 0.0101
-
-=cut
+DBIx::Custom::SQL::Template - DBIx::Custom SQL Template
 
 =head1 SYNOPSIS
     

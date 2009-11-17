@@ -1,6 +1,9 @@
 package DBIx::Custom::Query;
 use Object::Simple;
 
+use strict;
+use warnings;
+
 sub sql             : Attr {}
 sub key_infos       : Attr {}
 sub bind_filter     : Attr {}
@@ -21,11 +24,7 @@ Object::Simple->build_class;
 
 =head1 NAME
 
-DBIx::Custom::Query - Query object for DBIx::Custom
-
-=head1 VERSION
-
-Version 0.0101
+DBIx::Custom::Query - DBIx::Custom query
 
 =head1 SYNOPSIS
 

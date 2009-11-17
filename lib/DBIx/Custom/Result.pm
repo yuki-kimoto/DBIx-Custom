@@ -1,5 +1,6 @@
 package DBIx::Custom::Result;
 use Object::Simple;
+
 use strict;
 use warnings;
 use Carp 'croak';
@@ -193,11 +194,7 @@ Object::Simple->build_class;
 
 =head1 NAME
 
-DBIx::Custom::Result - Resultset for DBIx::Custom
-
-=head1 VERSION
-
-Version 0.0301
+DBIx::Custom::Result - DBIx::Custom Resultset
 
 =head1 SYNOPSIS
 

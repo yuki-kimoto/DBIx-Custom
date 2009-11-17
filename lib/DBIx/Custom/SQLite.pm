@@ -1,8 +1,8 @@
 package DBIx::Custom::SQLite;
 use base 'DBIx::Custom::Basic';
 
-use warnings;
 use strict;
+use warnings;
 use Carp 'croak';
 
 my $class = __PACKAGE__;
@@ -63,10 +63,6 @@ sub last_insert_id {
 =head1 NAME
 
 DBIx::Custom::SQLite - DBIx::Custom SQLite implementation
-
-=head1 Version
-
-Version 0.0201
 
 =head1 Synopsys
 

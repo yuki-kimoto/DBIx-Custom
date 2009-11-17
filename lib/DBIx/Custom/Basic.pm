@@ -1,10 +1,9 @@
 package DBIx::Custom::Basic;
-use 5.008001;
 use base 'DBIx::Custom';
-use Encode qw/decode encode/;
 
 use warnings;
 use strict;
+use Encode qw/decode encode/;
 
 my $class = __PACKAGE__;
 
