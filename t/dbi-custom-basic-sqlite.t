@@ -44,6 +44,7 @@ my $dbi;
 my $decoded_str;
 my $encoded_str;
 my $array;
+my $ret_val;
 
 use DBIx::Custom::Basic;
 
@@ -52,9 +53,10 @@ $dbi = DBIx::Custom::Basic->new($NEW_ARGS->{0});
 ok($dbi->filters->{encode_utf8}, "$test : exists default_bind_filter");
 ok($dbi->filters->{decode_utf8}, "$test : exists default_fetch_filter");
 
-$dbi->utf8_filter_on;
+$ret_val = $dbi->utf8_filter_on;
 is($dbi->bind_filter, $dbi->filters->{encode_utf8}, 'default bind filter');
 is($dbi->fetch_filter, $dbi->filters->{decode_utf8}, 'default fetch filter');
+is(ref $ret_val, 'DBIx::Custom::Basic', "$test : retern value");
 
 $decoded_str = 'あ';
 $encoded_str = $dbi->bind_filter->($decoded_str);

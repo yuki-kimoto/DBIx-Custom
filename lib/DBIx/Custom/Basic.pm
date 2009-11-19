@@ -28,8 +28,12 @@ $class->add_format(
 # Methods
 sub utf8_filter_on {
     my $self = shift;
+    
+    # Set utf8 filters
     $self->bind_filter($self->filters->{encode_utf8});
     $self->fetch_filter($self->filters->{decode_utf8});
+    
+    return $self;
 }
 
 1;
@@ -46,7 +50,23 @@ You can use all methods of L<DBIx::Custom>
 
 Please see L<DBIx::Custom> documentation
 
-=head1 Filters
+=head1 Methods
+
+=head2 utf8_filter_on
+
+Encode and decode utf8 filter on
+
+    $self = $self->utf8_filter_on;
+    
+    # Sample
+    $dbi->utf8_filter_on;
+
+This equel to
+
+    $dbi->bind_filter($dbi->filters->{encode_utf8});
+    $dbi->fetch_filter($dbi->filters->{decode_utf8});
+
+=head1 Available filters
 
 =head2 encode_utf8
 
@@ -66,7 +86,7 @@ This filter is generally used as fetch filter
 
     $dbi->fetch_filter($dbi->filters->{decode_utf8});
 
-=head2 Formats
+=head2 Available formats
     
 strptime formats is available
     
@@ -81,18 +101,6 @@ strptime formats is available
 You get format as the following
 
     my $format = $dbi->formats->{$format_name};
-
-=head1 Methods
-
-=head2 utf8_filter_on
-
-    # Encode and decode utf8 filter on
-    $dbi->utf8_filter_on;
-
-This equel to
-
-    $dbi->bind_filter($dbi->filters->{encode_utf8});
-    $dbi->fetch_filter($dbi->filters->{decode_utf8});
 
 =head1 AUTHOR
 

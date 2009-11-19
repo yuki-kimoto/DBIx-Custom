@@ -42,49 +42,56 @@ DBIx::Custom::Query - DBIx::Custom query
     # Execute query
     $dbi->execute($query, $params);
 
-=head1 OBJECT ACCESSORS
+=head1 Accessors
 
 =head2 sth
 
-    # Set and get statement handle
-    $self = $query->sth($sql);
-    $sth  = $query->sth;
+Set and get statement handle
+
+    $self = $self->sth($sql);
+    $sth  = $self->sth;
 
 =head2 sql
 
-    # Set and get SQL
-    $self = $query->sql($sql);
-    $sql  = $query->sql;
+Set and get SQL
+
+    $self = $self->sql($sql);
+    $sql  = $self->sql;
 
 =head2 bind_filter
 
-    # Set and get bind filter
-    $self        = $query->bind_filter($bind_filter);
-    $bind_filter = $query->bind_filter;
+Set and get bind filter
+
+    $self        = $self->bind_filter($bind_filter);
+    $bind_filter = $self->bind_filter;
 
 =head2 no_bind_filters
 
-    # Set and get keys of no filtering
-    $self            = $query->no_bind_filters($no_filters);
-    $no_bind_filters = $query->no_bind_filters;
+Set and get keys of no filtering
+
+    $self            = $self->no_bind_filters($no_filters);
+    $no_bind_filters = $self->no_bind_filters;
 
 =head2 fetch_filter
 
-    # Set and get fetch filter
-    $self        = $query->fetch_filter($fetch_filter);
-    $fetch_filter = $query->fetch_filter;
+Set and get fetch filter
+
+    $self         = $self->fetch_filter($fetch_filter);
+    $fetch_filter = $self->fetch_filter;
 
 =head2 no_fetch_filters
 
-    # Set and get keys of no filtering
-    $self            = $query->no_fetch_filters($no_filters);
-    $no_fetch_filters = $query->no_fetch_filters;
+Set and get keys of no filtering
+
+    $self             = $self->no_fetch_filters($no_filters);
+    $no_fetch_filters = $self->no_fetch_filters;
 
 =head2 key_infos
 
-    # Set and get key informations
-    $self      = $query->key_infos($key_infos);
-    $key_infos = $query->key_infos;
+Set and get key informations
+
+    $self      = $self->key_infos($key_infos);
+    $key_infos = $self->key_infos;
 
 =head1 AUTHOR
 

@@ -58,7 +58,7 @@ DBIx::Custom::MySQL - DBIx::Custom MySQL implementation
     $dbi->insert('books', {title => 'perl', author => 'taro'});
     
     # Update 
-    # same as 'update books set (title = 'aaa', author = 'ken') where id = 5;
+    # same as 'update books set title = 'aaa', author = 'ken' where id = 5;
     $dbi->update('books', {title => 'aaa', author => 'ken'}, {id => 5});
     
     # Delete
@@ -70,7 +70,7 @@ DBIx::Custom::MySQL - DBIx::Custom MySQL implementation
     # select * from books where ahthor = 'taro'; 
     $dbi->select('books', {author => 'taro'});
 
-=head1 See DBIx::Custom and DBI::Custom::Basic documentation
+=head1 See DBIx::Custom and DBI::Custom::Basic documentation at first
 
 This class is L<DBIx::Custom::Basic> subclass,
 and L<DBIx::Custom::Basic> is L<DBIx::Custom> subclass.
@@ -82,14 +82,24 @@ Please see L<DBIx::Custom::Basic> and <DBIx::Custom> documentation.
 
 =head2 connect
 
-    This method override DBIx::Custom::connect
+Connect to database
+
+    $self = $self->connect;
     
-    If database attribute is set, automatically data source is created and connect
+    # Sample
+    $dbi->connect;
+
+This override L<DBIx::Custom> connect.
+
+If you set database, host, or port, data source is automatically created and connect
 
 =head2 last_insert_id
 
-    # Get last insert id
     $last_insert_id = $self->last_insert_id;
+    
+    # Sample
+    $dbi->insert('books', {title => 'Perl', author => 'taro'});
+    $last_insert_id = $dbi->last_insert_id;
 
 This is equal to MySQL function
 

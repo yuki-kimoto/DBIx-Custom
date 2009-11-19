@@ -9,12 +9,14 @@ use Carp 'croak';
 sub _dbi             : Attr {}
 sub sth              : Attr {}
 sub fetch_filter     : Attr {}
-sub no_fetch_filters      : Attr { type => 'array', trigger => sub {
+
+sub no_fetch_filters : Attr { type => 'array', trigger => sub {
     my $self = shift;
     my $no_fetch_filters = $self->no_fetch_filters || [];
     my %no_fetch_filters_map = map {$_ => 1} @{$no_fetch_filters};
     $self->_no_fetch_filters_map(\%no_fetch_filters_map);
 }}
+
 sub _no_fetch_filters_map : Attr {default => sub { {} }}
 
 # Fetch (array)
@@ -197,7 +199,7 @@ Object::Simple->build_class;
 
 DBIx::Custom::Result - DBIx::Custom Resultset
 
-=head1 SYNOPSIS
+=head1 Synopsis
 
     # $result is DBIx::Custom::Result object
     my $dbi = DBIx::Custom->new;
@@ -207,43 +209,40 @@ DBIx::Custom::Result - DBIx::Custom Resultset
         # do something
     }
 
-=head1 OBJECT ACCESSORS
+=head1 Accessors
 
 =head2 sth
 
-    # Set and Get statement handle
+Set and Get statement handle
+
     $self = $result->sth($sth);
     $sth  = $reuslt->sth
-
-Statement handle is automatically set by DBIx::Custom.
-so you do not set statement handle.
-
-If you need statement handle, you can get statement handle by using this method.
+    
+    # Sample
+    $dbi->sth->errstr
 
 =head2 fetch_filter
 
-    # Set and Get fetch filter
+Set and Get fetch filter
+
     $self         = $result->fetch_filter($sth);
     $fetch_filter = $result->fech_filter;
 
-Statement handle is automatically set by DBIx::Custom.
-If you want to set your fetch filter, you set it.
-
 =head2 no_fetch_filters
 
-    # Set and Get no filter keys when fetching
+Set and Get no filter keys when fetching
+
     $self             = $result->no_fetch_filters($no_fetch_filters);
     $no_fetch_filters = $result->no_fetch_filters;
 
-=head1 METHODS
+=head1 Methods
 
 =head2 fetch
 
-    # Fetch row as array reference (Scalar context)
-    $row = $result->fetch;
-    
-    # Fetch row as array (List context)
-    @row = $result->fecth
+Fetch a row
+
+    $row = $self->fetch; # array reference
+    @row = $self->fecth; # array
 
     # Sample
     while (my $row = $result->fetch) {
@@ -252,15 +251,12 @@ If you want to set your fetch filter, you set it.
         my $val2 = $row->[1];
     }
 
-fetch method is fetch resultset and get row as array or array reference.
-
 =head2 fetch_hash
 
-    # Fetch row as hash reference (Scalar context)
-    $row = $result->fetch_hash;
-    
-    # Fetch row as hash (List context)
-    %row = $result->fecth_hash
+Fetch row as hash
+
+    $row = $self->fetch_hash; # hash reference
+    %row = $self->fecth_hash; # hash
 
     # Sample
     while (my $row = $result->fetch_hash) {
@@ -269,85 +265,85 @@ fetch method is fetch resultset and get row as array or array reference.
         my $val2 = $row->{key2};
     }
 
-fetch_hash method is fetch resultset and get row as hash or hash reference.
-
 =head2 fetch_first
 
-    # Fetch only first (Scalar context)
+Fetch only first row(Scalar context)
+
+    $row = $self->fetch_first; # array reference
+    @row = $self->fetch_first; # array
+    
+    # Sample
     $row = $result->fetch_first;
     
-    # Fetch only first (List context)
-    @row = $result->fetch_first;
-    
-This method fetch only first and finish statement handle
+This method fetch only first row and finish statement handle
 
 =head2 fetch_hash_first
     
-    # Fetch only first as hash (Scalar context)
+Fetch only first row as hash
+
+    $row = $self->fetch_hash_first; # hash reference
+    @row = $self->fetch_hash_first; # hash
+    
+    # Sample
     $row = $result->fetch_hash_first;
     
-    # Fetch only first as hash (Scalar context)
-    @row = $result->fetch_hash_first;
-    
-This method fetch only first and finish statement handle
+This method fetch only first row and finish statement handle
 
 =head2 fetch_rows
 
-    # Fetch multi rows (Scalar context)
-    $rows = $result->fetch_rows($row_count);
+Fetch rows
+
+    $rows = $self->fetch_rows($row_count); # array ref of array ref
+    @rows = $self->fetch_rows($row_count); # array of array ref
     
-    # Fetch multi rows (List context)
-    @rows = $result->fetch_rows($row_count);
-    
-    # Sapmle 
-    $rows = $result->fetch_rows(10);
+    # Sample 
+    while(my $rows = $result->fetch_rows(10)) {
+        # do someting
+    }
 
 =head2 fetch_hash_rows
 
-    # Fetch multi rows as hash (Scalar context)
-    $rows = $result->fetch_hash_rows($row_count);
+Fetch rows as hash
+
+    $rows = $self->fetch_hash_rows($row_count); # array ref of hash ref
+    @rows = $self->fetch_hash_rows($row_count); # array of hash ref
     
-    # Fetch multi rows as hash (List context)
-    @rows = $result->fetch_hash_rows($row_count);
-    
-    # Sapmle 
-    $rows = $result->fetch_hash_rows(10);
+    # Sample 
+    while(my $rows = $result->fetch_hash_rows(10)) {
+        # do someting
+    }
 
 =head2 fetch_all
 
-    # Fetch all row as array ref of array ref (Scalar context)
-    $rows = $result->fetch_all;
-    
-    # Fetch all row as array of array ref (List context)
-    @rows = $result->fecth_all;
+Fetch all rows
+
+    $rows = $self->fetch_all; # array ref of array ref
+    @rows = $self->fecth_all; # array of array ref
 
     # Sample
     my $rows = $result->fetch_all;
-    my $val0_0 = $rows->[0][0];
-    my $val1_1 = $rows->[1][1];
-
-fetch_all method is fetch resultset and get all rows as array or array reference.
 
 =head2 fetch_hash_all
 
-    # Fetch all row as array ref of hash ref (Scalar context)
-    $rows = $result->fetch_hash_all;
-    
-    # Fetch all row as array of hash ref (List context)
-    @rows = $result->fecth_all_hash;
+Fetch all row as array ref of hash ref (Scalar context)
+
+    $rows = $self->fetch_hash_all; # array ref of hash ref
+    @rows = $self->fecth_all_hash; # array of hash ref
 
     # Sample
     my $rows = $result->fetch_hash_all;
-    my $val0_key1 = $rows->[0]{key1};
-    my $val1_key2 = $rows->[1]{key2};
 
 =head2 error
 
-    # Get error infomation
-    $error_messege = $result->error;
-    ($error_message, $error_number, $error_state) = $result->error;
+Get error infomation
 
-You can get get information. This is crenspond to the following.
+    $error_messege = $self->error;
+    ($error_message, $error_number, $error_state) = $self->error;
+    
+    # Sample
+    $error = $result->error;
+
+You can get get information. This is same as the following.
 
     $error_message : $result->sth->errstr
     $error_number  : $result->sth->err
@@ -355,24 +351,29 @@ You can get get information. This is crenspond to the following.
 
 =head2 finish
 
-    # Finish statement handle
-    $result->finish
+Finish statement handle
+
+    $ret_val = $self->finish
     
     # Sample
-    my $row = $reuslt->fetch; # fetch only one row
+    my $row = $reuslt->fetch; # fetch a row
     $result->finish
 
-You can finish statement handle.This is equel to
+This is equel to
 
     $result->sth->finish;
 
-=head1 AUTHOR
+=head1 See also
+
+L<DBIx::Custom>
+
+=head1 Author
 
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 
 Github L<http://github.com/yuki-kimoto>
 
-=head1 COPYRIGHT & LICENSE
+=head1 Copyright & licence
 
 Copyright 2009 Yuki Kimoto, all rights reserved.
 
