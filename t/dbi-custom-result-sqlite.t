@@ -208,7 +208,9 @@ is_deeply(\@rows, [[1, 2], [3, 4]], $test);
 
 test 'fetch filter';
 $fetch_filter = sub {
-    my ($value, $key, $type, $sth, $i) = @_;
+    my ($value, $key, $dbi, $infos) = @_;
+    my ($type, $sth, $i) = @{$infos}{qw/type sth index/};
+    
     if ($key eq 'key1' && $value == 1 && $type =~ /char/i && $i == 0 && $sth->{TYPE}->[$i] eq $type) {
         return $value * 3;
     }

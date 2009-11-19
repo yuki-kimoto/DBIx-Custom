@@ -10,13 +10,11 @@ my $builder = Module::Build->new(
     build_requires => {
         'Test::More' => 0,
     },
-    recommends => {
-        'DBD::SQLite' => 1.25,
-        'Time::Piece' => 1.15
-    },
     requires => {
         'Object::Simple' => 2.0702,
         'DBI'            => 1.605,
+        'DBD::SQLite'    => 1.25,
+        'Time::Piece'    => 1.15
     },
     add_to_cleanup      => [ 'DBIx-Custom-*' ],
     create_makefile_pl => 'traditional',

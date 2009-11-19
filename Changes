@@ -1,3 +1,7 @@
+0.0601
+  bind_filter argument is changed to ($value, $key, $dbi, $infos) (not backword compatible)
+  fetch_filter argument is changed to ($value, $key, $dbi, $infos) (not backword compatible)
+  run_transaction argument is changed to ($dbi)
 0.0502
   update document
 0.0501

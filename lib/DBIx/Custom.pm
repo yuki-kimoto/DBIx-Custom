@@ -3,7 +3,7 @@ use 5.008001;
 package DBIx::Custom;
 use Object::Simple;
 
-our $VERSION = '0.0502';
+our $VERSION = '0.0601';
 
 use Carp 'croak';
 use DBI;
@@ -12,7 +12,7 @@ use DBIx::Custom::Result;
 use DBIx::Custom::SQL::Template;
 
 
-### Class-Object Accessors
+### Accessors
 sub user        : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub password    : ClassObjectAttr { initialize => {clone => 'scalar'} }
 sub data_source : ClassObjectAttr { initialize => {clone => 'scalar'} }
@@ -60,8 +60,7 @@ sub sql_template : ClassObjectAttr {
     }
 }
 
-### Object Accessor
-sub dbh          : Attr {}
+sub dbh : Attr {}
 
 
 ### Methods
@@ -276,6 +275,7 @@ sub execute {
         
         # Create result
         my $result = $result_class->new({
+            _dbi             => $self,
             sth              => $sth,
             fetch_filter     => $query->fetch_filter,
             no_fetch_filters => $query->no_fetch_filters
@@ -328,8 +328,8 @@ sub _build_bind_values {
                         {
                             push @bind_values, 
                                  $bind_filter->($root_params->[$current_key->[0]], 
-                                                $original_key,
-                                                $table, $column);
+                                                $original_key, $self,
+                                                {table => $table, column => $column});
                         }
                         # Not filtering
                         else {
@@ -349,8 +349,8 @@ sub _build_bind_values {
                         {
                             push @bind_values,
                                  $bind_filter->($root_params->{$current_key},
-                                                $original_key,
-                                                $table, $column);
+                                                $original_key, $self,
+                                                {table => $table, column => $column});
                         }
                         # Not filtering
                         else {
@@ -408,7 +408,7 @@ sub run_transaction {
     $self->_auto_commit(0);
     
     # Run transaction
-    eval {$transaction->()};
+    eval {$transaction->($self)};
     
     # Tranzaction error
     my $transaction_error = $@;
@@ -753,11 +753,11 @@ Object::Simple->build_class;
 
 DBIx::Custom - Customizable simple DBI
 
-=head1 VERSION
+=head1 Version
 
-Version 0.0502
+Version 0.0601
 
-=head1 CAUTION
+=head1 Caution
 
 This module is now experimental stage.
 
@@ -766,38 +766,56 @@ because I want this module stable, and not to damage your DB data by this module
 
 Please tell me bug if you find
 
-=head1 SYNOPSIS
+=head1 Synopsys
 
   my $dbi = DBIx::Custom->new;
   
   my $query = $dbi->create_query($template);
   $dbi->execute($query);
 
-=head1 CLASS-OBJECT ACCESSORS
+=head1 Accessors
 
 =head2 user
 
-    # Set and get database user name
-    $self = $dbi->user($user);
-    $user = $dbi->user;
+Set and get database user name
+    
+    # For object
+    $self  = $self->user($user);
+    $user  = $self->user;
+    
+    # For class
+    $class = $class->user($user);
+    $user  = $class->user;
     
     # Sample
     $dbi->user('taro');
-
+    
 =head2 password
 
-    # Set and get database password
-    $self     = $dbi->password($password);
-    $password = $dbi->password;
+Set and get database password
+    
+    # For object
+    $self     = $self->password($password);
+    $password = $self->password;
+
+    # For class
+    $class    = $class->password($password);
+    $password = $class->password;
     
     # Sample
     $dbi->password('lkj&le`@s');
 
 =head2 data_source
 
-    # Set and get database data source
-    $self        = $dbi->data_source($data_soruce);
-    $data_source = $dbi->data_source;
+Set and get database data source
+    
+    # For object
+    $self        = $self->data_source($data_soruce);
+    $data_source = $self->data_source;
+    
+    # For class
+    $class       = $class->data_source($data_soruce);
+    $data_source = $class->data_source;
     
     # Sample(SQLite)
     $dbi->data_source(dbi:SQLite:dbname=$database);
@@ -810,120 +828,227 @@ Please tell me bug if you find
     
 =head2 database
 
-    # Set and get database name
-    $self     = $dbi->database($database);
-    $database = $dbi->database;
+Set and get database name
+
+    # For object
+    $self     = $self->database($database);
+    $database = $self->database;
+
+    # For class
+    $class    = $class->database($database);
+    $database = $class->database;
+    
+    # Sample
+    $dbi->database('books');
 
 =head2 host
 
-    # Set and get host name
-    $self = $dbi->host($host);
-    $host = $dbi->host;
+Set and get host name
+
+    # For object
+    $self = $self->host($host);
+    $host = $self->host;
+
+    # For class
+    $class = $class->host($host);
+    $host  = $class->host;
+    
+    # Sample
+    $dbi->host('somehost.com');
+    $dbi->host('127.1.2.3');
 
 =head2 port
 
-    # Set and get port
-    $self = $dbi->port($port);
-    $port = $dbi->port;
+Set and get port
 
-This method will be used in subclass connect method.
+    # For object
+    $self = $self->port($port);
+    $port = $self->port;
+
+    # For class
+    $class = $class->port($port);
+    $port = $class->port;
+    
+    # Sample
+    $dbi->port(1198);
 
 =head2 dbi_options
 
-    # Set and get DBI option
-    $self       = $dbi->dbi_options({$options => $value, ...});
-    $dbi_options = $dbi->dbi_options;
+Set and get DBI option
 
+    # For object
+    $self        = $self->dbi_options({$options => $value, ...});
+    $dbi_options = $self->dbi_options;
+    
+    # For class
+    $class       = $class->dbi_options({$options => $value, ...});
+    $dbi_options = $class->dbi_options;
+    
     # Sample
     $dbi->dbi_options({PrintError => 0, RaiseError => 1});
 
-dbi_options is used when you connect database by using connect.
-
-=head2 prepare
-
-    $sth = $dbi->prepare($sql);
-
-This method is same as DBI::prepare
-
-=head2 do
-
-    $dbi->do($sql, @bind_values);
-
-This method is same as DBI::do
-
 =head2 sql_template
 
-    # Set and get SQL::Template object
-    $self         = $dbi->sql_template($sql_template);
-    $sql_template = $dbi->sql_template;
-    
+Set and get SQL::Template object
+
+    # For object
+    $self         = $self->sql_template($sql_template);
+    $sql_template = $self->sql_template;
+
+    # For class
+    $class        = $class->sql_template($sql_template);
+    $sql_template = $class->sql_template;
+
     # Sample
     $dbi->sql_template(DBI::Cutom::SQL::Template->new);
 
 =head2 filters
 
-    # Set and get filters
-    $self    = $dbi->filters($filters);
-    $filters = $dbi->filters;
+Set and get filters
+
+    # For object
+    $self    = $self->filters($filters);
+    $filters = $self->filters;
+
+    # For class
+    $class   = $class->filters($filters);
+    $filters = $class->filters;
+    
+    # Sample
+    $ret = $dbi->filters->{encode_utf8}->($value);
 
 =head2 formats
 
-    # Set and get formats
-    $self    = $dbi->formats($formats);
-    $formats = $dbi->formats;
-    
-=head2 bind_filter
+Set and get formats
 
-    # Set and get binding filter
-    $self        = $dbi->bind_filter($bind_filter);
-    $bind_filter = $dbi->bind_filter
+    # For object
+    $self    = $self->formats($formats);
+    $formats = $self->formats;
+
+    # For class
+    $self    = $self->formats($formats);
+    $formats = $self->formats;
 
     # Sample
-    $dbi->bind_filter($self->filters->{default_bind_filter});
-    
+    $datetime_format = $dbi->formats->{datetime};
 
-you can get DBI database handle if you need.
+=head2 bind_filter
+
+Set and get binding filter
+
+    # For object
+    $self        = $self->bind_filter($bind_filter);
+    $bind_filter = $self->bind_filter
+
+    # For object
+    $class       = $class->bind_filter($bind_filter);
+    $bind_filter = $class->bind_filter
+
+    # Sample
+    $dbi->bind_filter(sub {
+        my ($value, $key, $dbi, $infos) = @_;
+        
+        # edit $value
+        
+        return $value;
+    });
 
 =head2 fetch_filter
 
-    # Set and get Fetch filter
-    $self         = $dbi->fetch_filter($fetch_filter);
-    $fetch_filter = $dbi->fetch_filter;
+Set and get Fetch filter
+
+    # For object
+    $self         = $self->fetch_filter($fetch_filter);
+    $fetch_filter = $self->fetch_filter;
+
+    # For class
+    $class        = $class->fetch_filter($fetch_filter);
+    $fetch_filter = $class->fetch_filter;
 
     # Sample
-    $dbi->fetch_filter($self->filters->{default_fetch_filter});
+    $dbi->fetch_filter(sub {
+        my ($value, $key, $dbi, $infos) = @_;
+        
+        # edit $value
+        
+        return $value;
+    });
 
 =head2 no_bind_filters
 
-    # Set and get no filter keys when binding
-    $self            = $dbi->no_bind_filters($no_bind_filters);
-    $no_bind_filters = $dbi->no_bind_filters;
+Set and get no filter keys when binding
+    
+    # For object
+    $self            = $self->no_bind_filters($no_bind_filters);
+    $no_bind_filters = $self->no_bind_filters;
+
+    # For class
+    $class           = $class->no_bind_filters($no_bind_filters);
+    $no_bind_filters = $class->no_bind_filters;
+
+    # Sample
+    $dbi->no_bind_filters(qw/title author/);
 
 =head2 no_fetch_filters
 
-    # Set and get no filter keys when fetching
-    $self             = $dbi->no_fetch_filters($no_fetch_filters);
-    $no_fetch_filters = $dbi->no_fetch_filters;
+Set and get no filter keys when fetching
+
+    # For object
+    $self             = $self->no_fetch_filters($no_fetch_filters);
+    $no_fetch_filters = $self->no_fetch_filters;
+
+    # For class
+    $class            = $class->no_fetch_filters($no_fetch_filters);
+    $no_fetch_filters = $class->no_fetch_filters;
+
+    # Sample
+    $dbi->no_fetch_filters(qw/title author/);
 
 =head2 result_class
 
-    # Set and get resultset class
+Set and get resultset class
+
+    # For object
     $self         = $dbi->result_class($result_class);
     $result_class = $dbi->result_class;
+    
+    # For class
+    $class        = $class->result_class($result_class);
+    $result_class = $class->result_class;
     
     # Sample
     $dbi->result_class('DBIx::Custom::Result');
 
 =head2 dbh
 
-    # Get database handle
-    $dbh = $self->dbh;
+Get database handle
+    
+    $self = $self->dbh($dbh);
+    $dbh  = $self->dbh;
+    
+    # Sample
+    $table_info = $dbi->dbh->table_info
+    
+=head2 query_cache_max
 
-=head1 METHODS
+Set and get query cache max
+
+    $class           = $class->query_cache_max($query_cache_max);
+    $query_cache_max = $class->query_cache_max;
+    
+    # Sample
+    DBIx::Custom->query_cache_max(50);
+
+DBIx::Custom cache queries for performance.
+
+Default is 50
+
+=head1 Methods
 
 =head2 connect
 
-    # Connect to database
+Connect to database
+
     $self = $dbi->connect;
     
     # Sample
@@ -933,92 +1058,114 @@ you can get DBI database handle if you need.
 
 =head2 disconnect
 
-    # Disconnect database
+Disconnect database
+
+    $self = $dbi->disconnect;
+    
+    # Sample
     $dbi->disconnect;
 
 If database is already disconnected, this method do noting.
 
 =head2 reconnect
 
-    # Reconnect
+Reconnect to database
+
+    $self = $dbi->reconnect;
+    
+    # Sample
     $dbi->reconnect;
 
 =head2 connected
 
-    # Check connected
-    $dbi->connected
+Check connected
+    
+    $is_connected = $self->connected;
+    
+    # Sample
+    if ($dbi->connected) { # do something }
     
 =head2 filter_off
 
-    # bind_filter and fitch_filter off
-    $self->filter_off;
+bind_filter and fitch_filter off
+    
+    $self = $self->filter_off
+    
+    # Sample
+    $dbi->filter_off;
     
 This is equeal to
     
-    $self->bind_filter(undef);
-    $self->fetch_filter(undef);
+    $dbi->bind_filter(undef);
+    $dbi->fetch_filter(undef);
 
 =head2 add_filter
 
-    # Add filter (hash ref or hash can be recieve)
-    $self = $dbi->add_filter({$filter_name => $filter, ...});
-    $self = $dbi->add_filter($filetr_name => $filter, ...);
+Resist filter
     
-    # Sample
+    $self = $self->add_filter({$name => $filter, ...});
+    # or
+    $self = $self->add_filter($name => $filter, ...);
+    
+    # Sample (For example DBIx::Custom::Basic)
     $dbi->add_filter(
-        decode_utf8 => sub {
-            my ($key, $value, $table, $column) = @_;
-            return Encode::decode('UTF-8', $value);
-        },
-        datetime_to_string => sub {
-            my ($key, $value, $table, $column) = @_;
-            return $value->strftime('%Y-%m-%d %H:%M:%S')
-        },
-        default_bind_filter => sub {
-            my ($key, $value, $table, $column) = @_;
-            if (ref $value eq 'Time::Piece') {
-                return $dbi->filters->{datetime_to_string}->($value);
-            }
-            else {
-                return $dbi->filters->{decode_utf8}->($value);
-            }
-        },
-        
         encode_utf8 => sub {
-            my ($key, $value) = @_;
-            return Encode::encode('UTF-8', $value);
+            my ($value, $key, $dbi, $infos) = @_;
+            utf8::upgrade($value) unless Encode::is_utf8($value);
+            return encode('UTF-8', $value);
         },
-        string_to_datetime => sub {
-            my ($key, $value) = @_;
-            return DateTime::Format::MySQL->parse_datetime($value);
-        },
-        default_fetch_filter => sub {
-            my ($key, $value, $type, $sth, $i) = @_;
-            if ($type eq 'DATETIME') {
-                return $dbi->filters->{string_to_datetime}->($value);
-            }
-            else {
-                return $dbi->filters->{encode_utf8}->($value);
-            }
+        decode_utf8 => sub {
+            my ($value, $key, $dbi, $infos) = @_;
+            return decode('UTF-8', $value)
         }
     );
 
-add_filter add filter to filters
-
 =head2 add_format
 
-    $dbi->add_format(date => '%Y:%m:%d');
+Resist format
+
+    $self = $self->add_format({$name => $format, ...});
+    # or
+    $self = $self->add_format($name => $format, ...);
+    
+    # Sample
+    $dbi->add_format(date => '%Y:%m:%d', datetime => '%Y-%m-%d %H:%M:%S');
+
+=head2 prepare
+
+Prepare statement handle
+
+    $sth = $self->prepare($sql);
+    
+    # Sample
+    $sth = $dbi->prepare('select * from books;');
+
+This method is same as DBI prepare method.
+
+=head2 do
+
+Execute SQL
+
+    $ret_val = $self->do($sql, @bind_values);
+    
+    # Sample
+    $ret_val = $dbi->do('insert into books (title, author) values (?, ?)',
+                        'Perl', 'taro');
+
+This method is same as DBI do method.
 
 =head2 create_query
     
-    # Create Query object from SQL template
+Create Query object from SQL template
+
     my $query = $dbi->create_query($template);
     
 =head2 execute
 
-    # Parse SQL template and execute SQL
+Parse SQL template and execute SQL
+
     $result = $dbi->query($query, $params);
-    $result = $dbi->query($template, $params); # Shorcut
+    $result = $dbi->query($template, $params); # Shortcut
     
     # Sample
     $result = $dbi->query("select * from authors where {= name} and {= age}", 
@@ -1032,8 +1179,11 @@ See also L<DBIx::Custom::SQL::Template>
 
 =head2 run_transaction
 
-    # Run transaction
+Run transaction
+
     $dbi->run_transaction(sub {
+        my $dbi = shift;
+        
         # do something
     });
 
@@ -1042,7 +1192,8 @@ If tranzation is died, rollback is execute.
 
 =head2 insert
 
-    # Insert
+Insert
+
     $dbi->insert($table, $insert_values);
     
     # Sample
@@ -1050,7 +1201,8 @@ If tranzation is died, rollback is execute.
 
 =head2 update
 
-    # Update
+Update
+
     $dbi->update($table, $update_values, $where);
     
     # Sample
@@ -1058,12 +1210,14 @@ If tranzation is died, rollback is execute.
 
 =head2 update_all
 
-    # Update all rows
+Update all rows
+
     $dbi->update($table, $updat_values);
 
 =head2 delete
 
-    # Delete
+Delete
+
     $dbi->delete($table, $where);
     
     # Sample
@@ -1071,19 +1225,22 @@ If tranzation is died, rollback is execute.
 
 =head2 delete_all
 
-    # Delete all rows
+Delete all rows
+
     $dbi->delete_all($table);
 
 =head2 last_insert_id
 
-    # Get last insert id
+Get last insert id
+
     $last_insert_id = $dbi->last_insert_id;
-    
-This method is same as DBI last_insert_id;
+
+This method is implemented by subclass.
 
 =head2 select
     
-    # Select
+Select
+
     $dbi->select(
         $table,                # must be string or array;
         [@$columns],           # must be array reference. this is optional
@@ -1114,16 +1271,6 @@ This method is same as DBI last_insert_id;
         "where table1.id = table2.id",
     );
 
-=head1 Class Accessors
-
-=head2 query_cache_max
-
-    # Max query cache count
-    $class           = $class->query_cache_max($query_cache_max);
-    $query_cache_max = $class->query_cache_max;
-    
-    # Sample
-    DBIx::Custom->query_cache_max(50);
 
 =head1 CAUTION
 

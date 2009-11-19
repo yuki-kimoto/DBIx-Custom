@@ -182,8 +182,12 @@ $dbi->do($CREATE_TABLE->{0});
 $insert_tmpl  = "insert into table1 {insert key1 key2};";
 $insert_query = $dbi->create_query($insert_tmpl);
 $insert_query->bind_filter(sub {
-    my ($value, $key, $table, $column) = @_;
-    if ($key eq 'key1' && $table eq '' && $column eq 'key1') {
+    my ($value, $key, $dbi, $infos) = @_;
+    my ($table, $column) = @{$infos}{qw/table column/};
+    
+    if ($key eq 'key1' && $table eq '' && $column eq 'key1'
+        && $dbi->isa('DBIx::Custom'))
+    {
         return $value * 2;
     }
     return $value;
@@ -191,8 +195,12 @@ $insert_query->bind_filter(sub {
 $dbi->execute($insert_query, {key1 => 1, key2 => 2});
 $select_query = $dbi->create_query($SELECT_TMPL->{0});
 $select_query->fetch_filter(sub {
-    my ($value, $key, $type, $sth, $i) = @_;
-    if ($key eq 'key2' && $type =~ /char/ && $sth->can('execute') && $i == 1) {
+    my ($value, $key, $dbi, $infos) = @_;
+    my ($type, $sth, $i) = @{$infos}{qw/type sth index/};
+    
+    if ($key eq 'key2' && $type =~ /char/ && ref $sth eq 'DBI::st' 
+        && $i == 1 && $dbi->isa('DBIx::Custom'))
+    {
         return $value * 3;
     }
     return $value;
@@ -214,7 +222,9 @@ $dbi->do($CREATE_TABLE->{0});
 $insert_tmpl  = "insert into table1 {insert table1.key1 table1.key2}";
 $insert_query = $dbi->create_query($insert_tmpl);
 $insert_query->bind_filter(sub {
-    my ($value, $key, $table, $column) = @_;
+    my ($value, $key, $dbi, $infos) = @_;
+    my ($table, $column) = @{$infos}{qw/table column/};
+    
     if ($key eq 'table1.key1' && $table eq 'table1' && $column eq 'key1') {
         return $value * 3;
     }
@@ -233,7 +243,9 @@ $dbi->execute($insert_query, {key1 => 2, key2 => 4});
 $select_tmpl = "select * from table1 where {in table1.key1 2} and {in table1.key2 2}";
 $select_query = $dbi->create_query($select_tmpl);
 $select_query->bind_filter(sub {
-    my ($value, $key, $table, $column) = @_;
+    my ($value, $key, $dbi, $infos) = @_;
+    my ($table, $column) = @{$infos}{qw/table column/};
+    
     if ($key eq 'table1.key1' && $table eq 'table1' && $column eq 'key1' || $key eq 'table1.key2') {
         return $value * 2;
     }
@@ -407,6 +419,7 @@ test 'run_tansaction';
 $dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{0});
 $dbi->run_transaction(sub {
+    my $dbi = shift;
     $insert_tmpl = 'insert into table1 {insert key1 key2}';
     $dbi->execute($insert_tmpl, {key1 => 1, key2 => 2});
     $dbi->execute($insert_tmpl, {key1 => 3, key2 => 4});
@@ -420,6 +433,7 @@ $dbi->do($CREATE_TABLE->{0});
 $dbi->dbh->{RaiseError} = 0;
 eval{
     $dbi->run_transaction(sub {
+        my $dbi = shift;
         $insert_tmpl = 'insert into table1 {insert key1 key2}';
         $dbi->execute($insert_tmpl, {key1 => 1, key2 => 2});
         die "Fatal Error";

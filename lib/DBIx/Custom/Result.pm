@@ -6,6 +6,7 @@ use warnings;
 use Carp 'croak';
 
 # Attributes
+sub _dbi             : Attr {}
 sub sth              : Attr {}
 sub fetch_filter     : Attr {}
 sub no_fetch_filters      : Attr { type => 'array', trigger => sub {
@@ -34,8 +35,8 @@ sub fetch {
         my $types = $sth->{TYPE};
         for (my $i = 0; $i < @$keys; $i++) {
             next if $self->_no_fetch_filters_map->{$keys->[$i]};
-            $row->[$i]= $fetch_filter->($row->[$i], $keys->[$i], $types->[$i],
-                                        $sth, $i);
+            $row->[$i]= $fetch_filter->($row->[$i], $keys->[$i], $self->_dbi,
+                                        {type => $types->[$i], sth => $sth, index => $i});
         }
     }
     return wantarray ? @$row : $row;
@@ -66,8 +67,8 @@ sub fetch_hash {
             }
             else {
                 $row_hash->{$keys->[$i]}
-                  = $fetch_filter->($row->[$i], $keys->[$i],
-                                    $types->[$i], $sth, $i);
+                  = $fetch_filter->($row->[$i], $keys->[$i], $self->_dbi,
+                                    {type => $types->[$i], sth => $sth, index => $i});
             }
         }
     }
