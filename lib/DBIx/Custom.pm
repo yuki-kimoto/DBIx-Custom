@@ -1192,19 +1192,23 @@ If tranzation is died, rollback is execute.
 
 =head2 insert
 
-Insert
+Insert row
 
-    $dbi->insert($table, $insert_values);
+    $ret_val = $self->insert($table, \%$insert_params);
+
+$ret_val is maybe affected rows count
     
     # Sample
     $dbi->insert('books', {title => 'Perl', author => 'Taro'});
 
 =head2 update
 
-Update
+Update rows
 
-    $dbi->update($table, $update_values, $where);
-    
+    $self = $self->update($table, \%update_params, \%where);
+
+$ret_val is maybe affected rows count
+
     # Sample
     $dbi->update('books', {title => 'Perl', author => 'Taro'}, {id => 5});
 
@@ -1212,22 +1216,87 @@ Update
 
 Update all rows
 
-    $dbi->update($table, $updat_values);
+    $ret_val = $self->update_all($table, \%updat_params);
+
+$ret_val is maybe affected rows count
+
+    # Sample
+    $dbi->update_all('books', {author => 'taro'});
 
 =head2 delete
 
-Delete
+Delete rows
 
-    $dbi->delete($table, $where);
+    $ret_val = $self->delete($table, \%where);
+
+$ret_val is maybe affected rows count
     
     # Sample
-    $dbi->delete('Books', {id => 5});
+    $dbi->delete('books', {id => 5});
 
 =head2 delete_all
 
 Delete all rows
 
-    $dbi->delete_all($table);
+    $ret_val = $self->delete_all($table);
+
+$ret_val is maybe affected rows count
+
+    # Sample
+    $dib->delete_all('books');
+
+=head2 select
+    
+Select rows
+
+    $resut = $self->select(
+        $table,                # must be string or array;
+        \@$columns,            # must be array reference. this is optional
+        \%$where_params,       # must be hash reference.  this is optional
+        $append_statement,     # must be string.          this is optional
+        $query_edit_callback   # must be code reference.  this is optional
+    );
+
+$reslt is L<DBI::Custom::Result> object
+
+The following is some select samples
+
+    # select * from books;
+    $result = $dbi->select('books');
+    
+    # select * from books where title = 'Perl';
+    $result = $dbi->select('books', {title => 1});
+    
+    # select title, author from books where id = 1 for update;
+    $result = $dbi->select(
+        'books',              # table
+        ['title', 'author'],  # columns
+        {id => 1},            # where clause
+        'for update',         # append statement
+    );
+
+You can join multi tables
+    
+    $result = $dbi->select(
+        ['table1', 'table2'],                # tables
+        ['table1.id as table1_id', 'title'], # columns (alias is ok)
+        {table1.id => 1},                    # where clase
+        "where table1.id = table2.id",       # join clause (must start 'where')
+    );
+
+You can also edit query
+        
+    $dbi->select(
+        'books',
+        # column, where clause, append statement,
+        sub {
+            my $query = shift;
+            $query->bind_filter(sub {
+                # ...
+            });
+        }
+    }
+
 
 =head2 last_insert_id
 
@@ -1237,44 +1306,9 @@ Get last insert id
 
 This method is implemented by subclass.
 
-=head2 select
-    
-Select
+=head1 Caution
 
-    $dbi->select(
-        $table,                # must be string or array;
-        [@$columns],           # must be array reference. this is optional
-        {%$where_params},      # must be hash reference.  this is optional
-        $append_statement,     # must be string.          this is optional
-        $query_edit_callback   # must be code reference.  this is optional
-    );
-    
-    # Sample
-    $dbi->select(
-        'Books',
-        ['title', 'author'],
-        {id => 1},
-        "for update",
-        sub {
-            my $query = shift;
-            $query->bind_filter(sub {
-                # ...
-            });
-        }
-    );
-    
-    # The way to join multi tables
-    $dbi->select(
-        ['table1', 'table2'],
-        ['table1.id as table1_id', 'title'],
-        {table1.id => 1},
-        "where table1.id = table2.id",
-    );
-
-
-=head1 CAUTION
-
-DBIx::Custom have DIB object internal.
+DBIx::Custom have DBI object.
 This module is work well in the following DBI condition.
 
     1. AutoCommit is true
