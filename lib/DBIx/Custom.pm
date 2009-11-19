@@ -3,11 +3,10 @@ use 5.008001;
 package DBIx::Custom;
 use Object::Simple;
 
-our $VERSION = '0.0601';
+our $VERSION = '0.0602';
 
 use Carp 'croak';
 use DBI;
-use DBIx::Custom::Query;
 use DBIx::Custom::Result;
 use DBIx::Custom::SQL::Template;
 
@@ -205,8 +204,6 @@ sub create_query {
     unless ($query) {
         $query = eval{$sql_template->create_query($template)};
         croak($@) if $@;
-        
-        $query = DBIx::Custom::Query->new($query);
         
         $class->_add_query_cache($template, $query);
     }

@@ -5,7 +5,9 @@ use strict;
 use warnings;
 use Carp 'croak';
 
-# Accessor is created by Object::Simple. Please read Object::Simple document
+use DBIx::Custom::Query;
+
+# Accessor is created by Object::Simple.
 
 ### Class-Object accessors
 
@@ -46,17 +48,17 @@ sub tag_processors : ClassObjectAttr {
     initialize => {
         clone => 'hash', 
         default => sub {{
-            '?'             => \&DBIx::Custom::SQL::Template::TagProcessor::expand_basic_tag,
-            '='             => \&DBIx::Custom::SQL::Template::TagProcessor::expand_basic_tag,
-            '<>'            => \&DBIx::Custom::SQL::Template::TagProcessor::expand_basic_tag,
-            '>'             => \&DBIx::Custom::SQL::Template::TagProcessor::expand_basic_tag,
-            '<'             => \&DBIx::Custom::SQL::Template::TagProcessor::expand_basic_tag,
-            '>='            => \&DBIx::Custom::SQL::Template::TagProcessor::expand_basic_tag,
-            '<='            => \&DBIx::Custom::SQL::Template::TagProcessor::expand_basic_tag,
-            'like'          => \&DBIx::Custom::SQL::Template::TagProcessor::expand_basic_tag,
-            'in'            => \&DBIx::Custom::SQL::Template::TagProcessor::expand_in_tag,
-            'insert'        => \&DBIx::Custom::SQL::Template::TagProcessor::expand_insert_tag,
-            'update'    => \&DBIx::Custom::SQL::Template::TagProcessor::expand_update_tag
+            '?'             => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+            '='             => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+            '<>'            => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+            '>'             => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+            '<'             => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+            '>='            => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+            '<='            => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+            'like'          => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+            'in'            => \&DBIx::Custom::SQL::Template::TagProcessors::expand_in_tag,
+            'insert'        => \&DBIx::Custom::SQL::Template::TagProcessors::expand_insert_tag,
+            'update'    => \&DBIx::Custom::SQL::Template::TagProcessors::expand_update_tag
         }}
     }
 }
@@ -214,7 +216,7 @@ sub _build_query {
     $sql .= ';' unless $sql =~ /;$/;
     
     # Query
-    my $query = {sql => $sql, key_infos => $all_key_infos};
+    my $query = DBIx::Custom::Query->new(sql => $sql, key_infos => $all_key_infos);
     
     return $query;
 }
@@ -235,7 +237,8 @@ sub _placeholder_count {
 Object::Simple->build_class;
 
 
-package DBIx::Custom::SQL::Template::TagProcessor;
+package DBIx::Custom::SQL::Template::TagProcessors;
+
 use strict;
 use warnings;
 use Carp 'croak';
@@ -475,7 +478,7 @@ sub expand_update_tag {
 
 DBIx::Custom::SQL::Template - DBIx::Custom SQL Template
 
-=head1 SYNOPSIS
+=head1 Synopsis
     
     my $sql_tmpl = DBIx::Custom::SQL::Template->new;
     
@@ -497,32 +500,34 @@ DBIx::Custom::SQL::Template - DBIx::Custom SQL Template
     $query = $dbi->create_query($tmpl); # This is SQL::Template create_query
     $dbi->query($query, $param);
 
-=head1 CLASS-OBJECT ACCESSORS
-
-Class-Object accessor is used from both object and class
-
-    $class->$accessor # call from class
-    $self->$accessor  # call form object
+=head1 Accessors
 
 =head2 tag_processors
 
-    # Set and get
-    $self           = $sql_tmpl->tag_processors($tag_processors);
-    $tag_processors = $sql_tmpl->tag_processors;
-    
-    # Sample
-    $sql_tmpl->tag_processors(
-        '?' => \&expand_question,
-        '=' => \&expand_equel
-    );
+Set and get tag processors
 
-You can use add_tag_processor to add tag processor
+    # For object
+    $self           = $self->tag_processors($tag_processors);
+    $tag_processors = $self->tag_processors;
+
+    # For class
+    $class          = $class->tag_processors($tag_processors);
+    $tag_processors = $class->tag_processors;
+
+    # Sample
+    $placeholder_tag_processor = $sql_tmpl->tag_processor->{'?'};
 
 =head2 tag_start
 
-    # Set and get
-    $self      = $sql_tmpl->tag_start($tag_start);
-    $tag_start = $sql_tmpl->tag_start;
+Set and get start tag
+    
+    # For object
+    $self      = $self->tag_start($tag_start);
+    $tag_start = $self->tag_start;
+    
+    # For class
+    $class     = $class->tag_start($tag_start);
+    $tag_start = $class->tag_start;
     
     # Sample
     $sql_tmpl->tag_start('{');
@@ -531,9 +536,15 @@ Default is '{'
 
 =head2 tag_end
 
-    # Set and get
-    $self    = $sql_tmpl->tag_start($tag_end);
-    $tag_end = $sql_tmpl->tag_start;
+Set and get end tag
+    
+    # For object
+    $self    = $self->tag_start($tag_end);
+    $tag_end = $self->tag_start;
+    
+    # For class
+    $self    = $self->tag_start($tag_end);
+    $tag_end = $self->tag_start;
     
     # Sample
     $sql_tmpl->tag_start('}');
@@ -542,56 +553,61 @@ Default is '}'
     
 =head2 tag_syntax
     
-    # Set and get
-    $self       = $sql_tmpl->tag_syntax($tag_syntax);
-    $tag_syntax = $sql_tmpl->tag_syntax;
+Set and get tag syntax
+    
+    # For object
+    $self       = $self->tag_syntax($tag_syntax);
+    $tag_syntax = $self->tag_syntax;
+
+    # For class
+    $class      = $class->tag_syntax($tag_syntax);
+    $tag_syntax = $class->tag_syntax;
     
     # Sample
-    $sql_tmpl->tag_syntax(
-        "[Tag]            [Expand]\n" .
-        "{? name}         ?\n" .
-        "{= name}         name = ?\n" .
-        "{<> name}        name <> ?\n"
-    );
+    $syntax = $sql_tmpl->tag_syntax;
 
-=head1 METHODS
+=head1 Methods
 
 =head2 create_query
     
-    # Create SQL form SQL template
-    $query = $sql_tmpl->create_query($tmpl);
+Create L<DBIx::Custom::Query> object parsing SQL template
+
+    $query = $self->create_query($tmpl);
     
     # Sample
     $query = $sql_tmpl->create_sql(
          "select * from table where {= title} && {like author} || {<= price}")
     
-    # Result
-    $qeury->{sql} : "select * from table where title = ? && author like ? price <= ?;"
-    $query->{key_infos} : [['title'], ['author'], ['price']]
+    # Expanded
+    $qeury->sql : "select * from table where title = ? && author like ? price <= ?;"
+    $query->key_infos : [['title'], ['author'], ['price']]
     
-    # Sample2 (with table name)
+    # Sample with table name
     ($sql, @bind_values) = $sql_tmpl->create_sql(
             "select * from table where {= table.title} && {like table.author}",
             {table => {title => 'Perl', author => '%Taro%'}}
         )
     
-    # Result2
-    $query->{sql} : "select * from table where table.title = ? && table.title like ?;"
-    $query->{key_infos} :[ [['table.title'],['table', 'title']],
-                           [['table.author'],['table', 'author']] ]
+    # Expanded
+    $query->sql : "select * from table where table.title = ? && table.title like ?;"
+    $query->key_infos :[ [['table.title'],['table', 'title']],
+                         [['table.author'],['table', 'author']] ]
 
-This method create query using by DBIx::Custom.
-query is two infomation
+This method create query using by L<DBIx::Custom>.
+query has two infomation
 
-    1.sql       : SQL
-    2.key_infos : Parameter access key information
+    1. sql       : SQL
+    2. key_infos : Parameter access key information
 
 =head2 add_tag_processor
 
 Add tag processor
-  
-    # Add
-    $self = $sql_tmpl->add_tag_processor($tag_processor);
+    
+    # For object
+    $self = $self->add_tag_processor($tag_processor);
+    
+    # For class
+    $class = $class->add_tag_processor($tag_processor);
     
     # Sample
     $sql_tmpl->add_tag_processor(
@@ -628,12 +644,14 @@ If you want to know more, Please see DBIx::Custom::SQL::Template source code.
 
 =head2 clone
 
-    # Clone DBIx::Custom::SQL::Template object
+Clone DBIx::Custom::SQL::Template object
+
     $clone = $self->clone;
     
 =head1 Available Tags
     
-    # Available Tags
+Available Tags
+
     [tag]            [expand]
     {? name}         ?
     {= name}         name = ?
@@ -647,24 +665,24 @@ If you want to know more, Please see DBIx::Custom::SQL::Template source code.
     {like name}      name like ?
     {in name}        name in [?, ?, ..]
     
-    {insert}  (key1, key2, key3) values (?, ?, ?)
-    {update}     set key1 = ?, key2 = ?, key3 = ?
+    {insert}         (key1, key2, key3) values (?, ?, ?)
+    {update}         set key1 = ?, key2 = ?, key3 = ?
     
-    # Sample1
+    # Sample
     $query = $sql_tmpl->create_sql(
         "insert into table {insert key1 key2}"
     );
-    # Result1
-    $sql : "insert into table (key1, key2) values (?, ?)"
+    # Expanded
+    $query->sql : "insert into table (key1, key2) values (?, ?)"
     
     
-    # Sample2
+    # Sample
     $query = $sql_tmpl->create_sql(
         "update table {update key1 key2} where {= key3}"
     );
     
-    # Result2
-    $query->{sql} : "update table set key1 = ?, key2 = ? where key3 = ?;"
+    # Expanded
+    $query->sql : "update table set key1 = ?, key2 = ? where key3 = ?;"
     
 =head1 AUTHOR
 

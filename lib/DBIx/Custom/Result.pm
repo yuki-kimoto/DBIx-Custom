@@ -256,7 +256,7 @@ Fetch a row
 Fetch row as hash
 
     $row = $self->fetch_hash; # hash reference
-    %row = $self->fecth_hash; # hash
+    %row = $self->fetch_hash; # hash
 
     # Sample
     while (my $row = $result->fetch_hash) {
@@ -282,7 +282,7 @@ This method fetch only first row and finish statement handle
 Fetch only first row as hash
 
     $row = $self->fetch_hash_first; # hash reference
-    @row = $self->fetch_hash_first; # hash
+    %row = $self->fetch_hash_first; # hash
     
     # Sample
     $row = $result->fetch_hash_first;
