@@ -3,7 +3,7 @@ use 5.008001;
 package DBIx::Custom;
 use Object::Simple;
 
-our $VERSION = '0.0602';
+our $VERSION = '0.0605';
 
 use Carp 'croak';
 use DBI;
@@ -198,10 +198,15 @@ sub create_query {
     my $sql_template = $self->sql_template;
     
     # Try to get cached query
-    my $query = $class->_query_caches->{$template};
+    my $cached_query = $class->_query_caches->{$template};
     
     # Create query
-    unless ($query) {
+    my $query;
+    if ($query) {
+        $query = $self->new(sql       => $cached_query->sql, 
+                            key_infos => $cached_query->key_infos);
+    }
+    else {
         $query = eval{$sql_template->create_query($template)};
         croak($@) if $@;
         

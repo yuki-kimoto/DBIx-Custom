@@ -10,6 +10,7 @@ my $class = __PACKAGE__;
 $class->add_filter(
     encode_utf8 => sub {
         my $value = shift;
+        return $value unless defined $value;
         utf8::upgrade($value) unless Encode::is_utf8($value);
         return encode('UTF-8', $value);
     },

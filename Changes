@@ -1,3 +1,11 @@
+0.0605
+  fix encode_utf8 filter
+0.0604
+  fix timeformat tests
+0.0603
+  fix cache system bug
+0.0602
+  update document
 0.0601
   bind_filter argument is changed to ($value, $key, $dbi, $infos) (not backword compatible)
   fetch_filter argument is changed to ($value, $key, $dbi, $infos) (not backword compatible)

@@ -34,52 +34,52 @@ $dbi = DBIx::Custom::SQLite->new;
 $data   = '2009-01-02 03:04:05';
 $format = $dbi->formats->{'SQL99_datetime'};
 $timepiece = Time::Piece->strptime($data, $format);
-is($timepiece->strftime('%F'), '2009-01-02', "$test : datetime date");
-is($timepiece->strftime('%T'), '03:04:05',  "$test : datetime time");
+is($timepiece->strftime('%Y-%m-%d'), '2009-01-02', "$test : datetime date");
+is($timepiece->strftime('%H:%M:%S'), '03:04:05',  "$test : datetime time");
 
 $data   = '2009-01-02';
 $format = $dbi->formats->{'SQL99_date'};
 $timepiece = Time::Piece->strptime($data, $format);
-is($timepiece->strftime('%F'), '2009-01-02', "$test : date");
+is($timepiece->strftime('%Y-%m-%d'), '2009-01-02', "$test : date");
 
 $data   = '03:04:05';
 $format = $dbi->formats->{'SQL99_time'};
 $timepiece = Time::Piece->strptime($data, $format);
-is($timepiece->strftime('%T'), '03:04:05',  "$test : time");
+is($timepiece->strftime('%H:%M:%S'), '03:04:05',  "$test : time");
 
 
 test 'ISO-8601 format';
 $data   = '2009-01-02T03:04:05';
 $format = $dbi->formats->{'ISO-8601_datetime'};
 $timepiece = Time::Piece->strptime($data, $format);
-is($timepiece->strftime('%F'), '2009-01-02', "$test : datetime date");
-is($timepiece->strftime('%T'), '03:04:05',  "$test : datetime time");
+is($timepiece->strftime('%Y-%m-%d'), '2009-01-02', "$test : datetime date");
+is($timepiece->strftime('%H:%M:%S'), '03:04:05',  "$test : datetime time");
 
 $data   = '2009-01-02';
 $format = $dbi->formats->{'ISO-8601_date'};
 $timepiece = Time::Piece->strptime($data, $format);
-is($timepiece->strftime('%F'), '2009-01-02', "$test : date");
+is($timepiece->strftime('%Y-%m-%d'), '2009-01-02', "$test : date");
 
 $data   = '03:04:05';
 $format = $dbi->formats->{'ISO-8601_time'};
 $timepiece = Time::Piece->strptime($data, $format);
-is($timepiece->strftime('%T'), '03:04:05',  "$test : time");
+is($timepiece->strftime('%H:%M:%S'), '03:04:05',  "$test : time");
 
 
 test 'default format';
 $data   = '2009-01-02 03:04:05';
 $format = $dbi->formats->{'datetime'};
 $timepiece = Time::Piece->strptime($data, $format);
-is($timepiece->strftime('%F'), '2009-01-02', "$test : datetime date");
-is($timepiece->strftime('%T'), '03:04:05',  "$test : datetime time");
+is($timepiece->strftime('%Y-%m-%d'), '2009-01-02', "$test : datetime date");
+is($timepiece->strftime('%H:%M:%S'), '03:04:05',  "$test : datetime time");
 
 $data   = '2009-01-02';
 $format = $dbi->formats->{'date'};
 $timepiece = Time::Piece->strptime($data, $format);
-is($timepiece->strftime('%F'), '2009-01-02', "$test : date");
+is($timepiece->strftime('%Y-%m-%d'), '2009-01-02', "$test : date");
 
 $data   = '03:04:05';
 $format = $dbi->formats->{'time'};
 $timepiece = Time::Piece->strptime($data, $format);
-is($timepiece->strftime('%T'), '03:04:05',  "$test : time");
+is($timepiece->strftime('%H:%M:%S'), '03:04:05',  "$test : time");
 
