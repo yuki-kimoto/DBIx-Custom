@@ -12,66 +12,40 @@ use DBIx::Custom::SQL::Template;
 
 
 ### Accessors
-sub user        : ClassObjectAttr { initialize => {clone => 'scalar'} }
-sub password    : ClassObjectAttr { initialize => {clone => 'scalar'} }
-sub data_source : ClassObjectAttr { initialize => {clone => 'scalar'} }
-
-sub options : ClassObjectAttr {
-    type       => 'hash',
-    initialize => {clone => 'hash', default => sub { {} }}
-}
-
-sub database     : ClassObjectAttr { initialize => {clone => 'scalar'} }
-sub host         : ClassObjectAttr { initialize => {clone => 'scalar'} }
-sub port         : ClassObjectAttr { initialize => {clone => 'scalar'} }
-
-sub bind_filter  : ClassObjectAttr { initialize => {clone => 'scalar'} }
-sub fetch_filter : ClassObjectAttr { initialize => {clone => 'scalar'} }
-
-sub no_bind_filters : ClassObjectAttr {
-    type       => 'array',
-    initialize => {clone => 'array', default => sub { [] }}
-}
-
-sub no_fetch_filters : ClassObjectAttr {
-    type => 'array',
-    initialize => {clone => 'array', default => sub { [] }}
-}
-
-sub filters : ClassObjectAttr {
-    type => 'hash',
-    deref => 1,
-    initialize => {
-        clone   => 'hash',
-        default => sub { {} }
-    }
-}
-
-sub formats : ClassObjectAttr {
-    type => 'hash',
-    deref => 1,
-    initialize => {
-        clone   => 'hash',
-        default => sub { {} }
-    }
-}
-
-sub result_class : ClassObjectAttr {
-    initialize => {
-        clone   => 'scalar',
-        default => 'DBIx::Custom::Result'
-    }
-}
-
-sub sql_tmpl : ClassObjectAttr {
-    initialize => {
-        clone   => sub {$_[0] ? $_[0]->clone : undef},
-        default => sub {DBIx::Custom::SQL::Template->new}
-    }
-}
-
 sub dbh : Attr {}
 
+sub _query_caches     : ClassAttr { type => 'hash',  build => sub {{}} }
+sub _query_cache_keys : ClassAttr { type => 'array', build => sub {[]} }
+sub query_cache_max   : ClassAttr { build => 50 }
+
+sub user         : HybridAttr { clone => 'scalar' }
+sub password     : HybridAttr { clone => 'scalar' }
+sub data_source  : HybridAttr { clone => 'scalar' }
+sub database     : HybridAttr { clone => 'scalar' }
+sub host         : HybridAttr { clone => 'scalar' }
+sub port         : HybridAttr { clone => 'scalar' }
+sub bind_filter  : HybridAttr { clone => 'scalar' }
+sub fetch_filter : HybridAttr { clone => 'scalar' }
+
+sub no_bind_filters  : HybridAttr { type  => 'array', build => sub {[]}, 
+                                    clone => 'array' }
+
+sub no_fetch_filters : HybridAttr { type  => 'array', build => sub { [] },
+                                    clone => 'array' }
+
+sub options : HybridAttr { type  => 'hash', build => sub {{}}, clone => 'hash' } 
+
+sub filters : HybridAttr { type  => 'hash', build => sub {{}},
+                           clone => 'hash', deref => 1 }
+
+sub formats : HybridAttr { type  => 'hash', build => sub { {} },
+                           clone => 'hash', deref => 1 }
+
+sub result_class : HybridAttr { build => 'DBIx::Custom::Result',
+                                clone => 'scalar' }
+
+sub sql_tmpl : HybridAttr { build => sub {DBIx::Custom::SQL::Template->new},
+                            clone => sub {$_[0] ? $_[0]->clone : undef} }
 
 ### Methods
 
@@ -731,14 +705,6 @@ sub select {
     
     return $result;
 }
-
-sub _query_caches     : ClassAttr { type => 'hash',
-                                    auto_build => sub {shift->_query_caches({}) } }
-                                    
-sub _query_cache_keys : ClassAttr { type => 'array',
-                                    auto_build => sub {shift->_query_cache_keys([])} }
-                                    
-sub query_cache_max   : ClassAttr { auto_build => sub {shift->query_cache_max(50)} }
 
 sub _add_query_cache {
     my ($class, $template, $query) = @_;

@@ -1,5 +1,5 @@
 package DBIx::Custom::SQL::Template;
-use Object::Simple;
+use Object::Simple; Object::Simple->build_class;
 
 use strict;
 use warnings;
@@ -7,23 +7,21 @@ use Carp 'croak';
 
 use DBIx::Custom::Query;
 
-# Accessor is created by Object::Simple.
+__PACKAGE__->add_tag_processor(
+    '?'      => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+    '='      => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+    '<>'     => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+    '>'      => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+    '<'      => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+    '>='     => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+    '<='     => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+    'like'   => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
+    'in'     => \&DBIx::Custom::SQL::Template::TagProcessors::expand_in_tag,
+    'insert' => \&DBIx::Custom::SQL::Template::TagProcessors::expand_insert_tag,
+    'update' => \&DBIx::Custom::SQL::Template::TagProcessors::expand_update_tag
+);
 
-### Class-Object accessors
-
-# Tag start
-sub tag_start   : ClassObjectAttr {
-    initialize => {default => '{', clone => 'scalar'}
-}
-
-# Tag end
-sub tag_end     : ClassObjectAttr {
-    initialize => {default => '}', clone => 'scalar'}
-}
-
-# Tag syntax
-sub tag_syntax  : ClassObjectAttr {
-    initialize => {default => <<'EOS', clone => 'scalar'}}
+__PACKAGE__->tag_syntax(<< 'EOS');
 [tag]                     [expand]
 {? name}                  ?
 {= name}                  name = ?
@@ -41,27 +39,16 @@ sub tag_syntax  : ClassObjectAttr {
 {update key1 key2}    set key1 = ?, key2 = ?
 EOS
 
-# Tag processors
-sub tag_processors : ClassObjectAttr {
-    type => 'hash',
-    deref => 1,
-    initialize => {
-        clone => 'hash', 
-        default => sub {{
-            '?'             => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
-            '='             => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
-            '<>'            => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
-            '>'             => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
-            '<'             => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
-            '>='            => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
-            '<='            => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
-            'like'          => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
-            'in'            => \&DBIx::Custom::SQL::Template::TagProcessors::expand_in_tag,
-            'insert'        => \&DBIx::Custom::SQL::Template::TagProcessors::expand_insert_tag,
-            'update'    => \&DBIx::Custom::SQL::Template::TagProcessors::expand_update_tag
-        }}
-    }
-}
+# Accessor is created by Object::Simple.
+
+### Class-Object accessors
+
+
+sub tag_start      : HybridAttr { build => '{', clone => 'scalar' }
+sub tag_end        : HybridAttr { build => '}', clone => 'scalar' }
+sub tag_syntax     : HybridAttr { clone => 'scalar' }
+sub tag_processors : HybridAttr { type  => 'hash', build => sub {{}},
+                                  clone => 'hash', deref => 1 }
 
 # Add Tag processor
 sub add_tag_processor {
@@ -234,7 +221,7 @@ sub _placeholder_count {
     return $count;
 }
 
-Object::Simple->build_class;
+1;
 
 
 package DBIx::Custom::SQL::Template::TagProcessors;
