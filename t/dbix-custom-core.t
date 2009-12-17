@@ -26,19 +26,19 @@ $dbi = DBIx::Custom->new(
     database => 'a',
     password => 'b',
     data_source => 'c',
-    dbi_options => {d => 1, e => 2},
+    options => {d => 1, e => 2},
     filters => {
         f => 3,
     },
     bind_filter => 'f',
     fetch_filter => 'g',
     result_class => 'g',
-    sql_template => $SQL_TMPL->{0},
+    sql_tmpl => $SQL_TMPL->{0},
 );
 is_deeply($dbi,{user => 'a', database => 'a', password => 'b', data_source => 'c', 
-                dbi_options => {d => 1, e => 2}, filters => {f => 3}, bind_filter => 'f',
+                options => {d => 1, e => 2}, filters => {f => 3}, bind_filter => 'f',
                 fetch_filter => 'g', result_class => 'g',
-                sql_template => $SQL_TMPL->{0}}, $test);
+                sql_tmpl => $SQL_TMPL->{0}}, $test);
 isa_ok($dbi, 'DBIx::Custom');
 
 
@@ -52,7 +52,7 @@ test 'Sub class constructor';
       ->database('a')
       ->password('b')
       ->data_source('c')
-      ->dbi_options({d => 1, e => 2})
+      ->options({d => 1, e => 2})
       ->filters(
           f => 3
       )
@@ -62,7 +62,7 @@ test 'Sub class constructor';
       ->bind_filter('f')
       ->fetch_filter('g')
       ->result_class('DBIx::Custom::Result')
-      ->sql_template($SQL_TMPL->{0})
+      ->sql_tmpl($SQL_TMPL->{0})
     ;
 }
 $dbi = DBIx::Custom::T1->new(
@@ -70,7 +70,7 @@ $dbi = DBIx::Custom::T1->new(
     database => 'ao',
     password => 'bo',
     data_source => 'co',
-    dbi_options => {do => 10, eo => 20},
+    options => {do => 10, eo => 20},
     filters => {
         fo => 30,
     },
@@ -80,19 +80,19 @@ $dbi = DBIx::Custom::T1->new(
     bind_filter => 'fo',
     fetch_filter => 'go',
     result_class => 'ho',
-    sql_template => $SQL_TMPL->{0},
+    sql_tmpl => $SQL_TMPL->{0},
 );
 is($dbi->user, 'ao', "$test : user");
 is($dbi->database, 'ao', "$test : database");
 is($dbi->password, 'bo', "$test : passowr");
 is($dbi->data_source, 'co', "$test : data_source");
-is_deeply($dbi->dbi_options, {do => 10, eo => 20}, "$test : dbi_options");
+is_deeply($dbi->options, {do => 10, eo => 20}, "$test : options");
 is_deeply(scalar $dbi->filters, {fo => 30}, "$test : filters");
 is_deeply(scalar $dbi->formats, {fo => 30}, "$test : formats");
 is($dbi->bind_filter, 'fo', "$test : bind_filter");
 is($dbi->fetch_filter, 'go', "$test : fetch_filter");
 is($dbi->result_class, 'ho', "$test : result_class");
-is($dbi->sql_template->tag_start, 0, "$test : sql_template");
+is($dbi->sql_tmpl->tag_start, 0, "$test : sql_tmpl");
 isa_ok($dbi, 'DBIx::Custom::T1');
 
 test 'Sub class constructor default';
@@ -101,13 +101,13 @@ is($dbi->user, 'a', "$test : user");
 is($dbi->database, 'a', "$test : database");
 is($dbi->password, 'b', "$test : password");
 is($dbi->data_source, 'c', "$test : data_source");
-is_deeply($dbi->dbi_options, {d => 1, e => 2}, "$test : dbi_options");
+is_deeply($dbi->options, {d => 1, e => 2}, "$test : options");
 is_deeply({$dbi->filters}, {f => 3}, "$test : filters");
 is_deeply({$dbi->formats}, {f => 3}, "$test : formats");
 is($dbi->bind_filter, 'f', "$test : bind_filter");
 is($dbi->fetch_filter, 'g', "$test : fetch_filter");
 is($dbi->result_class, 'DBIx::Custom::Result', "$test : result_class");
-is($dbi->sql_template->tag_start, 0, "$test : sql_template");
+is($dbi->sql_tmpl->tag_start, 0, "$test : sql_tmpl");
 isa_ok($dbi, 'DBIx::Custom::T1');
 
 
@@ -121,13 +121,13 @@ is($dbi->user, 'a', "$test : user");
 is($dbi->database, 'a', "$test : database");
 is($dbi->password, 'b', "$test : passowrd");
 is($dbi->data_source, 'c', "$test : data_source");
-is_deeply($dbi->dbi_options, {d => 1, e => 2}, "$test : dbi_options");
+is_deeply($dbi->options, {d => 1, e => 2}, "$test : options");
 is_deeply(scalar $dbi->filters, {f => 3}, "$test : filters");
 is_deeply(scalar $dbi->formats, {f => 3}, "$test : formats");
 is($dbi->bind_filter, 'f', "$test : bind_filter");
 is($dbi->fetch_filter, 'g', "$test : fetch_filter");
 is($dbi->result_class, 'DBIx::Custom::Result', "$test : result_class");
-is($dbi->sql_template->tag_start, 0, "$test sql_template");
+is($dbi->sql_tmpl->tag_start, 0, "$test sql_tmpl");
 isa_ok($dbi, 'DBIx::Custom::T1_2');
 
 
@@ -141,7 +141,7 @@ test 'Customized sub class constructor default';
       ->database('ao')
       ->password('bo')
       ->data_source('co')
-      ->dbi_options({do => 10, eo => 20})
+      ->options({do => 10, eo => 20})
       ->filters(
         fo => 30
       )
@@ -151,7 +151,7 @@ test 'Customized sub class constructor default';
       ->bind_filter('fo')
       ->fetch_filter('go')
       ->result_class('ho')
-      ->sql_template($SQL_TMPL->{1})
+      ->sql_tmpl($SQL_TMPL->{1})
     ;
 }
 $dbi = DBIx::Custom::T1_3->new;
@@ -159,13 +159,13 @@ is($dbi->user, 'ao', "$test : user");
 is($dbi->database, 'ao', "$test : database");
 is($dbi->password, 'bo', "$test : password");
 is($dbi->data_source, 'co', "$test : data_source");
-is_deeply($dbi->dbi_options, {do => 10, eo => 20}, "$test : dbi_options");
+is_deeply($dbi->options, {do => 10, eo => 20}, "$test : options");
 is_deeply(scalar $dbi->filters, {fo => 30}, "$test : filters");
 is_deeply(scalar $dbi->formats, {fo => 30}, "$test : formats");
 is($dbi->bind_filter, 'fo', "$test : bind_filter");
 is($dbi->fetch_filter, 'go', "$test : fetch_filter");
 is($dbi->result_class, 'ho', "$test : result_class");
-is($dbi->sql_template->tag_start, 1, "$test : sql_template");
+is($dbi->sql_tmpl->tag_start, 1, "$test : sql_tmpl");
 isa_ok($dbi, 'DBIx::Custom::T1_3');
 
 
@@ -175,7 +175,7 @@ $dbi = DBIx::Custom::T1_3->new(
     database => 'a',
     password => 'b',
     data_source => 'c',
-    dbi_options => {d => 1, e => 2},
+    options => {d => 1, e => 2},
     filters => {
         f => 3,
     },
@@ -185,19 +185,19 @@ $dbi = DBIx::Custom::T1_3->new(
     bind_filter => 'f',
     fetch_filter => 'g',
     result_class => 'h',
-    sql_template => $SQL_TMPL->{2},
+    sql_tmpl => $SQL_TMPL->{2},
 );
 is($dbi->user, 'a', "$test : user");
 is($dbi->database, 'a', "$test : database");
 is($dbi->password, 'b', "$test : password");
 is($dbi->data_source, 'c', "$test : data_source");
-is_deeply($dbi->dbi_options, {d => 1, e => 2}, "$test : dbi_options");
+is_deeply($dbi->options, {d => 1, e => 2}, "$test : options");
 is_deeply({$dbi->filters}, {f => 3}, "$test : filters");
 is_deeply({$dbi->formats}, {f => 3}, "$test : formats");
 is($dbi->bind_filter, 'f', "$test : bind_filter");
 is($dbi->fetch_filter, 'g', "$test : fetch_filter");
 is($dbi->result_class, 'h', "$test : result_class");
-is($dbi->sql_template->tag_start, 2, "$test : sql_template");
+is($dbi->sql_tmpl->tag_start, 2, "$test : sql_tmpl");
 isa_ok($dbi, 'DBIx::Custom');
 
 
@@ -218,3 +218,15 @@ $dbi->fetch_filter('b');
 $dbi->filter_off;
 ok(!$dbi->bind_filter,  "$test : bind_filter  off");
 ok(!$dbi->fetch_filter, "$test : fetch_filter off");
+
+__END__
+test 'Accessor';
+$dbi = DBIx::Custom->new;
+$dbi->options(opt1 => 1, opt2 => 2);
+is_deeply(scalar $dbi->options, {opt1 => 1, opt2 => 2}, "$test : options");
+
+$dbi->no_bind_filters('a', 'b');
+is_deeply(scalar $dbi->no_bind_filters, ['a', 'b'], "$test: no_bind_filters");
+
+$dbi->no_fetch_filters('a', 'b');
+is_deeply(scalar $dbi->no_fetch_filters, ['a', 'b'], "$test: no_fetch_filters");

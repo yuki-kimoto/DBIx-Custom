@@ -1,3 +1,10 @@
+0.0901
+  DBIx::Basic filter 'encode_utf8' utf8::upgrade process is deleted
+0.0801
+  add 'create_table', 'drop_table' methods
+0.0701
+  rename sql_template to sql_tmpl (not backword compatible)
+  rename dbi_options to options (not backword compatible)
 0.0605
   fix encode_utf8 filter
 0.0604

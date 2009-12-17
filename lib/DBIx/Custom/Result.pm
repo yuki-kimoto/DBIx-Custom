@@ -201,12 +201,16 @@ DBIx::Custom::Result - DBIx::Custom Resultset
 
 =head1 Synopsis
 
-    # $result is DBIx::Custom::Result object
-    my $dbi = DBIx::Custom->new;
-    my $result = $dbi->query($sql_template, $param);
+    my $result = $dbi->query($query);
     
-    while (my ($val1, $val2) = $result->fetch) {
-        # do something
+    # Fetch
+    while (my @row = $result->fetch) {
+        # Do something
+    }
+    
+    # Fetch hash
+    while (my %row = $result->fetch_hash) {
+        # Do something
     }
 
 =head1 Accessors
@@ -215,24 +219,21 @@ DBIx::Custom::Result - DBIx::Custom Resultset
 
 Set and Get statement handle
 
-    $self = $result->sth($sth);
-    $sth  = $reuslt->sth
+    $result = $result->sth($sth);
+    $sth    = $reuslt->sth
     
-    # Sample
-    $dbi->sth->errstr
-
 =head2 fetch_filter
 
 Set and Get fetch filter
 
-    $self         = $result->fetch_filter($sth);
-    $fetch_filter = $result->fech_filter;
+    $result         = $result->fetch_filter($sth);
+    $fetch_filter   = $result->fech_filter;
 
 =head2 no_fetch_filters
 
 Set and Get no filter keys when fetching
 
-    $self             = $result->no_fetch_filters($no_fetch_filters);
+    $result           = $result->no_fetch_filters($no_fetch_filters);
     $no_fetch_filters = $result->no_fetch_filters;
 
 =head1 Methods
@@ -241,10 +242,11 @@ Set and Get no filter keys when fetching
 
 Fetch a row
 
-    $row = $self->fetch; # array reference
-    @row = $self->fecth; # array
+    $row = $result->fetch; # array reference
+    @row = $result->fecth; # array
 
-    # Sample
+The following is fetch sample
+
     while (my $row = $result->fetch) {
         # do something
         my $val1 = $row->[0];
@@ -255,10 +257,11 @@ Fetch a row
 
 Fetch row as hash
 
-    $row = $self->fetch_hash; # hash reference
-    %row = $self->fetch_hash; # hash
+    $row = $result->fetch_hash; # hash reference
+    %row = $result->fetch_hash; # hash
 
-    # Sample
+The following is fetch_hash sample
+
     while (my $row = $result->fetch_hash) {
         # do something
         my $val1 = $row->{key1};
@@ -269,10 +272,11 @@ Fetch row as hash
 
 Fetch only first row(Scalar context)
 
-    $row = $self->fetch_first; # array reference
-    @row = $self->fetch_first; # array
+    $row = $result->fetch_first; # array reference
+    @row = $result->fetch_first; # array
     
-    # Sample
+The following is fetch_first sample
+
     $row = $result->fetch_first;
     
 This method fetch only first row and finish statement handle
@@ -281,10 +285,11 @@ This method fetch only first row and finish statement handle
     
 Fetch only first row as hash
 
-    $row = $self->fetch_hash_first; # hash reference
-    %row = $self->fetch_hash_first; # hash
+    $row = $result->fetch_hash_first; # hash reference
+    %row = $result->fetch_hash_first; # hash
     
-    # Sample
+The following is fetch_hash_first sample
+
     $row = $result->fetch_hash_first;
     
 This method fetch only first row and finish statement handle
@@ -293,10 +298,11 @@ This method fetch only first row and finish statement handle
 
 Fetch rows
 
-    $rows = $self->fetch_rows($row_count); # array ref of array ref
-    @rows = $self->fetch_rows($row_count); # array of array ref
+    $rows = $result->fetch_rows($row_count); # array ref of array ref
+    @rows = $result->fetch_rows($row_count); # array of array ref
     
-    # Sample 
+The following is fetch_rows sample
+
     while(my $rows = $result->fetch_rows(10)) {
         # do someting
     }
@@ -305,10 +311,11 @@ Fetch rows
 
 Fetch rows as hash
 
-    $rows = $self->fetch_hash_rows($row_count); # array ref of hash ref
-    @rows = $self->fetch_hash_rows($row_count); # array of hash ref
+    $rows = $result->fetch_hash_rows($row_count); # array ref of hash ref
+    @rows = $result->fetch_hash_rows($row_count); # array of hash ref
     
-    # Sample 
+The following is fetch_hash_rows sample
+
     while(my $rows = $result->fetch_hash_rows(10)) {
         # do someting
     }
@@ -317,31 +324,31 @@ Fetch rows as hash
 
 Fetch all rows
 
-    $rows = $self->fetch_all; # array ref of array ref
-    @rows = $self->fecth_all; # array of array ref
+    $rows = $result->fetch_all; # array ref of array ref
+    @rows = $result->fecth_all; # array of array ref
 
-    # Sample
+The following is fetch_all sample
+
     my $rows = $result->fetch_all;
 
 =head2 fetch_hash_all
 
 Fetch all row as array ref of hash ref (Scalar context)
 
-    $rows = $self->fetch_hash_all; # array ref of hash ref
-    @rows = $self->fecth_all_hash; # array of hash ref
+    $rows = $result->fetch_hash_all; # array ref of hash ref
+    @rows = $result->fecth_all_hash; # array of hash ref
 
-    # Sample
+The following is fetch_hash_all sample
+
     my $rows = $result->fetch_hash_all;
 
 =head2 error
 
 Get error infomation
 
-    $error_messege = $self->error;
-    ($error_message, $error_number, $error_state) = $self->error;
+    $error_messege = $result->error;
+    ($error_message, $error_number, $error_state) = $result->error;
     
-    # Sample
-    $error = $result->error;
 
 You can get get information. This is same as the following.
 
@@ -353,10 +360,6 @@ You can get get information. This is same as the following.
 
 Finish statement handle
 
-    $ret_val = $self->finish
-    
-    # Sample
-    my $row = $reuslt->fetch; # fetch a row
     $result->finish
 
 This is equel to

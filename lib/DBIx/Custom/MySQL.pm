@@ -53,24 +53,9 @@ DBIx::Custom::MySQL - DBIx::Custom MySQL implementation
 
     # New
     my $dbi = DBIx::Custom::MySQL->new(user => 'taro', $password => 'kliej&@K',
-                                      database => 'sample_db');
-    # Insert 
-    $dbi->insert('books', {title => 'perl', author => 'taro'});
-    
-    # Update 
-    # same as 'update books set title = 'aaa', author = 'ken' where id = 5;
-    $dbi->update('books', {title => 'aaa', author => 'ken'}, {id => 5});
-    
-    # Delete
-    $dbi->delete('books', {author => 'taro'});
-    
-    # select * from books;
-    $dbi->select('books');
-    
-    # select * from books where ahthor = 'taro'; 
-    $dbi->select('books', {author => 'taro'});
+                                       database => 'sample_db');
 
-=head1 See DBIx::Custom and DBI::Custom::Basic documentation at first
+=head1 See DBIx::Custom and DBIx::Custom::Basic documentation at first
 
 This class is L<DBIx::Custom::Basic> subclass,
 and L<DBIx::Custom::Basic> is L<DBIx::Custom> subclass.
@@ -84,20 +69,18 @@ Please see L<DBIx::Custom::Basic> and <DBIx::Custom> documentation.
 
 Connect to database
 
-    $self = $self->connect;
-    
-    # Sample
-    $dbi->connect;
+    $self->connect;
 
 This override L<DBIx::Custom> connect.
 
-If you set database, host, or port, data source is automatically created and connect
+If you set database, host, or port, data source is automatically created.
 
 =head2 last_insert_id
 
-    $last_insert_id = $self->last_insert_id;
-    
-    # Sample
+    $last_insert_id = $dbi->last_insert_id;
+
+The folloing is last_insert_id sample.
+
     $dbi->insert('books', {title => 'Perl', author => 'taro'});
     $last_insert_id = $dbi->last_insert_id;
 

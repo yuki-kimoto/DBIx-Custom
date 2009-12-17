@@ -486,19 +486,6 @@ DBIx::Custom::SQL::Template - DBIx::Custom SQL Template
     my $param = {k1 => 1, k2 => 2, k3 => 3};
     
     my $query = $sql_template->create_query($tmpl);
-    
-    
-    # Using query from DBIx::Custom
-    use DBIx::Custom;
-    my $dbi = DBI->new(
-       data_source => $data_source,
-       user        => $user,
-       password    => $password, 
-       dbi_options => {PrintError => 0, RaiseError => 1}
-    );
-    
-    $query = $dbi->create_query($tmpl); # This is SQL::Template create_query
-    $dbi->query($query, $param);
 
 =head1 Accessors
 
@@ -506,65 +493,34 @@ DBIx::Custom::SQL::Template - DBIx::Custom SQL Template
 
 Set and get tag processors
 
-    # For object
-    $self           = $self->tag_processors($tag_processors);
-    $tag_processors = $self->tag_processors;
-
-    # For class
-    $class          = $class->tag_processors($tag_processors);
-    $tag_processors = $class->tag_processors;
-
-    # Sample
-    $placeholder_tag_processor = $sql_tmpl->tag_processor->{'?'};
+    $sql_tmpl       = $sql_tmpl->tag_processors($name1 => $tag_processor1
+                                                $name2 => $tag_processor2);
+    $tag_processors = $sql_tmpl->tag_processors;
 
 =head2 tag_start
 
 Set and get start tag
     
-    # For object
-    $self      = $self->tag_start($tag_start);
-    $tag_start = $self->tag_start;
-    
-    # For class
-    $class     = $class->tag_start($tag_start);
-    $tag_start = $class->tag_start;
-    
-    # Sample
-    $sql_tmpl->tag_start('{');
+    $sql_tmpl  = $sql_tmpl->tag_start('{');
+    $tag_start = $sql_tmpl->tag_start;
 
-Default is '{'
+tag_start default is '{'
 
 =head2 tag_end
 
 Set and get end tag
     
-    # For object
-    $self    = $self->tag_start($tag_end);
-    $tag_end = $self->tag_start;
-    
-    # For class
-    $self    = $self->tag_start($tag_end);
-    $tag_end = $self->tag_start;
-    
-    # Sample
-    $sql_tmpl->tag_start('}');
+    $sql_tmpl    = $sql_tmpl->tag_start('}');
+    $tag_end = $sql_tmpl->tag_start;
 
-Default is '}'
+tag_start default is '}'
     
 =head2 tag_syntax
     
 Set and get tag syntax
     
-    # For object
-    $self       = $self->tag_syntax($tag_syntax);
-    $tag_syntax = $self->tag_syntax;
-
-    # For class
-    $class      = $class->tag_syntax($tag_syntax);
-    $tag_syntax = $class->tag_syntax;
-    
-    # Sample
-    $syntax = $sql_tmpl->tag_syntax;
+    $sql_tmpl   = $sql_tmpl->tag_syntax($tag_syntax);
+    $tag_syntax = $sql_tmpl->tag_syntax;
 
 =head1 Methods
 
@@ -572,7 +528,7 @@ Set and get tag syntax
     
 Create L<DBIx::Custom::Query> object parsing SQL template
 
-    $query = $self->create_query($tmpl);
+    $query = $sql_tmpl->create_query($tmpl);
     
     # Sample
     $query = $sql_tmpl->create_sql(
@@ -603,13 +559,10 @@ query has two infomation
 
 Add tag processor
     
-    # For object
-    $self = $self->add_tag_processor($tag_processor);
-    
-    # For class
-    $class = $class->add_tag_processor($tag_processor);
-    
-    # Sample
+    $sql_tmpl = $sql_tmpl->add_tag_processor($tag_processor);
+
+The following is add_tag_processor sample
+
     $sql_tmpl->add_tag_processor(
         '?' => sub {
             my ($tag_name, $tag_args) = @_;
@@ -646,7 +599,7 @@ If you want to know more, Please see DBIx::Custom::SQL::Template source code.
 
 Clone DBIx::Custom::SQL::Template object
 
-    $clone = $self->clone;
+    $clone = $sql_tmpl->clone;
     
 =head1 Available Tags
     
@@ -668,15 +621,18 @@ Available Tags
     {insert}         (key1, key2, key3) values (?, ?, ?)
     {update}         set key1 = ?, key2 = ?, key3 = ?
     
-    # Sample
+
+The following is insert SQL sample
+
     $query = $sql_tmpl->create_sql(
         "insert into table {insert key1 key2}"
     );
+    
     # Expanded
     $query->sql : "insert into table (key1, key2) values (?, ?)"
+
+The following is update SQL sample
     
-    
-    # Sample
     $query = $sql_tmpl->create_sql(
         "update table {update key1 key2} where {= key3}"
     );

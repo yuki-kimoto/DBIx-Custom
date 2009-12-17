@@ -72,30 +72,10 @@ DBIx::Custom::SQLite - DBIx::Custom SQLite implementation
     my $dbi = DBIx::Custom::SQLite->new(user => 'taro', $password => 'kliej&@K',
                                         database => 'sample');
     
-    # Insert 
-    $dbi->insert('books', {title => 'perl', author => 'taro'});
+    # Connect memory database
+    my $dbi->connect_memory;
     
-    # Update 
-    # same as 'update books set title = 'aaa', author = 'ken' where id = 5;
-    $dbi->update('books', {title => 'aaa', author => 'ken'}, {id => 5});
-    
-    # Delete
-    $dbi->delete('books', {author => 'taro'});
-    
-    # select * from books;
-    $dbi->select('books');
-    
-    # select * from books where ahthor = 'taro'; 
-    $dbi->select('books', {author => 'taro'}); 
-    
-    # select author, title from books where author = 'taro'
-    $dbi->select('books', [qw/author title/], {author => 'taro'});
-    
-    # select author, title from books where author = 'taro' order by id limit 1;
-    $dbi->select('books', [qw/author title/], {author => 'taro'},
-                 'order by id limit 1');
-
-=head1 See DBIx::Custom and DBI::Custom::Basic documentation at first
+=head1 See DBIx::Custom and DBIx::Custom::Basic documentation at first
 
 This class is L<DBIx::Custom::Basic> subclass.
 and L<DBIx::Custom::Basic> is L<DBIx::Custom> subclass
@@ -103,46 +83,36 @@ and L<DBIx::Custom::Basic> is L<DBIx::Custom> subclass
 You can use all methods of L<DBIx::Custom::Basic> and <DBIx::Custom>
 Please see L<DBIx::Custom::Basic> and <DBIx::Custom> documentation
 
-=head1 methods
+=head1 Methods
 
 =head2 connect
 
 Connect to database
 
-    $self = $self->connect;
-    
-    # Sample
     $dbi->connect;
 
-This override L<DBIx::Custom> connect.
-
-If you set database, data source is automatically created and connect
+If you set database, host, or port, data source is automatically created.
 
 =head2 connect_memory
 
 Connect memory database
 
-    $self = $self->connect_memory;
-    
-    # Sample
     $dbi->connect_memory;
 
 =head2 reconnect_memory
 
 Reconnect to memory databsse
 
-    $self = $self->reconnect_memory;
-    
-    # Sample
-    $self = $dbi->reconnect_memory;
+    $dbi->reconnect_memory;
 
 =head2 last_insert_id
 
 Get last insert id
 
-    $last_insert_id = $self->last_insert_id;
+    $last_insert_id = $dbi->last_insert_id;
     
-    # Sample
+The folloing is last_insert_id sample.
+
     $dbi->insert('books', {title => 'Perl', author => 'taro'});
     $last_insert_id = $dbi->last_insert_id;
 

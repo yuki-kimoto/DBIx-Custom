@@ -8,12 +8,7 @@ use Encode qw/decode encode/;
 my $class = __PACKAGE__;
 
 $class->add_filter(
-    encode_utf8 => sub {
-        my $value = shift;
-        return $value unless defined $value;
-        utf8::upgrade($value) unless Encode::is_utf8($value);
-        return encode('UTF-8', $value);
-    },
+    encode_utf8 => sub { encode('UTF-8', shift) },
     decode_utf8 => sub { decode('UTF-8', shift) }
 );
 
@@ -57,9 +52,6 @@ Please see L<DBIx::Custom> documentation
 
 Encode and decode utf8 filter on
 
-    $self = $self->utf8_filter_on;
-    
-    # Sample
     $dbi->utf8_filter_on;
 
 This equel to
@@ -71,7 +63,9 @@ This equel to
 
 =head2 encode_utf8
 
-    # Encode to UTF-8 byte stream (utf8::upgrade is done if need)
+Encode internal string to UTF-8 byte stream
+If need, utf8::upgrade is also done.
+
     $dbi->filters->{encode_utf8}->($value);
     
 This filter is generally used as bind filter
@@ -80,7 +74,7 @@ This filter is generally used as bind filter
 
 =head2 decode_utf8
 
-    # Decode to perl internal string
+Decode UTF-8 byte stream to internal string
     $dbi->filters->{decode_utf8}->($value);
     
 This filter is generally used as fetch filter

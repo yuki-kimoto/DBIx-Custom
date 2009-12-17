@@ -27,20 +27,19 @@ Object::Simple->build_class;
 DBIx::Custom::Query - DBIx::Custom query
 
 =head1 SYNOPSIS
-
-    # Create query
-    my $dbi = DBIx::Custom->new;
-    my $query = $dbi->create_query($template);
     
-    # Set query attributes
+    # New
+    my $query = DBIx::Custom::Query->new;
+    
+    # Create by using create_query
+    my $query = DBIx::Custom->create_query($template);
+    
+    # Set attributes
     $query->bind_filter($dbi->filters->{default_bind_filter});
     $query->no_bind_filters('title', 'author');
     
     $query->fetch_filter($dbi->filters->{default_fetch_filter});
     $query->no_fetch_filters('title', 'author');
-    
-    # Execute query
-    $dbi->execute($query, $params);
 
 =head1 Accessors
 
@@ -48,50 +47,50 @@ DBIx::Custom::Query - DBIx::Custom query
 
 Set and get statement handle
 
-    $self = $self->sth($sql);
-    $sth  = $self->sth;
+    $query = $query->sth($sth);
+    $sth   = $query->sth;
 
 =head2 sql
 
 Set and get SQL
 
-    $self = $self->sql($sql);
-    $sql  = $self->sql;
+    $query = $query->sql($sql);
+    $sql   = $query->sql;
 
 =head2 bind_filter
 
 Set and get bind filter
 
-    $self        = $self->bind_filter($bind_filter);
-    $bind_filter = $self->bind_filter;
+    $query       = $query->bind_filter($bind_filter);
+    $bind_filter = $query->bind_filter;
 
 =head2 no_bind_filters
 
 Set and get keys of no filtering
 
-    $self            = $self->no_bind_filters($no_filters);
-    $no_bind_filters = $self->no_bind_filters;
+    $query           = $query->no_bind_filters($no_filters);
+    $no_bind_filters = $query->no_bind_filters;
 
 =head2 fetch_filter
 
 Set and get fetch filter
 
-    $self         = $self->fetch_filter($fetch_filter);
-    $fetch_filter = $self->fetch_filter;
+    $query        = $query->fetch_filter($fetch_filter);
+    $fetch_filter = $query->fetch_filter;
 
 =head2 no_fetch_filters
 
 Set and get keys of no filtering
 
-    $self             = $self->no_fetch_filters($no_filters);
-    $no_fetch_filters = $self->no_fetch_filters;
+    $query            = $query->no_fetch_filters($no_filters);
+    $no_fetch_filters = $query->no_fetch_filters;
 
 =head2 key_infos
 
 Set and get key informations
 
-    $self      = $self->key_infos($key_infos);
-    $key_infos = $self->key_infos;
+    $query     = $query->key_infos($key_infos);
+    $key_infos = $query->key_infos;
 
 =head1 AUTHOR
 
