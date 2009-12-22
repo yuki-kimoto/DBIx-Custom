@@ -1,23 +1,31 @@
 package DBIx::Custom::Result;
-use Object::Simple;
+use base 'Object::Simple::Base';
 
 use strict;
 use warnings;
 use Carp 'croak';
 
-# Attributes
-sub _dbi             : Attr {}
-sub sth              : Attr {}
-sub fetch_filter     : Attr {}
+use Object::Simple::Util;
 
-sub no_fetch_filters : Attr { type => 'array', trigger => sub {
+my $p = __PACKAGE__;
+
+$p->attr([qw/_dbi sth fetch_filter/])
+  ->attr(_no_fetch_filters_map => sub { {} });
+
+$p->attr(no_fetch_filters => (type => 'array', trigger => sub {
     my $self = shift;
     my $no_fetch_filters = $self->no_fetch_filters || [];
     my %no_fetch_filters_map = map {$_ => 1} @{$no_fetch_filters};
     $self->_no_fetch_filters_map(\%no_fetch_filters_map);
-}}
+}));
 
-sub _no_fetch_filters_map : Attr {default => sub { {} }}
+sub new {
+    my $self = shift->SUPER::new(@_);
+    
+    Object::Simple::Util->init_attrs($self, 'no_fetch_filters');
+    
+    return $self;
+}
 
 # Fetch (array)
 sub fetch {
@@ -193,8 +201,6 @@ sub error {
     return wantarray ? ($sth->errstr, $sth->err, $sth->state) : $sth->errstr;
 }
 
-Object::Simple->build_class;
-
 =head1 NAME
 
 DBIx::Custom::Result - DBIx::Custom Resultset
@@ -237,6 +243,10 @@ Set and Get no filter keys when fetching
     $no_fetch_filters = $result->no_fetch_filters;
 
 =head1 Methods
+
+=head2 new
+
+    my $result = DBIx::Custom::Result->new;
 
 =head2 fetch
 

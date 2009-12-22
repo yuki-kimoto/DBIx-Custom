@@ -1,5 +1,5 @@
 package DBIx::Custom::SQL::Template;
-use Object::Simple; Object::Simple->build_class;
+use base 'Object::Simple::Base';
 
 use strict;
 use warnings;
@@ -7,7 +7,17 @@ use Carp 'croak';
 
 use DBIx::Custom::Query;
 
-__PACKAGE__->add_tag_processor(
+my $p = __PACKAGE__;
+
+$p->hybrid_attr(tag_processors => (type  => 'hash', default => sub { {} },
+                                   deref => 1,      clone   => 'hash'));
+
+$p->hybrid_attr(tag_start => (default => '{', clone => 'scalar'))
+  ->hybrid_attr(tag_end   => (default => '}', clone => 'scalar'));
+
+$p->hybrid_attr(tag_syntax => (clone => 'scalar'));
+
+$p->add_tag_processor(
     '?'      => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
     '='      => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
     '<>'     => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
@@ -21,7 +31,7 @@ __PACKAGE__->add_tag_processor(
     'update' => \&DBIx::Custom::SQL::Template::TagProcessors::expand_update_tag
 );
 
-__PACKAGE__->tag_syntax(<< 'EOS');
+$p->tag_syntax(<< 'EOS');
 [tag]                     [expand]
 {? name}                  ?
 {= name}                  name = ?
@@ -39,16 +49,6 @@ __PACKAGE__->tag_syntax(<< 'EOS');
 {update key1 key2}    set key1 = ?, key2 = ?
 EOS
 
-# Accessor is created by Object::Simple.
-
-### Class-Object accessors
-
-
-sub tag_start      : HybridAttr { build => '{', clone => 'scalar' }
-sub tag_end        : HybridAttr { build => '}', clone => 'scalar' }
-sub tag_syntax     : HybridAttr { clone => 'scalar' }
-sub tag_processors : HybridAttr { type  => 'hash', build => sub {{}},
-                                  clone => 'hash', deref => 1 }
 
 # Add Tag processor
 sub add_tag_processor {

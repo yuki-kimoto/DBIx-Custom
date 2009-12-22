@@ -1,26 +1,29 @@
 package DBIx::Custom::Query;
-use Object::Simple;
+use base 'Object::Simple::Base';
 
 use strict;
 use warnings;
 
-sub sql             : Attr {}
-sub key_infos       : Attr {}
-sub bind_filter     : Attr {}
-sub fetch_filter     : Attr {}
-sub sth             : Attr {}
+my $p = __PACKAGE__;
 
-sub no_bind_filters      : Attr { type => 'array', trigger => sub {
+$p->attr([qw/sql key_infos bind_filter fetch_filter sth/])
+  ->attr(_no_bind_filters_map => sub { {} })
+  ->attr(no_fetch_filters => (type => 'array', default => sub { [] }));
+
+$p->attr(no_bind_filters => (type => 'array', trigger => sub {
     my $self = shift;
     my $no_bind_filters = $self->no_bind_filters || [];
     my %no_bind_filters_map = map {$_ => 1} @{$no_bind_filters};
     $self->_no_bind_filters_map(\%no_bind_filters_map);
-}}
-sub _no_bind_filters_map : Attr {default => sub { {} }}
+}));
 
-sub no_fetch_filters     : Attr { type => 'array', default => sub { [] } }
-
-Object::Simple->build_class;
+sub new {
+    my $self = shift->SUPER::new(@_);
+    
+    Object::Simple::Util->init_attrs($self, 'no_bind_filters');
+    
+    return $self;
+}
 
 =head1 NAME
 
@@ -92,6 +95,12 @@ Set and get key informations
     $query     = $query->key_infos($key_infos);
     $key_infos = $query->key_infos;
 
+=head1 Methods
+
+=head2 new
+
+    my $query = DBIx::Custom::Query->new;
+    
 =head1 AUTHOR
 
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
