@@ -6,59 +6,48 @@ use warnings;
 
 use 5.008001;
 
-
-our $VERSION = '0.0901';
-
 use Carp 'croak';
 use DBI;
 use DBIx::Custom::Result;
 use DBIx::Custom::SQL::Template;
 
-my $p = __PACKAGE__;
+__PACKAGE__->attr('dbh');
 
-$p->attr('dbh');
+__PACKAGE__->class_attr(_query_caches     => sub { {} });
+__PACKAGE__->class_attr(_query_cache_keys => sub { [] });
+__PACKAGE__->class_attr('query_cache_max', default => 50, clone => 'scalar');
 
-$p->class_attr(_query_caches     => (type => 'hash',  default => sub { {} }))
-  ->class_attr(_query_cache_keys => (type => 'array', default => sub { [] }))
-  ->class_attr(query_cache_max   => 50);
+__PACKAGE__->dual_attr([qw/user password data_source/], clone => 'scalar');
+__PACKAGE__->dual_attr([qw/database host port/],        clone => 'scalar');
+__PACKAGE__->dual_attr([qw/bind_filter fetch_filter/],  clone => 'scalar');
 
-$p->hybrid_attr([qw/user password data_source
-                   database host port 
-                   bind_filter fetch_filter/] => (clone => 'scalar'));
+__PACKAGE__->dual_attr([qw/no_bind_filters no_fetch_filters/],
+                       default => sub { [] }, clone => 'array');
 
-$p->hybrid_attr([qw/no_bind_filters no_fetch_filters/]
-            => (type => 'array', default => sub { [] }, clone => 'array'));
+__PACKAGE__->dual_attr([qw/options filters formats/],
+                       default => sub { {} }, clone => 'hash');
 
-$p->hybrid_attr(options => (type  => 'hash', default => sub { {} },
-                            clone => 'hash'));
+__PACKAGE__->dual_attr('result_class', default => 'DBIx::Custom::Result',
+                                       clone   => 'scalar');
 
-$p->hybrid_attr([qw/filters formats/]
-            => (type => 'hash', default => sub { {} },
-                deref => 1,     clone   => 'hash'));
-
-$p->hybrid_attr(result_class => (default => 'DBIx::Custom::Result',
-                                 clone   => 'scalar'));
-
-$p->hybrid_attr(sql_tmpl => (default => sub {DBIx::Custom::SQL::Template->new},
-                             clone => sub {$_[0] ? $_[0]->clone : undef}));
-
-### Methods
+__PACKAGE__->dual_attr('sql_tmpl', default => sub {DBIx::Custom::SQL::Template->new},
+                                   clone   => sub {$_[0] ? $_[0]->clone : undef});
 
 sub add_filter {
     my $invocant = shift;
     
-    my %old_filters = $invocant->filters;
-    my %new_filters = ref $_[0] eq 'HASH' ? %{$_[0]} : @_;
-    $invocant->filters(%old_filters, %new_filters);
+    my $filters = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $invocant->filters({%{$invocant->filters}, %$filters});
+    
     return $invocant;
 }
 
 sub add_format{
     my $invocant = shift;
     
-    my %old_formats = $invocant->formats;
-    my %new_formats = ref $_[0] eq 'HASH' ? %{$_[0]} : @_;
-    $invocant->formats(%old_formats, %new_formats);
+    my $formats = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $invocant->formats({%{$invocant->formats}, %$formats});
+
     return $invocant;
 }
 
@@ -737,7 +726,11 @@ DBIx::Custom - Customizable DBI
 
 =head1 VERSION
 
-Version 0.0801
+Version 0.0903
+
+=cut
+
+our $VERSION = '0.0903';
 
 =head1 SYNOPSYS
     

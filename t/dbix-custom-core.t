@@ -53,12 +53,8 @@ test 'Sub class constructor';
       ->password('b')
       ->data_source('c')
       ->options({d => 1, e => 2})
-      ->filters(
-          f => 3
-      )
-      ->formats(
-          f => 3
-      )
+      ->filters({f => 3})
+      ->formats({f => 3})
       ->bind_filter('f')
       ->fetch_filter('g')
       ->result_class('DBIx::Custom::Result')
@@ -102,8 +98,8 @@ is($dbi->database, 'a', "$test : database");
 is($dbi->password, 'b', "$test : password");
 is($dbi->data_source, 'c', "$test : data_source");
 is_deeply($dbi->options, {d => 1, e => 2}, "$test : options");
-is_deeply({$dbi->filters}, {f => 3}, "$test : filters");
-is_deeply({$dbi->formats}, {f => 3}, "$test : formats");
+is_deeply($dbi->filters, {f => 3}, "$test : filters");
+is_deeply($dbi->formats, {f => 3}, "$test : formats");
 is($dbi->bind_filter, 'f', "$test : bind_filter");
 is($dbi->fetch_filter, 'g', "$test : fetch_filter");
 is($dbi->result_class, 'DBIx::Custom::Result', "$test : result_class");
@@ -142,12 +138,8 @@ test 'Customized sub class constructor default';
       ->password('bo')
       ->data_source('co')
       ->options({do => 10, eo => 20})
-      ->filters(
-        fo => 30
-      )
-      ->formats(
-        fo => 30
-      )
+      ->filters({fo => 30})
+      ->formats({fo => 30})
       ->bind_filter('fo')
       ->fetch_filter('go')
       ->result_class('ho')
@@ -192,8 +184,8 @@ is($dbi->database, 'a', "$test : database");
 is($dbi->password, 'b', "$test : password");
 is($dbi->data_source, 'c', "$test : data_source");
 is_deeply($dbi->options, {d => 1, e => 2}, "$test : options");
-is_deeply({$dbi->filters}, {f => 3}, "$test : filters");
-is_deeply({$dbi->formats}, {f => 3}, "$test : formats");
+is_deeply($dbi->filters, {f => 3}, "$test : filters");
+is_deeply($dbi->formats, {f => 3}, "$test : formats");
 is($dbi->bind_filter, 'f', "$test : bind_filter");
 is($dbi->fetch_filter, 'g', "$test : fetch_filter");
 is($dbi->result_class, 'h', "$test : result_class");
@@ -219,14 +211,13 @@ $dbi->filter_off;
 ok(!$dbi->bind_filter,  "$test : bind_filter  off");
 ok(!$dbi->fetch_filter, "$test : fetch_filter off");
 
-__END__
 test 'Accessor';
 $dbi = DBIx::Custom->new;
-$dbi->options(opt1 => 1, opt2 => 2);
+$dbi->options({opt1 => 1, opt2 => 2});
 is_deeply(scalar $dbi->options, {opt1 => 1, opt2 => 2}, "$test : options");
 
-$dbi->no_bind_filters('a', 'b');
+$dbi->no_bind_filters(['a', 'b']);
 is_deeply(scalar $dbi->no_bind_filters, ['a', 'b'], "$test: no_bind_filters");
 
-$dbi->no_fetch_filters('a', 'b');
+$dbi->no_fetch_filters(['a', 'b']);
 is_deeply(scalar $dbi->no_fetch_filters, ['a', 'b'], "$test: no_fetch_filters");

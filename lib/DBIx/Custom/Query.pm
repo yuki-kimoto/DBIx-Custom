@@ -4,18 +4,16 @@ use base 'Object::Simple::Base';
 use strict;
 use warnings;
 
-my $p = __PACKAGE__;
+__PACKAGE__->attr([qw/sql key_infos bind_filter fetch_filter sth/]);
+__PACKAGE__->attr(_no_bind_filters_map => sub { {} });
+__PACKAGE__->attr(no_fetch_filters => sub { [] });
 
-$p->attr([qw/sql key_infos bind_filter fetch_filter sth/])
-  ->attr(_no_bind_filters_map => sub { {} })
-  ->attr(no_fetch_filters => (type => 'array', default => sub { [] }));
-
-$p->attr(no_bind_filters => (type => 'array', trigger => sub {
+__PACKAGE__->attr('no_bind_filters', trigger => sub {
     my $self = shift;
     my $no_bind_filters = $self->no_bind_filters || [];
     my %no_bind_filters_map = map {$_ => 1} @{$no_bind_filters};
     $self->_no_bind_filters_map(\%no_bind_filters_map);
-}));
+});
 
 sub new {
     my $self = shift->SUPER::new(@_);

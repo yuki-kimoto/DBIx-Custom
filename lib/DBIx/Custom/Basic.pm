@@ -5,14 +5,12 @@ use warnings;
 use strict;
 use Encode qw/decode encode/;
 
-my $class = __PACKAGE__;
-
-$class->add_filter(
+__PACKAGE__->add_filter(
     encode_utf8 => sub { encode('UTF-8', shift) },
     decode_utf8 => sub { decode('UTF-8', shift) }
 );
 
-$class->add_format(
+__PACKAGE__->add_format(
     'SQL99_date'        => '%Y-%m-%d',
     'SQL99_datetime'    => '%Y-%m-%d %H:%M:%S',
     'SQL99_time'        => '%H:%M:%S',

@@ -227,8 +227,8 @@ $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 2, key2 => 6}], "$test : bind_filter fetch_filter");
 
 $dbi->do("delete from table1;");
-$insert_query->no_bind_filters('key1');
-$select_query->no_fetch_filters('key2');
+$insert_query->no_bind_filters(['key1']);
+$select_query->no_fetch_filters(['key2']);
 $dbi->query($insert_query, {key1 => 1, key2 => 2});
 $result = $dbi->query($select_query);
 $rows = $result->fetch_hash_all;

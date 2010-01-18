@@ -5,12 +5,10 @@ use strict;
 use warnings;
 use Carp 'croak';
 
-my $p = __PACKAGE__;
-
-$p->add_format(
-    datetime => $p->formats->{SQL99_datetime},
-    date     => $p->formats->{SQL99_date},
-    time     => $p->formats->{SQL99_time},
+__PACKAGE__->add_format(
+    datetime => __PACKAGE__->formats->{SQL99_datetime},
+    date     => __PACKAGE__->formats->{SQL99_date},
+    time     => __PACKAGE__->formats->{SQL99_time},
 );
 
 sub connect {

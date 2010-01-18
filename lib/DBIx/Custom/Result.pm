@@ -7,17 +7,15 @@ use Carp 'croak';
 
 use Object::Simple::Util;
 
-my $p = __PACKAGE__;
+__PACKAGE__->attr([qw/_dbi sth fetch_filter/]);
+__PACKAGE__->attr(_no_fetch_filters_map => sub { {} });
 
-$p->attr([qw/_dbi sth fetch_filter/])
-  ->attr(_no_fetch_filters_map => sub { {} });
-
-$p->attr(no_fetch_filters => (type => 'array', trigger => sub {
+__PACKAGE__->attr('no_fetch_filters', trigger => sub {
     my $self = shift;
     my $no_fetch_filters = $self->no_fetch_filters || [];
     my %no_fetch_filters_map = map {$_ => 1} @{$no_fetch_filters};
     $self->_no_fetch_filters_map(\%no_fetch_filters_map);
-}));
+});
 
 sub new {
     my $self = shift->SUPER::new(@_);

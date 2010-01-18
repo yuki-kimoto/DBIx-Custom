@@ -7,17 +7,15 @@ use Carp 'croak';
 
 use DBIx::Custom::Query;
 
-my $p = __PACKAGE__;
+__PACKAGE__->dual_attr('tag_processors', default => sub { {} },
+                                         clone   => 'hash');
 
-$p->hybrid_attr(tag_processors => (type  => 'hash', default => sub { {} },
-                                   deref => 1,      clone   => 'hash'));
+__PACKAGE__->dual_attr('tag_start', default => '{', clone => 'scalar');
+__PACKAGE__->dual_attr('tag_end',   default => '}', clone => 'scalar');
 
-$p->hybrid_attr(tag_start => (default => '{', clone => 'scalar'))
-  ->hybrid_attr(tag_end   => (default => '}', clone => 'scalar'));
+__PACKAGE__->dual_attr('tag_syntax', clone => 'scalar');
 
-$p->hybrid_attr(tag_syntax => (clone => 'scalar'));
-
-$p->add_tag_processor(
+__PACKAGE__->add_tag_processor(
     '?'      => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
     '='      => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
     '<>'     => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
@@ -31,7 +29,7 @@ $p->add_tag_processor(
     'update' => \&DBIx::Custom::SQL::Template::TagProcessors::expand_update_tag
 );
 
-$p->tag_syntax(<< 'EOS');
+__PACKAGE__->tag_syntax(<< 'EOS');
 [tag]                     [expand]
 {? name}                  ?
 {= name}                  name = ?
@@ -54,7 +52,7 @@ EOS
 sub add_tag_processor {
     my $invocant = shift;
     my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $invocant->tag_processors(%{$invocant->tag_processors}, %{$tag_processors});
+    $invocant->tag_processors({%{$invocant->tag_processors}, %{$tag_processors}});
     return $invocant;
 }
 

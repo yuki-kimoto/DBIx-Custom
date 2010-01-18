@@ -1,3 +1,7 @@
+0.0903
+  catch up with Object::Simple update
+0.0902
+  cleanup
 0.0901
   DBIx::Basic filter 'encode_utf8' utf8::upgrade process is deleted
 0.0801
