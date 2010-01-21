@@ -27,11 +27,11 @@ $query = DBIx::Custom::Query->new(
 is($query->sql, 'a', "$test : sql");
 is($query->key_infos, 'b', "$test : key_infos ");
 is($query->bind_filter, 'c', "$test : bind_filter");
-is_deeply(scalar $query->no_bind_filters, [qw/d e/], "$test : no_bind_filters");
-is_deeply(scalar $query->_no_bind_filters_map, {d => 1, e => 1}, "$test : _no_bind_filters_map");
-is_deeply(scalar $query->no_fetch_filters, [qw/g h/], "$test : no_fetch_filters");
+is_deeply($query->no_bind_filters, [qw/d e/], "$test : no_bind_filters");
+is_deeply($query->_no_bind_filters, {d => 1, e => 1}, "$test : _no_bind_filters");
+is_deeply($query->no_fetch_filters, [qw/g h/], "$test : no_fetch_filters");
 is($query->sth, 'e', "$test : sth");
 
 $query->no_bind_filters(undef);
-is_deeply(scalar $query->_no_bind_filters_map, {}, "$test _no_bind_filters_map undef value");
+is_deeply(scalar $query->_no_bind_filters, {}, "$test _no_bind_filters undef value");
 

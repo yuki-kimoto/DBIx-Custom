@@ -5,27 +5,35 @@ use strict;
 use warnings;
 use Carp 'croak';
 
-use Object::Simple::Util;
-
 __PACKAGE__->attr([qw/_dbi sth fetch_filter/]);
-__PACKAGE__->attr(_no_fetch_filters_map => sub { {} });
-
-__PACKAGE__->attr('no_fetch_filters', trigger => sub {
-    my $self = shift;
-    my $no_fetch_filters = $self->no_fetch_filters || [];
-    my %no_fetch_filters_map = map {$_ => 1} @{$no_fetch_filters};
-    $self->_no_fetch_filters_map(\%no_fetch_filters_map);
-});
+__PACKAGE__->attr(_no_fetch_filters => sub { {} });
 
 sub new {
     my $self = shift->SUPER::new(@_);
     
-    Object::Simple::Util->init_attrs($self, 'no_fetch_filters');
+    $self->no_fetch_filters($self->{no_fetch_filters})
+      if exists $self->{no_fetch_filters};
     
     return $self;
 }
 
-# Fetch (array)
+sub no_fetch_filters {
+    my $self = shift;
+    
+    if (@_) {
+        
+        $self->{no_fetch_filters} = $_[0];
+        
+        my %no_fetch_filters = map {$_ => 1} @{$self->{no_fetch_filters}};
+        
+        $self->_no_fetch_filters(\%no_fetch_filters);
+        
+        return $self;
+    }
+    
+    return $self->{no_fetch_filters};
+}
+
 sub fetch {
     my ($self, $type) = @_;
     my $sth = $self->sth;
@@ -42,7 +50,7 @@ sub fetch {
         my $keys  = $sth->{NAME_lc};
         my $types = $sth->{TYPE};
         for (my $i = 0; $i < @$keys; $i++) {
-            next if $self->_no_fetch_filters_map->{$keys->[$i]};
+            next if $self->_no_fetch_filters->{$keys->[$i]};
             $row->[$i]= $fetch_filter->($row->[$i], $keys->[$i], $self->_dbi,
                                         {type => $types->[$i], sth => $sth, index => $i});
         }
@@ -50,7 +58,6 @@ sub fetch {
     return wantarray ? @$row : $row;
 }
 
-# Fetch (hash)
 sub fetch_hash {
     my $self = shift;
     my $sth = $self->sth;
@@ -70,7 +77,7 @@ sub fetch_hash {
     if ($fetch_filter) {
         my $types = $sth->{TYPE};
         for (my $i = 0; $i < @$keys; $i++) {
-            if ($self->_no_fetch_filters_map->{$keys->[$i]}) {
+            if ($self->_no_fetch_filters->{$keys->[$i]}) {
                 $row_hash->{$keys->[$i]} = $row->[$i];
             }
             else {
@@ -90,7 +97,6 @@ sub fetch_hash {
     return wantarray ? %$row_hash : $row_hash;
 }
 
-# Fetch only first (array)
 sub fetch_first {
     my $self = shift;
     
@@ -106,7 +112,6 @@ sub fetch_first {
     return wantarray ? @$row : $row;
 }
 
-# Fetch only first (hash)
 sub fetch_hash_first {
     my $self = shift;
     
@@ -122,7 +127,6 @@ sub fetch_hash_first {
     return wantarray ? %$row : $row;
 }
 
-# Fetch multi rows (array)
 sub fetch_rows {
     my ($self, $count) = @_;
     
@@ -144,7 +148,6 @@ sub fetch_rows {
     return wantarray ? @$rows : $rows;
 }
 
-# Fetch multi rows (hash)
 sub fetch_hash_rows {
     my ($self, $count) = @_;
     
@@ -166,8 +169,6 @@ sub fetch_hash_rows {
     return wantarray ? @$rows : $rows;
 }
 
-
-# Fetch all (array)
 sub fetch_all {
     my $self = shift;
     
@@ -178,7 +179,6 @@ sub fetch_all {
     return wantarray ? @$rows : $rows;
 }
 
-# Fetch all (hash)
 sub fetch_hash_all {
     my $self = shift;
     
@@ -189,10 +189,8 @@ sub fetch_hash_all {
     return wantarray ? @$rows : $rows;
 }
 
-# Finish
 sub finish { shift->sth->finish }
 
-# Error
 sub error { 
     my $self = shift;
     my $sth  = $self->sth;

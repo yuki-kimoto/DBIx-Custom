@@ -5,22 +5,32 @@ use strict;
 use warnings;
 
 __PACKAGE__->attr([qw/sql key_infos bind_filter fetch_filter sth/]);
-__PACKAGE__->attr(_no_bind_filters_map => sub { {} });
+__PACKAGE__->attr(_no_bind_filters => sub { {} });
 __PACKAGE__->attr(no_fetch_filters => sub { [] });
-
-__PACKAGE__->attr('no_bind_filters', trigger => sub {
-    my $self = shift;
-    my $no_bind_filters = $self->no_bind_filters || [];
-    my %no_bind_filters_map = map {$_ => 1} @{$no_bind_filters};
-    $self->_no_bind_filters_map(\%no_bind_filters_map);
-});
 
 sub new {
     my $self = shift->SUPER::new(@_);
     
-    Object::Simple::Util->init_attrs($self, 'no_bind_filters');
+    $self->no_bind_filters($self->{no_bind_filters})
+      if $self->{no_bind_filters};
     
     return $self;
+}
+
+sub no_bind_filters {
+    my $self = shift;
+    
+    if (@_) {
+        $self->{no_bind_filters} = $_[0];
+        
+        my %no_bind_filters = map { $_ => 1 } @{$self->{no_bind_filters}};
+        
+        $self->_no_bind_filters(\%no_bind_filters);
+        
+        return $self;
+    }
+    
+    return $self->{no_bind_filters};
 }
 
 =head1 NAME

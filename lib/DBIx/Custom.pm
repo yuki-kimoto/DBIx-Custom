@@ -250,7 +250,7 @@ sub _build_bind_values {
     my ($self, $query, $params) = @_;
     my $key_infos           = $query->key_infos;
     my $bind_filter         = $query->bind_filter;
-    my $no_bind_filters_map = $query->_no_bind_filters_map || {};
+    my $no_bind_filters     = $query->_no_bind_filters || {};
     
     # binding values
     my @bind_values;
@@ -284,7 +284,7 @@ sub _build_bind_values {
                     if (ref $current_key eq 'ARRAY') {
                         # Filtering 
                         if ($bind_filter &&
-                            !$no_bind_filters_map->{$original_key})
+                            !$no_bind_filters->{$original_key})
                         {
                             push @bind_values, 
                                  $bind_filter->($root_params->[$current_key->[0]], 
@@ -305,7 +305,7 @@ sub _build_bind_values {
                         
                         # Filtering
                         if ($bind_filter &&
-                            !$no_bind_filters_map->{$original_key}) 
+                            !$no_bind_filters->{$original_key}) 
                         {
                             push @bind_values,
                                  $bind_filter->($root_params->{$current_key},
