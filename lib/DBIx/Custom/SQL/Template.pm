@@ -8,12 +8,12 @@ use Carp 'croak';
 use DBIx::Custom::Query;
 
 __PACKAGE__->dual_attr('tag_processors', default => sub { {} },
-                                         clone   => 'hash');
+                                         inherit   => 'hash');
 
-__PACKAGE__->dual_attr('tag_start', default => '{', clone => 'scalar');
-__PACKAGE__->dual_attr('tag_end',   default => '}', clone => 'scalar');
+__PACKAGE__->dual_attr('tag_start', default => '{', inherit => 'scalar');
+__PACKAGE__->dual_attr('tag_end',   default => '}', inherit => 'scalar');
 
-__PACKAGE__->dual_attr('tag_syntax', clone => 'scalar');
+__PACKAGE__->dual_attr('tag_syntax', inherit => 'scalar');
 
 __PACKAGE__->add_tag_processor(
     '?'      => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,
