@@ -1,5 +1,5 @@
 package DBIx::Custom::Query;
-use base 'Object::Simple::Base';
+use base 'Object::Simple';
 
 use strict;
 use warnings;
@@ -121,3 +121,7 @@ Copyright 2009 Yuki Kimoto, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
+
+=cut
+
+1;

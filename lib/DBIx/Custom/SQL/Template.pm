@@ -1,5 +1,5 @@
 package DBIx::Custom::SQL::Template;
-use base 'Object::Simple::Base';
+use base 'Object::Simple';
 
 use strict;
 use warnings;
@@ -8,12 +8,12 @@ use Carp 'croak';
 use DBIx::Custom::Query;
 
 __PACKAGE__->dual_attr('tag_processors', default => sub { {} },
-                                         inherit   => 'hash');
+                                         inherit => 'hash_copy');
 
-__PACKAGE__->dual_attr('tag_start', default => '{', inherit => 'scalar');
-__PACKAGE__->dual_attr('tag_end',   default => '}', inherit => 'scalar');
+__PACKAGE__->dual_attr('tag_start', default => '{', inherit => 'scalar_copy');
+__PACKAGE__->dual_attr('tag_end',   default => '}', inherit => 'scalar_copy');
 
-__PACKAGE__->dual_attr('tag_syntax', inherit => 'scalar');
+__PACKAGE__->dual_attr('tag_syntax', inherit => 'scalar_copy');
 
 __PACKAGE__->add_tag_processor(
     '?'      => \&DBIx::Custom::SQL::Template::TagProcessors::expand_basic_tag,

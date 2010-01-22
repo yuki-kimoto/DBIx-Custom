@@ -1,5 +1,5 @@
 package DBIx::Custom;
-use base 'Object::Simple::Base';
+use base 'Object::Simple';
 
 use strict;
 use warnings;
@@ -13,20 +13,22 @@ __PACKAGE__->attr('dbh');
 
 __PACKAGE__->class_attr(_query_caches     => sub { {} });
 __PACKAGE__->class_attr(_query_cache_keys => sub { [] });
-__PACKAGE__->class_attr('query_cache_max', default => 50, inherit => 'scalar');
 
-__PACKAGE__->dual_attr([qw/user password data_source/], inherit => 'scalar');
-__PACKAGE__->dual_attr([qw/database host port/],        inherit => 'scalar');
-__PACKAGE__->dual_attr([qw/bind_filter fetch_filter/],  inherit => 'scalar');
+__PACKAGE__->class_attr('query_cache_max', default => 50,
+                                           inherit => 'scalar_copy');
+
+__PACKAGE__->dual_attr([qw/user password data_source/], inherit => 'scalar_copy');
+__PACKAGE__->dual_attr([qw/database host port/],        inherit => 'scalar_copy');
+__PACKAGE__->dual_attr([qw/bind_filter fetch_filter/],  inherit => 'scalar_copy');
 
 __PACKAGE__->dual_attr([qw/no_bind_filters no_fetch_filters/],
-                       default => sub { [] }, inherit => 'array');
+                       default => sub { [] }, inherit => 'array_copy');
 
 __PACKAGE__->dual_attr([qw/options filters formats/],
-                       default => sub { {} }, inherit => 'hash');
+                       default => sub { {} }, inherit => 'hash_copy');
 
 __PACKAGE__->dual_attr('result_class', default => 'DBIx::Custom::Result',
-                                       inherit   => 'scalar');
+                                       inherit => 'scalar_copy');
 
 __PACKAGE__->dual_attr('sql_tmpl', default => sub {DBIx::Custom::SQL::Template->new},
                                    inherit   => sub {$_[0] ? $_[0]->clone : undef});
@@ -724,11 +726,11 @@ DBIx::Custom - Customizable DBI
 
 =head1 VERSION
 
-Version 0.0904
+Version 0.0905
 
 =cut
 
-our $VERSION = '0.0904';
+our $VERSION = '0.0905';
 
 =head1 SYNOPSYS
     
@@ -933,30 +935,6 @@ Set and get query cache max
     $query_cache_max = DBIx::Custom->query_cache_max;
 
 Default value is 50
-
-=head2 Accessor summary
-
-                       Accessor type       Variable type
-    user               class and object    scalar(string)
-    password           class and object    scalar(string)
-    data_source        class and object    scalar(string)
-    database           class and object    scalar(string)
-    host               class and object    scalar(string)
-
-    port               class and object    scalar(int)
-    options            class and object    hash(string)
-    sql_tmpl           class and object    scalar(DBIx::Custom::SQL::Template)
-    filters            class and object    hash(code ref)
-    formats            class and object    hash(string)
-
-    bind_filter        class and object    scalar(code ref)
-    fetch_filter       class and object    scalar(code ref)
-    no_bind_filters    class and object    array(string)
-    no_fetch_filters   class and object    array(string)
-    result_class       class and object    scalar(string)
-
-    dbh                object              scalar(DBI)
-    query_cache_max    class               scalar(int)
 
 =head1 Methods
 

@@ -11,7 +11,7 @@ my $builder = Module::Build->new(
         'Test::More' => 0,
     },
     requires => {
-        'Object::Simple' => 3.0101,
+        'Object::Simple' => 3.0201,
         'DBI'            => 1.605,
         'DBD::SQLite'    => 1.25,
         'Time::Piece'    => 1.15
