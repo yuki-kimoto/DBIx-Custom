@@ -726,11 +726,11 @@ DBIx::Custom - Customizable DBI
 
 =head1 VERSION
 
-Version 0.0905
+Version 0.0906
 
 =cut
 
-our $VERSION = '0.0905';
+our $VERSION = '0.0906';
 
 =head1 SYNOPSYS
     

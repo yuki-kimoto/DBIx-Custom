@@ -1,5 +1,5 @@
 package DBIx::Custom::Result;
-use base 'Object::Simple::Base';
+use base 'Object::Simple';
 
 use strict;
 use warnings;
