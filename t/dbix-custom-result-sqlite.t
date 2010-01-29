@@ -79,33 +79,33 @@ while (my %row = $result->fetch_hash) {
 is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], $test);
 
 
-test 'fetch_first';
+test 'fetch_single';
 $result = query($dbh, $sql);
-$row = $result->fetch_first;
+$row = $result->fetch_single;
 is_deeply($row, [1, 2], "$test : row");
 $row = $result->fetch;
 ok(!$row, "$test : finished");
 
 
-test 'fetch_first list context';
+test 'fetch_single list context';
 $result = query($dbh, $sql);
-@row = $result->fetch_first;
+@row = $result->fetch_single;
 is_deeply([@row], [1, 2], "$test : row");
 @row = $result->fetch;
 ok(!@row, "$test : finished");
 
 
-test 'fetch_hash_first';
+test 'fetch_hash_single';
 $result = query($dbh, $sql);
-$row = $result->fetch_hash_first;
+$row = $result->fetch_hash_single;
 is_deeply($row, {key1 => 1, key2 => 2}, "$test : row");
 $row = $result->fetch_hash;
 ok(!$row, "$test : finished");
 
 
-test 'fetch_hash_first list context';
+test 'fetch_hash_single list context';
 $result = query($dbh, $sql);
-@row = $result->fetch_hash_first;
+@row = $result->fetch_hash_single;
 is_deeply({@row}, {key1 => 1, key2 => 2}, "$test : row");
 @row = $result->fetch_hash;
 ok(!@row, "$test : finished");

@@ -417,16 +417,16 @@ sub create_table {
     my ($self, $table, @column_definitions) = @_;
     
     # Create table
-    my $sql = "create table $table (\n";
+    my $sql = "create table $table (";
     
     # Column definitions
     foreach my $column_definition (@column_definitions) {
-        $sql .= "\t$column_definition,\n";
+        $sql .= "$column_definition,";
     }
-    $sql =~ s/,\n$//;
+    $sql =~ s/,$//;
     
     # End
-    $sql .= "\n);";
+    $sql .= ");";
     
     # Do query
     return $self->do($sql);

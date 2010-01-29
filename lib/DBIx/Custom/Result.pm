@@ -97,7 +97,7 @@ sub fetch_hash {
     return wantarray ? %$row_hash : $row_hash;
 }
 
-sub fetch_first {
+sub fetch_single {
     my $self = shift;
     
     # Fetch
@@ -112,7 +112,7 @@ sub fetch_first {
     return wantarray ? @$row : $row;
 }
 
-sub fetch_hash_first {
+sub fetch_hash_single {
     my $self = shift;
     
     # Fetch hash
@@ -274,31 +274,31 @@ The following is fetch_hash sample
         my $val2 = $row->{key2};
     }
 
-=head2 fetch_first
+=head2 fetch_single
 
 Fetch only first row(Scalar context)
 
-    $row = $result->fetch_first; # array reference
-    @row = $result->fetch_first; # array
+    $row = $result->fetch_single; # array reference
+    @row = $result->fetch_single; # array
     
-The following is fetch_first sample
+The following is fetch_single sample
 
-    $row = $result->fetch_first;
+    $row = $result->fetch_single;
     
 This method fetch only first row and finish statement handle
 
-=head2 fetch_hash_first
+=head2 fetch_hash_single
     
 Fetch only first row as hash
 
-    $row = $result->fetch_hash_first; # hash reference
-    %row = $result->fetch_hash_first; # hash
+    $row = $result->fetch_hash_single; # hash reference
+    %row = $result->fetch_hash_single; # hash
     
-The following is fetch_hash_first sample
+The following is fetch_hash_single sample
 
-    $row = $result->fetch_hash_first;
+    $row = $result->fetch_hash_single;
     
-This method fetch only first row and finish statement handle
+This method fetch only single row and finish statement handle
 
 =head2 fetch_rows
 
