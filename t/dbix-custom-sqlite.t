@@ -32,6 +32,7 @@ my $dbi;
 my $ret_val;
 my $rows;
 my $db_file;
+my $id;
 
 test 'connect_memory';
 $dbi = DBIx::Custom::SQLite->new;
@@ -67,3 +68,12 @@ ok(defined $ret_val, "$test : database");
 $dbi->disconnect;
 unlink $db_file if -f $db_file;
 
+test 'last_insert_rowid';
+$dbi = DBIx::Custom::SQLite->new;
+$dbi->connect_memory;
+$ret_val = $dbi->do($CREATE_TABLE->{0});
+$dbi->insert('table1', {key1 => 1, key2 => 2});
+is($dbi->last_insert_rowid, 1, "$test: first");
+$dbi->insert('table1', {key1 => 1, key2 => 2});
+is($dbi->last_insert_rowid, 2, "$test: second");
+$dbi->disconnect;

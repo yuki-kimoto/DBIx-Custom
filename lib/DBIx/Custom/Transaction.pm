@@ -68,39 +68,29 @@ sub run {
 
 =head1 NAME
 
-DBIx::Custom::TransactionScope - Transaction scope
+DBIx::Custom::Transaction - Transaction
 
 =head1 SYNOPSYS
-
-    use DBIx::Custom::SQLite;
     
-    # New
-    my $dbi = DBIx::Custom::SQLite->new(user => 'taro', $password => 'kliej&@K',
-                                        database => 'sample');
+    use DBIx::Custom::Transaction
+    my $txn = DBIx::Custom::Transaction->new(dbi => DBIx::Custom->new);
+    $txn->run(sub { ... });
     
-    # Connect memory database
-    my $dbi->connect_memory;
-
 =head1 ATTRIBUTES
 
 =head2 dbi
 
+    $self = $txn->dbi($dbi);
+    $dbi  = $txn->dbi;
+    
 =head1 METHODS
 
 =head2 run
+    
+    $txn->run(
+        sub {
+            # Transaction
+        }
+    );
 
-=head1 AUTHOR
-
-Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
-
-Github L<http://github.com/yuki-kimoto>
-
-I develope this module L<http://github.com/yuki-kimoto/DBIx-Custom>
-
-=head1 Copyright & lisence
-
-Copyright 2009 Yuki Kimoto, all rights reserved.
-
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
-
+=cut
