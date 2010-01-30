@@ -37,6 +37,7 @@ __PACKAGE__->dual_attr('sql_tmpl', default => sub {DBIx::Custom::SQL::Template->
 sub add_filter {
     my $invocant = shift;
     
+    # Add filter
     my $filters = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $invocant->filters({%{$invocant->filters}, %$filters});
     
@@ -46,6 +47,7 @@ sub add_filter {
 sub add_format{
     my $invocant = shift;
     
+    # Add format
     my $formats = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $invocant->formats({%{$invocant->formats}, %$formats});
 
@@ -55,10 +57,14 @@ sub add_format{
 sub _auto_commit {
     my $self = shift;
     
+    # Not connected
     croak("Not yet connect to database") unless $self->dbh;
     
     if (@_) {
+        
+        # Set AutoCommit
         $self->dbh->{AutoCommit} = $_[0];
+        
         return $self;
     }
     return $self->dbh->{AutoCommit};
@@ -66,11 +72,14 @@ sub _auto_commit {
 
 sub connect {
     my $self = shift;
+    
+    # Information
     my $data_source = $self->data_source;
     my $user        = $self->user;
     my $password    = $self->password;
     my $options     = $self->options;
     
+    # Connect
     my $dbh = eval{DBI->connect(
         $data_source,
         $user,
@@ -83,34 +92,45 @@ sub connect {
         }
     )};
     
+    # Connect error
     croak $@ if $@;
     
+    # Database handle
     $self->dbh($dbh);
+    
     return $self;
 }
 
 sub DESTROY {
     my $self = shift;
+    
+    # Disconnect
     $self->disconnect if $self->connected;
 }
 
-sub connected {
-    my $self = shift;
-    return ref $self->{dbh} eq 'DBI::db';
-}
+sub connected { ref shift->{dbh} eq 'DBI::db' }
 
 sub disconnect {
     my $self = shift;
+    
     if ($self->connected) {
+        
+        # Disconnect
         $self->dbh->disconnect;
         delete $self->{dbh};
     }
+    
+    return $self;
 }
 
 sub reconnect {
     my $self = shift;
+    
+    # Reconnect
     $self->disconnect if $self->connected;
     $self->connect;
+    
+    return $self;
 }
 
 sub prepare {
@@ -359,13 +379,6 @@ sub _build_bind_values {
 
 sub transaction { DBIx::Custom::Transaction->new(dbi => shift) }
 
-sub last_insert_id {
-    my $self = shift;
-    my $class = ref $self;
-    croak "'$class' do not suppert 'last_insert_id'";
-}
-
-
 sub create_table {
     my ($self, $table, @column_definitions) = @_;
     
@@ -495,6 +508,7 @@ sub update_all {
     my $query_edit_cb    = shift;
     my $options          = {allow_update_all => 1};
     
+    # Update all rows
     return $self->update($table, $update_params, {}, $append_statement,
                          $query_edit_cb, $options);
 }
@@ -551,6 +565,7 @@ sub delete_all {
     my $query_edit_cb    = shift;
     my $options          = {allow_delete_all => 1};
     
+    # Delete all rows
     return $self->delete($table, {}, $append_statement, $query_edit_cb,
                          $options);
 }
@@ -645,16 +660,20 @@ sub select {
 
 sub _add_query_cache {
     my ($class, $template, $query) = @_;
+    
+    # Query information
     my $query_cache_keys = $class->_query_cache_keys;
     my $query_caches     = $class->_query_caches;
     
+    # Already cached
     return $class if $query_caches->{$template};
     
+    # Cache
     $query_caches->{$template} = $query;
     push @$query_cache_keys, $template;
     
+    # Check cache overflow
     my $overflow = @$query_cache_keys - $class->query_cache_max;
-    
     for (my $i = 0; $i < $overflow; $i++) {
         my $template = shift @$query_cache_keys;
         delete $query_caches->{$template};
@@ -666,7 +685,7 @@ sub _add_query_cache {
 sub filter_off {
     my $self = shift;
     
-    # filter off
+    # Filter off
     $self->bind_filter(undef);
     $self->fetch_filter(undef);
     
@@ -679,11 +698,11 @@ DBIx::Custom - Customizable DBI
 
 =head1 VERSION
 
-Version 0.1001
+Version 0.1101
 
 =cut
 
-our $VERSION = '0.1001';
+our $VERSION = '0.1101';
 
 =head1 SYNOPSYS
     
@@ -714,25 +733,25 @@ our $VERSION = '0.1001';
     $dbi->select('books', [qw/author title/], {author => 'Ken'},
                  'order by id limit 1');
 
-=head1 Accessors
+=head1 ATTRIBUTES
 
 =head2 user
 
-Set and get database user name
+Database user name
     
     $dbi  = $dbi->user('Ken');
     $user = $dbi->user;
     
 =head2 password
 
-Set and get database password
+Database password
     
     $dbi      = $dbi->password('lkj&le`@s');
     $password = $dbi->password;
 
 =head2 data_source
 
-Set and get database data source
+Database data source
     
     $dbi         = $dbi->data_source("dbi:mysql:dbname=$database");
     $data_source = $dbi->data_source;
@@ -741,14 +760,14 @@ If you know data source more, See also L<DBI>.
 
 =head2 database
 
-Set and get database name
+Database name
 
     $dbi      = $dbi->database('books');
     $database = $dbi->database;
 
 =head2 host
 
-Set and get host name
+Host name
 
     $dbi  = $dbi->host('somehost.com');
     $host = $dbi->host;
@@ -757,21 +776,21 @@ You can also set IP address like '127.03.45.12'.
 
 =head2 port
 
-Set and get port
+Port number
 
     $dbi  = $dbi->port(1198);
     $port = $dbi->port;
 
 =head2 options
 
-Set and get DBI option
+DBI options
 
     $dbi     = $dbi->options({PrintError => 0, RaiseError => 1});
     $options = $dbi->options;
 
 =head2 sql_tmpl
 
-Set and get SQL::Template object
+SQL::Template object
 
     $dbi      = $dbi->sql_tmpl(DBIx::Cutom::SQL::Template->new);
     $sql_tmpl = $dbi->sql_tmpl;
@@ -780,7 +799,7 @@ See also L<DBIx::Custom::SQL::Template>.
 
 =head2 filters
 
-Set and get filters
+Filters
 
     $dbi     = $dbi->filters({filter1 => sub { }, filter2 => sub {}});
     $filters = $dbi->filters;
@@ -793,7 +812,7 @@ If you add filter, use add_filter method.
 
 =head2 formats
 
-Set and get formats
+Formats
 
     $dbi     = $dbi->formats({format1 => sub { }, format2 => sub {}});
     $formats = $dbi->formats;
@@ -806,7 +825,7 @@ If you add format, use add_format method.
 
 =head2 bind_filter
 
-Set and get binding filter
+Binding filter
 
     $dbi         = $dbi->bind_filter($bind_filter);
     $bind_filter = $dbi->bind_filter
@@ -830,7 +849,7 @@ Bind filter arguemts is
 
 =head2 fetch_filter
 
-Set and get Fetch filter
+Fetching filter
 
     $dbi          = $dbi->fetch_filter($fetch_filter);
     $fetch_filter = $dbi->fetch_filter;
@@ -854,42 +873,47 @@ Bind filter arguemts is
 
 =head2 no_bind_filters
 
-Set and get no filter keys when binding
+Key list which dose not have to bind filtering
     
     $dbi             = $dbi->no_bind_filters(qw/title author/);
     $no_bind_filters = $dbi->no_bind_filters;
 
 =head2 no_fetch_filters
 
-Set and get no filter keys when fetching
+Key list which dose not have to fetch filtering
 
     $dbi              = $dbi->no_fetch_filters(qw/title author/);
     $no_fetch_filters = $dbi->no_fetch_filters;
 
 =head2 result_class
 
-Set and get resultset class
+Resultset class
 
     $dbi          = $dbi->result_class('DBIx::Custom::Result');
     $result_class = $dbi->result_class;
 
+Default is L<DBIx::Custom::Result>
+
 =head2 dbh
 
-Get database handle
+Database handle
     
     $dbi = $dbi->dbh($dbh);
     $dbh = $dbi->dbh;
     
 =head2 query_cache_max
 
-Set and get query cache max
+Query cache max
 
     $class           = DBIx::Custom->query_cache_max(50);
     $query_cache_max = DBIx::Custom->query_cache_max;
 
 Default value is 50
 
-=head1 Methods
+=head1 METHODS
+
+This class is L<Object::Simple> subclass.
+You can use all methods of L<Object::Simple>
 
 =head2 connect
 
@@ -1149,15 +1173,6 @@ You can also edit query
             });
         }
     }
-
-
-=head2 last_insert_id
-
-Get last insert id
-
-    $last_insert_id = $dbi->last_insert_id;
-
-This method is implemented by subclass.
 
 =head2 prepare
 

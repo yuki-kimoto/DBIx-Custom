@@ -1,8 +1,9 @@
 package DBIx::Custom::Result;
-use base 'Object::Simple';
 
 use strict;
 use warnings;
+
+use base 'Object::Simple';
 use Carp 'croak';
 
 __PACKAGE__->attr([qw/_dbi sth fetch_filter/]);
@@ -11,6 +12,7 @@ __PACKAGE__->attr(_no_fetch_filters => sub { {} });
 sub new {
     my $self = shift->SUPER::new(@_);
     
+    # Initialize attributes
     $self->no_fetch_filters($self->{no_fetch_filters})
       if exists $self->{no_fetch_filters};
     
@@ -22,10 +24,11 @@ sub no_fetch_filters {
     
     if (@_) {
         
+        # Set
         $self->{no_fetch_filters} = $_[0];
         
+        # Cached
         my %no_fetch_filters = map {$_ => 1} @{$self->{no_fetch_filters}};
-        
         $self->_no_fetch_filters(\%no_fetch_filters);
         
         return $self;
@@ -172,6 +175,7 @@ sub fetch_hash_rows {
 sub fetch_all {
     my $self = shift;
     
+    # Fetch all rows
     my $rows = [];
     while(my @row = $self->fetch) {
         push @$rows, [@row];
@@ -182,6 +186,7 @@ sub fetch_all {
 sub fetch_hash_all {
     my $self = shift;
     
+    # Fetch all rows as hash
     my $rows = [];
     while(my %row = $self->fetch_hash) {
         push @$rows, {%row};
@@ -193,15 +198,20 @@ sub finish { shift->sth->finish }
 
 sub error { 
     my $self = shift;
+    
+    # Statement handle
     my $sth  = $self->sth;
+    
     return wantarray ? ($sth->errstr, $sth->err, $sth->state) : $sth->errstr;
 }
+
+1;
 
 =head1 NAME
 
 DBIx::Custom::Result - DBIx::Custom Resultset
 
-=head1 Synopsis
+=head1 SYNOPSIS
 
     my $result = $dbi->query($query);
     
@@ -215,30 +225,33 @@ DBIx::Custom::Result - DBIx::Custom Resultset
         # Do something
     }
 
-=head1 Accessors
+=head1 ATTRIBUTES
 
 =head2 sth
 
-Set and Get statement handle
+Statement handle
 
     $result = $result->sth($sth);
     $sth    = $reuslt->sth
     
 =head2 fetch_filter
 
-Set and Get fetch filter
+Filter excuted when data is fetched
 
     $result         = $result->fetch_filter($sth);
     $fetch_filter   = $result->fech_filter;
 
 =head2 no_fetch_filters
 
-Set and Get no filter keys when fetching
+Key list which dose not have to fetch filtering
 
     $result           = $result->no_fetch_filters($no_fetch_filters);
     $no_fetch_filters = $result->no_fetch_filters;
 
-=head1 Methods
+=head1 METHODS
+
+This class is L<Object::Simple> subclass.
+You can use all methods of L<Object::Simple>
 
 =head2 new
 
@@ -372,23 +385,4 @@ This is equel to
 
     $result->sth->finish;
 
-=head1 See also
-
-L<DBIx::Custom>
-
-=head1 Author
-
-Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
-
-Github L<http://github.com/yuki-kimoto>
-
-=head1 Copyright & licence
-
-Copyright 2009 Yuki Kimoto, all rights reserved.
-
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
-
 =cut
-
-1;

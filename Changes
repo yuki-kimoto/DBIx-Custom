@@ -1,3 +1,10 @@
+0.1101
+  rename DBIx::Custom::SQLite last_insert_id to last_insert_rowid
+0.1001
+  remove run_transaction().
+  add transaction() and DBIx::Custom::Transaction
+  rename fetch_first to fetch_single
+  rename fetch_hash_first to fetch_hash_single
 0.0906
   fix some bug
 0.0905

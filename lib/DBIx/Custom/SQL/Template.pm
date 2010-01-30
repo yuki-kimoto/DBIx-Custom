@@ -1,10 +1,10 @@
 package DBIx::Custom::SQL::Template;
-use base 'Object::Simple';
 
 use strict;
 use warnings;
-use Carp 'croak';
 
+use base 'Object::Simple';
+use Carp 'croak';
 use DBIx::Custom::Query;
 
 __PACKAGE__->dual_attr('tag_processors', default => sub { {} },
@@ -48,7 +48,6 @@ __PACKAGE__->tag_syntax(<< 'EOS');
 EOS
 
 
-# Add Tag processor
 sub add_tag_processor {
     my $invocant = shift;
     my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
@@ -56,7 +55,6 @@ sub add_tag_processor {
     return $invocant;
 }
 
-# Clone
 sub clone {
     my $self = shift;
     my $new = $self->new;
@@ -69,10 +67,6 @@ sub clone {
     return $new;
 }
 
-
-### Object Methods
-
-# Create Query
 sub create_query {
     my ($self, $template)  = @_;
     
@@ -85,7 +79,6 @@ sub create_query {
     return $query;
 }
 
-# Parse template
 sub _parse_template {
     my ($self, $template) = @_;
     $template ||= '';
@@ -142,7 +135,6 @@ sub _parse_template {
     return $tree;
 }
 
-# Build SQL from parsing tree
 sub _build_query {
     my ($self, $tree) = @_;
     
@@ -206,7 +198,6 @@ sub _build_query {
     return $query;
 }
 
-# Get placeholder count
 sub _placeholder_count {
     my ($self, $expand) = @_;
     $expand ||= '';
@@ -220,7 +211,6 @@ sub _placeholder_count {
 }
 
 1;
-
 
 package DBIx::Custom::SQL::Template::TagProcessors;
 
@@ -457,13 +447,15 @@ sub expand_update_tag {
     return ($expand, $key_infos);
 }
 
+package DBIx::Custom::SQL::Template;
+
 1;
 
 =head1 NAME
 
 DBIx::Custom::SQL::Template - DBIx::Custom SQL Template
 
-=head1 Synopsis
+=head1 SYNOPSIS
     
     my $sql_tmpl = DBIx::Custom::SQL::Template->new;
     
@@ -472,42 +464,37 @@ DBIx::Custom::SQL::Template - DBIx::Custom SQL Template
     
     my $query = $sql_template->create_query($tmpl);
 
-=head1 Accessors
+=head1 ATTRIBUTES
 
 =head2 tag_processors
-
-Set and get tag processors
 
     $sql_tmpl       = $sql_tmpl->tag_processors($name1 => $tag_processor1
                                                 $name2 => $tag_processor2);
     $tag_processors = $sql_tmpl->tag_processors;
 
 =head2 tag_start
-
-Set and get start tag
     
     $sql_tmpl  = $sql_tmpl->tag_start('{');
     $tag_start = $sql_tmpl->tag_start;
 
-tag_start default is '{'
+Default is '{'
 
 =head2 tag_end
-
-Set and get end tag
     
     $sql_tmpl    = $sql_tmpl->tag_start('}');
     $tag_end = $sql_tmpl->tag_start;
 
-tag_start default is '}'
+Default is '}'
     
 =head2 tag_syntax
-    
-Set and get tag syntax
     
     $sql_tmpl   = $sql_tmpl->tag_syntax($tag_syntax);
     $tag_syntax = $sql_tmpl->tag_syntax;
 
-=head1 Methods
+=head1 METHODS
+
+This class is L<Object::Simple> subclass.
+You can use all methods of L<Object::Simple>
 
 =head2 create_query
     
@@ -625,25 +612,4 @@ The following is update SQL sample
     # Expanded
     $query->sql : "update table set key1 = ?, key2 = ? where key3 = ?;"
     
-=head1 AUTHOR
-
-Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
-
-Github 
-L<http://github.com/yuki-kimoto>
-L<http://github.com/yuki-kimoto/DBIx-Custom-SQL-Template>
-
-Please let know me bag if you find
-Please request me if you want to do something
-
-=head1 COPYRIGHT & LICENSE
-
-Copyright 2009 Yuki Kimoto, all rights reserved.
-
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
-
-
 =cut
-
-1; # End of DBIx::Custom::SQL::Template
