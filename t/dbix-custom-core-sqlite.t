@@ -432,11 +432,10 @@ is_deeply($rows, [{key1 => 6, key2 => 6, key3 => 6, key4 => 6, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "$test : update tag #update with table name dot");
 
 
-test 'run_tansaction';
+test 'transaction';
 $dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{0});
-$dbi->run_transaction(sub {
-    my $dbi = shift;
+$dbi->transaction->run(sub {
     $insert_tmpl = 'insert into table1 {insert key1 key2}';
     $dbi->query($insert_tmpl, {key1 => 1, key2 => 2});
     $dbi->query($insert_tmpl, {key1 => 3, key2 => 4});
@@ -449,8 +448,7 @@ $dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{0});
 $dbi->dbh->{RaiseError} = 0;
 eval{
-    $dbi->run_transaction(sub {
-        my $dbi = shift;
+    $dbi->transaction->run(sub {
         $insert_tmpl = 'insert into table1 {insert key1 key2}';
         $dbi->query($insert_tmpl, {key1 => 1, key2 => 2});
         die "Fatal Error";
@@ -464,9 +462,10 @@ $rows   = $result->fetch_hash_all;
 is_deeply($rows, [], "$test : rollback");
 
 
+
 test 'Error case';
 $dbi = DBIx::Custom->new;
-eval{$dbi->run_transaction};
+eval{$dbi->transaction->run};
 like($@, qr/Not yet connect to database/, "$test : Yet Connected");
 
 $dbi = DBIx::Custom->new(data_source => 'dbi:SQLit');
@@ -476,9 +475,9 @@ ok($@, "$test : connect error");
 $dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->connect;
 $dbi->dbh->{AutoCommit} = 0;
-eval{$dbi->run_transaction()};
+eval{$dbi->transaction->run};
 like($@, qr/AutoCommit must be true before transaction start/,
-         "$test : run_transaction auto commit is false");
+         "$test : transaction auto commit is false");
 
 $dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $sql = 'laksjdf';

@@ -1,13 +1,14 @@
 package DBIx::Custom;
-use base 'Object::Simple';
 
 use strict;
 use warnings;
 
+use base 'Object::Simple';
 use Carp 'croak';
 use DBI;
 use DBIx::Custom::Result;
 use DBIx::Custom::SQL::Template;
+use DBIx::Custom::Transaction;
 
 __PACKAGE__->attr('dbh');
 
@@ -356,55 +357,7 @@ sub _build_bind_values {
     return \@bind_values;
 }
 
-sub run_transaction {
-    my ($self, $transaction) = @_;
-    
-    # Check auto commit
-    croak("AutoCommit must be true before transaction start")
-      unless $self->_auto_commit;
-    
-    # Auto commit off
-    $self->_auto_commit(0);
-    
-    # Run transaction
-    eval {$transaction->($self)};
-    
-    # Tranzaction error
-    my $transaction_error = $@;
-    
-    # Tranzaction is failed.
-    if ($transaction_error) {
-        # Rollback
-        eval{$self->dbh->rollback};
-        
-        # Rollback error
-        my $rollback_error = $@;
-        
-        # Auto commit on
-        $self->_auto_commit(1);
-        
-        if ($rollback_error) {
-            # Rollback is failed
-            croak("${transaction_error}Rollback is failed : $rollback_error");
-        }
-        else {
-            # Rollback is success
-            croak("${transaction_error}Rollback is success");
-        }
-    }
-    # Tranzaction is success
-    else {
-        # Commit
-        eval{$self->dbh->commit};
-        my $commit_error = $@;
-        
-        # Auto commit on
-        $self->_auto_commit(1);
-        
-        # Commit is failed
-        croak($commit_error) if $commit_error;
-    }
-}
+sub transaction { DBIx::Custom::Transaction->new(dbi => shift) }
 
 sub last_insert_id {
     my $self = shift;
@@ -726,11 +679,11 @@ DBIx::Custom - Customizable DBI
 
 =head1 VERSION
 
-Version 0.0906
+Version 0.1001
 
 =cut
 
-our $VERSION = '0.0906';
+our $VERSION = '0.1001';
 
 =head1 SYNOPSYS
     
@@ -1038,11 +991,11 @@ Return value of query method is L<DBIx::Custom::Result> object
 
 See also L<DBIx::Custom::Result>.
 
-=head2 run_transaction
+=head2 transaction
 
-Run transaction
+Get L<DBIx::Custom::Transaction> object, and you run a transaction.
 
-    $dbi->run_transaction(sub {
+    $dbi->transaction->run(sub {
         my $dbi = shift;
         
         # do something
