@@ -308,7 +308,7 @@ sub _build_bind_values {
         
         # Filter
         push @bind_values, 
-             $filter ? $filter->($value, $table, $column, $self->filters)
+             $filter ? $filter->($value, $table, $column, $self)
                      : $value;
     }
     
@@ -316,6 +316,62 @@ sub _build_bind_values {
 }
 
 sub transaction { DBIx::Custom::Transaction->new(dbi => shift) }
+
+sub run_transaction {
+    my ($self, $transaction) = @_;
+    
+    # DBIx::Custom object
+    my $dbi = $self->dbi;
+    
+    # Shorcut
+    return unless $dbi;
+    
+    # Check auto commit
+    croak("AutoCommit must be true before transaction start")
+      unless $dbi->_auto_commit;
+    
+    # Auto commit off
+    $dbi->_auto_commit(0);
+    
+    # Run transaction
+    eval {$transaction->()};
+    
+    # Tranzaction error
+    my $transaction_error = $@;
+    
+    # Tranzaction is failed.
+    if ($transaction_error) {
+        # Rollback
+        eval{$dbi->dbh->rollback};
+        
+        # Rollback error
+        my $rollback_error = $@;
+        
+        # Auto commit on
+        $dbi->_auto_commit(1);
+        
+        if ($rollback_error) {
+            # Rollback is failed
+            croak("${transaction_error}Rollback is failed : $rollback_error");
+        }
+        else {
+            # Rollback is success
+            croak("${transaction_error}Rollback is success");
+        }
+    }
+    # Tranzaction is success
+    else {
+        # Commit
+        eval{$dbi->dbh->commit};
+        my $commit_error = $@;
+        
+        # Auto commit on
+        $dbi->_auto_commit(1);
+        
+        # Commit is failed
+        croak($commit_error) if $commit_error;
+    }
+}
 
 sub create_table {
     my ($self, $table, @column_definitions) = @_;
@@ -1138,6 +1194,10 @@ Retrun value is affected rows count.
 This method is same as DBI do method.
 
 See also L<DBI>
+
+=head2 run_transaction
+
+
 
 =head1 DBIx::Custom default configuration
 
