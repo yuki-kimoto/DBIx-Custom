@@ -45,26 +45,6 @@ $datas = [
             {original_key => 'k1', table => '', column => 'k1', access_keys => [['k1', [2]]]},
         ],
     },
-    {
-        name            => 'insert',
-        tmpl            => "{insert k1 k2 k3}",
-        sql_expected    => "(k1, k2, k3) values (?, ?, ?);",
-        key_infos_expected   => [
-            {original_key => 'k1', table => '', column => 'k1', access_keys => [['#insert', 'k1'], ['k1']]},
-            {original_key => 'k2', table => '', column => 'k2', access_keys => [['#insert', 'k2'], ['k2']]},
-            {original_key => 'k3', table => '', column => 'k3', access_keys => [['#insert', 'k3'], ['k3']]},
-        ],
-    },
-    {
-        name            => 'update',
-        tmpl            => "{update k1 k2 k3}",
-        sql_expected    => "set k1 = ?, k2 = ?, k3 = ?;",
-        key_infos_expected   => [
-            {original_key => 'k1', table => '', column => 'k1', access_keys => [['#update', 'k1'], ['k1']]},
-            {original_key => 'k2', table => '', column => 'k2', access_keys => [['#update', 'k2'], ['k2']]},
-            {original_key => 'k3', table => '', column => 'k3', access_keys => [['#update', 'k3'], ['k3']]},
-        ],
-    },
     
     # Table name
     {
@@ -85,24 +65,6 @@ $datas = [
             {original_key => 'a.k1', table => 'a', column => 'k1', access_keys => [['a.k1', [1]], ['a', 'k1', [1]]]},
             {original_key => 'b.k2', table => 'b', column => 'k2', access_keys => [['b.k2', [0]], ['b', 'k2', [0]]]},
             {original_key => 'b.k2', table => 'b', column => 'k2', access_keys => [['b.k2', [1]], ['b', 'k2', [1]]]},
-        ],
-    },
-    {
-        name            => 'insert with table name',
-        tmpl            => "{insert a.k1 b.k2}",
-        sql_expected    => "(k1, k2) values (?, ?);",
-        key_infos_expected  => [
-            {original_key => 'a.k1', table => 'a', column => 'k1', access_keys => [['#insert', 'a.k1'], ['#insert', 'a', 'k1'], ['a.k1'], ['a', 'k1']]},
-            {original_key => 'b.k2', table => 'b', column => 'k2', access_keys => [['#insert', 'b.k2'], ['#insert', 'b', 'k2'], ['b.k2'], ['b', 'k2']]},
-        ],
-    },
-    {
-        name            => 'update with table name',
-        tmpl            => "{update a.k1 b.k2}",
-        sql_expected    => "set k1 = ?, k2 = ?;",
-        key_infos_expected  => [
-            {original_key => 'a.k1', table => 'a', column => 'k1', access_keys => [['#update', 'a.k1'], ['#update', 'a', 'k1'], ['a.k1'], ['a', 'k1']]},
-            {original_key => 'b.k2', table => 'b', column => 'k2', access_keys => [['#update', 'b.k2'], ['#update', 'b', 'k2'], ['b.k2'], ['b', 'k2']]},
         ],
     },
     {

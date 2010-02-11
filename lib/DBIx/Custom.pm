@@ -502,7 +502,7 @@ sub update {
     $query_edit_cb->($query) if $query_edit_cb;
     
     # Rearrange parammeters
-    my $params = {'#update' => $update_params, %$where_params};
+    my $params = {%$update_params, %$where_params};
     
     # Execute query
     my $ret_val = $self->query($query, $params);

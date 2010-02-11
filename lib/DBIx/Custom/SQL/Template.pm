@@ -222,9 +222,10 @@ package DBIx::Custom::SQL::Template::TagProcessors;
 
 use strict;
 use warnings;
-use Carp 'croak';
 
-# Expand tag '?', '=', '<>', '>', '<', '>=', '<=', 'like'
+use Carp 'croak';
+use DBIx::Custom::Column;
+
 sub expand_basic_tag {
     my ($tag_name, $tag_args) = @_;
     my $original_key = $tag_args->[0];
@@ -239,7 +240,10 @@ sub expand_basic_tag {
                : "$original_key $tag_name ?";
     
     # Get table and clumn name
-    my ($table, $column) = get_table_and_column($original_key);
+    my $c = DBIx::Custom::Column->new;
+    $c->parse($original_key);
+    my $table  = $c->table;
+    my $column = $c->column;
     
     # Parameter key infomation
     my $key_info = {};
@@ -266,7 +270,6 @@ sub expand_basic_tag {
     return ($expand, $key_infos);
 }
 
-# Expand tag 'in'
 sub expand_in_tag {
     my ($tag_name, $tag_args) = @_;
     my ($original_key, $placeholder_count) = @$tag_args;
@@ -292,7 +295,10 @@ sub expand_in_tag {
     $expand .= ')';
     
     # Get table and clumn name
-    my ($table, $column) = get_table_and_column($original_key);
+    my $c = DBIx::Custom::Column->new;
+    $c->parse($original_key);
+    my $table  = $c->table;
+    my $column = $c->column;
     
     # Create parameter key infomations
     my $key_infos = [];
@@ -322,19 +328,6 @@ sub expand_in_tag {
     return ($expand, $key_infos);
 }
 
-# Get table and column
-sub get_table_and_column {
-    my $key = shift;
-    $key ||= '';
-    
-    return ('', $key) unless $key =~ /\./;
-    
-    my ($table, $column) = split /\./, $key;
-    
-    return ($table, $column);
-}
-
-# Expand tag 'insert'
 sub expand_insert_tag {
     my ($tag_name, $tag_args) = @_;
     my $original_keys = $tag_args;
@@ -346,8 +339,11 @@ sub expand_insert_tag {
     my $place_holders = '(';
     
     foreach my $original_key (@$original_keys) {
-        # Get table and column
-        my ($table, $column) = get_table_and_column($original_key);
+        # Get table and clumn name
+        my $c = DBIx::Custom::Column->new;
+        $c->parse($original_key);
+        my $table  = $c->table;
+        my $column = $c->column;
         
         # Join insert column
         $insert_keys   .= "$column, ";
@@ -371,7 +367,10 @@ sub expand_insert_tag {
     my $key_infos = [];
     foreach my $original_key (@$original_keys) {
         # Get table and clumn name
-        my ($table, $column) = get_table_and_column($original_key);
+        my $c = DBIx::Custom::Column->new;
+        $c->parse($original_key);
+        my $table  = $c->table;
+        my $column = $c->column;
         
         # Parameter key infomation
         my $key_info = {};
@@ -387,8 +386,6 @@ sub expand_insert_tag {
         
         # Access keys
         my $access_keys = [];
-        push @$access_keys, ['#insert', $original_key];
-        push @$access_keys, ['#insert', $table, $column] if $table && $column;
         push @$access_keys, [$original_key];
         push @$access_keys, [$table, $column] if $table && $column;
         $key_info->{access_keys} = $access_keys;
@@ -400,7 +397,6 @@ sub expand_insert_tag {
     return ($expand, $key_infos);
 }
 
-# Expand tag 'update'
 sub expand_update_tag {
     my ($tag_name, $tag_args) = @_;
     my $original_keys = $tag_args;
@@ -411,7 +407,10 @@ sub expand_update_tag {
     # 
     foreach my $original_key (@$original_keys) {
         # Get table and clumn name
-        my ($table, $column) = get_table_and_column($original_key);
+        my $c = DBIx::Custom::Column->new;
+        $c->parse($original_key);
+        my $table  = $c->table;
+        my $column = $c->column;
 
         # Join key and placeholder
         $expand .= "$column = ?, ";
@@ -424,7 +423,10 @@ sub expand_update_tag {
     my $key_infos = [];
     foreach my $original_key (@$original_keys) {
         # Get table and clumn name
-        my ($table, $column) = get_table_and_column($original_key);
+        my $c = DBIx::Custom::Column->new;
+        $c->parse($original_key);
+        my $table  = $c->table;
+        my $column = $c->column;
         
         # Parameter key infomation
         my $key_info = {};
@@ -440,8 +442,6 @@ sub expand_update_tag {
         
         # Access keys
         my $access_keys = [];
-        push @$access_keys, ['#update', $original_key];
-        push @$access_keys, ['#update', $table, $column] if $table && $column;
         push @$access_keys, [$original_key];
         push @$access_keys, [$table, $column] if $table && $column;
         $key_info->{access_keys} = $access_keys;
