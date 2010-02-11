@@ -303,20 +303,9 @@ sub _build_bind_values {
                 if ($i == @$access_key - 1) {
                     # Key is array reference
                     if (ref $current_key eq 'ARRAY') {
-                        # Filtering 
-                        if ($bind_filter &&
-                            !$no_bind_filters->{$original_key})
-                        {
-                            push @bind_values, 
-                                 $bind_filter->($root_params->[$current_key->[0]], 
-                                                $original_key, $self,
-                                                {table => $table, column => $column});
-                        }
-                        # Not filtering
-                        else {
-                            push @bind_values,
-                                 scalar $root_params->[$current_key->[0]];
-                        }
+                        push @bind_values, 
+                             $self->_filter($root_params->[$current_key->[0]], 
+                                            $key_info, $query);
                     }
                     # Key is string
                     else {
@@ -324,20 +313,9 @@ sub _build_bind_values {
                         next ACCESS_KEYS
                           unless exists $root_params->{$current_key};
                         
-                        # Filtering
-                        if ($bind_filter &&
-                            !$no_bind_filters->{$original_key}) 
-                        {
-                            push @bind_values,
-                                 $bind_filter->($root_params->{$current_key},
-                                                $original_key, $self,
-                                                {table => $table, column => $column});
-                        }
-                        # Not filtering
-                        else {
-                            push @bind_values,
-                                 scalar $root_params->{$current_key};
-                        }
+                        push @bind_values,
+                             $self->_filter($root_params->{$current_key},
+                                            $key_info, $query);
                     }
                     
                     # Key is found
@@ -375,6 +353,28 @@ sub _build_bind_values {
         }
     }
     return \@bind_values;
+}
+
+sub _filter {
+    my ($self, $value, $key_info, $query) = @_;
+    
+    my $bind_filter     = $query->bind_filter;
+    my $no_bind_filters = $query->_no_bind_filters || {};
+    
+    my $original_key = $key_info->{original_key} || '';
+    my $table        = $key_info->{table}        || '';
+    my $column       = $key_info->{column}       || '';
+    
+    # Filtering 
+    if ($bind_filter &&
+        !$no_bind_filters->{$original_key})
+    {
+        return $bind_filter->($value, $original_key, $self,
+                              {table => $table, column => $column});
+    }
+    
+    # Not filtering
+    return $value;
 }
 
 sub transaction { DBIx::Custom::Transaction->new(dbi => shift) }

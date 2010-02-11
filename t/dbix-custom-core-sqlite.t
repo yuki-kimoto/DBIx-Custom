@@ -97,7 +97,7 @@ $ret_val = $dbi->create_table(
                  );
 ok(defined $ret_val, "$test : create_table");
 
-eval{$dbi->insert('table1', {key1 => 1, key2 => 2})};
+$dbi->insert('table1', {key1 => 1, key2 => 2});
 ok(!$@, "$test : table exist");
 
 $ret_val = $dbi->drop_table('table1');
