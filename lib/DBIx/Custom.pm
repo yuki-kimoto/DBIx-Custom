@@ -9,6 +9,7 @@ use DBI;
 use DBIx::Custom::Result;
 use DBIx::Custom::SQL::Template;
 use DBIx::Custom::Transaction;
+use DBIx::Custom::Query;
 
 __PACKAGE__->attr('dbh');
 
@@ -173,22 +174,31 @@ sub do{
 
 sub create_query {
     my ($self, $template) = @_;
+    
     my $class = ref $self;
+    
+    my $table = '';
+    if (ref $template eq 'ARRAY') {
+        $table    = $template->[0];
+        $template = $template->[1];
+    }
     
     # Create query from SQL template
     my $sql_tmpl = $self->sql_tmpl;
     
     # Try to get cached query
-    my $cached_query = $class->_query_caches->{$template};
+    my $cached_query = $class->_query_caches->{"$table$template"};
     
     # Create query
     my $query;
-    if ($query) {
-        $query = $self->new(sql       => $cached_query->sql, 
-                            key_infos => $cached_query->key_infos);
+    if ($cached_query) {
+        $query = DBIx::Custom::Query->new(
+            sql       => $cached_query->sql,
+            key_infos => $cached_query->key_infos
+        );
     }
     else {
-        $query = eval{$sql_tmpl->create_query($template)};
+        $query = eval{$sql_tmpl->create_query([$table , $template])};
         croak($@) if $@;
         
         $class->_add_query_cache($template, $query);
@@ -574,11 +584,11 @@ sub _select_usage { return << 'EOS' }
 Your select arguments is wrong.
 select usage:
 $dbi->select(
-    $table,                # must be string or array ref
-    [@$columns],           # must be array reference. this can be ommited
-    {%$where_params},      # must be hash reference.  this can be ommited
-    $append_statement,     # must be string.          this can be ommited
-    $query_edit_callback   # must be code reference.  this can be ommited
+    $table,                # String or array ref
+    [@$columns],           # Array reference. this can be ommited
+    {%$where_params},      # Hash reference.  this can be ommited
+    $append_statement,     # String.          this can be ommited
+    $query_edit_callback   # Sub reference.   this can be ommited
 );
 EOS
 
@@ -703,6 +713,10 @@ Version 0.1101
 =cut
 
 our $VERSION = '0.1101';
+
+=head1 STATE
+
+This module is not stable. Method name and functionality will be change.
 
 =head1 SYNOPSYS
     

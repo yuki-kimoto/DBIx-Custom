@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use base 'Object::Simple';
+
 use Carp 'croak';
 
 __PACKAGE__->attr([qw/_dbi sth fetch_filter/]);

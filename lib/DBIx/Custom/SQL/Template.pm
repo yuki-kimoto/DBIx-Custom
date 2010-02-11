@@ -81,6 +81,12 @@ sub create_query {
 
 sub _parse_template {
     my ($self, $template) = @_;
+    
+    my $table = '';
+    if (ref $template eq 'ARRAY') {
+        $table    = $template->[0];
+        $template = $template->[1];
+    }
     $template ||= '';
     
     my $tree = [];

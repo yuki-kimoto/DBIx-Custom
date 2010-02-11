@@ -758,7 +758,6 @@ $queries[1] = $dbi->create_query($tmpls[1]);
 ok(!exists DBIx::Custom->_query_caches->{$tmpls[0]}, "$test : cache overflow deleted key");
 is(DBIx::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql cache overflow deleted key");
 is_deeply(DBIx::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos cache overflow deleted key");
-isnt(DBIx::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos cache overflow deleted key");
 is(DBIx::Custom->_query_caches->{$tmpls[2]}{sql}, $queries[2]->sql, "$test : sql cache overflow deleted key");
 is_deeply(DBIx::Custom->_query_caches->{$tmpls[2]}{key_infos}, $queries[2]->key_infos, "$test : key_infos cache overflow deleted key");
 is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls[1, 2]], "$test : cache key third");
