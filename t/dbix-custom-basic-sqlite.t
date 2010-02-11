@@ -53,17 +53,3 @@ $dbi = DBIx::Custom::Basic->new($NEW_ARGS->{0});
 ok($dbi->filters->{encode_utf8}, "$test : exists default_bind_filter");
 ok($dbi->filters->{decode_utf8}, "$test : exists default_fetch_filter");
 
-$ret_val = $dbi->utf8_filter_on;
-is($dbi->bind_filter, $dbi->filters->{encode_utf8}, 'default bind filter');
-is($dbi->fetch_filter, $dbi->filters->{decode_utf8}, 'default fetch filter');
-is(ref $ret_val, 'DBIx::Custom::Basic', "$test : retern value");
-
-$decoded_str = 'あ';
-$encoded_str = $dbi->bind_filter->($decoded_str);
-is($encoded_str, encode('UTF-8', $decoded_str), "$test : encode utf8");
-is($decoded_str, $dbi->fetch_filter->($encoded_str), "$test : fetch_filter");
-
-$decoded_str = 'a';
-$encoded_str = $dbi->bind_filter->($decoded_str);
-is($encoded_str, encode('UTF-8', $decoded_str), "$test : upgrade and encode utf8");
-is($decoded_str, $dbi->fetch_filter->($encoded_str), "$test : fetch_filter");

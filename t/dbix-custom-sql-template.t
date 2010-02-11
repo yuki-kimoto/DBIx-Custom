@@ -25,14 +25,14 @@ $datas = [
         tmpl            => "a {?  k1} b {=  k2} {<> k3} {>  k4} {<  k5} {>= k6} {<= k7} {like k8}", ,
         sql_expected    => "a ? b k2 = ? k3 <> ? k4 > ? k5 < ? k6 >= ? k7 <= ? k8 like ?;",
         key_infos_expected   => [
-            {original_key => 'k1', table => '', column => 'k1', access_keys => [['k1']]},
-            {original_key => 'k2', table => '', column => 'k2', access_keys => [['k2']]},
-            {original_key => 'k3', table => '', column => 'k3', access_keys => [['k3']]},
-            {original_key => 'k4', table => '', column => 'k4', access_keys => [['k4']]},
-            {original_key => 'k5', table => '', column => 'k5', access_keys => [['k5']]},
-            {original_key => 'k6', table => '', column => 'k6', access_keys => [['k6']]},
-            {original_key => 'k7', table => '', column => 'k7', access_keys => [['k7']]},
-            {original_key => 'k8', table => '', column => 'k8', access_keys => [['k8']]},
+            {table => '', column => 'k1', id => ''},
+            {table => '', column => 'k2', id => ''},
+            {table => '', column => 'k3', id => ''},
+            {table => '', column => 'k4', id => ''},
+            {table => '', column => 'k5', id => ''},
+            {table => '', column => 'k6', id => ''},
+            {table => '', column => 'k7', id => ''},
+            {table => '', column => 'k8', id => ''},
         ],
     },
     {
@@ -40,9 +40,9 @@ $datas = [
         tmpl            => "{in k1 3};",
         sql_expected    => "k1 in (?, ?, ?);",
         key_infos_expected   => [
-            {original_key => 'k1', table => '', column => 'k1', access_keys => [['k1', [0]]]},
-            {original_key => 'k1', table => '', column => 'k1', access_keys => [['k1', [1]]]},
-            {original_key => 'k1', table => '', column => 'k1', access_keys => [['k1', [2]]]},
+            {table => '', column => 'k1', id => '', pos => 0},
+            {table => '', column => 'k1', id => '', pos => 1},
+            {table => '', column => 'k1', id => '', pos => 2},
         ],
     },
     
@@ -52,8 +52,8 @@ $datas = [
         tmpl            => "{= a.k1} {= a.k2}",
         sql_expected    => "a.k1 = ? a.k2 = ?;",
         key_infos_expected  => [
-            {original_key => 'a.k1', table => 'a', column => 'k1', access_keys => [['a.k1'], ['a', 'k1']]},
-            {original_key => 'a.k2', table => 'a', column => 'k2', access_keys => [['a.k2'], ['a', 'k2']]},
+            {table => 'a', column => 'k1', id => ''},
+            {table => 'a', column => 'k2', id => ''},
         ],
     },
     {   
@@ -61,10 +61,10 @@ $datas = [
         tmpl            => "{in a.k1 2} {in b.k2 2}",
         sql_expected    => "a.k1 in (?, ?) b.k2 in (?, ?);",
         key_infos_expected  => [
-            {original_key => 'a.k1', table => 'a', column => 'k1', access_keys => [['a.k1', [0]], ['a', 'k1', [0]]]},
-            {original_key => 'a.k1', table => 'a', column => 'k1', access_keys => [['a.k1', [1]], ['a', 'k1', [1]]]},
-            {original_key => 'b.k2', table => 'b', column => 'k2', access_keys => [['b.k2', [0]], ['b', 'k2', [0]]]},
-            {original_key => 'b.k2', table => 'b', column => 'k2', access_keys => [['b.k2', [1]], ['b', 'k2', [1]]]},
+            {table => 'a', column => 'k1', id => '', pos => 0},
+            {table => 'a', column => 'k1', id => '', pos => 1},
+            {table => 'b', column => 'k2', id => '', pos => 0},
+            {table => 'b', column => 'k2', id => '', pos => 1},
         ],
     },
     {

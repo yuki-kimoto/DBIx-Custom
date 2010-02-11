@@ -177,7 +177,7 @@ sub _build_query {
             
             # Expand tag using tag processor
             my ($expand, $key_infos)
-              = $tag_processor->($tag_name, $tag_args, $self->table);
+              = $tag_processor->($tag_name, $tag_args, $self->table || '');
             
             # Check tag processor return value
             croak("Tag processor '$tag_name' must return (\$expand, \$key_infos)")

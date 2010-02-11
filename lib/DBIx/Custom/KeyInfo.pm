@@ -24,9 +24,9 @@ sub parse {
     
     # Parse
     ($key || '') =~ /^(?:(.+?)\.)?(.+?)(?:@(.+))?$/;
-    $self->table($1);
-    $self->column($2);
-    $self->id($3);
+    $self->table($1 || '');
+    $self->column($2 || '');
+    $self->id($3 || '');
     
     return $self;
 }

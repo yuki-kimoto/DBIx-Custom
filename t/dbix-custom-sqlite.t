@@ -39,10 +39,9 @@ $dbi = DBIx::Custom::SQLite->new;
 $dbi->connect_memory;
 $ret_val = $dbi->do($CREATE_TABLE->{0});
 ok(defined $ret_val, $test);
-$dbi->utf8_filter_on;
-$dbi->insert('table1', {key1 => 'あ', key2 => 2});
-$rows = $dbi->select('table1', {key1 => 'あ'})->fetch_hash_all;
-is_deeply($rows, [{key1 => 'あ', key2 => 2}], "$test : select rows");
+$dbi->insert('table1', {key1 => 'a', key2 => 2});
+$rows = $dbi->select('table1', {key1 => 'a'})->fetch_hash_all;
+is_deeply($rows, [{key1 => 'a', key2 => 2}], "$test : select rows");
 
 test 'connect_memory error';
 eval{$dbi->connect_memory};
