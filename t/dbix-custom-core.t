@@ -215,9 +215,3 @@ test 'Accessor';
 $dbi = DBIx::Custom->new;
 $dbi->options({opt1 => 1, opt2 => 2});
 is_deeply(scalar $dbi->options, {opt1 => 1, opt2 => 2}, "$test : options");
-
-$dbi->no_bind_filters(['a', 'b']);
-is_deeply(scalar $dbi->no_bind_filters, ['a', 'b'], "$test: no_bind_filters");
-
-$dbi->no_fetch_filters(['a', 'b']);
-is_deeply(scalar $dbi->no_fetch_filters, ['a', 'b'], "$test: no_fetch_filters");

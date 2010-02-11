@@ -227,17 +227,6 @@ $result->fetch_filter($fetch_filter);
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 2}, {key1 => 3, key2 => 4}], "$test hash");
 
-$result = query($dbh, $sql);
-$result->no_fetch_filters(['key1']);
-$rows = $result->fetch_all;
-is_deeply($rows, [[1, 2], [3, 4]], "$test array no filter keys");
-
-$result = query($dbh, $sql);
-$result->no_fetch_filters(['key1']);
-$rows = $result->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test hash no filter keys");
-
-
 test 'finish';
 $result = query($dbh, $sql);
 $result->fetch;

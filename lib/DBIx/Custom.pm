@@ -4,12 +4,13 @@ use strict;
 use warnings;
 
 use base 'Object::Simple';
+
 use Carp 'croak';
 use DBI;
 use DBIx::Custom::Result;
 use DBIx::Custom::SQL::Template;
-use DBIx::Custom::Transaction;
 use DBIx::Custom::Query;
+use DBIx::Custom::KeyInfo;
 
 __PACKAGE__->attr('dbh');
 
@@ -22,9 +23,6 @@ __PACKAGE__->class_attr('query_cache_max', default => 50,
 __PACKAGE__->dual_attr([qw/user password data_source/], inherit => 'scalar_copy');
 __PACKAGE__->dual_attr([qw/database host port/],        inherit => 'scalar_copy');
 __PACKAGE__->dual_attr([qw/bind_filter fetch_filter/],  inherit => 'scalar_copy');
-
-__PACKAGE__->dual_attr([qw/no_bind_filters no_fetch_filters/],
-                       default => sub { [] }, inherit => 'array_copy');
 
 __PACKAGE__->dual_attr([qw/options filters formats/],
                        default => sub { {} }, inherit => 'hash_copy');
@@ -217,14 +215,8 @@ sub create_query {
     # Set bind filter
     $query->bind_filter($self->bind_filter);
     
-    # Set no filter keys when binding
-    $query->no_bind_filters($self->no_bind_filters);
-    
     # Set fetch filter
     $query->fetch_filter($self->fetch_filter);
-    
-    # Set no filter keys when fetching
-    $query->no_fetch_filters($self->no_fetch_filters);
     
     return $query;
 }
@@ -278,7 +270,6 @@ sub query{
             _dbi             => $self,
             sth              => $sth,
             fetch_filter     => $query->fetch_filter,
-            no_fetch_filters => $query->no_fetch_filters
         });
         return $result;
     }
@@ -301,9 +292,9 @@ sub _build_bind_values {
         my $pos          = $key_info->pos;
         
         # Value
-        my $value = $id && $pos ? $params->{$id}->{$column}->[$pos]
-                  : $id         ? $params->{$id}->{$column}
-                  : $pos        ? $params->{$column}->[$pos]
+        my $value = $id && defined $pos ? $params->{$id}->{$column}->[$pos]
+                  : $id                 ? $params->{$id}->{$column}
+                  : defined $pos        ? $params->{$column}->[$pos]
                   : $params->{$column};
         
         # Filter
@@ -320,18 +311,15 @@ sub transaction { DBIx::Custom::Transaction->new(dbi => shift) }
 sub run_transaction {
     my ($self, $transaction) = @_;
     
-    # DBIx::Custom object
-    my $dbi = $self->dbi;
-    
     # Shorcut
-    return unless $dbi;
+    return unless $self;
     
     # Check auto commit
     croak("AutoCommit must be true before transaction start")
-      unless $dbi->_auto_commit;
+      unless $self->_auto_commit;
     
     # Auto commit off
-    $dbi->_auto_commit(0);
+    $self->_auto_commit(0);
     
     # Run transaction
     eval {$transaction->()};
@@ -342,13 +330,13 @@ sub run_transaction {
     # Tranzaction is failed.
     if ($transaction_error) {
         # Rollback
-        eval{$dbi->dbh->rollback};
+        eval{$self->dbh->rollback};
         
         # Rollback error
         my $rollback_error = $@;
         
         # Auto commit on
-        $dbi->_auto_commit(1);
+        $self->_auto_commit(1);
         
         if ($rollback_error) {
             # Rollback is failed
@@ -362,11 +350,11 @@ sub run_transaction {
     # Tranzaction is success
     else {
         # Commit
-        eval{$dbi->dbh->commit};
+        eval{$self->dbh->commit};
         my $commit_error = $@;
         
         # Auto commit on
-        $dbi->_auto_commit(1);
+        $self->_auto_commit(1);
         
         # Commit is failed
         croak($commit_error) if $commit_error;
@@ -466,7 +454,13 @@ sub update {
     if (@where_keys) {
         $where_clause = 'where ';
         foreach my $where_key (@where_keys) {
-            $where_clause .= "{= $where_key} and ";
+            my $key_info = DBIx::Custom::KeyInfo->new($where_key);
+            
+            my $table_new = $key_info->table || $table;
+            my $column = $table_new . '.' . $key_info->column
+                         . '#@where';
+
+            $where_clause .= "{= $column} and ";
         }
         $where_clause =~ s/ and $//;
     }
@@ -486,7 +480,7 @@ sub update {
     $query_edit_cb->($query) if $query_edit_cb;
     
     # Rearrange parammeters
-    my $params = {%$update_params, %$where_params};
+    my $params = {%$update_params, '@where' => $where_params};
     
     # Execute query
     my $ret_val = $self->query($query, $params);
@@ -618,11 +612,23 @@ sub select {
     # Where clause keys
     my @where_keys = keys %$where_params;
     
+    my $where_params_new = {};
+    
     # Join where clause
     if (@where_keys) {
         $template .= 'where ';
         foreach my $where_key (@where_keys) {
-            $template .= "{= $where_key} and ";
+            my $key_info = DBIx::Custom::KeyInfo->new($where_key);
+            
+            my $table_new = $key_info->table || $tables->[0];
+            my $column = $table_new . '.' . $key_info->column
+                         . '#' . $table_new;
+                      
+            $template .= "{= $column} and ";
+            
+            $where_params_new->{$table_new} ||= {};
+            $where_params_new->{$table_new}->{$key_info->column}
+              = $where_params->{$where_key};
         }
     }
     $template =~ s/ and $//;
@@ -647,7 +653,7 @@ sub select {
     $query_edit_cb->($query) if $query_edit_cb;
     
     # Execute query
-    my $result = $self->query($query, $where_params);
+    my $result = $self->query($query, $where_params_new);
     
     return $result;
 }
@@ -692,11 +698,11 @@ DBIx::Custom - Customizable DBI
 
 =head1 VERSION
 
-Version 0.1101
+Version 0.1201
 
 =cut
 
-our $VERSION = '0.1101';
+our $VERSION = '0.1201';
 
 =head1 STATE
 
@@ -868,20 +874,6 @@ Bind filter arguemts is
     2. $key   : Key
     3. $dbi   : DBIx::Custom object
     4. $infos : {type => $table, sth => $sth, index => $index}
-
-=head2 no_bind_filters
-
-Key list which dose not have to bind filtering
-    
-    $dbi             = $dbi->no_bind_filters(qw/title author/);
-    $no_bind_filters = $dbi->no_bind_filters;
-
-=head2 no_fetch_filters
-
-Key list which dose not have to fetch filtering
-
-    $dbi              = $dbi->no_fetch_filters(qw/title author/);
-    $no_fetch_filters = $dbi->no_fetch_filters;
 
 =head2 result_class
 

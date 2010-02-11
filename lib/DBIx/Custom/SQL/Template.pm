@@ -237,14 +237,18 @@ sub expand_basic_tag {
     croak("You must be pass key as argument to tag '{$tag_name }'")
       unless $key;
     
-    # Expanded tag
-    my $expand = $tag_name eq '?'
-               ? '?'
-               : "$key $tag_name ?";
-    
+    # Key info
     my $key_info = DBIx::Custom::KeyInfo->new($key);
     $key_info->table($table) unless $key_info->table;
-    
+
+    # Expanded tag
+    my $column = $key_info->table
+               ? $key_info->table . '.' . $key_info->column
+               : $key_info->column;
+    my $expand = $tag_name eq '?'
+               ? '?'
+               : "$column $tag_name ?";
+
     return ($expand, [$key_info]);
 }
 
@@ -263,7 +267,12 @@ sub expand_in_tag {
       if !$placeholder_count || $placeholder_count =~ /\D/;
 
     # Expand tag
-    my $expand = "$key $tag_name (";
+    my $key_info = DBIx::Custom::KeyInfo->new($key);
+    my $column = $key_info->table
+               ? $key_info->table . '.' . $key_info->column
+               : $key_info->column;
+
+    my $expand = "$column $tag_name (";
     for (my $i = 0; $i < $placeholder_count; $i++) {
         $expand .= '?, ';
     }

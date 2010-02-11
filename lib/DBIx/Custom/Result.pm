@@ -8,35 +8,6 @@ use base 'Object::Simple';
 use Carp 'croak';
 
 __PACKAGE__->attr([qw/_dbi sth fetch_filter/]);
-__PACKAGE__->attr(_no_fetch_filters => sub { {} });
-
-sub new {
-    my $self = shift->SUPER::new(@_);
-    
-    # Initialize attributes
-    $self->no_fetch_filters($self->{no_fetch_filters})
-      if exists $self->{no_fetch_filters};
-    
-    return $self;
-}
-
-sub no_fetch_filters {
-    my $self = shift;
-    
-    if (@_) {
-        
-        # Set
-        $self->{no_fetch_filters} = $_[0];
-        
-        # Cached
-        my %no_fetch_filters = map {$_ => 1} @{$self->{no_fetch_filters}};
-        $self->_no_fetch_filters(\%no_fetch_filters);
-        
-        return $self;
-    }
-    
-    return $self->{no_fetch_filters};
-}
 
 sub fetch {
     my ($self, $type) = @_;
@@ -54,7 +25,6 @@ sub fetch {
         my $keys  = $sth->{NAME_lc};
         my $types = $sth->{TYPE};
         for (my $i = 0; $i < @$keys; $i++) {
-            next if $self->_no_fetch_filters->{$keys->[$i]};
             $row->[$i]= $fetch_filter->($row->[$i], $keys->[$i], $self->_dbi,
                                         {type => $types->[$i], sth => $sth, index => $i});
         }
@@ -81,14 +51,9 @@ sub fetch_hash {
     if ($fetch_filter) {
         my $types = $sth->{TYPE};
         for (my $i = 0; $i < @$keys; $i++) {
-            if ($self->_no_fetch_filters->{$keys->[$i]}) {
-                $row_hash->{$keys->[$i]} = $row->[$i];
-            }
-            else {
-                $row_hash->{$keys->[$i]}
-                  = $fetch_filter->($row->[$i], $keys->[$i], $self->_dbi,
-                                    {type => $types->[$i], sth => $sth, index => $i});
-            }
+            $row_hash->{$keys->[$i]}
+              = $fetch_filter->($row->[$i], $keys->[$i], $self->_dbi,
+                                {type => $types->[$i], sth => $sth, index => $i});
         }
     }
     
@@ -241,13 +206,6 @@ Filter excuted when data is fetched
 
     $result         = $result->fetch_filter($sth);
     $fetch_filter   = $result->fech_filter;
-
-=head2 no_fetch_filters
-
-Key list which dose not have to fetch filtering
-
-    $result           = $result->no_fetch_filters($no_fetch_filters);
-    $no_fetch_filters = $result->no_fetch_filters;
 
 =head1 METHODS
 
