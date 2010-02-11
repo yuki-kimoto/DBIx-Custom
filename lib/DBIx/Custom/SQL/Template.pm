@@ -7,6 +7,7 @@ use base 'Object::Simple';
 use Carp 'croak';
 use DBIx::Custom::Query;
 
+__PACKAGE__->attr('table');
 __PACKAGE__->dual_attr('tag_processors', default => sub { {} },
                                          inherit => 'hash_copy');
 
@@ -176,7 +177,7 @@ sub _build_query {
             
             # Expand tag using tag processor
             my ($expand, $key_infos)
-              = $tag_processor->($tag_name, $tag_args);
+              = $tag_processor->($tag_name, $tag_args, $self->table);
             
             # Check tag processor return value
             croak("Tag processor '$tag_name' must return (\$expand, \$key_infos)")
@@ -224,61 +225,37 @@ use strict;
 use warnings;
 
 use Carp 'croak';
-use DBIx::Custom::Column;
+use DBIx::Custom::KeyInfo;
 
 sub expand_basic_tag {
-    my ($tag_name, $tag_args) = @_;
-    my $original_key = $tag_args->[0];
+    my ($tag_name, $tag_args, $table) = @_;
+    
+    # Key
+    my $key = $tag_args->[0];
     
     # Key is not exist
     croak("You must be pass key as argument to tag '{$tag_name }'")
-      if !$original_key;
+      unless $key;
     
     # Expanded tag
     my $expand = $tag_name eq '?'
                ? '?'
-               : "$original_key $tag_name ?";
+               : "$key $tag_name ?";
     
-    # Get table and clumn name
-    my $c = DBIx::Custom::Column->new;
-    $c->parse($original_key);
-    my $table  = $c->table;
-    my $column = $c->column;
+    my $key_info = DBIx::Custom::KeyInfo->new($key);
+    $key_info->table($table) unless $key_info->table;
     
-    # Parameter key infomation
-    my $key_info = {};
-    
-    # Original key
-    $key_info->{original_key} = $original_key;
-    
-    # Table
-    $key_info->{table}  = $table;
-    
-    # Column name
-    $key_info->{column} = $column;
-    
-    # Access keys
-    my $access_keys = [];
-    push @$access_keys, [$original_key];
-    push @$access_keys, [$table, $column] if $table && $column;
-    $key_info->{access_keys} = $access_keys;
-    
-    # Add parameter key information
-    my $key_infos = [];
-    push @$key_infos, $key_info;
-    
-    return ($expand, $key_infos);
+    return ($expand, [$key_info]);
 }
 
 sub expand_in_tag {
-    my ($tag_name, $tag_args) = @_;
-    my ($original_key, $placeholder_count) = @$tag_args;
+    my ($tag_name, $tag_args, $table) = @_;
+    my ($key, $placeholder_count) = @$tag_args;
     
     # Key must be specified
     croak("You must be pass key as first argument of tag '{$tag_name }'\n" . 
           "Usage: {$tag_name \$key \$placeholder_count}")
-      unless $original_key;
-      
+      unless $key;
     
     # Place holder count must be specified
     croak("You must be pass placeholder count as second argument of tag '{$tag_name }'\n" . 
@@ -286,7 +263,7 @@ sub expand_in_tag {
       if !$placeholder_count || $placeholder_count =~ /\D/;
 
     # Expand tag
-    my $expand = "$original_key $tag_name (";
+    my $expand = "$key $tag_name (";
     for (my $i = 0; $i < $placeholder_count; $i++) {
         $expand .= '?, ';
     }
@@ -294,34 +271,14 @@ sub expand_in_tag {
     $expand =~ s/, $//;
     $expand .= ')';
     
-    # Get table and clumn name
-    my $c = DBIx::Custom::Column->new;
-    $c->parse($original_key);
-    my $table  = $c->table;
-    my $column = $c->column;
-    
     # Create parameter key infomations
     my $key_infos = [];
     for (my $i = 0; $i < $placeholder_count; $i++) {
-        # Parameter key infomation
-        my $key_info = {};
-        
-        # Original key
-        $key_info->{original_key} = $original_key;
-        
-        # Table
-        $key_info->{table}   = $table;
-        
-        # Column name
-        $key_info->{column}  = $column;
-        
-        # Access keys
-        my $access_keys = [];
-        push @$access_keys, [$original_key, [$i]];
-        push @$access_keys, [$table, $column, [$i]] if $table && $column;
-        $key_info->{access_keys} = $access_keys;
         
         # Add parameter key infos
+        my $key_info = DBIx::Custom::KeyInfo->new($key);
+        $key_info->table($table) unless $key_info->table;
+        $key_info->pos($i);
         push @$key_infos, $key_info;
     }
     
@@ -329,8 +286,8 @@ sub expand_in_tag {
 }
 
 sub expand_insert_tag {
-    my ($tag_name, $tag_args) = @_;
-    my $original_keys = $tag_args;
+    my ($tag_name, $tag_args, $table) = @_;
+    my $keys = $tag_args;
     
     # Insert key (k1, k2, k3, ..)
     my $insert_keys = '(';
@@ -338,12 +295,10 @@ sub expand_insert_tag {
     # placeholder (?, ?, ?, ..)
     my $place_holders = '(';
     
-    foreach my $original_key (@$original_keys) {
+    foreach my $key (@$keys) {
         # Get table and clumn name
-        my $c = DBIx::Custom::Column->new;
-        $c->parse($original_key);
-        my $table  = $c->table;
-        my $column = $c->column;
+        my $key_info = DBIx::Custom::KeyInfo->new($key);
+        my $column   = $key_info->column;
         
         # Join insert column
         $insert_keys   .= "$column, ";
@@ -365,32 +320,9 @@ sub expand_insert_tag {
     
     # Create parameter key infomations
     my $key_infos = [];
-    foreach my $original_key (@$original_keys) {
-        # Get table and clumn name
-        my $c = DBIx::Custom::Column->new;
-        $c->parse($original_key);
-        my $table  = $c->table;
-        my $column = $c->column;
-        
-        # Parameter key infomation
-        my $key_info = {};
-        
-        # Original key
-        $key_info->{original_key} = $original_key;
-        
-        # Table
-        $key_info->{table}   = $table;
-        
-        # Column name
-        $key_info->{column}  = $column;
-        
-        # Access keys
-        my $access_keys = [];
-        push @$access_keys, [$original_key];
-        push @$access_keys, [$table, $column] if $table && $column;
-        $key_info->{access_keys} = $access_keys;
-        
-        # Add parameter key infos
+    foreach my $key (@$keys) {
+        my $key_info = DBIx::Custom::KeyInfo->new($key);
+        $key_info->table($table) unless $key_info->table;
         push @$key_infos, $key_info;
     }
     
@@ -398,19 +330,16 @@ sub expand_insert_tag {
 }
 
 sub expand_update_tag {
-    my ($tag_name, $tag_args) = @_;
-    my $original_keys = $tag_args;
+    my ($tag_name, $tag_args, $table) = @_;
+    my $keys = $tag_args;
     
     # Expanded tag
     my $expand = 'set ';
     
-    # 
-    foreach my $original_key (@$original_keys) {
+    foreach my $key (@$keys) {
         # Get table and clumn name
-        my $c = DBIx::Custom::Column->new;
-        $c->parse($original_key);
-        my $table  = $c->table;
-        my $column = $c->column;
+        my $key_info = DBIx::Custom::KeyInfo->new($key);
+        my $column = $key_info->column;
 
         # Join key and placeholder
         $expand .= "$column = ?, ";
@@ -419,34 +348,10 @@ sub expand_update_tag {
     # Delete last ', '
     $expand =~ s/, $//;
     
-    # Create parameter key infomations
     my $key_infos = [];
-    foreach my $original_key (@$original_keys) {
-        # Get table and clumn name
-        my $c = DBIx::Custom::Column->new;
-        $c->parse($original_key);
-        my $table  = $c->table;
-        my $column = $c->column;
-        
-        # Parameter key infomation
-        my $key_info = {};
-        
-        # Original key
-        $key_info->{original_key} = $original_key;
-        
-        # Table
-        $key_info->{table}  = $table;
-        
-        # Column name
-        $key_info->{column} = $column;
-        
-        # Access keys
-        my $access_keys = [];
-        push @$access_keys, [$original_key];
-        push @$access_keys, [$table, $column] if $table && $column;
-        $key_info->{access_keys} = $access_keys;
-        
-        # Add parameter key infos
+    foreach my $key (@$keys) {
+        my $key_info = DBIx::Custom::KeyInfo->new($key);
+        $key_info->table($table) unless $key_info->table;
         push @$key_infos, $key_info;
     }
     
@@ -619,3 +524,4 @@ The following is update SQL sample
     $query->sql : "update table set key1 = ?, key2 = ? where key3 = ?;"
     
 =cut
+

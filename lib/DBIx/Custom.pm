@@ -179,7 +179,7 @@ sub create_query {
     
     my $table = '';
     if (ref $template eq 'ARRAY') {
-        $table    = $template->[0];
+        $table    = $template->[0] if $template->[0];
         $template = $template->[1];
     }
     
@@ -198,10 +198,11 @@ sub create_query {
         );
     }
     else {
-        $query = eval{$sql_tmpl->create_query([$table , $template])};
+        $sql_tmpl->table($table);
+        $query = eval{$sql_tmpl->create_query($template)};
         croak($@) if $@;
         
-        $class->_add_query_cache($template, $query);
+        $class->_add_query_cache("$table$template", $query);
     }
     
     # Connect if not
@@ -229,14 +230,21 @@ sub create_query {
 }
 
 sub query{
-    my ($self, $query, $params)  = @_;
+    my ($self, $query, $params, $query_edit_cb)  = @_;
     $params ||= {};
     
     # First argument is SQL template
-    if (!ref $query) {
-        my $template = $query;
-        $query = $self->create_query($template);
-        my $query_edit_cb = $_[3];
+    unless (ref $query eq 'DBIx::Custom::Query') {
+        my $table;
+        my $template;
+        
+        if (ref $query eq 'ARRAY') {
+            $table    = $query->[0];
+            $template = $query->[1];
+        }
+        else { $template = $query }
+        
+        $query = $self->create_query([$table, $template]);
         $query_edit_cb->($query) if ref $query_edit_cb eq 'CODE';
     }
     
@@ -279,112 +287,32 @@ sub query{
 
 sub _build_bind_values {
     my ($self, $query, $params) = @_;
-    my $key_infos           = $query->key_infos;
-    my $bind_filter         = $query->bind_filter;
-    my $no_bind_filters     = $query->_no_bind_filters || {};
+    my $key_infos  = $query->key_infos;
+    my $filter     = $query->bind_filter;
     
     # binding values
     my @bind_values;
     
-    # Create bind values
-    KEY_INFOS :
+    # Build bind values
     foreach my $key_info (@$key_infos) {
-        # Set variable
-        my $access_keys  = $key_info->{access_keys};
-        my $original_key = $key_info->{original_key} || '';
-        my $table        = $key_info->{table}        || '';
-        my $column       = $key_info->{column}       || '';
+        my $table        = $key_info->table;
+        my $column       = $key_info->column;
+        my $id           = $key_info->id;
+        my $pos          = $key_info->pos;
         
-        # Key is found?
-        my $found;
+        # Value
+        my $value = $id && $pos ? $params->{$id}->{$column}->[$pos]
+                  : $id         ? $params->{$id}->{$column}
+                  : $pos        ? $params->{$column}->[$pos]
+                  : $params->{$column};
         
-        # Build bind values
-        ACCESS_KEYS :
-        foreach my $access_key (@$access_keys) {
-            # Root parameter
-            my $root_params = $params;
-            
-            # Search corresponding value
-            for (my $i = 0; $i < @$access_key; $i++) {
-                # Current key
-                my $current_key = $access_key->[$i];
-                
-                # Last key
-                if ($i == @$access_key - 1) {
-                    # Key is array reference
-                    if (ref $current_key eq 'ARRAY') {
-                        push @bind_values, 
-                             $self->_filter($root_params->[$current_key->[0]], 
-                                            $key_info, $query);
-                    }
-                    # Key is string
-                    else {
-                        # Key is not found
-                        next ACCESS_KEYS
-                          unless exists $root_params->{$current_key};
-                        
-                        push @bind_values,
-                             $self->_filter($root_params->{$current_key},
-                                            $key_info, $query);
-                    }
-                    
-                    # Key is found
-                    $found = 1;
-                    next KEY_INFOS;
-                }
-                # First or middle key
-                else {
-                    # Key is array reference
-                    if (ref $current_key eq 'ARRAY') {
-                        # Go next key
-                        $root_params = $root_params->[$current_key->[0]];
-                    }
-                    # Key is string
-                    else {
-                        # Not found
-                        next ACCESS_KEYS
-                          unless exists $root_params->{$current_key};
-                        
-                        # Go next key
-                        $root_params = $root_params->{$current_key};
-                    }
-                }
-            }
-        }
-        
-        # Key is not found
-        unless ($found) {
-            require Data::Dumper;
-            my $key_info_dump  = Data::Dumper->Dump([$key_info], ['*key_info']);
-            my $params_dump    = Data::Dumper->Dump([$params], ['*params']);
-            croak("Corresponding key is not found in your parameters\n" . 
-                  "<Key information>\n$key_info_dump\n\n" .
-                  "<Your parameters>\n$params_dump\n");
-        }
+        # Filter
+        push @bind_values, 
+             $filter ? $filter->($value, $table, $column, $self->filters)
+                     : $value;
     }
+    
     return \@bind_values;
-}
-
-sub _filter {
-    my ($self, $value, $key_info, $query) = @_;
-    
-    my $bind_filter     = $query->bind_filter;
-    my $no_bind_filters = $query->_no_bind_filters || {};
-    
-    my $original_key = $key_info->{original_key} || '';
-    my $table        = $key_info->{table}        || '';
-    my $column       = $key_info->{column}       || '';
-    
-    # Filtering 
-    if ($bind_filter &&
-        !$no_bind_filters->{$original_key})
-    {
-        return $bind_filter->($value, $original_key, $self,
-                              {table => $table, column => $column});
-    }
-    
-    # Not filtering
-    return $value;
 }
 
 sub transaction { DBIx::Custom::Transaction->new(dbi => shift) }
@@ -436,7 +364,7 @@ sub insert {
     my $template = "insert into $table {insert " . join(' ', @insert_keys) . '}';
     $template .= " $append_statement" if $append_statement;
     # Create query
-    my $query = $self->create_query($template);
+    my $query = $self->create_query([$table, $template]);
     
     # Query edit callback must be code reference
     croak("Query edit callback must be code reference")
@@ -492,7 +420,7 @@ sub update {
     $template .= " $append_statement" if $append_statement;
     
     # Create query
-    my $query = $self->create_query($template);
+    my $query = $self->create_query([$table, $template]);
     
     # Query edit callback must be code reference
     croak("Query edit callback must be code reference")
@@ -553,7 +481,7 @@ sub delete {
     $template .= " $append_statement" if $append_statement;
     
     # Create query
-    my $query = $self->create_query($template);
+    my $query = $self->create_query([$table, $template]);
     
     # Query edit callback must be code reference
     croak("Query edit callback must be code reference")
@@ -657,7 +585,7 @@ sub select {
     }
     
     # Create query
-    my $query = $self->create_query($template);
+    my $query = $self->create_query([$tables->[0], $template]);
     
     # Query edit
     $query_edit_cb->($query) if $query_edit_cb;

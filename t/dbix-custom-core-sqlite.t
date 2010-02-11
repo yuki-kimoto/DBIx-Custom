@@ -180,17 +180,18 @@ $insert_tmpl = "insert into table1 {insert key1 key2}";
 $dbi->query($insert_tmpl, {key1 => 1, key2 => 2}, sub {
     my $query = shift;
     $query->bind_filter(sub {
-        my ($value, $key) = @_;
-        if ($key eq 'key2') {
+        my ($value, $table, $column) = @_;
+        if ($column eq 'key2') {
             return $value + 1;
         }
         return $value;
     });
 });
-$result = $dbi->query($SELECT_TMPL->{0});
+$result = $dbi->query(['table1', $SELECT_TMPL->{0}]);
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 3}], $test);
 
+__END__
 
 test 'Filter basic';
 $dbi->do($DROP_TABLE->{0});
@@ -199,11 +200,9 @@ $dbi->do($CREATE_TABLE->{0});
 $insert_tmpl  = "insert into table1 {insert key1 key2};";
 $insert_query = $dbi->create_query($insert_tmpl);
 $insert_query->bind_filter(sub {
-    my ($value, $key, $dbi, $infos) = @_;
-    my ($table, $column) = @{$infos}{qw/table column/};
+    my ($value, $table, $column) = @_;
     
-    if ($key eq 'key1' && $table eq '' && $column eq 'key1'
-        && $dbi->isa('DBIx::Custom'))
+    if ($table eq '' && $column eq 'key1')
     {
         return $value * 2;
     }
