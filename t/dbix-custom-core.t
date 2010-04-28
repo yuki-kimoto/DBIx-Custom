@@ -30,14 +30,14 @@ $dbi = DBIx::Custom->new(
     filters => {
         f => 3,
     },
-    bind_filter => 'f',
-    fetch_filter => 'g',
+    default_bind_filter => 'f',
+    default_fetch_filter => 'g',
     result_class => 'g',
     sql_tmpl => $SQL_TMPL->{0},
 );
 is_deeply($dbi,{user => 'a', database => 'a', password => 'b', data_source => 'c', 
-                options => {d => 1, e => 2}, filters => {f => 3}, bind_filter => 'f',
-                fetch_filter => 'g', result_class => 'g',
+                options => {d => 1, e => 2}, filters => {f => 3}, default_bind_filter => 'f',
+                default_fetch_filter => 'g', result_class => 'g',
                 sql_tmpl => $SQL_TMPL->{0}}, $test);
 isa_ok($dbi, 'DBIx::Custom');
 
@@ -120,14 +120,6 @@ test 'add_formats';
 $dbi = DBIx::Custom->new;
 $dbi->add_format(a => sub {1});
 is($dbi->formats->{a}->(), 1, $test);
-
-test 'filter_off';
-$dbi = DBIx::Custom->new;
-$dbi->bind_filter('a');
-$dbi->fetch_filter('b');
-$dbi->filter_off;
-ok(!$dbi->bind_filter,  "$test : bind_filter  off");
-ok(!$dbi->fetch_filter, "$test : fetch_filter off");
 
 test 'Accessor';
 $dbi = DBIx::Custom->new;

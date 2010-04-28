@@ -22,7 +22,7 @@ __PACKAGE__->class_attr('query_cache_max', default => 50,
 
 __PACKAGE__->attr([qw/user password data_source/]);
 __PACKAGE__->attr([qw/database host port/]);
-__PACKAGE__->attr([qw/bind_filter fetch_filter options/]);
+__PACKAGE__->attr([qw/default_bind_filter default_fetch_filter options/]);
 
 __PACKAGE__->dual_attr([qw/ filters formats/],
                        default => sub { {} }, inherit => 'hash_copy');
@@ -210,10 +210,10 @@ sub create_query {
     $query->sth($sth);
     
     # Set bind filter
-    $query->bind_filter($self->bind_filter);
+    $query->bind_filter($self->default_bind_filter);
     
     # Set fetch filter
-    $query->fetch_filter($self->fetch_filter);
+    $query->fetch_filter($self->default_fetch_filter);
     
     return $query;
 }
@@ -679,16 +679,6 @@ sub _add_query_cache {
     return $class;
 }
 
-sub filter_off {
-    my $self = shift;
-    
-    # Filter off
-    $self->bind_filter(undef);
-    $self->fetch_filter(undef);
-    
-    return $self;
-}
-
 =head1 NAME
 
 DBIx::Custom - Customizable DBI
@@ -824,22 +814,24 @@ This method is generally used to get a format.
 
 If you add format, use add_format method.
 
-=head2 bind_filter
+=head2 default_bind_filter
 
 Binding filter
 
-    $dbi         = $dbi->bind_filter($bind_filter);
-    $bind_filter = $dbi->bind_filter
+    $dbi                 = $dbi->default_bind_filter($default_bind_filter);
+    $default_bind_filter = $dbi->default_bind_filter
 
 The following is bind filter sample
-
-    $dbi->bind_filter(sub {
-        my ($value, $key, $dbi, $infos) = @_;
+    
+    $dbi->add_filter(encode_utf8 => sub {
+        my $value = shift;
         
-        # edit $value
+        require Encode 'encode_utf8';
         
-        return $value;
+        return encode_utf8($value);
     });
+    
+    $dbi->default_bind_filter('encode_utf8')
 
 Bind filter arguemts is
 
@@ -848,22 +840,24 @@ Bind filter arguemts is
     3. $dbi   : DBIx::Custom object
     4. $infos : {table => $table, column => $column}
 
-=head2 fetch_filter
+=head2 default_fetch_filter
 
 Fetching filter
 
-    $dbi          = $dbi->fetch_filter($fetch_filter);
-    $fetch_filter = $dbi->fetch_filter;
+    $dbi                  = $dbi->default_fetch_filter($default_fetch_filter);
+    $default_fetch_filter = $dbi->default_fetch_filter;
 
 The following is fetch filter sample
 
-    $dbi->fetch_filter(sub {
-        my ($value, $key, $dbi, $infos) = @_;
+    $dbi->add_filter(decode_utf8 => sub {
+        my $value = shift;
         
-        # edit $value
+        require Encode 'decode_utf8';
         
-        return $value;
+        return decode_utf8($value);
     });
+
+    $dbi->default_fetch_filter('decode_utf8');
 
 Bind filter arguemts is
 
@@ -928,17 +922,6 @@ Check if database is connected.
     
     $is_connected = $dbi->connected;
     
-=head2 filter_off
-
-bind_filter and fitch_filter off
-    
-    $dbi->filter_off
-    
-This method is equeal to
-    
-    $dbi->bind_filter(undef);
-    $dbi->fetch_filter(undef);
-
 =head2 add_filter
 
 Resist filter
