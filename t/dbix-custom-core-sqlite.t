@@ -438,31 +438,35 @@ $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : basic");
 
 $dbi->do('delete from table1');
-$dbi->insert('table1', {key1 => 1, key2 => 2}, sub {
-    my $query = shift;
-    $query->bind_filter(sub {
-        my ($value, $table, $column, $dbi) = @_;
-        if ($column eq 'key1') {
-            return $value * 3;
+$dbi->insert('table1', {key1 => 1, key2 => 2}, 
+    {
+        query_edit_cb => sub {
+            my $query = shift;
+            $query->bind_filter(sub {
+                my ($value, $table, $column, $dbi) = @_;
+                if ($column eq 'key1') {
+                    return $value * 3;
+                }
+                return $value;
+            });
         }
-        return $value;
-    });
-});
+    }
+);
 $result = $dbi->query($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 2}], "$test : edit_query_callback");
 
-$dbi->insert('table1', {key1 => 1, key2 => 2}, '   ', sub {
+$dbi->insert('table1', {key1 => 1, key2 => 2}, {append => '   ', query_edit_cb => sub {
     my $query = shift;
     like($query->sql, qr/insert into table1 \(.+\) values \(\?, \?\)    ;/, 
         "$test: append statement");
-});
+}});
 
 test 'insert error';
 eval{$dbi->insert('table1')};
 like($@, qr/Key-value pairs for insert must be specified to 'insert' second argument/, "$test : insert key-value not specifed");
 
-eval{$dbi->insert('table1', {key1 => 1, key2 => 2}, '', 'aaa')};
+eval{$dbi->insert('table1', {key1 => 1, key2 => 2}, {append => '', query_edit_cb => 'aaa'})};
 like($@, qr/Query edit callback must be code reference/, "$test : query edit callback not code ref");
 
 

@@ -387,12 +387,28 @@ sub drop_table {
     return $self->do($sql);
 }
 
+our %VALID_INSERT_ARGS = map { $_ => 1 } qw/append query_edit_cb/;
+
 sub insert {
-    my $self             = shift;
-    my $table            = shift || '';
-    my $insert_params    = shift || {};
-    my $append_statement = shift unless ref $_[0];
-    my $query_edit_cb    = shift;
+    my ($self, $table, $insert_params, $args) = @_;
+    
+    # Table
+    $table ||= '';
+    
+    # Insert params
+    $insert_params ||= {};
+    
+    # Arguments
+    $args ||= {};
+    
+    # Check arguments
+    foreach my $name (keys %$args) {
+        croak "\"$name\" is invalid name"
+          unless $VALID_INSERT_ARGS{$name};
+    }
+    
+    my $append_statement = $args->{append} || '';
+    my $query_edit_cb    = $args->{query_edit_cb};
     
     # Insert keys
     my @insert_keys = keys %$insert_params;
