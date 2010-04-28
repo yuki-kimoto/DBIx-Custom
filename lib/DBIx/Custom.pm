@@ -521,20 +521,33 @@ sub update_all {
     return $self->update($table, $update_params, $args);
 }
 
+our %VALID_DELETE_ARGS
+  = map { $_ => 1 } qw/where append query_edit_cb allow_delete_all/;
+
 sub delete {
-    my $self             = shift;
-    my $table            = shift || '';
-    my $where_params     = shift || {};
-    my $append_statement = shift unless ref $_[0];
-    my $query_edit_cb    = shift;
-    my $options          = shift;
+    my ($self, $table, $args) = @_;
+    
+    # Table
+    $table            ||= '';
+
+    # Check arguments
+    foreach my $name (keys %$args) {
+        croak "\"$name\" is invalid name"
+          unless $VALID_DELETE_ARGS{$name};
+    }
+    
+    # Arguments
+    my $where_params     = $args->{where} || {};
+    my $append_statement = $args->{append};
+    my $query_edit_cb    = $args->{query_edit_cb};
+    my $allow_delete_all = $args->{allow_delete_all};
     
     # Where keys
     my @where_keys = keys %$where_params;
     
     # Not exists where keys
     croak("Key-value pairs for where clause must be specified to 'delete' second argument")
-      if !@where_keys && !$options->{allow_delete_all};
+      if !@where_keys && !$allow_delete_all;
     
     # Where clause
     my $where_clause = '';
@@ -567,15 +580,14 @@ sub delete {
 }
 
 sub delete_all {
-    my $self             = shift;
-    my $table            = shift || '';
-    my $append_statement = shift unless ref $_[0];
-    my $query_edit_cb    = shift;
-    my $options          = {allow_delete_all => 1};
+    my ($self, $table, $args) = @_;
+    
+    $args ||= {};
+    
+    $args->{allow_delete_all} = 1;
     
     # Delete all rows
-    return $self->delete($table, {}, $append_statement, $query_edit_cb,
-                         $options);
+    return $self->delete($table, $args);
 }
 
 sub _select_usage { return << 'EOS' }

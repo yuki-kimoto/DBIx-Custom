@@ -558,7 +558,7 @@ $dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{0});
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
-$dbi->delete('table1', {key1 => 1});
+$dbi->delete('table1', {where => {key1 => 1}});
 $result = $dbi->query($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : basic");
@@ -566,28 +566,28 @@ is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : basic");
 $dbi->do("delete from table1;");
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
-$dbi->delete('table1', {key2 => 1}, sub {
+$dbi->delete('table1', {where => {key2 => 1}, query_edit_cb => sub {
     my $query = shift;
     $query->bind_filter(sub {
         my ($value, $table, $column, $dbi) = @_;
         return $value * 2;
     });
-});
+}});
 $result = $dbi->query($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : query edit callback");
 
-$dbi->delete('table1', {key1 => 1}, '   ', sub {
+$dbi->delete('table1', {where => {key1 => 1}, append => '   ', query_edit_cb => sub {
     my $query = shift;
     is($query->sql, 'delete from table1 where table1.key1 = ?    ;',
        "$test: append statement");
-});
+}});
 
 
 $dbi->delete_all('table1');
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
-$dbi->delete('table1', {key1 => 1, key2 => 2});
+$dbi->delete('table1', {where => {key1 => 1, key2 => 2}});
 $rows = $dbi->select('table1')->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : delete multi key");
 
@@ -599,7 +599,7 @@ eval{$dbi->delete('table1')};
 like($@, qr/Key-value pairs for where clause must be specified to 'delete' second argument/,
          "$test : where key-value pairs not specified");
 
-eval{$dbi->delete('table1', {key1 => 1}, '', 'aaa')};
+eval{$dbi->delete('table1', {where => {key1 => 1}, append => '', query_edit_cb => 'aaa'})};
 like($@, qr/Query edit callback must be code reference/, 
          "$test : query edit callback not code ref");
 
