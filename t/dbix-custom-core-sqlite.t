@@ -179,7 +179,7 @@ $dbi->do($CREATE_TABLE->{0});
 $insert_tmpl = "insert into table1 {insert key1 key2}";
 $dbi->query($insert_tmpl, {key1 => 1, key2 => 2}, sub {
     my $query = shift;
-    $query->bind_filter(sub {
+    $query->query_filter(sub {
         my ($value, $table, $column, $dbi) = @_;
         if ($column eq 'key2' && $dbi->isa('DBIx::Custom')) {
             return $value + 1;
@@ -197,7 +197,7 @@ $dbi->do($CREATE_TABLE->{0});
 
 $insert_tmpl  = "insert into table1 {insert key1 key2};";
 $insert_query = $dbi->create_query($insert_tmpl);
-$insert_query->bind_filter(sub {
+$insert_query->query_filter(sub {
     my ($value, $table, $column, $dbi) = @_;
     
     if ($table eq '' && $column eq 'key1')
@@ -221,13 +221,13 @@ $select_query->fetch_filter(sub {
 });
 $result = $dbi->query($select_query);
 $rows = $result->fetch_hash_all;
-is_deeply($rows, [{key1 => 2, key2 => 6}], "$test : bind_filter fetch_filter");
+is_deeply($rows, [{key1 => 2, key2 => 6}], "$test : query_filter fetch_filter");
 
 $dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{0});
 $insert_tmpl  = "insert into table1 {insert table1.key1 table1.key2}";
 $insert_query = $dbi->create_query($insert_tmpl);
-$insert_query->bind_filter(sub {
+$insert_query->query_filter(sub {
     my ($value, $table, $column, $dbi) = @_;
     
     if ($table eq 'table1' && $column eq 'key1') {
@@ -247,7 +247,7 @@ $insert_query = $dbi->create_query($insert_tmpl);
 $dbi->query($insert_query, {key1 => 2, key2 => 4});
 $select_tmpl = "select * from table1 where {in table1.key1 2} and {in table1.key2 2}";
 $select_query = $dbi->create_query($select_tmpl);
-$select_query->bind_filter(sub {
+$select_query->query_filter(sub {
     my ($value, $table, $column, $dbi) = @_;
     
     if ($table eq 'table1' && $column eq 'key1') {
@@ -257,7 +257,7 @@ $select_query->bind_filter(sub {
 });
 $result = $dbi->query($select_query, {key1 => [1,5], key2 => [2,4]});
 $rows = $result->fetch_hash_all;
-is_deeply($rows, [{key1 => 2, key2 => 4}], "$test : bind_filter");
+is_deeply($rows, [{key1 => 2, key2 => 4}], "$test : query_filter");
 
 
 test 'DBIx::Custom::SQL::Template basic tag';
@@ -442,7 +442,7 @@ $dbi->insert('table1', {key1 => 1, key2 => 2},
     {
         query_edit_cb => sub {
             my $query = shift;
-            $query->bind_filter(sub {
+            $query->query_filter(sub {
                 my ($value, $table, $column, $dbi) = @_;
                 if ($column eq 'key1') {
                     return $value * 3;
@@ -497,7 +497,7 @@ $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 $dbi->update('table1', {key2 => 11}, {where => {key1 => 1}, query_edit_cb => sub {
     my $query = shift;
-    $query->bind_filter(sub {
+    $query->query_filter(sub {
         my ($value, $table, $column, $dbi) = @_;
         if ($column eq 'key2') {
             return $value * 2;
@@ -541,7 +541,7 @@ $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 $dbi->update_all('table1', {key2 => 10}, {query_edit_cb => sub {
     my $query = shift;
-    $query->bind_filter(sub {
+    $query->query_filter(sub {
         my ($value, $table, $column, $dbi) = @_;
         return $value * 2;
     })
@@ -568,7 +568,7 @@ $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
 $dbi->delete('table1', {where => {key2 => 1}, query_edit_cb => sub {
     my $query = shift;
-    $query->bind_filter(sub {
+    $query->query_filter(sub {
         my ($value, $table, $column, $dbi) = @_;
         return $value * 2;
     });
@@ -638,7 +638,7 @@ is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : append statement");
 
 $rows = $dbi->select('table1', {where => {key1 => 2}, query_edit_cb =>sub {
     my $query = shift;
-    $query->bind_filter(sub {
+    $query->query_filter(sub {
         my ($value, $table, $column, $dbi) = @_;
         if ($column eq 'key1') {
             return $value - 1;
@@ -697,11 +697,11 @@ is_deeply(DBIx::Custom->_query_caches->{$tmpls[2]}{key_infos}, $queries[2]->key_
 is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls[1, 2]], "$test : cache key third");
 
 $query = $dbi->create_query($tmpls[0]);
-$query->bind_filter('aaa');
+$query->query_filter('aaa');
 $query = $dbi->create_query($tmpls[0]);
-ok(!$query->bind_filter, "$test : only cached sql and key_infos");
-$query->bind_filter('bbb');
+ok(!$query->query_filter, "$test : only cached sql and key_infos");
+$query->query_filter('bbb');
 $query = $dbi->create_query($tmpls[0]);
-ok(!$query->bind_filter, "$test : only cached sql and key_infos");
+ok(!$query->query_filter, "$test : only cached sql and key_infos");
 
 

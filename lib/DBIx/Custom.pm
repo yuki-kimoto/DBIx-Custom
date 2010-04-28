@@ -22,7 +22,7 @@ __PACKAGE__->class_attr('query_cache_max', default => 50,
 
 __PACKAGE__->attr([qw/user password data_source/]);
 __PACKAGE__->attr([qw/database host port/]);
-__PACKAGE__->attr([qw/default_bind_filter default_fetch_filter options/]);
+__PACKAGE__->attr([qw/default_query_filter default_fetch_filter options/]);
 
 __PACKAGE__->dual_attr([qw/ filters formats/],
                        default => sub { {} }, inherit => 'hash_copy');
@@ -210,7 +210,7 @@ sub create_query {
     $query->sth($sth);
     
     # Set bind filter
-    $query->bind_filter($self->default_bind_filter);
+    $query->query_filter($self->default_query_filter);
     
     # Set fetch filter
     $query->fetch_filter($self->default_fetch_filter);
@@ -276,7 +276,7 @@ sub query{
 sub _build_bind_values {
     my ($self, $query, $params) = @_;
     my $key_infos  = $query->key_infos;
-    my $filter     = $query->bind_filter;
+    my $filter     = $query->query_filter;
     
     # binding values
     my @bind_values;
@@ -855,12 +855,12 @@ This method is generally used to get a format.
 
 If you add format, use add_format method.
 
-=head2 default_bind_filter
+=head2 default_query_filter
 
 Binding filter
 
-    $dbi                 = $dbi->default_bind_filter($default_bind_filter);
-    $default_bind_filter = $dbi->default_bind_filter
+    $dbi                 = $dbi->default_query_filter($default_query_filter);
+    $default_query_filter = $dbi->default_query_filter
 
 The following is bind filter sample
     
@@ -872,7 +872,7 @@ The following is bind filter sample
         return encode_utf8($value);
     });
     
-    $dbi->default_bind_filter('encode_utf8')
+    $dbi->default_query_filter('encode_utf8')
 
 Bind filter arguemts is
 
@@ -1179,7 +1179,7 @@ You can also edit query
         # column, where clause, append statement,
         sub {
             my $query = shift;
-            $query->bind_filter(sub {
+            $query->query_filter(sub {
                 # ...
             });
         }

@@ -17,13 +17,13 @@ test 'Accessors';
 $query = DBIx::Custom::Query->new(
     sql              => 'a',
     key_infos        => 'b',
-    bind_filter      => 'c',
+    query_filter      => 'c',
     sth              => 'e',
     fetch_filter     => 'f',
 );
 
 is($query->sql, 'a', "$test : sql");
 is($query->key_infos, 'b', "$test : key_infos ");
-is($query->bind_filter, 'c', "$test : bind_filter");
+is($query->query_filter, 'c', "$test : query_filter");
 is($query->sth, 'e', "$test : sth");
 
