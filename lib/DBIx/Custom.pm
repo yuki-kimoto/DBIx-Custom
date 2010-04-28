@@ -20,18 +20,15 @@ __PACKAGE__->class_attr(_query_cache_keys => sub { [] });
 __PACKAGE__->class_attr('query_cache_max', default => 50,
                                            inherit => 'scalar_copy');
 
-__PACKAGE__->dual_attr([qw/user password data_source/], inherit => 'scalar_copy');
-__PACKAGE__->dual_attr([qw/database host port/],        inherit => 'scalar_copy');
-__PACKAGE__->dual_attr([qw/bind_filter fetch_filter/],  inherit => 'scalar_copy');
+__PACKAGE__->attr([qw/user password data_source/]);
+__PACKAGE__->attr([qw/database host port/]);
+__PACKAGE__->attr([qw/bind_filter fetch_filter options/]);
 
-__PACKAGE__->dual_attr([qw/options filters formats/],
+__PACKAGE__->dual_attr([qw/ filters formats/],
                        default => sub { {} }, inherit => 'hash_copy');
 
-__PACKAGE__->dual_attr('result_class', default => 'DBIx::Custom::Result',
-                                       inherit => 'scalar_copy');
-
-__PACKAGE__->dual_attr('sql_tmpl', default => sub {DBIx::Custom::SQL::Template->new},
-                                   inherit   => sub {$_[0] ? $_[0]->clone : undef});
+__PACKAGE__->attr(result_class => 'DBIx::Custom::Result');
+__PACKAGE__->attr(sql_tmpl => sub { DBIx::Custom::SQL::Template->new });
 
 sub add_filter {
     my $invocant = shift;
