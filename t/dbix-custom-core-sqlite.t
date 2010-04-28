@@ -475,7 +475,7 @@ $dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{1});
 $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
-$dbi->update('table1', {key2 => 11}, {key1 => 1});
+$dbi->update('table1', {key2 => 11}, {where => {key1 => 1}});
 $result = $dbi->query($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
@@ -485,7 +485,7 @@ is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
 $dbi->do("delete from table1");
 $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
-$dbi->update('table1', {key2 => 12}, {key2 => 2, key3 => 3});
+$dbi->update('table1', {key2 => 12}, {where => {key2 => 2, key3 => 3}});
 $result = $dbi->query($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 12, key3 => 3, key4 => 4, key5 => 5},
@@ -495,7 +495,7 @@ is_deeply($rows, [{key1 => 1, key2 => 12, key3 => 3, key4 => 4, key5 => 5},
 $dbi->do("delete from table1");
 $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
-$dbi->update('table1', {key2 => 11}, {key1 => 1}, sub {
+$dbi->update('table1', {key2 => 11}, {where => {key1 => 1}, query_edit_cb => sub {
     my $query = shift;
     $query->bind_filter(sub {
         my ($value, $table, $column, $dbi) = @_;
@@ -504,18 +504,18 @@ $dbi->update('table1', {key2 => 11}, {key1 => 1}, sub {
         }
         return $value;
     });
-});
+}});
 $result = $dbi->query($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 22, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "$test : query edit callback");
 
-$dbi->update('table1', {key2 => 11}, {key1 => 1}, '   ', sub {
+$dbi->update('table1', {key2 => 11}, {where => {key1 => 1}, append => '   ', query_edit_cb => sub {
     my $query = shift;
     is($query->sql, 'update table1 set key2 = ? where table1.key1 = ?    ;',
        "$test: append statement");
-});
+}});
 
 
 test 'update error';
@@ -529,7 +529,7 @@ eval{$dbi->update('table1', {key2 => 1})};
 like($@, qr/Key-value pairs for where clause must be specified to 'update' third argument/,
          "$test : where key-value pairs not specified");
 
-eval{$dbi->update('table1', {key2 => 1}, {key2 => 3}, '', 'aaa')};
+eval{$dbi->update('table1', {key2 => 1}, {where => {key2 => 3}, append => '', query_edit_cb => 'aaa'})};
 like($@, qr/Query edit callback must be code reference/, 
          "$test : query edit callback not code reference");
 
@@ -539,13 +539,13 @@ $dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{1});
 $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
-$dbi->update_all('table1', {key2 => 10}, sub {
+$dbi->update_all('table1', {key2 => 10}, {query_edit_cb => sub {
     my $query = shift;
     $query->bind_filter(sub {
         my ($value, $table, $column, $dbi) = @_;
         return $value * 2;
     })
-});
+}});
 $result = $dbi->query($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 20, key3 => 3, key4 => 4, key5 => 5},

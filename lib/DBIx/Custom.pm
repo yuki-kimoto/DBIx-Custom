@@ -436,14 +436,23 @@ sub insert {
     return $ret_val;
 }
 
+our %VALID_UPDATE_ARGS
+  = map { $_ => 1 } qw/where append query_edit_cb allow_update_all/;
+
 sub update {
-    my $self             = shift;
-    my $table            = shift || '';
-    my $update_params    = shift || {};
-    my $where_params     = shift || {};
-    my $append_statement = shift unless ref $_[0];
-    my $query_edit_cb    = shift;
-    my $options          = shift;
+    my ($self, $table, $update_params, $args) = @_;
+    
+    # Check arguments
+    foreach my $name (keys %$args) {
+        croak "\"$name\" is invalid name"
+          unless $VALID_UPDATE_ARGS{$name};
+    }
+    
+    # Arguments
+    my $where_params     = $args->{where} || {};
+    my $append_statement = $args->{append} || '';
+    my $query_edit_cb    = $args->{query_edit_cb};
+    my $allow_update_all = $args->{allow_update_all};
     
     # Update keys
     my @update_keys = keys %$update_params;
@@ -457,7 +466,7 @@ sub update {
     
     # Not exists where keys
     croak("Key-value pairs for where clause must be specified to 'update' third argument")
-      if !@where_keys && !$options->{allow_update_all};
+      if !@where_keys && !$allow_update_all;
     
     # Update clause
     my $update_clause = '{update ' . join(' ', @update_keys) . '}';
@@ -502,16 +511,14 @@ sub update {
 }
 
 sub update_all {
-    my $self             = shift;
-    my $table            = shift || '';
-    my $update_params    = shift || {};
-    my $append_statement = shift unless ref $_[0];
-    my $query_edit_cb    = shift;
-    my $options          = {allow_update_all => 1};
+    my ($self, $table, $update_params, $args) = @_;
+    
+    $args ||= {};
+    
+    $args->{allow_update_all} = 1;
     
     # Update all rows
-    return $self->update($table, $update_params, {}, $append_statement,
-                         $query_edit_cb, $options);
+    return $self->update($table, $update_params, $args);
 }
 
 sub delete {
