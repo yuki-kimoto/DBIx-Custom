@@ -513,8 +513,8 @@ sub update {
 sub update_all {
     my ($self, $table, $update_params, $args) = @_;
     
+    # Allow all update
     $args ||= {};
-    
     $args->{allow_update_all} = 1;
     
     # Update all rows
@@ -582,8 +582,8 @@ sub delete {
 sub delete_all {
     my ($self, $table, $args) = @_;
     
+    # Allow all delete
     $args ||= {};
-    
     $args->{allow_delete_all} = 1;
     
     # Delete all rows
@@ -591,34 +591,40 @@ sub delete_all {
 }
 
 sub _select_usage { return << 'EOS' }
-Your select arguments is wrong.
-select usage:
+Select usage:
 $dbi->select(
-    $table,                # String or array ref
-    [@$columns],           # Array reference. this can be ommited
-    {%$where_params},      # Hash reference.  this can be ommited
-    $append_statement,     # String.          this can be ommited
-    $query_edit_callback   # Sub reference.   this can be ommited
+    $table,                   # String or array ref
+    {
+        columns => $columns   # Array reference
+        where   => $params    # Hash reference.
+        append  => $statement # String. 
+        query_edit_cb => $cb  # Sub reference
+    }
 );
 EOS
 
+our %VALID_SELECT_ARGS
+  = map { $_ => 1 } qw/columns where append query_edit_cb/;
+
+
 sub select {
-    my $self = shift;
+    my ($self, $tables, $args) = @_;
     
-    # Check argument
-    croak($self->_select_usage) unless @_;
+    # Table
+    $tables ||= '';
+    $tables = [$tables] unless ref $tables;
+    
+    # Check arguments
+    foreach my $name (keys %$args) {
+        croak "\"$name\" is invalid name"
+          unless $VALID_SELECT_ARGS{$name};
+    }
     
     # Arguments
-    my $tables = shift || '';
-    $tables    = [$tables] unless ref $tables;
-    
-    my $columns          = ref $_[0] eq 'ARRAY' ? shift : [];
-    my $where_params     = ref $_[0] eq 'HASH'  ? shift : {};
-    my $append_statement = $_[0] && !ref $_[0]  ? shift : '';
-    my $query_edit_cb    = shift if ref $_[0] eq 'CODE';
-    
-    # Check rest argument
-    croak($self->_select_usage) if @_;
+    my $columns          = $args->{columns} || [];
+    my $where_params     = $args->{where} || {};
+    my $append_statement = $args->{append} || '';
+    my $query_edit_cb    = $args->{query_edit_cb};
     
     # SQL template for select statement
     my $template = 'select ';

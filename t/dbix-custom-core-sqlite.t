@@ -624,19 +624,19 @@ $rows = $dbi->select('table1')->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2},
                   {key1 => 3, key2 => 4}], "$test : table");
 
-$rows = $dbi->select('table1', ['key1'])->fetch_hash_all;
+$rows = $dbi->select('table1', {columns => ['key1']})->fetch_hash_all;
 is_deeply($rows, [{key1 => 1}, {key1 => 3}], "$test : table and columns and where key");
 
-$rows = $dbi->select('table1', {key1 => 1})->fetch_hash_all;
+$rows = $dbi->select('table1', {where => {key1 => 1}})->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : table and columns and where key");
 
-$rows = $dbi->select('table1', ['key1'], {key1 => 3})->fetch_hash_all;
+$rows = $dbi->select('table1', {columns => ['key1'], where => {key1 => 3}})->fetch_hash_all;
 is_deeply($rows, [{key1 => 3}], "$test : table and columns and where key");
 
-$rows = $dbi->select('table1', "order by key1 desc limit 1")->fetch_hash_all;
+$rows = $dbi->select('table1', {append => "order by key1 desc limit 1"})->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : append statement");
 
-$rows = $dbi->select('table1', {key1 => 2}, sub {
+$rows = $dbi->select('table1', {where => {key1 => 2}, query_edit_cb =>sub {
     my $query = shift;
     $query->bind_filter(sub {
         my ($value, $table, $column, $dbi) = @_;
@@ -645,15 +645,18 @@ $rows = $dbi->select('table1', {key1 => 2}, sub {
         }
         return $value;
     });
-})->fetch_hash_all;
+}})->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : query edit call back");
 
 $dbi->do($CREATE_TABLE->{2});
 $dbi->insert('table2', {key1 => 1, key3 => 5});
 $rows = $dbi->select([qw/table1 table2/],
-                     ['table1.key1 as table1_key1', 'table2.key1 as table2_key1', 'key2', 'key3'],
-                     {'table1.key2' => 2},
-                     "where table1.key1 = table2.key1")->fetch_hash_all;
+                      {
+                         columns => ['table1.key1 as table1_key1', 'table2.key1 as table2_key1', 'key2', 'key3'],
+                         where   => {'table1.key2' => 2},
+                         append  => "where table1.key1 = table2.key1"
+                      }
+                    )->fetch_hash_all;
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "$test : join");
 
 test 'Cache';

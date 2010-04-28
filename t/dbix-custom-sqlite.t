@@ -40,7 +40,7 @@ $dbi->connect_memory;
 $ret_val = $dbi->do($CREATE_TABLE->{0});
 ok(defined $ret_val, $test);
 $dbi->insert('table1', {key1 => 'a', key2 => 2});
-$rows = $dbi->select('table1', {key1 => 'a'})->fetch_hash_all;
+$rows = $dbi->select('table1', {where => {key1 => 'a'}})->fetch_hash_all;
 is_deeply($rows, [{key1 => 'a', key2 => 2}], "$test : select rows");
 
 test 'connect_memory error';
