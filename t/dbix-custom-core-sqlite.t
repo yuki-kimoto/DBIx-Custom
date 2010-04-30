@@ -260,7 +260,7 @@ $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 2, key2 => 4}], "$test : query_filter");
 
 
-test 'DBIx::Custom::SQL::Template basic tag';
+test 'DBIx::Custom::SQLTemplate basic tag';
 $dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{1});
 $sth = $dbi->prepare("insert into table1 (key1, key2, key3, key4, key5) values (?, ?, ?, ?, ?);");
@@ -304,7 +304,7 @@ $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag2 with table dot");
 
 
-test 'DIB::Custom::SQL::Template in tag';
+test 'DIB::Custom::SQLTemplate in tag';
 $dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{1});
 $sth = $dbi->prepare("insert into table1 (key1, key2, key3, key4, key5) values (?, ?, ?, ?, ?);");
@@ -330,7 +330,7 @@ $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : with table dot");
 
 
-test 'DBIx::Custom::SQL::Template insert tag';
+test 'DBIx::Custom::SQLTemplate insert tag';
 $dbi->do("delete from table1");
 $insert_tmpl = 'insert into table1 {insert key1 key2 key3 key4 key5}';
 $dbi->query($insert_tmpl, {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
@@ -346,7 +346,7 @@ $result = $dbi->query($SELECT_TMPLS->{0});
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : with table name");
 
-test 'DBIx::Custom::SQL::Template update tag';
+test 'DBIx::Custom::SQLTemplate update tag';
 $dbi->do("delete from table1");
 $insert_tmpl = "insert into table1 {insert key1 key2 key3 key4 key5}";
 $dbi->query($insert_tmpl, {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});

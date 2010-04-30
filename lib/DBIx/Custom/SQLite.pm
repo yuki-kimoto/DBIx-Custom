@@ -7,7 +7,7 @@ use base 'DBIx::Custom::Basic';
 use Carp 'croak';
 
 # Add format
-__PACKAGE__->add_format(
+__PACKAGE__->resist_format(
     datetime => __PACKAGE__->formats->{SQL99_datetime},
     date     => __PACKAGE__->formats->{SQL99_date},
     time     => __PACKAGE__->formats->{SQL99_time},

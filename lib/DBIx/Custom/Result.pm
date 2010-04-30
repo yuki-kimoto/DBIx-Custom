@@ -7,35 +7,42 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 
-__PACKAGE__->attr([qw/_dbi sth fetch_filter/]);
+__PACKAGE__->attr([qw/sth filters default_filter filter/]);
 
 sub fetch {
     my ($self, $type) = @_;
-    my $sth = $self->sth;
-    my $fetch_filter = $self->fetch_filter;
+    
+    my $sth            = $self->sth;
+    my $filters        = $self->filters || {};
+    my $default_filter = $self->default_filter;
+    my $filter         = $self->filter || {};
     
     # Fetch
     my $row = $sth->fetchrow_arrayref;
     
     # Cannot fetch
     return unless $row;
+
+    # Key
+    my $columns  = $sth->{NAME_lc};
     
     # Filter
-    if ($fetch_filter) {
-        my $keys  = $sth->{NAME_lc};
-        my $types = $sth->{TYPE};
-        for (my $i = 0; $i < @$keys; $i++) {
-            $row->[$i]= $fetch_filter->($row->[$i], $keys->[$i], $self->_dbi,
-                                        {type => $types->[$i], sth => $sth, index => $i});
-        }
+    for (my $i = 0; $i < @$columns; $i++) {
+        my $fname  = $filter->{$columns->[$i]} || $filters->{$default_filter};
+        my $filter = $filters->{$fname};
+        $row->[$i] = $filter->($row->[$i]) if $filter;
     }
+
     return wantarray ? @$row : $row;
 }
 
 sub fetch_hash {
     my $self = shift;
-    my $sth = $self->sth;
-    my $fetch_filter = $self->fetch_filter;
+
+    my $sth            = $self->sth;
+    my $filters        = $self->filters || {};
+    my $default_filter = $self->default_filter;
+    my $filter         = $self->filter || {};
     
     # Fetch
     my $row = $sth->fetchrow_arrayref;
@@ -44,25 +51,18 @@ sub fetch_hash {
     return unless $row;
     
     # Keys
-    my $keys  = $sth->{NAME_lc};
+    my $columns  = $sth->{NAME_lc};
     
     # Filter
     my $row_hash = {};
-    if ($fetch_filter) {
-        my $types = $sth->{TYPE};
-        for (my $i = 0; $i < @$keys; $i++) {
-            $row_hash->{$keys->[$i]}
-              = $fetch_filter->($row->[$i], $keys->[$i], $self->_dbi,
-                                {type => $types->[$i], sth => $sth, index => $i});
-        }
+    for (my $i = 0; $i < @$columns; $i++) {
+        my $fname  = $filter->{$columns->[$i]} || $filters->{$default_filter};
+        my $filter = $filters->{$fname};
+        $row_hash->{$columns->[$i]} = $filter
+                                    ? $filter->($columns->[$i])
+                                    : $columns->[$i];
     }
     
-    # No filter
-    else {
-        for (my $i = 0; $i < @$keys; $i++) {
-            $row_hash->{$keys->[$i]} = $row->[$i];
-        }
-    }
     return wantarray ? %$row_hash : $row_hash;
 }
 
@@ -200,12 +200,19 @@ Statement handle
     $result = $result->sth($sth);
     $sth    = $reuslt->sth
     
-=head2 fetch_filter
+=head2 default_filter
 
 Filter excuted when data is fetched
 
-    $result         = $result->fetch_filter($sth);
-    $fetch_filter   = $result->fech_filter;
+    $result         = $result->default_filter($sth);
+    $default_filter = $result->default_filter;
+
+=head2 filter
+
+Filter excuted when data is fetched
+
+    $result   = $result->filter($sth);
+    $filter   = $result->filter;
 
 =head1 METHODS
 

@@ -5,7 +5,7 @@ use warnings;
 
 use base 'Object::Simple';
 
-__PACKAGE__->attr([qw/sql key_infos query_filter fetch_filter sth/]);
+__PACKAGE__->attr([qw/sql key_infos default_filter filter sth/]);
 
 1;
 
@@ -21,10 +21,6 @@ DBIx::Custom::Query - DBIx::Custom query
     # Create by using create_query
     my $query = DBIx::Custom->create_query($template);
     
-    # Attributes
-    $query->query_filter($dbi->filters->{default_query_filter});
-    $query->fetch_filter($dbi->filters->{default_fetch_filter});
-
 =head1 ATTRIBUTES
 
 =head2 sth
@@ -41,19 +37,19 @@ SQL
     $query = $query->sql($sql);
     $sql   = $query->sql;
 
-=head2 query_filter
+=head2 default_filter
 
 Filter excuted when value is bind
 
-    $query       = $query->query_filter($query_filter);
-    $query_filter = $query->query_filter;
+    $query          = $query->default_filter($default_filter);
+    $default_filter = $query->default_filter;
 
-=head2 fetch_filter
+=head2 filter
 
-Filter excuted when data is fetched
+Filter excuted when value is bind
 
-    $query        = $query->fetch_filter($fetch_filter);
-    $fetch_filter = $query->fetch_filter;
+    $query  = $query->filter($filter);
+    $filter = $query->filter;
 
 =head2 key_infos
 

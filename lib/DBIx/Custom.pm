@@ -8,7 +8,7 @@ use base 'Object::Simple';
 use Carp 'croak';
 use DBI;
 use DBIx::Custom::Result;
-use DBIx::Custom::SQL::Template;
+use DBIx::Custom::SQLTemplate;
 use DBIx::Custom::Query;
 use DBIx::Custom::KeyInfo;
 
@@ -28,9 +28,9 @@ __PACKAGE__->dual_attr([qw/ filters formats/],
                        default => sub { {} }, inherit => 'hash_copy');
 
 __PACKAGE__->attr(result_class => 'DBIx::Custom::Result');
-__PACKAGE__->attr(sql_tmpl => sub { DBIx::Custom::SQL::Template->new });
+__PACKAGE__->attr(sql_tmpl => sub { DBIx::Custom::SQLTemplate->new });
 
-sub add_filter {
+sub resist_filter {
     my $invocant = shift;
     
     # Add filter
@@ -40,7 +40,7 @@ sub add_filter {
     return $invocant;
 }
 
-sub add_format{
+sub resist_format{
     my $invocant = shift;
     
     # Add format
@@ -172,9 +172,7 @@ sub create_query {
     
     my $class = ref $self;
     
-    my $table = '';
     if (ref $template eq 'ARRAY') {
-        $table    = $template->[0] if $template->[0];
         $template = $template->[1];
     }
     
@@ -182,7 +180,7 @@ sub create_query {
     my $sql_tmpl = $self->sql_tmpl;
     
     # Try to get cached query
-    my $cached_query = $class->_query_caches->{"$table$template"};
+    my $cached_query = $class->_query_caches->{"$template"};
     
     # Create query
     my $query;
@@ -193,11 +191,10 @@ sub create_query {
         );
     }
     else {
-        $sql_tmpl->table($table);
         $query = eval{$sql_tmpl->create_query($template)};
         croak($@) if $@;
         
-        $class->_add_query_cache("$table$template", $query);
+        $class->_add_query_cache("$template", $query);
     }
     
     # Connect if not
@@ -209,36 +206,30 @@ sub create_query {
     # Set statement handle
     $query->sth($sth);
     
-    # Set bind filter
-    $query->query_filter($self->default_query_filter);
-    
-    # Set fetch filter
-    $query->fetch_filter($self->default_fetch_filter);
-    
     return $query;
 }
 
 sub query{
-    my ($self, $query, $params, $query_edit_cb)  = @_;
+    my ($self, $query, $params, $args)  = @_;
     $params ||= {};
+    
+    # Filter
+    my $filter = $args->{filter} || {};
     
     # First argument is SQL template
     unless (ref $query eq 'DBIx::Custom::Query') {
-        my $table;
         my $template;
         
         if (ref $query eq 'ARRAY') {
-            $table    = $query->[0];
-            $template = $query->[1];
+            $template = $query->[0];
         }
         else { $template = $query }
         
-        $query = $self->create_query([$table, $template]);
-        $query_edit_cb->($query) if ref $query_edit_cb eq 'CODE';
+        $query = $self->create_query($template);
     }
-    
+
     # Create bind value
-    my $bind_values = $self->_build_bind_values($query, $params);
+    my $bind_values = $self->_build_bind_values($query, $params, $filter);
     
     # Execute
     my $sth      = $query->sth;
@@ -264,9 +255,9 @@ sub query{
         
         # Create result
         my $result = $result_class->new({
-            _dbi             => $self,
-            sth              => $sth,
-            fetch_filter     => $query->fetch_filter,
+            sth             => $sth,
+            default_filter  => $self->default_fetch_filter,
+            filters         => $self->filters
         });
         return $result;
     }
@@ -274,29 +265,27 @@ sub query{
 }
 
 sub _build_bind_values {
-    my ($self, $query, $params) = @_;
-    my $key_infos  = $query->key_infos;
-    my $filter     = $query->query_filter;
+    my ($self, $query, $params, $filter) = @_;
+    my $key_infos      = $query->key_infos;
+    my $default_filter = $self->default_query_filter;
+    my $filters        = $self->filters;
     
     # binding values
     my @bind_values;
     
     # Build bind values
     foreach my $key_info (@$key_infos) {
-        my $table        = $key_info->table;
-        my $column       = $key_info->column;
-        my $id           = $key_info->id;
-        my $pos          = $key_info->pos;
+        my $column       = $key_info->{column};
+        my $pos          = $key_info->{pos};
         
         # Value
-        my $value = $id && defined $pos ? $params->{$id}->{$column}->[$pos]
-                  : $id                 ? $params->{$id}->{$column}
-                  : defined $pos        ? $params->{$column}->[$pos]
-                  : $params->{$column};
+        my $value = defined $pos ? $params->{$column}->[$pos] : $params->{$column};
         
         # Filter
+        $filter = $filters->{$filter} || $filters->{$default_filter};
+        
         push @bind_values, 
-             $filter ? $filter->($value, $table, $column, $self)
+             $filter ? $filter->($value)
                      : $value;
     }
     
@@ -387,7 +376,7 @@ sub drop_table {
     return $self->do($sql);
 }
 
-our %VALID_INSERT_ARGS = map { $_ => 1 } qw/append query_edit_cb/;
+our %VALID_INSERT_ARGS = map { $_ => 1 } qw/append filter/;
 
 sub insert {
     my ($self, $table, $insert_params, $args) = @_;
@@ -408,7 +397,7 @@ sub insert {
     }
     
     my $append_statement = $args->{append} || '';
-    my $query_edit_cb    = $args->{query_edit_cb};
+    my $filter           = $args->{filter};
     
     # Insert keys
     my @insert_keys = keys %$insert_params;
@@ -420,24 +409,15 @@ sub insert {
     # Templte for insert
     my $template = "insert into $table {insert " . join(' ', @insert_keys) . '}';
     $template .= " $append_statement" if $append_statement;
-    # Create query
-    my $query = $self->create_query([$table, $template]);
-    
-    # Query edit callback must be code reference
-    croak("Query edit callback must be code reference")
-      if $query_edit_cb && ref $query_edit_cb ne 'CODE';
-    
-    # Query edit if need
-    $query_edit_cb->($query) if $query_edit_cb;
     
     # Execute query
-    my $ret_val = $self->query($query, $insert_params);
+    my $ret_val = $self->query($template, $insert_params, {filter => $filter});
     
     return $ret_val;
 }
 
 our %VALID_UPDATE_ARGS
-  = map { $_ => 1 } qw/where append query_edit_cb allow_update_all/;
+  = map { $_ => 1 } qw/where append filter allow_update_all/;
 
 sub update {
     my ($self, $table, $update_params, $args) = @_;
@@ -451,7 +431,7 @@ sub update {
     # Arguments
     my $where_params     = $args->{where} || {};
     my $append_statement = $args->{append} || '';
-    my $query_edit_cb    = $args->{query_edit_cb};
+    my $filter           = $args->{filter};
     my $allow_update_all = $args->{allow_update_all};
     
     # Update keys
@@ -491,21 +471,11 @@ sub update {
     my $template = "update $table $update_clause $where_clause";
     $template .= " $append_statement" if $append_statement;
     
-    # Create query
-    my $query = $self->create_query([$table, $template]);
-    
-    # Query edit callback must be code reference
-    croak("Query edit callback must be code reference")
-      if $query_edit_cb && ref $query_edit_cb ne 'CODE';
-    
-    # Query edit if need
-    $query_edit_cb->($query) if $query_edit_cb;
-    
     # Rearrange parammeters
     my $params = {%$update_params, '@where' => $where_params};
     
     # Execute query
-    my $ret_val = $self->query($query, $params);
+    my $ret_val = $self->query($template, $params, {filter => $filter});
     
     return $ret_val;
 }
@@ -522,7 +492,7 @@ sub update_all {
 }
 
 our %VALID_DELETE_ARGS
-  = map { $_ => 1 } qw/where append query_edit_cb allow_delete_all/;
+  = map { $_ => 1 } qw/where append filter allow_delete_all/;
 
 sub delete {
     my ($self, $table, $args) = @_;
@@ -539,7 +509,7 @@ sub delete {
     # Arguments
     my $where_params     = $args->{where} || {};
     my $append_statement = $args->{append};
-    my $query_edit_cb    = $args->{query_edit_cb};
+    my $filter    = $args->{filter};
     my $allow_delete_all = $args->{allow_delete_all};
     
     # Where keys
@@ -563,18 +533,8 @@ sub delete {
     my $template = "delete from $table $where_clause";
     $template .= " $append_statement" if $append_statement;
     
-    # Create query
-    my $query = $self->create_query([$table, $template]);
-    
-    # Query edit callback must be code reference
-    croak("Query edit callback must be code reference")
-      if $query_edit_cb && ref $query_edit_cb ne 'CODE';
-    
-    # Query edit if need
-    $query_edit_cb->($query) if $query_edit_cb;
-    
     # Execute query
-    my $ret_val = $self->query($query, $where_params);
+    my $ret_val = $self->query($template, $where_params, {filter => $filter});
     
     return $ret_val;
 }
@@ -590,22 +550,8 @@ sub delete_all {
     return $self->delete($table, $args);
 }
 
-sub _select_usage { return << 'EOS' }
-Select usage:
-$dbi->select(
-    $table,                   # String or array ref
-    {
-        columns => $columns   # Array reference
-        where   => $params    # Hash reference.
-        append  => $statement # String. 
-        query_edit_cb => $cb  # Sub reference
-    }
-);
-EOS
-
 our %VALID_SELECT_ARGS
-  = map { $_ => 1 } qw/columns where append query_edit_cb/;
-
+  = map { $_ => 1 } qw/columns where append filter/;
 
 sub select {
     my ($self, $tables, $args) = @_;
@@ -624,7 +570,7 @@ sub select {
     my $columns          = $args->{columns} || [];
     my $where_params     = $args->{where} || {};
     my $append_statement = $args->{append} || '';
-    my $query_edit_cb    = $args->{query_edit_cb};
+    my $filter    = $args->{filter};
     
     # SQL template for select statement
     my $template = 'select ';
@@ -684,14 +630,8 @@ sub select {
         $template .= " $append_statement";
     }
     
-    # Create query
-    my $query = $self->create_query([$tables->[0], $template]);
-    
-    # Query edit
-    $query_edit_cb->($query) if $query_edit_cb;
-    
     # Execute query
-    my $result = $self->query($query, $where_params_new);
+    my $result = $self->query($template, $where_params_new, {filter => $filter});
     
     return $result;
 }
@@ -822,12 +762,12 @@ DBI options
 
 =head2 sql_tmpl
 
-SQL::Template object
+SQLTemplate object
 
-    $dbi      = $dbi->sql_tmpl(DBIx::Cutom::SQL::Template->new);
+    $dbi      = $dbi->sql_tmpl(DBIx::Cutom::SQLTemplate->new);
     $sql_tmpl = $dbi->sql_tmpl;
 
-See also L<DBIx::Custom::SQL::Template>.
+See also L<DBIx::Custom::SQLTemplate>.
 
 =head2 filters
 
@@ -840,7 +780,7 @@ This method is generally used to get a filter.
 
     $filter = $dbi->filters->{encode_utf8};
 
-If you add filter, use add_filter method.
+If you add filter, use resist_filter method.
 
 =head2 formats
 
@@ -853,7 +793,7 @@ This method is generally used to get a format.
 
     $filter = $dbi->formats->{datetime};
 
-If you add format, use add_format method.
+If you add format, use resist_format method.
 
 =head2 default_query_filter
 
@@ -864,7 +804,7 @@ Binding filter
 
 The following is bind filter sample
     
-    $dbi->add_filter(encode_utf8 => sub {
+    $dbi->resist_filter(encode_utf8 => sub {
         my $value = shift;
         
         require Encode 'encode_utf8';
@@ -890,7 +830,7 @@ Fetching filter
 
 The following is fetch filter sample
 
-    $dbi->add_filter(decode_utf8 => sub {
+    $dbi->resist_filter(decode_utf8 => sub {
         my $value = shift;
         
         require Encode 'decode_utf8';
@@ -963,15 +903,15 @@ Check if database is connected.
     
     $is_connected = $dbi->connected;
     
-=head2 add_filter
+=head2 resist_filter
 
 Resist filter
     
-    $dbi->add_filter($fname1 => $filter1, $fname => $filter2);
+    $dbi->resist_filter($fname1 => $filter1, $fname => $filter2);
     
-The following is add_filter sample
+The following is resist_filter sample
 
-    $dbi->add_filter(
+    $dbi->resist_filter(
         encode_utf8 => sub {
             my ($value, $key, $dbi, $infos) = @_;
             utf8::upgrade($value) unless Encode::is_utf8($value);
@@ -983,15 +923,15 @@ The following is add_filter sample
         }
     );
 
-=head2 add_format
+=head2 resist_format
 
 Add format
 
-    $dbi->add_format($fname1 => $format, $fname2 => $format2);
+    $dbi->resist_format($fname1 => $format, $fname2 => $format2);
     
-The following is add_format sample.
+The following is resist_format sample.
 
-    $dbi->add_format(date => '%Y:%m:%d', datetime => '%Y-%m-%d %H:%M:%S');
+    $dbi->resist_format(date => '%Y:%m:%d', datetime => '%Y-%m-%d %H:%M:%S');
 
 =head2 create_query
     
@@ -1003,7 +943,7 @@ $query is <DBIx::Query> object. This is executed by query method as the followin
 
     $dbi->query($query, $params);
 
-If you know SQL template, see also L<DBIx::Custom::SQL::Template>.
+If you know SQL template, see also L<DBIx::Custom::SQLTemplate>.
 
 =head2 query
 
@@ -1020,7 +960,7 @@ The following is query sample
         # do something
     }
 
-If you now syntax of template, See also L<DBIx::Custom::SQL::Template>
+If you now syntax of template, See also L<DBIx::Custom::SQLTemplate>
 
 Return value of query method is L<DBIx::Custom::Result> object
 
