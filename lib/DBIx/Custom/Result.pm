@@ -14,7 +14,7 @@ sub fetch {
     
     my $sth            = $self->sth;
     my $filters        = $self->filters || {};
-    my $default_filter = $self->default_filter;
+    my $default_filter = $self->default_filter || '';
     my $filter         = $self->filter || {};
     
     # Fetch
@@ -28,7 +28,7 @@ sub fetch {
     
     # Filter
     for (my $i = 0; $i < @$columns; $i++) {
-        my $fname  = $filter->{$columns->[$i]} || $filters->{$default_filter};
+        my $fname  = $filter->{$columns->[$i]} || $filters->{$default_filter} || '';
         my $filter = $filters->{$fname};
         $row->[$i] = $filter->($row->[$i]) if $filter;
     }
@@ -41,7 +41,7 @@ sub fetch_hash {
 
     my $sth            = $self->sth;
     my $filters        = $self->filters || {};
-    my $default_filter = $self->default_filter;
+    my $default_filter = $self->default_filter || '';
     my $filter         = $self->filter || {};
     
     # Fetch
@@ -56,11 +56,11 @@ sub fetch_hash {
     # Filter
     my $row_hash = {};
     for (my $i = 0; $i < @$columns; $i++) {
-        my $fname  = $filter->{$columns->[$i]} || $filters->{$default_filter};
+        my $fname  = $filter->{$columns->[$i]} || $filters->{$default_filter} || '';
         my $filter = $filters->{$fname};
         $row_hash->{$columns->[$i]} = $filter
-                                    ? $filter->($columns->[$i])
-                                    : $columns->[$i];
+                                    ? $filter->($row->[$i])
+                                    : $row->[$i];
     }
     
     return wantarray ? %$row_hash : $row_hash;
@@ -204,7 +204,7 @@ Statement handle
 
 Filter excuted when data is fetched
 
-    $result         = $result->default_filter($sth);
+    $result         = $result->default_filter($default_filter);
     $default_filter = $result->default_filter;
 
 =head2 filter

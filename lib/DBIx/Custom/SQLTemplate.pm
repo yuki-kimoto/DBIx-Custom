@@ -233,7 +233,10 @@ sub expand_basic_tag {
     # Key is not exist
     croak("You must be pass key as argument to tag '{$tag_name }'")
       unless $column;
-
+    
+    # delete ID
+    
+    
     # Expanded tag
     my $expand = $tag_name eq '?'
                ? '?'

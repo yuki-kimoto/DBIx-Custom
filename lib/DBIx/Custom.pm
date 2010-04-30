@@ -10,7 +10,6 @@ use DBI;
 use DBIx::Custom::Result;
 use DBIx::Custom::SQLTemplate;
 use DBIx::Custom::Query;
-use DBIx::Custom::KeyInfo;
 
 __PACKAGE__->attr('dbh');
 
@@ -213,9 +212,6 @@ sub query{
     my ($self, $query, $params, $args)  = @_;
     $params ||= {};
     
-    # Filter
-    my $filter = $args->{filter} || {};
-    
     # First argument is SQL template
     unless (ref $query eq 'DBIx::Custom::Query') {
         my $template;
@@ -227,6 +223,9 @@ sub query{
         
         $query = $self->create_query($template);
     }
+
+    # Filter
+    my $filter = $args->{filter} || $query->filter || {};
 
     # Create bind value
     my $bind_values = $self->_build_bind_values($query, $params, $filter);
@@ -267,8 +266,9 @@ sub query{
 sub _build_bind_values {
     my ($self, $query, $params, $filter) = @_;
     my $key_infos      = $query->key_infos;
-    my $default_filter = $self->default_query_filter;
+    my $default_filter = $self->default_query_filter || '';
     my $filters        = $self->filters;
+    $filter            ||= {};
     
     # binding values
     my @bind_values;
@@ -282,11 +282,11 @@ sub _build_bind_values {
         my $value = defined $pos ? $params->{$column}->[$pos] : $params->{$column};
         
         # Filter
-        $filter = $filters->{$filter} || $filters->{$default_filter};
+        my $fname = $filter->{$column} || $default_filter || '';
         
-        push @bind_values, 
-             $filter ? $filter->($value)
-                     : $value;
+        push @bind_values, $filters->{$fname}
+                         ? $filters->{$fname}->($value)
+                         : $value;
     }
     
     return \@bind_values;
@@ -453,16 +453,15 @@ sub update {
     
     # Where clause
     my $where_clause = '';
+    my $new_where_params = {};
+    
     if (@where_keys) {
         $where_clause = 'where ';
         foreach my $where_key (@where_keys) {
-            my $key_info = DBIx::Custom::KeyInfo->new($where_key);
-            
-            my $table_new = $key_info->table || $table;
-            my $column = $table_new . '.' . $key_info->column
-                         . '#@where';
+            $new_where_params->{"$where_key@where"}
+              = $where_params->{$where_key};
 
-            $where_clause .= "{= $column} and ";
+            $where_clause .= "{= $where_key@where} and ";
         }
         $where_clause =~ s/ and $//;
     }
@@ -472,7 +471,7 @@ sub update {
     $template .= " $append_statement" if $append_statement;
     
     # Rearrange parammeters
-    my $params = {%$update_params, '@where' => $where_params};
+    my $params = {%$update_params, %$new_where_params};
     
     # Execute query
     my $ret_val = $self->query($template, $params, {filter => $filter});
