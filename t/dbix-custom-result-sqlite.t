@@ -33,7 +33,7 @@ my $row;
 my @rows;
 my $rows;
 my $result;
-my $fetch_filter;
+my $filter;
 my @error;
 my $error;
 
@@ -207,25 +207,18 @@ is_deeply(\@rows, [[1, 2], [3, 4]], $test);
 
 
 test 'fetch filter';
-$fetch_filter = sub {
-    my ($value, $key, $dbi, $infos) = @_;
-    my ($type, $sth, $i) = @{$infos}{qw/type sth index/};
-    
-    if ($key eq 'key1' && $value == 1 && $type =~ /char/i && $i == 0 && $sth->{TYPE}->[$i] eq $type) {
-        return $value * 3;
-    }
-    return $value;
-};
-
 $result = query($dbh, $sql);
-$result->fetch_filter($fetch_filter);
+$result->filters({three_times => sub { $_[0] * 3}});
+$result->filter({key1 => 'three_times'});
+
 $rows = $result->fetch_all;
-is_deeply($rows, [[3, 2], [3, 4]], "$test array");
+is_deeply($rows, [[3, 2], [9, 4]], "$test array");
 
 $result = query($dbh, $sql);
-$result->fetch_filter($fetch_filter);
+$result->filters({three_times => sub { $_[0] * 3}});
+$result->filter({key1 => 'three_times'});
 $rows = $result->fetch_hash_all;
-is_deeply($rows, [{key1 => 3, key2 => 2}, {key1 => 3, key2 => 4}], "$test hash");
+is_deeply($rows, [{key1 => 3, key2 => 2}, {key1 => 9, key2 => 4}], "$test hash");
 
 test 'finish';
 $result = query($dbh, $sql);

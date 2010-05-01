@@ -8,7 +8,7 @@ BEGIN {
 	use_ok( 'DBIx::Custom::MySQL' );
 	use_ok( 'DBIx::Custom::Query' );
 	use_ok( 'DBIx::Custom::Result' );
-	use_ok( 'DBIx::Custom::SQL::Template' );
+	use_ok( 'DBIx::Custom::SQLTemplate' );
 	use_ok( 'DBIx::Custom::SQLite' );
 }
 

@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use DBIx::Custom;
-use DBIx::Custom::SQL::Template;
+use DBIx::Custom::SQLTemplate;
 
 # Function for test name
 my $test;
@@ -13,9 +13,9 @@ sub test {
 
 # Variables for test
 our $SQL_TMPL = {
-    0 => DBIx::Custom::SQL::Template->new->tag_start(0),
-    1 => DBIx::Custom::SQL::Template->new->tag_start(1),
-    2 => DBIx::Custom::SQL::Template->new->tag_start(2)
+    0 => DBIx::Custom::SQLTemplate->new->tag_start(0),
+    1 => DBIx::Custom::SQLTemplate->new->tag_start(1),
+    2 => DBIx::Custom::SQLTemplate->new->tag_start(2)
 };
 my $dbi;
 
@@ -111,14 +111,14 @@ is_deeply($dbi->formats, {f => 3}, "$test : formats");
 isa_ok($dbi, 'DBIx::Custom');
 
 
-test 'add_filters';
+test 'resist_filters';
 $dbi = DBIx::Custom->new;
-$dbi->add_filter(a => sub {1});
+$dbi->resist_filter(a => sub {1});
 is($dbi->filters->{a}->(), 1, $test);
 
-test 'add_formats';
+test 'resist_formats';
 $dbi = DBIx::Custom->new;
-$dbi->add_format(a => sub {1});
+$dbi->resist_format(a => sub {1});
 is($dbi->formats->{a}->(), 1, $test);
 
 test 'Accessor';

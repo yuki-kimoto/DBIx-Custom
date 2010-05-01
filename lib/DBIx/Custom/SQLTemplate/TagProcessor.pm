@@ -38,13 +38,13 @@ sub expand_in_tag {
     my ($column, $count) = @$tag_args;
     
     # Key must be specified
-    croak("You must be pass key as first argument of tag '{$tag_name }'\n" . 
-          "Usage: {$tag_name \$key \$count}")
+    croak("You must be pass key as first argument of tag '{in }'\n" . 
+          "Usage: {in \$key \$count}")
       unless $column;
     
     # Place holder count must be specified
-    croak("You must be pass placeholder count as second argument of tag '{$tag_name }'\n" . 
-          "Usage: {$tag_name \$key \$count}")
+    croak("You must be pass value count as second argument of tag '{in }'\n" . 
+          "Usage: {in \$key \$count}")
       if !$count || $count =~ /\D/;
 
     # Expand tag

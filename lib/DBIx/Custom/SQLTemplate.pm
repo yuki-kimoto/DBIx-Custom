@@ -18,7 +18,7 @@ __PACKAGE__->dual_attr('tag_end',   default => '}', inherit => 'scalar_copy');
 __PACKAGE__->dual_attr('tag_syntax', inherit => 'scalar_copy');
 
 __PACKAGE__->resist_tag_processor(
-    '?'      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
+    '?'      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_placeholder_tag,
     '='      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
     '<>'     => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
     '>'      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,

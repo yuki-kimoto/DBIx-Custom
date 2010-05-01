@@ -16,14 +16,14 @@ my $query;
 test 'Accessors';
 $query = DBIx::Custom::Query->new(
     sql              => 'a',
-    key_infos        => 'b',
-    query_filter      => 'c',
+    columns        => 'b',
+    filter      => 'c',
     sth              => 'e',
     fetch_filter     => 'f',
 );
 
 is($query->sql, 'a', "$test : sql");
-is($query->key_infos, 'b', "$test : key_infos ");
-is($query->query_filter, 'c', "$test : query_filter");
+is($query->columns, 'b', "$test : columns ");
+is($query->filter, 'c', "$test : filter");
 is($query->sth, 'e', "$test : sth");
 

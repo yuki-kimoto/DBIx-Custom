@@ -128,44 +128,6 @@ sub reconnect {
     return $self;
 }
 
-sub prepare {
-    my ($self, $sql) = @_;
-    
-    # Connect if not
-    $self->connect unless $self->connected;
-    
-    # Prepare
-    my $sth = eval{$self->dbh->prepare($sql)};
-    
-    # Error
-    croak("$@<Your SQL>\n$sql") if $@;
-    
-    return $sth;
-}
-
-sub do{
-    my ($self, $sql, @bind_values) = @_;
-    
-    # Connect if not
-    $self->connect unless $self->connected;
-    
-    # Do
-    my $affected = eval{$self->dbh->do($sql, @bind_values)};
-    
-    # Error
-    if ($@) {
-        my $error = $@;
-        require Data::Dumper;
-        
-        my $bind_value_dump
-          = Data::Dumper->Dump([\@bind_values], ['*bind_valuds']);
-        
-        croak("$error<Your SQL>\n$sql\n<Your bind values>\n$bind_value_dump\n");
-    }
-    
-    return $affected;
-}
-
 sub create_query {
     my ($self, $template) = @_;
     
@@ -200,7 +162,7 @@ sub create_query {
     $self->connect unless $self->connected;
     
     # Prepare statement handle
-    my $sth = $self->prepare($query->{sql});
+    my $sth = $self->dbh->prepare($query->{sql});
     
     # Set statement handle
     $query->sth($sth);
@@ -363,8 +325,11 @@ sub create_table {
     # End
     $sql .= ");";
     
+    # Connect
+    $self->connect unless $self->connected;
+    
     # Do query
-    return $self->do($sql);
+    return $self->dbh->do($sql);
 }
 
 sub drop_table {
@@ -373,8 +338,11 @@ sub drop_table {
     # Drop table
     my $sql = "drop table $table;";
 
+    # Connect
+    $self->connect unless $self->connected;
+
     # Do query
-    return $self->do($sql);
+    return $self->dbh->do($sql);
 }
 
 our %VALID_INSERT_ARGS = map { $_ => 1 } qw/append filter/;
@@ -1122,32 +1090,7 @@ You can also edit query
         }
     }
 
-=head2 prepare
-
-Prepare statement handle.
-
-    $sth = $dbi->prepare('select * from books;');
-
-This method is same as DBI prepare method.
-
-See also L<DBI>.
-
-=head2 do
-
-Execute SQL
-
-    $affected = $dbi->do('insert into books (title, author) values (?, ?)',
-                        'Perl', 'taro');
-
-Retrun value is affected rows count.
-
-This method is same as DBI do method.
-
-See also L<DBI>
-
 =head2 run_transaction
-
-
 
 =head1 DBIx::Custom default configuration
 
