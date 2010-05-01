@@ -5,7 +5,7 @@ use warnings;
 
 use base 'Object::Simple';
 
-__PACKAGE__->attr([qw/sql key_infos default_filter filter sth/]);
+__PACKAGE__->attr([qw/sql columns default_filter filter sth/]);
 
 1;
 
@@ -51,12 +51,12 @@ Filter excuted when value is bind
     $query  = $query->filter($filter);
     $filter = $query->filter;
 
-=head2 key_infos
+=head2 columns
 
 Key informations
 
-    $query     = $query->key_infos($key_infos);
-    $key_infos = $query->key_infos;
+    $query   = $query->columns($columns);
+    $columns = $query->columns;
 
 =head1 METHODS
 

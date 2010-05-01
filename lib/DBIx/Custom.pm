@@ -186,7 +186,7 @@ sub create_query {
     if ($cached_query) {
         $query = DBIx::Custom::Query->new(
             sql       => $cached_query->sql,
-            key_infos => $cached_query->key_infos
+            columns => $cached_query->columns
         );
     }
     else {
@@ -238,7 +238,6 @@ sub query{
     if (my $execute_error = $@) {
         require Data::Dumper;
         my $sql              = $query->{sql} || '';
-        my $key_infos_dump   = Data::Dumper->Dump([$query->key_infos], ['*key_infos']);
         my $params_dump      = Data::Dumper->Dump([$params], ['*params']);
         
         croak("$execute_error" . 
@@ -265,28 +264,32 @@ sub query{
 
 sub _build_bind_values {
     my ($self, $query, $params, $filter) = @_;
-    my $key_infos      = $query->key_infos;
-    my $default_filter = $self->default_query_filter || '';
-    my $filters        = $self->filters;
-    $filter            ||= {};
     
     # binding values
     my @bind_values;
     
     # Build bind values
-    foreach my $key_info (@$key_infos) {
-        my $column       = $key_info->{column};
-        my $pos          = $key_info->{pos};
+    my $count = {};
+    foreach my $column (@{$query->columns}) {
         
         # Value
-        my $value = defined $pos ? $params->{$column}->[$pos] : $params->{$column};
+        my $value = ref $params->{$column}
+                  ? $params->{$column}->[$count->{$column} || 0]
+                  : $params->{$column};
         
         # Filter
-        my $fname = $filter->{$column} || $default_filter || '';
+        $filter ||= {};
         
+        # Filter name
+        my $fname = $filter->{$column} || $self->default_query_filter || '';
+        
+        my $filters = $self->filters;
         push @bind_values, $filters->{$fname}
                          ? $filters->{$fname}->($value)
                          : $value;
+        
+        # Count up 
+        $count->{$column}++;
     }
     
     return \@bind_values;
@@ -420,7 +423,7 @@ our %VALID_UPDATE_ARGS
   = map { $_ => 1 } qw/where append filter allow_update_all/;
 
 sub update {
-    my ($self, $table, $update_params, $args) = @_;
+    my ($self, $table, $params, $args) = @_;
     
     # Check arguments
     foreach my $name (keys %$args) {
@@ -435,7 +438,7 @@ sub update {
     my $allow_update_all = $args->{allow_update_all};
     
     # Update keys
-    my @update_keys = keys %$update_params;
+    my @update_keys = keys %$params;
     
     # Not exists update kyes
     croak("Key-value pairs for update must be specified to 'update' second argument")
@@ -453,15 +456,13 @@ sub update {
     
     # Where clause
     my $where_clause = '';
-    my $new_where_params = {};
+    my $new_where = {};
     
     if (@where_keys) {
         $where_clause = 'where ';
         foreach my $where_key (@where_keys) {
-            $new_where_params->{"$where_key@where"}
-              = $where_params->{$where_key};
-
-            $where_clause .= "{= $where_key@where} and ";
+            
+            $where_clause .= "{= $where_key} and ";
         }
         $where_clause =~ s/ and $//;
     }
@@ -471,7 +472,15 @@ sub update {
     $template .= " $append_statement" if $append_statement;
     
     # Rearrange parammeters
-    my $params = {%$update_params, %$new_where_params};
+    foreach my $where_key (@where_keys) {
+        
+        if (exists $params->{$where_key}) {
+            $params->{$where_key} = [$params->{$where_key}]
+              unless ref $params->{$where_key} eq 'ARRAY';
+            
+            push @{$params->{$where_key}}, $where_params->{$where_key}};
+        }
+    }
     
     # Execute query
     my $ret_val = $self->query($template, $params, {filter => $filter});
@@ -595,23 +604,11 @@ sub select {
     # Where clause keys
     my @where_keys = keys %$where_params;
     
-    my $where_params_new = {};
-    
     # Join where clause
     if (@where_keys) {
         $template .= 'where ';
         foreach my $where_key (@where_keys) {
-            my $key_info = DBIx::Custom::KeyInfo->new($where_key);
-            
-            my $table_new = $key_info->table || $tables->[0];
-            my $column = $table_new . '.' . $key_info->column
-                         . '#' . $table_new;
-                      
             $template .= "{= $column} and ";
-            
-            $where_params_new->{$table_new} ||= {};
-            $where_params_new->{$table_new}->{$key_info->column}
-              = $where_params->{$where_key};
         }
     }
     $template =~ s/ and $//;
@@ -630,7 +627,7 @@ sub select {
     }
     
     # Execute query
-    my $result = $self->query($template, $where_params_new, {filter => $filter});
+    my $result = $self->query($template, $where_params, {filter => $filter});
     
     return $result;
 }

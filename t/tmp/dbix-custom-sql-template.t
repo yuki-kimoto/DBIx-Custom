@@ -87,7 +87,7 @@ for (my $i = 0; $i < @$datas; $i++) {
 test 'Original tag processor';
 $sql_tmpl = DBIx::Custom::SQLTemplate->new;
 
-$ret_val = $sql_tmpl->add_tag_processor(
+$ret_val = $sql_tmpl->resist_tag_processor(
     p => sub {
         my ($tag_name, $args) = @_;
         
@@ -98,8 +98,8 @@ $ret_val = $sql_tmpl->add_tag_processor(
 );
 
 $query = $sql_tmpl->create_query("{p a b}");
-is($query->{sql}, "p ? a b;", "$test : add_tag_processor sql");
-is_deeply($query->{key_infos}, [2], "$test : add_tag_processor key_infos");
+is($query->{sql}, "p ? a b;", "$test : resist_tag_processor sql");
+is_deeply($query->{key_infos}, [2], "$test : resist_tag_processor key_infos");
 isa_ok($ret_val, 'DBIx::Custom::SQLTemplate');
 
 
@@ -110,28 +110,28 @@ $sql_tmpl = DBIx::Custom::SQLTemplate->new;
 eval{$sql_tmpl->create_query("{a }")};
 like($@, qr/Tag '{a }' in SQL template is not exist/, "$test : tag_processor not exist");
 
-$sql_tmpl->add_tag_processor({
+$sql_tmpl->resist_tag_processor({
     q => 'string'
 });
 
 eval{$sql_tmpl->create_query("{q}", {})};
 like($@, qr/Tag processor 'q' must be code reference/, "$test : tag_processor not code ref");
 
-$sql_tmpl->add_tag_processor({
+$sql_tmpl->resist_tag_processor({
    r => sub {} 
 });
 
 eval{$sql_tmpl->create_query("{r}")};
 like($@, qr/\QTag processor 'r' must return (\E\$expand\Q, \E\$key_infos\Q)/, "$test : tag processor return noting");
 
-$sql_tmpl->add_tag_processor({
+$sql_tmpl->resist_tag_processor({
    s => sub { return ("a", "")} 
 });
 
 eval{$sql_tmpl->create_query("{s}")};
 like($@, qr/\QTag processor 's' must return (\E\$expand\Q, \E\$key_infos\Q)/, "$test : tag processor return not array key_infos");
 
-$sql_tmpl->add_tag_processor(
+$sql_tmpl->resist_tag_processor(
     t => sub {return ("a", [])}
 );
 
@@ -141,7 +141,7 @@ like($@, qr/Tag '{t }' arguments cannot contain '?'/, "$test : cannot contain '?
 
 test 'General error case';
 $sql_tmpl = DBIx::Custom::SQLTemplate->new;
-$sql_tmpl->add_tag_processor(
+$sql_tmpl->resist_tag_processor(
     a => sub {
         return ("? ? ?", [[],[]]);
     }
