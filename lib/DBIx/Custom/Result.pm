@@ -179,7 +179,7 @@ DBIx::Custom::Result - DBIx::Custom Resultset
 
 =head1 SYNOPSIS
 
-    my $result = $dbi->query($query);
+    my $result = $dbi->execute($query);
     
     # Fetch
     while (my @row = $result->fetch) {

@@ -170,7 +170,7 @@ sub create_query {
     return $query;
 }
 
-sub query{
+sub execute{
     my ($self, $query, $params, $args)  = @_;
     $params ||= {};
     
@@ -380,7 +380,7 @@ sub insert {
     $template .= " $append_statement" if $append_statement;
     
     # Execute query
-    my $ret_val = $self->query($template, $insert_params, {filter => $filter});
+    my $ret_val = $self->execute($template, $insert_params, {filter => $filter});
     
     return $ret_val;
 }
@@ -452,7 +452,7 @@ sub update {
     }
     
     # Execute query
-    my $ret_val = $self->query($template, $params, {filter => $filter});
+    my $ret_val = $self->execute($template, $params, {filter => $filter});
     
     return $ret_val;
 }
@@ -511,7 +511,7 @@ sub delete {
     $template .= " $append_statement" if $append_statement;
     
     # Execute query
-    my $ret_val = $self->query($template, $where_params, {filter => $filter});
+    my $ret_val = $self->execute($template, $where_params, {filter => $filter});
     
     return $ret_val;
 }
@@ -596,7 +596,7 @@ sub select {
     }
     
     # Execute query
-    my $result = $self->query($template, $where_params, {filter => $filter});
+    my $result = $self->execute($template, $where_params, {filter => $filter});
     
     return $result;
 }
@@ -648,10 +648,10 @@ This module is not stable. Method name and functionality will be change.
                                 user => 'ken', password => '!LFKD%$&');
     
     # Query
-    $dbi->query("select title from books");
+    $dbi->execute("select title from books");
     
     # Query with parameters
-    $dbi->query("select id from books where {= author} && {like title}",
+    $dbi->execute("select id from books where {= author} && {like title}",
                 {author => 'ken', title => '%Perl%'});
     
     # Insert 
@@ -767,7 +767,7 @@ Binding filter
     $dbi                 = $dbi->default_query_filter($default_query_filter);
     $default_query_filter = $dbi->default_query_filter
 
-The following is bind filter sample
+The following is bind filter example
     
     $dbi->resist_filter(encode_utf8 => sub {
         my $value = shift;
@@ -793,7 +793,7 @@ Fetching filter
     $dbi                  = $dbi->default_fetch_filter($default_fetch_filter);
     $default_fetch_filter = $dbi->default_fetch_filter;
 
-The following is fetch filter sample
+The following is fetch filter example
 
     $dbi->resist_filter(decode_utf8 => sub {
         my $value = shift;
@@ -874,7 +874,7 @@ Resist filter
     
     $dbi->resist_filter($fname1 => $filter1, $fname => $filter2);
     
-The following is resist_filter sample
+The following is resist_filter example
 
     $dbi->resist_filter(
         encode_utf8 => sub {
@@ -894,7 +894,7 @@ Add format
 
     $dbi->resist_format($fname1 => $format, $fname2 => $format2);
     
-The following is resist_format sample.
+The following is resist_format example.
 
     $dbi->resist_format(date => '%Y:%m:%d', datetime => '%Y-%m-%d %H:%M:%S');
 
@@ -906,19 +906,19 @@ Create Query object parsing SQL template
 
 $query is <DBIx::Query> object. This is executed by query method as the following
 
-    $dbi->query($query, $params);
+    $dbi->execute($query, $params);
 
 If you know SQL template, see also L<DBIx::Custom::SQLTemplate>.
 
-=head2 query
+=head2 execute
 
 Query
 
-    $result = $dbi->query($template, $params);
+    $result = $dbi->execute($template, $params);
 
-The following is query sample
+The following is query example
 
-    $result = $dbi->query("select * from authors where {= name} and {= age}", 
+    $result = $dbi->execute("select * from authors where {= name} and {= age}", 
                           {author => 'taro', age => 19});
     
     while (my @row = $result->fetch) {
@@ -927,9 +927,7 @@ The following is query sample
 
 If you now syntax of template, See also L<DBIx::Custom::SQLTemplate>
 
-Return value of query method is L<DBIx::Custom::Result> object
-
-See also L<DBIx::Custom::Result>.
+execute() return L<DBIx::Custom::Result> object
 
 =head2 transaction
 
@@ -971,7 +969,7 @@ Insert row
 
 Retrun value is affected rows count
     
-The following is insert sample.
+The following is insert example.
 
     $dbi->insert('books', {title => 'Perl', author => 'Taro'});
 
@@ -988,7 +986,7 @@ Update rows
 
 Retrun value is affected rows count
 
-The following is update sample.
+The following is update example.
 
     $dbi->update('books', {title => 'Perl', author => 'Taro'}, {id => 5});
 
@@ -1005,7 +1003,7 @@ Update all rows
 
 Retrun value is affected rows count
 
-The following is update_all sample.
+The following is update_all example.
 
     $dbi->update_all('books', {author => 'taro'});
 
@@ -1018,7 +1016,7 @@ Delete rows
 
 Retrun value is affected rows count
     
-The following is delete sample.
+The following is delete example.
 
     $dbi->delete('books', {id => 5});
 
@@ -1034,7 +1032,7 @@ Delete all rows
 
 Retrun value is affected rows count
 
-The following is delete_all sample.
+The following is delete_all example.
 
     $dbi->delete_all('books');
 
@@ -1052,7 +1050,7 @@ Select rows
 
 $reslt is L<DBIx::Custom::Result> object
 
-The following is some select samples
+The following is some select examples
 
     # select * from books;
     $result = $dbi->select('books');
