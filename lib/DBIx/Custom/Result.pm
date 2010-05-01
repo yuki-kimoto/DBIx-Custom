@@ -56,7 +56,7 @@ sub fetch_hash {
     # Filter
     my $row_hash = {};
     for (my $i = 0; $i < @$columns; $i++) {
-        my $fname  = $filter->{$columns->[$i]} || $filters->{$default_filter} || '';
+        my $fname  = $filter->{$columns->[$i]} || $default_filter || '';
         my $filter = $filters->{$fname};
         $row_hash->{$columns->[$i]} = $filter
                                     ? $filter->($row->[$i])

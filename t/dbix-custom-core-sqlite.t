@@ -37,7 +37,7 @@ my $NEW_ARGS = {
     0 => {data_source => 'dbi:SQLite:dbname=:memory:'}
 };
 
-# Variables for test
+# Variables
 my $dbi;
 my $sth;
 my $tmpl;
@@ -48,6 +48,7 @@ my $update_tmpl;
 my $params;
 my $sql;
 my $result;
+my $row;
 my @rows;
 my $rows;
 my $query;
@@ -310,11 +311,16 @@ $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : basic");
 
 $dbi->execute('delete from table1');
-$dbi->resist_filter(three_times => sub { $_[0] * 3});
+$dbi->resist_filter(
+    twice       => sub { $_[0] * 2 },
+    three_times => sub { $_[0] * 3 }
+);
+$dbi->default_query_filter('twice');
 $dbi->insert('table1', {key1 => 1, key2 => 2}, {filter => {key1 => 'three_times'}});
 $result = $dbi->execute($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
-is_deeply($rows, [{key1 => 3, key2 => 2}], "$test : filter");
+is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : filter");
+$dbi->default_query_filter(undef);
 
 $dbi->execute($DROP_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -518,4 +524,17 @@ $query->filter('bbb');
 $query = $dbi->create_query($tmpls[0]);
 ok(!$query->filter, "$test : only cached sql and columns");
 
+test 'fetch filter';
+$dbi = DBIx::Custom->new($NEW_ARGS->{0});
+$dbi->resist_filter(
+    twice       => sub { $_[0] * 2 },
+    three_times => sub { $_[0] * 3 }
+);
+$dbi->default_fetch_filter('twice');
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert('table1', {key1 => 1, key2 => 2});
+$result = $dbi->select('table1');
+$result->filter({key1 => 'three_times'});
+$row = $result->fetch_hash_single;
+is_deeply($row, {key1 => 3, key2 => 4}, "$test: default_fetch_filter and filter");
 
