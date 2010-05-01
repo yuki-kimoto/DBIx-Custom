@@ -58,7 +58,7 @@ sub expand_in_tag {
     
     # Columns
     my $columns = [];
-    puhs @$columns, $column for (0 .. $count - 1);
+    push @$columns, $column for (0 .. $count - 1);
     
     return ($expand, $columns);
 }

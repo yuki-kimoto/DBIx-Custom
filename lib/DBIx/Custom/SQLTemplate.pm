@@ -7,7 +7,7 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 use DBIx::Custom::Query;
-use DBIx::Custom::SQLTemplate::TagProcessors;
+use DBIx::Custom::SQLTemplate::TagProcessor;
 
 __PACKAGE__->dual_attr('tag_processors', default => sub { {} },
                                          inherit => 'hash_copy');

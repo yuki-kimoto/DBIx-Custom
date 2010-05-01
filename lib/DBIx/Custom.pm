@@ -478,7 +478,7 @@ sub update {
             $params->{$where_key} = [$params->{$where_key}]
               unless ref $params->{$where_key} eq 'ARRAY';
             
-            push @{$params->{$where_key}}, $where_params->{$where_key}};
+            push @{$params->{$where_key}}, $where_params->{$where_key};
         }
     }
     
@@ -608,7 +608,7 @@ sub select {
     if (@where_keys) {
         $template .= 'where ';
         foreach my $where_key (@where_keys) {
-            $template .= "{= $column} and ";
+            $template .= "{= $where_key} and ";
         }
     }
     $template =~ s/ and $//;
