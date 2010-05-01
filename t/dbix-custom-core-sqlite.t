@@ -339,7 +339,7 @@ $dbi->resist_filter(three_times => sub { $_[0] * 3});
 $dbi->insert('table1', {key1 => 1, key2 => 2}, {filter => {key1 => 'three_times'}});
 $result = $dbi->query($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
-is_deeply($rows, [{key1 => 3, key2 => 2}], "$test : edit_query_callback");
+is_deeply($rows, [{key1 => 3, key2 => 2}], "$test : filter");
 
 $dbi->do($DROP_TABLE->{0});
 $dbi->do($CREATE_TABLE->{0});
@@ -377,28 +377,17 @@ is_deeply($rows, [{key1 => 1, key2 => 12, key3 => 3, key4 => 4, key5 => 5},
 $dbi->do("delete from table1");
 $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
-$dbi->update('table1', {key2 => 11}, {where => {key1 => 1}, query_edit_cb => sub {
-    my $query = shift;
-    $query->filter(sub {
-        my ($value, $table, $column, $dbi) = @_;
-        if ($column eq 'key2') {
-            return $value * 2;
-        }
-        return $value;
-    });
-}});
+$dbi->resist_filter(twice => sub { $_[0] * 2 });
+$dbi->update('table1', {key2 => 11}, {where => {key1 => 1},
+              filter => {key2 => 'twice'}});
 $result = $dbi->query($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 22, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
-                  "$test : query edit callback");
+                  "$test : filter");
 
-$dbi->update('table1', {key2 => 11}, {where => {key1 => 1}, append => '   ', query_edit_cb => sub {
-    my $query = shift;
-    is($query->sql, 'update table1 set key2 = ? where table1.key1 = ?    ;',
-       "$test: append statement");
-}});
 
+$result = $dbi->update('table1', {key2 => 11}, {where => {key1 => 1}, append => '   '});
 
 test 'update error';
 $dbi = DBIx::Custom->new($NEW_ARGS->{0});
@@ -411,28 +400,18 @@ eval{$dbi->update('table1', {key2 => 1})};
 like($@, qr/Key-value pairs for where clause must be specified to 'update' third argument/,
          "$test : where key-value pairs not specified");
 
-eval{$dbi->update('table1', {key2 => 1}, {where => {key2 => 3}, append => '', query_edit_cb => 'aaa'})};
-like($@, qr/Query edit callback must be code reference/, 
-         "$test : query edit callback not code reference");
-
-
 test 'update_all';
 $dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->do($CREATE_TABLE->{1});
 $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
-$dbi->update_all('table1', {key2 => 10}, {query_edit_cb => sub {
-    my $query = shift;
-    $query->filter(sub {
-        my ($value, $table, $column, $dbi) = @_;
-        return $value * 2;
-    })
-}});
+$dbi->resist_filter(twice => sub { $_[0] * 2 });
+$dbi->update_all('table1', {key2 => 10}, {filter => {key2 => 'twice'}});
 $result = $dbi->query($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 20, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 20, key3 => 8, key4 => 9, key5 => 10}],
-                  "$test : query edit callback");
+                  "$test : filter");
 
 
 test 'delete';
@@ -448,23 +427,13 @@ is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : basic");
 $dbi->do("delete from table1;");
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
-$dbi->delete('table1', {where => {key2 => 1}, query_edit_cb => sub {
-    my $query = shift;
-    $query->filter(sub {
-        my ($value, $table, $column, $dbi) = @_;
-        return $value * 2;
-    });
-}});
+$dbi->resist_filter(twice => sub { $_[0] * 2 });
+$dbi->delete('table1', {where => {key2 => 1}, filter => {key2 => 'twice'}});
 $result = $dbi->query($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
-is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : query edit callback");
+is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : filter");
 
-$dbi->delete('table1', {where => {key1 => 1}, append => '   ', query_edit_cb => sub {
-    my $query = shift;
-    is($query->sql, 'delete from table1 where table1.key1 = ?    ;',
-       "$test: append statement");
-}});
-
+$dbi->delete('table1', {where => {key1 => 1}, append => '   '});
 
 $dbi->delete_all('table1');
 $dbi->insert('table1', {key1 => 1, key2 => 2});
@@ -480,11 +449,6 @@ $dbi->do($CREATE_TABLE->{0});
 eval{$dbi->delete('table1')};
 like($@, qr/Key-value pairs for where clause must be specified to 'delete' second argument/,
          "$test : where key-value pairs not specified");
-
-eval{$dbi->delete('table1', {where => {key1 => 1}, append => '', query_edit_cb => 'aaa'})};
-like($@, qr/Query edit callback must be code reference/, 
-         "$test : query edit callback not code ref");
-
 
 test 'delete_all';
 $dbi = DBIx::Custom->new($NEW_ARGS->{0});
@@ -518,17 +482,10 @@ is_deeply($rows, [{key1 => 3}], "$test : table and columns and where key");
 $rows = $dbi->select('table1', {append => "order by key1 desc limit 1"})->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : append statement");
 
-$rows = $dbi->select('table1', {where => {key1 => 2}, query_edit_cb =>sub {
-    my $query = shift;
-    $query->filter(sub {
-        my ($value, $table, $column, $dbi) = @_;
-        if ($column eq 'key1') {
-            return $value - 1;
-        }
-        return $value;
-    });
-}})->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : query edit call back");
+$dbi->resist_filter(decrement => sub { $_[0] - 1 });
+$rows = $dbi->select('table1', {where => {key1 => 2}, filter => {key1 => 'decrement'}})
+            ->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : filter");
 
 $dbi->do($CREATE_TABLE->{2});
 $dbi->insert('table2', {key1 => 1, key3 => 5});
@@ -550,40 +507,40 @@ delete $DBIx::Custom::CLASS_ATTRS->{_query_cache_keys};
 $tmpls[0] = "insert into table1 {insert key1 key2}";
 $queries[0] = $dbi->create_query($tmpls[0]);
 is(DBIx::Custom->_query_caches->{$tmpls[0]}{sql}, $queries[0]->sql, "$test : sql first");
-is(DBIx::Custom->_query_caches->{$tmpls[0]}{key_infos}, $queries[0]->key_infos, "$test : key_infos first");
+is(DBIx::Custom->_query_caches->{$tmpls[0]}{columns}, $queries[0]->columns, "$test : columns first");
 is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls], "$test : cache key first");
 
 $tmpls[1] = "select * from table1";
 $queries[1] = $dbi->create_query($tmpls[1]);
 is(DBIx::Custom->_query_caches->{$tmpls[0]}{sql}, $queries[0]->sql, "$test : sql first");
-is(DBIx::Custom->_query_caches->{$tmpls[0]}{key_infos}, $queries[0]->key_infos, "$test : key_infos first");
+is(DBIx::Custom->_query_caches->{$tmpls[0]}{columns}, $queries[0]->columns, "$test : columns first");
 is(DBIx::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql second");
-is(DBIx::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos second");
+is(DBIx::Custom->_query_caches->{$tmpls[1]}{columns}, $queries[1]->columns, "$test : columns second");
 is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls], "$test : cache key second");
 
 $tmpls[2] = "select key1, key2 from table1";
 $queries[2] = $dbi->create_query($tmpls[2]);
 ok(!exists DBIx::Custom->_query_caches->{$tmpls[0]}, "$test : cache overflow deleted key");
 is(DBIx::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql cache overflow deleted key");
-is(DBIx::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos cache overflow deleted key");
+is(DBIx::Custom->_query_caches->{$tmpls[1]}{columns}, $queries[1]->columns, "$test : columns cache overflow deleted key");
 is(DBIx::Custom->_query_caches->{$tmpls[2]}{sql}, $queries[2]->sql, "$test : sql cache overflow deleted key");
-is(DBIx::Custom->_query_caches->{$tmpls[2]}{key_infos}, $queries[2]->key_infos, "$test : key_infos cache overflow deleted key");
+is(DBIx::Custom->_query_caches->{$tmpls[2]}{columns}, $queries[2]->columns, "$test : columns cache overflow deleted key");
 is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls[1, 2]], "$test : cache key third");
 
 $queries[1] = $dbi->create_query($tmpls[1]);
 ok(!exists DBIx::Custom->_query_caches->{$tmpls[0]}, "$test : cache overflow deleted key");
 is(DBIx::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql cache overflow deleted key");
-is_deeply(DBIx::Custom->_query_caches->{$tmpls[1]}{key_infos}, $queries[1]->key_infos, "$test : key_infos cache overflow deleted key");
+is_deeply(DBIx::Custom->_query_caches->{$tmpls[1]}{columns}, $queries[1]->columns, "$test : columns cache overflow deleted key");
 is(DBIx::Custom->_query_caches->{$tmpls[2]}{sql}, $queries[2]->sql, "$test : sql cache overflow deleted key");
-is_deeply(DBIx::Custom->_query_caches->{$tmpls[2]}{key_infos}, $queries[2]->key_infos, "$test : key_infos cache overflow deleted key");
+is_deeply(DBIx::Custom->_query_caches->{$tmpls[2]}{columns}, $queries[2]->columns, "$test : columns cache overflow deleted key");
 is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls[1, 2]], "$test : cache key third");
 
 $query = $dbi->create_query($tmpls[0]);
 $query->filter('aaa');
 $query = $dbi->create_query($tmpls[0]);
-ok(!$query->filter, "$test : only cached sql and key_infos");
+ok(!$query->filter, "$test : only cached sql and columns");
 $query->filter('bbb');
 $query = $dbi->create_query($tmpls[0]);
-ok(!$query->filter, "$test : only cached sql and key_infos");
+ok(!$query->filter, "$test : only cached sql and columns");
 
 

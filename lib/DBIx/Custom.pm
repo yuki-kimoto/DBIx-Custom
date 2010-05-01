@@ -295,8 +295,6 @@ sub _build_bind_values {
     return \@bind_values;
 }
 
-sub transaction { DBIx::Custom::Transaction->new(dbi => shift) }
-
 sub run_transaction {
     my ($self, $transaction) = @_;
     
@@ -479,6 +477,9 @@ sub update {
               unless ref $params->{$where_key} eq 'ARRAY';
             
             push @{$params->{$where_key}}, $where_params->{$where_key};
+        }
+        else {
+            $params->{$where_key} = $where_params->{$where_key};
         }
     }
     
