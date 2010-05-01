@@ -631,11 +631,11 @@ DBIx::Custom - DBI with hash bind and filtering system
 
 =head1 VERSION
 
-Version 0.1301
+Version 0.1401
 
 =cut
 
-our $VERSION = '0.1301';
+our $VERSION = '0.1401';
 
 =head1 STATE
 
