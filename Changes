@@ -1,3 +1,8 @@
+0.1401
+  renamed fetch_rows to fetch_multi
+  renamed fetch_hash_rows to fetch_hash_multi
+0.1301
+  Changed many(not backword compatible)
 0.1201
   Changed many(not backword compatible)
 0.1101

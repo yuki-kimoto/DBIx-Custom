@@ -111,75 +111,75 @@ is_deeply({@row}, {key1 => 1, key2 => 2}, "$test : row");
 ok(!@row, "$test : finished");
 
 
-test 'fetch_rows';
+test 'fetch_multi';
 $dbh->do("insert into table1 (key1, key2) values ('5', '6');");
 $dbh->do("insert into table1 (key1, key2) values ('7', '8');");
 $dbh->do("insert into table1 (key1, key2) values ('9', '10');");
 $result = query($dbh, $sql);
-$rows = $result->fetch_rows(2);
+$rows = $result->fetch_multi(2);
 is_deeply($rows, [[1, 2],
-                  [3, 4]], "$test : fetch_rows first");
-$rows = $result->fetch_rows(2);
+                  [3, 4]], "$test : fetch_multi first");
+$rows = $result->fetch_multi(2);
 is_deeply($rows, [[5, 6],
-                  [7, 8]], "$test : fetch_rows secound");
-$rows = $result->fetch_rows(2);
-is_deeply($rows, [[9, 10]], "$test : fetch_rows third");
-$rows = $result->fetch_rows(2);
+                  [7, 8]], "$test : fetch_multi secound");
+$rows = $result->fetch_multi(2);
+is_deeply($rows, [[9, 10]], "$test : fetch_multi third");
+$rows = $result->fetch_multi(2);
 ok(!$rows);
 
 
-test 'fetch_rows list context';
+test 'fetch_multi list context';
 $result = query($dbh, $sql);
-@rows = $result->fetch_rows(2);
+@rows = $result->fetch_multi(2);
 is_deeply([@rows], [[1, 2],
-                  [3, 4]], "$test : fetch_rows first");
-@rows = $result->fetch_rows(2);
+                  [3, 4]], "$test : fetch_multi first");
+@rows = $result->fetch_multi(2);
 is_deeply([@rows], [[5, 6],
-                  [7, 8]], "$test : fetch_rows secound");
-@rows = $result->fetch_rows(2);
-is_deeply([@rows], [[9, 10]], "$test : fetch_rows third");
-@rows = $result->fetch_rows(2);
+                  [7, 8]], "$test : fetch_multi secound");
+@rows = $result->fetch_multi(2);
+is_deeply([@rows], [[9, 10]], "$test : fetch_multi third");
+@rows = $result->fetch_multi(2);
 ok(!@rows);
 
 
-test 'fetch_rows error';
+test 'fetch_multi error';
 $result = query($dbh, $sql);
-eval {$result->fetch_rows};
+eval {$result->fetch_multi};
 like($@, qr/Row count must be specified/, "$test : Not specified row count");
 
 
-test 'fetch_hash_rows';
+test 'fetch_hash_multi';
 $result = query($dbh, $sql);
-$rows = $result->fetch_hash_rows(2);
+$rows = $result->fetch_hash_multi(2);
 is_deeply($rows, [{key1 => 1, key2 => 2},
-                  {key1 => 3, key2 => 4}], "$test : fetch_rows first");
-$rows = $result->fetch_hash_rows(2);
+                  {key1 => 3, key2 => 4}], "$test : fetch_multi first");
+$rows = $result->fetch_hash_multi(2);
 is_deeply($rows, [{key1 => 5, key2 => 6},
-                  {key1 => 7, key2 => 8}], "$test : fetch_rows secound");
-$rows = $result->fetch_hash_rows(2);
-is_deeply($rows, [{key1 => 9, key2 => 10}], "$test : fetch_rows third");
-$rows = $result->fetch_hash_rows(2);
+                  {key1 => 7, key2 => 8}], "$test : fetch_multi secound");
+$rows = $result->fetch_hash_multi(2);
+is_deeply($rows, [{key1 => 9, key2 => 10}], "$test : fetch_multi third");
+$rows = $result->fetch_hash_multi(2);
 ok(!$rows);
 
 
-test 'fetch_rows list context';
+test 'fetch_multi list context';
 $result = query($dbh, $sql);
-@rows = $result->fetch_hash_rows(2);
+@rows = $result->fetch_hash_multi(2);
 is_deeply([@rows], [{key1 => 1, key2 => 2},
-                    {key1 => 3, key2 => 4}], "$test : fetch_rows first");
-@rows = $result->fetch_hash_rows(2);
+                    {key1 => 3, key2 => 4}], "$test : fetch_multi first");
+@rows = $result->fetch_hash_multi(2);
 is_deeply([@rows], [{key1 => 5, key2 => 6},
-                    {key1 => 7, key2 => 8}], "$test : fetch_rows secound");
-@rows = $result->fetch_hash_rows(2);
-is_deeply([@rows], [{key1 => 9, key2 => 10}], "$test : fetch_rows third");
-@rows = $result->fetch_hash_rows(2);
+                    {key1 => 7, key2 => 8}], "$test : fetch_multi secound");
+@rows = $result->fetch_hash_multi(2);
+is_deeply([@rows], [{key1 => 9, key2 => 10}], "$test : fetch_multi third");
+@rows = $result->fetch_hash_multi(2);
 ok(!@rows);
 $dbh->do("delete from table1 where key1 = 5 or key1 = 7 or key1 = 9");
 
 
-test 'fetch_rows error';
+test 'fetch_multi error';
 $result = query($dbh, $sql);
-eval {$result->fetch_hash_rows};
+eval {$result->fetch_hash_multi};
 like($@, qr/Row count must be specified/, "$test : Not specified row count");
 
 

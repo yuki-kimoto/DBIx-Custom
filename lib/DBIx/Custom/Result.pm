@@ -96,7 +96,7 @@ sub fetch_hash_single {
     return wantarray ? %$row : $row;
 }
 
-sub fetch_rows {
+sub fetch_multi {
     my ($self, $count) = @_;
     
     # Not specified Row count
@@ -117,7 +117,7 @@ sub fetch_rows {
     return wantarray ? @$rows : $rows;
 }
 
-sub fetch_hash_rows {
+sub fetch_hash_multi {
     my ($self, $count) = @_;
     
     # Not specified Row count
@@ -279,29 +279,29 @@ The following is fetch_hash_single sample
     
 This method fetch only single row and finish statement handle
 
-=head2 fetch_rows
+=head2 fetch_multi
 
 Fetch rows
 
-    $rows = $result->fetch_rows($row_count); # array ref of array ref
-    @rows = $result->fetch_rows($row_count); # array of array ref
+    $rows = $result->fetch_multi($row_count); # array ref of array ref
+    @rows = $result->fetch_multi($row_count); # array of array ref
     
-The following is fetch_rows sample
+The following is fetch_multi sample
 
-    while(my $rows = $result->fetch_rows(10)) {
+    while(my $rows = $result->fetch_multi(10)) {
         # do someting
     }
 
-=head2 fetch_hash_rows
+=head2 fetch_hash_multi
 
 Fetch rows as hash
 
-    $rows = $result->fetch_hash_rows($row_count); # array ref of hash ref
-    @rows = $result->fetch_hash_rows($row_count); # array of hash ref
+    $rows = $result->fetch_hash_multi($row_count); # array ref of hash ref
+    @rows = $result->fetch_hash_multi($row_count); # array of hash ref
     
-The following is fetch_hash_rows sample
+The following is fetch_hash_multi sample
 
-    while(my $rows = $result->fetch_hash_rows(10)) {
+    while(my $rows = $result->fetch_hash_multi(10)) {
         # do someting
     }
 

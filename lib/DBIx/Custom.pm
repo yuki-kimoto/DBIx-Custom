@@ -627,15 +627,15 @@ sub _add_query_cache {
 
 =head1 NAME
 
-DBIx::Custom - Customizable DBI
+DBIx::Custom - DBI with hash bind and filtering system 
 
 =head1 VERSION
 
-Version 0.1201
+Version 0.1301
 
 =cut
 
-our $VERSION = '0.1201';
+our $VERSION = '0.1301';
 
 =head1 STATE
 
@@ -658,17 +658,31 @@ This module is not stable. Method name and functionality will be change.
     $dbi->insert('books', {title => 'perl', author => 'Ken'});
     
     # Update 
-    $dbi->update('books', {title => 'aaa', author => 'Ken'}, {id => 5});
+    $dbi->update('books', {title => 'aaa', author => 'Ken'}, {where => {id => 5}});
     
     # Delete
-    $dbi->delete('books', {author => 'Ken'});
+    $dbi->delete('books', {where => {author => 'Ken'}});
     
     # Select
-    $dbi->select('books');
-    $dbi->select('books', {author => 'taro'}); 
-    $dbi->select('books', [qw/author title/], {author => 'Ken'});
-    $dbi->select('books', [qw/author title/], {author => 'Ken'},
-                 'order by id limit 1');
+    my $result = $dbi->select('books');
+    my $result = $dbi->select('books', {where => {author => 'taro'}}); 
+    
+    my $result = $dbi->select(
+       'books', 
+       {
+           columns => [qw/author title/],
+           where   => {author => 'Ken'}
+        }
+    );
+    
+    my $result = $dbi->select(
+        'books',
+        {
+            columns => [qw/author title/],
+            where   => {author => 'Ken'},
+            append  => 'order by id limit 1'
+        }
+    );
 
 =head1 ATTRIBUTES
 
