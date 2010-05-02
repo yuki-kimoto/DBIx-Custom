@@ -168,7 +168,7 @@ is_deeply($rows, [{key1 => 1, key2 => 2}], $test);
 test 'Filter basic';
 $dbi->execute($DROP_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{0});
-$dbi->resist_filter(twice       => sub { $_[0] * 2}, 
+$dbi->register_filter(twice       => sub { $_[0] * 2}, 
                     three_times => sub { $_[0] * 3});
 
 $insert_tmpl  = "insert into table1 {insert key1 key2};";
@@ -311,7 +311,7 @@ $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : basic");
 
 $dbi->execute('delete from table1');
-$dbi->resist_filter(
+$dbi->register_filter(
     twice       => sub { $_[0] * 2 },
     three_times => sub { $_[0] * 3 }
 );
@@ -358,7 +358,7 @@ is_deeply($rows, [{key1 => 1, key2 => 12, key3 => 3, key4 => 4, key5 => 5},
 $dbi->execute("delete from table1");
 $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
-$dbi->resist_filter(twice => sub { $_[0] * 2 });
+$dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->update('table1', {key2 => 11}, {where => {key1 => 1},
               filter => {key2 => 'twice'}});
 $result = $dbi->execute($SELECT_TMPLS->{0});
@@ -386,7 +386,7 @@ $dbi = DBIx::Custom->new($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert('table1', {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert('table1', {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
-$dbi->resist_filter(twice => sub { $_[0] * 2 });
+$dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->update_all('table1', {key2 => 10}, {filter => {key2 => 'twice'}});
 $result = $dbi->execute($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
@@ -408,7 +408,7 @@ is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : basic");
 $dbi->execute("delete from table1;");
 $dbi->insert('table1', {key1 => 1, key2 => 2});
 $dbi->insert('table1', {key1 => 3, key2 => 4});
-$dbi->resist_filter(twice => sub { $_[0] * 2 });
+$dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->delete('table1', {where => {key2 => 1}, filter => {key2 => 'twice'}});
 $result = $dbi->execute($SELECT_TMPLS->{0});
 $rows   = $result->fetch_hash_all;
@@ -463,7 +463,7 @@ is_deeply($rows, [{key1 => 3}], "$test : table and columns and where key");
 $rows = $dbi->select('table1', {append => "order by key1 desc limit 1"})->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : append statement");
 
-$dbi->resist_filter(decrement => sub { $_[0] - 1 });
+$dbi->register_filter(decrement => sub { $_[0] - 1 });
 $rows = $dbi->select('table1', {where => {key1 => 2}, filter => {key1 => 'decrement'}})
             ->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : filter");
@@ -526,7 +526,7 @@ ok(!$query->filter, "$test : only cached sql and columns");
 
 test 'fetch filter';
 $dbi = DBIx::Custom->new($NEW_ARGS->{0});
-$dbi->resist_filter(
+$dbi->register_filter(
     twice       => sub { $_[0] * 2 },
     three_times => sub { $_[0] * 3 }
 );

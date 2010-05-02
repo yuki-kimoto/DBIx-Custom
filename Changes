@@ -1,3 +1,7 @@
+0.1402
+  remove finish(), error()
+  can receive code ref to filter()
+  renamed resist to register
 0.1401
   renamed fetch_rows to fetch_multi
   renamed fetch_hash_rows to fetch_hash_multi

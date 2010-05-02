@@ -220,22 +220,3 @@ $result->filter({key1 => 'three_times'});
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 2}, {key1 => 9, key2 => 4}], "$test hash");
 
-test 'finish';
-$result = query($dbh, $sql);
-$result->fetch;
-$result->finish;
-ok(!$result->fetch, $test);
-
-test 'error'; # Cannot real test
-$result = query($dbh, $sql);
-$sth = $result->sth;
-
-@error = $result->error;
-is(scalar @error, 3, "$test list context count");
-is($error[0], $sth->errstr, "$test list context errstr");
-is($error[1], $sth->err, "$test list context err");
-is($error[2], $sth->state, "$test list context state");
-
-$error = $result->error;
-is($error, $sth->errstr, "$test scalar context");
-

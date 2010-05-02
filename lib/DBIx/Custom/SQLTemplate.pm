@@ -17,7 +17,7 @@ __PACKAGE__->dual_attr('tag_end',   default => '}', inherit => 'scalar_copy');
 
 __PACKAGE__->dual_attr('tag_syntax', inherit => 'scalar_copy');
 
-__PACKAGE__->resist_tag_processor(
+__PACKAGE__->register_tag_processor(
     '?'      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_placeholder_tag,
     '='      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
     '<>'     => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
@@ -50,7 +50,7 @@ __PACKAGE__->tag_syntax(<< 'EOS');
 EOS
 
 
-sub resist_tag_processor {
+sub register_tag_processor {
     my $invocant = shift;
     my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $invocant->tag_processors({%{$invocant->tag_processors}, %{$tag_processors}});
@@ -293,15 +293,15 @@ query has two infomation
     1. sql       : SQL
     2. key_infos : Parameter access key information
 
-=head2 resist_tag_processor
+=head2 register_tag_processor
 
 Add tag processor
     
-    $sql_tmpl = $sql_tmpl->resist_tag_processor($tag_processor);
+    $sql_tmpl = $sql_tmpl->register_tag_processor($tag_processor);
 
-The following is resist_tag_processor sample
+The following is register_tag_processor sample
 
-    $sql_tmpl->resist_tag_processor(
+    $sql_tmpl->register_tag_processor(
         '?' => sub {
             my ($tag_name, $tag_args) = @_;
             

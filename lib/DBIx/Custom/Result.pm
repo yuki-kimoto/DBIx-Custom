@@ -12,10 +12,9 @@ __PACKAGE__->attr([qw/sth filters default_filter filter/]);
 sub fetch {
     my ($self, $type) = @_;
     
-    my $sth            = $self->sth;
-    my $filters        = $self->filters || {};
-    my $default_filter = $self->default_filter || '';
-    my $filter         = $self->filter || {};
+    my $sth     = $self->{sth};
+    my $filters = $self->{filters} || {};
+    my $filter  = $self->{filter} || {};
     
     # Fetch
     my $row = $sth->fetchrow_arrayref;
@@ -28,9 +27,22 @@ sub fetch {
     
     # Filter
     for (my $i = 0; $i < @$columns; $i++) {
-        my $fname  = $filter->{$columns->[$i]} || $filters->{$default_filter} || '';
-        my $filter = $filters->{$fname};
-        $row->[$i] = $filter->($row->[$i]) if $filter;
+        my $fname  = $filter->{$columns->[$i]} || $self->{default_filter} || '';
+        
+        if ($fname) {
+            my $filter;
+            
+            if (ref $fname) {
+                $filter = $fname;
+            }
+            else {
+                croak "Filter \"$fname\" is not registered."
+                  unless exists $filters->{$fname};
+                  
+                $filter = $filters->{$fname};
+            }
+            $row->[$i] = $filter->($row->[$i]);
+        }
     }
 
     return wantarray ? @$row : $row;
@@ -39,10 +51,9 @@ sub fetch {
 sub fetch_hash {
     my $self = shift;
 
-    my $sth            = $self->sth;
-    my $filters        = $self->filters || {};
-    my $default_filter = $self->default_filter || '';
-    my $filter         = $self->filter || {};
+    my $sth            = $self->{sth};
+    my $filters        = $self->{filters} || {};
+    my $filter         = $self->{filter} || {};
     
     # Fetch
     my $row = $sth->fetchrow_arrayref;
@@ -56,11 +67,25 @@ sub fetch_hash {
     # Filter
     my $row_hash = {};
     for (my $i = 0; $i < @$columns; $i++) {
-        my $fname  = $filter->{$columns->[$i]} || $default_filter || '';
-        my $filter = $filters->{$fname};
-        $row_hash->{$columns->[$i]} = $filter
-                                    ? $filter->($row->[$i])
-                                    : $row->[$i];
+        my $fname  = $filter->{$columns->[$i]} || $self->{default_filter} || '';
+        
+        if ($fname) {
+            my $filter;
+            
+            if (ref $fname) {
+                $filter = $fname;
+            }
+            else {
+                croak "Filter \"$fname\" is not registered."
+                  unless exists $filters->{$fname};
+                  
+                $filter = $filters->{$fname};
+            }
+            $row_hash->{$columns->[$i]} = $filter->($row->[$i]);
+        }
+        else {
+            $row_hash->{$columns->[$i]} = $row->[$i];
+        }
     }
     
     return wantarray ? %$row_hash : $row_hash;
@@ -76,7 +101,7 @@ sub fetch_single {
     return unless $row;
     
     # Finish statement handle
-    $self->finish;
+    $self->sth->finish;
     
     return wantarray ? @$row : $row;
 }
@@ -91,7 +116,7 @@ sub fetch_hash_single {
     return unless $row;
     
     # Finish statement handle
-    $self->finish;
+    $self->sth->finish;
     
     return wantarray ? %$row : $row;
 }
@@ -158,17 +183,6 @@ sub fetch_hash_all {
         push @$rows, {%row};
     }
     return wantarray ? @$rows : $rows;
-}
-
-sub finish { shift->sth->finish }
-
-sub error { 
-    my $self = shift;
-    
-    # Statement handle
-    my $sth  = $self->sth;
-    
-    return wantarray ? ($sth->errstr, $sth->err, $sth->state) : $sth->errstr;
 }
 
 1;

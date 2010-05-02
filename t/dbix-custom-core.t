@@ -111,14 +111,14 @@ is_deeply($dbi->formats, {f => 3}, "$test : formats");
 isa_ok($dbi, 'DBIx::Custom');
 
 
-test 'resist_filters';
+test 'register_filters';
 $dbi = DBIx::Custom->new;
-$dbi->resist_filter(a => sub {1});
+$dbi->register_filter(a => sub {1});
 is($dbi->filters->{a}->(), 1, $test);
 
-test 'resist_formats';
+test 'register_formats';
 $dbi = DBIx::Custom->new;
-$dbi->resist_format(a => sub {1});
+$dbi->register_format(a => sub {1});
 is($dbi->formats->{a}->(), 1, $test);
 
 test 'Accessor';

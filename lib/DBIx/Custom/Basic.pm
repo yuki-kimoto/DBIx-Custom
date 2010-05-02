@@ -7,13 +7,13 @@ use base 'DBIx::Custom';
 
 use Encode qw/decode encode/;
 
-__PACKAGE__->resist_filter(
+__PACKAGE__->register_filter(
     none        => sub { $_[0] },
     encode_utf8 => sub { encode('UTF-8', $_[0]) },
     decode_utf8 => sub { decode('UTF-8', $_[0]) }
 );
 
-__PACKAGE__->resist_format(
+__PACKAGE__->register_format(
     'SQL99_date'        => '%Y-%m-%d',
     'SQL99_datetime'    => '%Y-%m-%d %H:%M:%S',
     'SQL99_time'        => '%H:%M:%S',

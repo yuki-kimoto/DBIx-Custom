@@ -29,7 +29,7 @@ __PACKAGE__->dual_attr([qw/ filters formats/],
 __PACKAGE__->attr(result_class => 'DBIx::Custom::Result');
 __PACKAGE__->attr(sql_tmpl => sub { DBIx::Custom::SQLTemplate->new });
 
-sub resist_filter {
+sub register_filter {
     my $invocant = shift;
     
     # Add filter
@@ -39,7 +39,7 @@ sub resist_filter {
     return $invocant;
 }
 
-sub resist_format{
+sub register_format{
     my $invocant = shift;
     
     # Add format
@@ -631,11 +631,12 @@ DBIx::Custom - DBI with hash bind and filtering system
 
 =head1 VERSION
 
-Version 0.1401
+Version 0.1402
 
 =cut
 
-our $VERSION = '0.1401';
+our $VERSION = '0.1402';
+$VERSION = eval $VERSION;
 
 =head1 STATE
 
@@ -653,6 +654,8 @@ This module is not stable. Method name and functionality will be change.
     # Query with parameters
     $dbi->execute("select id from books where {= author} && {like title}",
                 {author => 'ken', title => '%Perl%'});
+    
+    
     
     # Insert 
     $dbi->insert('books', {title => 'perl', author => 'Ken'});
@@ -759,7 +762,7 @@ This method is generally used to get a filter.
 
     $filter = $dbi->filters->{encode_utf8};
 
-If you add filter, use resist_filter method.
+If you add filter, use register_filter method.
 
 =head2 formats
 
@@ -772,7 +775,7 @@ This method is generally used to get a format.
 
     $filter = $dbi->formats->{datetime};
 
-If you add format, use resist_format method.
+If you add format, use register_format method.
 
 =head2 default_query_filter
 
@@ -783,7 +786,7 @@ Binding filter
 
 The following is bind filter example
     
-    $dbi->resist_filter(encode_utf8 => sub {
+    $dbi->register_filter(encode_utf8 => sub {
         my $value = shift;
         
         require Encode 'encode_utf8';
@@ -809,7 +812,7 @@ Fetching filter
 
 The following is fetch filter example
 
-    $dbi->resist_filter(decode_utf8 => sub {
+    $dbi->register_filter(decode_utf8 => sub {
         my $value = shift;
         
         require Encode 'decode_utf8';
@@ -882,15 +885,15 @@ Check if database is connected.
     
     $is_connected = $dbi->connected;
     
-=head2 resist_filter
+=head2 register_filter
 
 Resist filter
     
-    $dbi->resist_filter($fname1 => $filter1, $fname => $filter2);
+    $dbi->register_filter($fname1 => $filter1, $fname => $filter2);
     
-The following is resist_filter example
+The following is register_filter example
 
-    $dbi->resist_filter(
+    $dbi->register_filter(
         encode_utf8 => sub {
             my ($value, $key, $dbi, $infos) = @_;
             utf8::upgrade($value) unless Encode::is_utf8($value);
@@ -902,15 +905,15 @@ The following is resist_filter example
         }
     );
 
-=head2 resist_format
+=head2 register_format
 
 Add format
 
-    $dbi->resist_format($fname1 => $format, $fname2 => $format2);
+    $dbi->register_format($fname1 => $format, $fname2 => $format2);
     
-The following is resist_format example.
+The following is register_format example.
 
-    $dbi->resist_format(date => '%Y:%m:%d', datetime => '%Y-%m-%d %H:%M:%S');
+    $dbi->register_format(date => '%Y:%m:%d', datetime => '%Y-%m-%d %H:%M:%S');
 
 =head2 create_query
     
