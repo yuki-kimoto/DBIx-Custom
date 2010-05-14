@@ -234,8 +234,11 @@ sub _build_bind_values {
     my $count = {};
     foreach my $column (@{$query->columns}) {
         
+        croak "\"$column\" is not exists in params"
+          unless exists $params->{$column};
+        
         # Value
-        my $value = ref $params->{$column}
+        my $value = ref $params->{$column} eq 'ARRAY'
                   ? $params->{$column}->[$count->{$column} || 0]
                   : $params->{$column};
         
@@ -245,9 +248,21 @@ sub _build_bind_values {
         # Filter name
         my $fname = $filter->{$column} || $self->default_query_filter || '';
         
-        my $filters = $self->filters;
-        push @bind_values, $filters->{$fname}
-                         ? $filters->{$fname}->($value)
+        my $filter_func;
+        if ($fname) {
+            
+            if (ref $fname eq 'CODE') {
+                $filter_func = $fname;
+            }
+            else {
+                my $filters = $self->filters;
+                croak "Not exists filter \"$fname\"" unless exists $filters->{$fname};
+                $filter_func = $filters->{$fname};
+            }            
+        }
+        
+        push @bind_values, $filter_func
+                         ? $filter_func->($value)
                          : $value;
         
         # Count up 

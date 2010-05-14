@@ -9,29 +9,12 @@ use Carp 'croak';
 use DBIx::Custom::Query;
 use DBIx::Custom::SQLTemplate::TagProcessor;
 
-__PACKAGE__->dual_attr('tag_processors', default => sub { {} },
-                                         inherit => 'hash_copy');
+__PACKAGE__->attr('tag_processors' => sub { {} });
 
-__PACKAGE__->dual_attr('tag_start', default => '{', inherit => 'scalar_copy');
-__PACKAGE__->dual_attr('tag_end',   default => '}', inherit => 'scalar_copy');
+__PACKAGE__->attr(tag_start => '{');
+__PACKAGE__->attr(tag_end   => '}');
 
-__PACKAGE__->dual_attr('tag_syntax', inherit => 'scalar_copy');
-
-__PACKAGE__->register_tag_processor(
-    '?'      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_placeholder_tag,
-    '='      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
-    '<>'     => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
-    '>'      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
-    '<'      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
-    '>='     => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
-    '<='     => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
-    'like'   => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
-    'in'     => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_in_tag,
-    'insert' => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_insert_tag,
-    'update' => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_update_tag
-);
-
-__PACKAGE__->tag_syntax(<< 'EOS');
+__PACKAGE__->attr('tag_syntax' => <<'EOS');
 [tag]                     [expand]
 {? name}                  ?
 {= name}                  name = ?
@@ -49,12 +32,31 @@ __PACKAGE__->tag_syntax(<< 'EOS');
 {update key1 key2}    set key1 = ?, key2 = ?
 EOS
 
+sub new {
+    my $self = shift->SUPER::new;
+    
+    $self->register_tag_processor(
+        '?'      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_placeholder_tag,
+        '='      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
+        '<>'     => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
+        '>'      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
+        '<'      => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
+        '>='     => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
+        '<='     => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
+        'like'   => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_basic_tag,
+        'in'     => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_in_tag,
+        'insert' => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_insert_tag,
+        'update' => \&DBIx::Custom::SQLTemplate::TagProcessors::expand_update_tag
+    );
+    
+    return $self;
+}
 
 sub register_tag_processor {
-    my $invocant = shift;
+    my $self = shift;
     my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $invocant->tag_processors({%{$invocant->tag_processors}, %{$tag_processors}});
-    return $invocant;
+    $self->tag_processors({%{$self->tag_processors}, %{$tag_processors}});
+    return $self;
 }
 
 sub clone {
@@ -261,6 +263,8 @@ Default is '}'
 
 This class is L<Object::Simple> subclass.
 You can use all methods of L<Object::Simple>
+
+=head2 new
 
 =head2 create_query
     
