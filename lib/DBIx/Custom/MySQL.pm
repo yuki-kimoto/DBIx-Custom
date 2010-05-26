@@ -6,12 +6,6 @@ use strict;
 use base 'DBIx::Custom::Basic';
 use Carp 'croak';
 
-__PACKAGE__->register_format(
-    datetime => __PACKAGE__->formats->{SQL99_datetime},
-    date     => __PACKAGE__->formats->{SQL99_date},
-    time     => __PACKAGE__->formats->{SQL99_time},
-);
-
 sub connect {
     my $self = shift;
     
@@ -43,6 +37,8 @@ sub last_insert_id {
     
     return $last_insert_id;
 }
+
+1;
 
 =head1 NAME
 
