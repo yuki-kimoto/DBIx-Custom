@@ -389,9 +389,16 @@ $rows = $dbi->select(
     table => [qw/table1 table2/],
     column => ['table1.key1 as table1_key1', 'table2.key1 as table2_key1', 'key2', 'key3'],
     where   => {'table1.key2' => 2},
-    append  => "where table1.key1 = table2.key1"
+    relation  => {'table1.key1' => 'table2.key1'}
 )->fetch_hash_all;
-is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "$test : join");
+is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "$test : relation : exists where");
+
+$rows = $dbi->select(
+    table => [qw/table1 table2/],
+    column => ['table1.key1 as table1_key1', 'table2.key1 as table2_key1', 'key2', 'key3'],
+    relation  => {'table1.key1' => 'table2.key1'}
+)->fetch_hash_all;
+is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "$test : relation : no exists where");
 
 test 'fetch filter';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -416,3 +423,22 @@ is($dbi->filters->{decode_utf8}->(encode_utf8('あ')),
 is($dbi->filters->{encode_utf8}->('あ'),
    encode_utf8('あ'), "$test : encode_utf8");
 
+test 'transaction';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->auto_commit(0);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
+$dbi->commit;
+$result = $dbi->select(table => 'table1');
+is_deeply(scalar $result->fetch_hash_all, [{key1 => 1, key2 => 2}, {key1 => 2, key2 => 3}],
+          "$test : commit");
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->auto_commit(0);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->rollback;
+
+$result = $dbi->select(table => 'table1');
+ok(! $result->fetch_single, "$test: rollback");

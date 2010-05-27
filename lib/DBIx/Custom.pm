@@ -13,7 +13,6 @@ use DBIx::Custom::Query;
 use Encode qw/encode_utf8 decode_utf8/;
 
 __PACKAGE__->attr('dbh');
-
 __PACKAGE__->attr([qw/user password data_source/]);
 __PACKAGE__->attr([qw/default_query_filter default_fetch_filter/]);
 
@@ -40,9 +39,6 @@ sub register_filter {
 sub auto_commit {
     my $self = shift;
     
-    # Not connected
-    croak("Not yet connect to database") unless $self->connected;
-    
     if (@_) {
         
         # Set AutoCommit
@@ -52,6 +48,9 @@ sub auto_commit {
     }
     return $self->dbh->{AutoCommit};
 }
+
+sub commit   { shift->dbh->commit }
+sub rollback { shift->dbh->rollback }
 
 sub connect {
     my $proto = shift;
@@ -124,7 +123,7 @@ sub create_query {
     my $sql_template = $self->sql_template;
     
     # Get cached query
-    my $cache = $self->{_cache}->{"$template"};
+    my $cache = $self->{_cache}->{$template};
     
     # Create query
     my $query;
@@ -139,7 +138,7 @@ sub create_query {
         croak($@) if $@;
         
         $self->{_cache}->{$template} = $query
-          unless $self->{_cache};
+          unless $self->{_cache}->{$template};
     }
     
     # Prepare statement handle
@@ -457,7 +456,7 @@ sub delete_all {
 }
 
 our %VALID_SELECT_ARGS
-  = map { $_ => 1 } qw/table column where append filter/;
+  = map { $_ => 1 } qw/table column where append relation filter param/;
 
 sub select {
     my $self = shift;;
@@ -473,15 +472,17 @@ sub select {
     # Arguments
     my $tables = $args->{table} || [];
     $tables = [$tables] unless ref $tables eq 'ARRAY';
-    my $columns          = $args->{column} || [];
-    my $where_params     = $args->{where} || {};
-    my $append_statement = $args->{append} || '';
-    my $filter    = $args->{filter};
+    my $columns  = $args->{column} || [];
+    my $where    = $args->{where} || {};
+    my $relation = $args->{relation};
+    my $append   = $args->{append};
+    my $filter   = $args->{filter};
+    my $param    = $args->{param} || {};
     
     # SQL template for select statement
     my $template = 'select ';
     
-    # Join column clause
+    # Column clause
     if (@$columns) {
         foreach my $column (@$columns) {
             $template .= "$column, ";
@@ -492,17 +493,15 @@ sub select {
         $template .= '* ';
     }
     
-    # Join table
+    # Table
     $template .= 'from ';
     foreach my $table (@$tables) {
         $template .= "$table, ";
     }
     $template =~ s/, $/ /;
     
-    # Where clause keys
-    my @where_keys = keys %$where_params;
-    
-    # Join where clause
+    # Where clause
+    my @where_keys = keys %$where;
     if (@where_keys) {
         $template .= 'where ';
         foreach my $where_key (@where_keys) {
@@ -511,21 +510,20 @@ sub select {
     }
     $template =~ s/ and $//;
     
-    # Append something to last of statement
-    if ($append_statement =~ s/^where //) {
-        if (@where_keys) {
-            $template .= " and $append_statement";
-        }
-        else {
-            $template .= " where $append_statement";
+    # Relation
+    if ($relation) {
+        $template .= @where_keys ? "and " : "where ";
+        foreach my $rkey (keys %$relation) {
+            $template .= "$rkey = " . $relation->{$rkey} . " and ";
         }
     }
-    else {
-        $template .= " $append_statement";
-    }
+    $template =~ s/ and $//;
+    
+    # Append some statement
+    $template .= " $append" if $append;
     
     # Execute query
-    my $result = $self->execute($template, param  => $where_params, 
+    my $result = $self->execute($template, param  => $where, 
                                            filter => $filter);
     
     return $result;
@@ -588,6 +586,13 @@ This module is not stable. Method name and functionality will be change.
         where  => {author => 'Ken'},
         append => 'order by id limit 1',
         filter => {tilte => 'encode_utf8'}
+    );
+    
+    # Select(Join table)
+    my $result = $dbi->select(
+        table => ['books', 'rental'],
+        column => ['books.name as book_name']
+        relation => {'books.id' => 'rental.book_id'}
     );
 
     # Execute SQL
@@ -710,6 +715,26 @@ This is equal to
     $dbi->dbh->{AutoCommit} = 1;
     $auto_commit = $dbi->dbh->{AutoCommit};
 
+=head2 commit
+
+Commit.
+
+    $dbi->commit;
+
+This is equal to
+
+    $dbi->dbh->commit;
+
+=head2 rollback
+
+Rollback.
+
+    $dbi->rollback
+
+This is equal to
+
+    $dbi->dbh->rollback;
+
 =head2 connect
 
 Connect to database.
@@ -767,23 +792,19 @@ Example.
 
 =head2 create_query
     
-Create Query instance parsing SQL template
+Create the instance of L<DBIx::Custom::Query>. 
+This receive the string written by SQL template.
 
     my $query = $dbi->create_query("select * from authors where {= name} and {= age}");
 
-$query is <DBIx::Query> instance. This is executed by query method as the following
-
-    $dbi->execute($query, $params);
-
-If you know SQL template, see also L<DBIx::Custom::SQLTemplate>.
-
 =head2 execute
 
-Query
+Execute the query or the string written by SQL template.
 
-    $result = $dbi->execute($template, $params);
+    $result = $dbi->execute($query,    param => $params, filter => {%filter});
+    $result = $dbi->execute($template, param => $params, filter => {%filter});
 
-The following is query example
+Example.
 
     $result = $dbi->execute("select * from authors where {= name} and {= age}", 
                             {name => 'taro', age => 19});
@@ -792,22 +813,22 @@ The following is query example
         # do something
     }
 
-If you now syntax of template, See also L<DBIx::Custom::SQLTemplate>
+See also L<DBIx::Custom::SQLTemplate>.
 
-execute() return L<DBIx::Custom::Result> instance
+Returned value L<DBIx::Custom::Result> instance.
 
 =head2 insert
 
-Insert row
+Insert row.
 
     $affected = $dbi->insert(table  => $table, 
                              param  => {%param},
                              append => $append,
                              filter => {%filter});
 
-Retrun value is affected rows count
+Retruned value is affected rows count.
     
-Example
+Example.
 
     # insert
     $dbi->insert(table  => 'books', 
@@ -817,7 +838,7 @@ Example
 
 =head2 update
 
-Update rows
+Update rows.
 
     $affected = $dbi->update(table  => $table, 
                              param  => {%params},
@@ -825,29 +846,29 @@ Update rows
                              append => $append,
                              filter => {%filter})
 
-Retrun value is affected rows count
+Retruned value is affected rows count
 
-Example
+Example.
 
     #update
     $dbi->update(table  => 'books',
                  param  => {title => 'Perl', author => 'Taro'},
                  where  => {id => 5},
                  append => "some statement",
-                 filter => {title => 'encode_utf8'})
+                 filter => {title => 'encode_utf8'});
 
 =head2 update_all
 
-Update all rows
+Update all rows.
 
     $affected = $dbi->update_all(table  => $table, 
                                  param  => {%params},
                                  filter => {%filter},
                                  append => $append);
 
-Retrun value is affected rows count
+Retruned value is affected rows count.
 
-Example
+Example.
 
     # update_all
     $dbi->update_all(table  => 'books', 
@@ -856,17 +877,16 @@ Example
 
 =head2 delete
 
-Delete rows
+Delete rows.
 
-    # delete
     $affected = $dbi->delete(table  => $table,
                              where  => {%where},
-                             append => $append
+                             append => $append,
                              filter => {%filter});
 
 Retrun value is affected rows count
     
-Example
+Example.
 
     # delete
     $dbi->delete(table  => 'books',
@@ -876,11 +896,11 @@ Example
 
 =head2 delete_all
 
-Delete all rows
+Delete all rows.
 
     $affected = $dbi->delete_all(table => $table);
 
-Retrun value is affected rows count
+Retruned value is affected rows count.
 
 Example
     
@@ -889,19 +909,20 @@ Example
 
 =head2 select
     
-Select rows
+Select rows.
 
-    $result = $dbi->select(table  => $table,
-                           column => [@column],
-                           where  => {%where},
-                           append => $append,
-                           filter => {%filter});
+    $result = $dbi->select(table    => $table,
+                           column   => [@column],
+                           where    => {%where},
+                           append   => $append,
+                           relation => {%relation}
+                           filter   => {%filter});
 
-$reslt is L<DBIx::Custom::Result> instance
+Returned value is L<DBIx::Custom::Result> instance.
 
-The following is some select examples
+Example.
 
-    # select
+    # select * from books;
     $result = $dbi->select('books');
     
     # select * from books where title = 'Perl';
@@ -910,18 +931,17 @@ The following is some select examples
     # select title, author from books where id = 1 for update;
     $result = $dbi->select(
         table  => 'books',
-        where  => ['title', 'author'],
+        column  => ['title', 'author'],
         where  => {id => 1},
         appned => 'for update'
     );
-
-You can join multi tables
     
-    $result = $dbi->select(
-        ['table1', 'table2'],                # tables
-        ['table1.id as table1_id', 'title'], # columns (alias is ok)
-        {table1.id => 1},                    # where clase
-        "where table1.id = table2.id",       # join clause (must start 'where')
+    # select books.name as book_name from books, rental 
+    # where books.id = rental.book_id;
+    my $result = $dbi->select(
+        table => ['books', 'rental'],
+        column => ['books.name as book_name']
+        relation => {'books.id' => 'rental.book_id'}
     );
 
 =head1 AUTHOR
@@ -930,7 +950,7 @@ Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 
 Github L<http://github.com/yuki-kimoto>
 
-I develope this module L<http://github.com/yuki-kimoto/DBIx-Custom>
+I develope this module on L<http://github.com/yuki-kimoto/DBIx-Custom>
 
 =head1 COPYRIGHT & LICENSE
 

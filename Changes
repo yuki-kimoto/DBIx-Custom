@@ -1,5 +1,7 @@
 0.1502
-  update document
+  added commit method
+  added rollback method
+  changed select argument, added relation option
   moved host attribute to DBIx::Custom::MySQL
   moved port attribute to DBIx::Custom::MySQL
   moved database attribute to DBIx::Custom::MySQL and DBIx::Custom::SQLite
