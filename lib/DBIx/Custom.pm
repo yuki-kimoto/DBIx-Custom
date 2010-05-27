@@ -10,30 +10,22 @@ use DBI;
 use DBIx::Custom::Result;
 use DBIx::Custom::SQLTemplate;
 use DBIx::Custom::Query;
+use Encode qw/encode_utf8 decode_utf8/;
 
 __PACKAGE__->attr('dbh');
 
-__PACKAGE__->class_attr(_query_caches     => sub { {} });
-__PACKAGE__->class_attr(_query_cache_keys => sub { [] });
-
-__PACKAGE__->class_attr('query_cache_max', default => 50,
-                                           inherit => 'scalar_copy');
-
 __PACKAGE__->attr([qw/user password data_source/]);
-__PACKAGE__->attr([qw/database host port/]);
-__PACKAGE__->attr([qw/default_query_filter default_fetch_filter options/]);
+__PACKAGE__->attr([qw/default_query_filter default_fetch_filter/]);
 
 __PACKAGE__->dual_attr('filters', default => sub { {} },
                                   inherit => 'hash_copy');
 __PACKAGE__->register_filter(
-    encode_utf8 => sub { encode('UTF-8', $_[0]) },
-    decode_utf8 => sub { decode('UTF-8', $_[0]) }
+    encode_utf8 => sub { encode_utf8($_[0]) },
+    decode_utf8 => sub { decode_utf8($_[0]) }
 );
 
 __PACKAGE__->attr(result_class => 'DBIx::Custom::Result');
 __PACKAGE__->attr(sql_template => sub { DBIx::Custom::SQLTemplate->new });
-
-
 
 sub register_filter {
     my $invocant = shift;
@@ -71,7 +63,6 @@ sub connect {
     my $data_source = $self->data_source;
     my $user        = $self->user;
     my $password    = $self->password;
-    my $options     = $self->options;
     
     # Connect
     my $dbh = eval{DBI->connect(
@@ -82,7 +73,6 @@ sub connect {
             RaiseError => 1,
             PrintError => 0,
             AutoCommit => 1,
-            %{$options || {} }
         }
     )};
     
@@ -130,35 +120,27 @@ sub reconnect {
 sub create_query {
     my ($self, $template) = @_;
     
-    my $class = ref $self;
-    
-    if (ref $template eq 'ARRAY') {
-        $template = $template->[1];
-    }
-    
     # Create query from SQL template
     my $sql_template = $self->sql_template;
     
-    # Try to get cached query
-    my $cached_query = $class->_query_caches->{"$template"};
+    # Get cached query
+    my $cache = $self->{_cache}->{"$template"};
     
     # Create query
     my $query;
-    if ($cached_query) {
+    if ($cache) {
         $query = DBIx::Custom::Query->new(
-            sql       => $cached_query->sql,
-            columns => $cached_query->columns
+            sql       => $cache->sql,
+            columns   => $cache->columns
         );
     }
     else {
         $query = eval{$sql_template->create_query($template)};
         croak($@) if $@;
         
-        $class->_add_query_cache("$template", $query);
+        $self->{_cache}->{$template} = $query
+          unless $self->{_cache};
     }
-    
-    # Connect if not
-    $self->connect unless $self->connected;
     
     # Prepare statement handle
     my $sth = $self->dbh->prepare($query->{sql});
@@ -549,41 +531,17 @@ sub select {
     return $result;
 }
 
-sub _add_query_cache {
-    my ($class, $template, $query) = @_;
-    
-    # Query information
-    my $query_cache_keys = $class->_query_cache_keys;
-    my $query_caches     = $class->_query_caches;
-    
-    # Already cached
-    return $class if $query_caches->{$template};
-    
-    # Cache
-    $query_caches->{$template} = $query;
-    push @$query_cache_keys, $template;
-    
-    # Check cache overflow
-    my $overflow = @$query_cache_keys - $class->query_cache_max;
-    for (my $i = 0; $i < $overflow; $i++) {
-        my $template = shift @$query_cache_keys;
-        delete $query_caches->{$template};
-    }
-    
-    return $class;
-}
-
 =head1 NAME
 
-DBIx::Custom - DBI with hash bind and filtering system 
+DBIx::Custom - DBI with hash parameter binding and filtering system
 
 =head1 VERSION
 
-Version 0.1501
+Version 0.1502
 
 =cut
 
-our $VERSION = '0.1501';
+our $VERSION = '0.1502';
 $VERSION = eval $VERSION;
 
 =head1 STATE
@@ -598,23 +556,23 @@ This module is not stable. Method name and functionality will be change.
     
     # Insert 
     $dbi->insert(table  => 'books',
-                 param  => {title => 'perl', author => 'Ken'}
+                 param  => {title => 'perl', author => 'Ken'},
                  filter => {title => 'encode_utf8'});
     
     # Update 
     $dbi->update(table  => 'books', 
                  param  => {title => 'aaa', author => 'Ken'}, 
-                 where  => {id => 5}
-                 filter => {title => 'encode_utf8');
+                 where  => {id => 5},
+                 filter => {title => 'encode_utf8'});
     
     # Update all
     $dbi->update_all(table  => 'books',
-                     param  => {title => 'aaa'}
+                     param  => {title => 'aaa'},
                      filter => {title => 'encode_utf8'});
     
     # Delete
     $dbi->delete(table  => 'books',
-                 where  => {author => 'Ken'}
+                 where  => {author => 'Ken'},
                  filter => {title => 'encode_utf8'});
     
     # Delete all
@@ -625,13 +583,11 @@ This module is not stable. Method name and functionality will be change.
     
     # Select(more complex)
     my $result = $dbi->select(
-        'books',
-        {
-            columns => [qw/author title/],
-            where   => {author => 'Ken'},
-            append  => 'order by id limit 1',
-            filter  => {tilte => 'encode_utf8'}
-        }
+        table  => 'books',
+        column => [qw/author title/],
+        where  => {author => 'Ken'},
+        append => 'order by id limit 1',
+        filter => {tilte => 'encode_utf8'}
     );
 
     # Execute SQL
@@ -656,157 +612,87 @@ This module is not stable. Method name and functionality will be change.
         
     }
     
+    # DBI instance
+    my $dbh = $dbi->dbh;
     
 =head1 ATTRIBUTES
 
 =head2 user
 
-Database user name
+Database user name.
     
     $dbi  = $dbi->user('Ken');
     $user = $dbi->user;
     
 =head2 password
 
-Database password
+Database password.
     
     $dbi      = $dbi->password('lkj&le`@s');
     $password = $dbi->password;
 
 =head2 data_source
 
-Database data source
+Database data source.
     
     $dbi         = $dbi->data_source("dbi:mysql:dbname=$database");
     $data_source = $dbi->data_source;
     
 If you know data source more, See also L<DBI>.
 
-=head2 database
-
-Database name
-
-    $dbi      = $dbi->database('books');
-    $database = $dbi->database;
-
-=head2 host
-
-Host name
-
-    $dbi  = $dbi->host('somehost.com');
-    $host = $dbi->host;
-
-You can also set IP address like '127.03.45.12'.
-
-=head2 port
-
-Port number
-
-    $dbi  = $dbi->port(1198);
-    $port = $dbi->port;
-
-=head2 options
-
-DBI options
-
-    $dbi     = $dbi->options({PrintError => 0, RaiseError => 1});
-    $options = $dbi->options;
-
 =head2 sql_template
 
-SQLTemplate object
+SQLTemplate instance. sql_template attribute must be 
+the instance of L<DBIx::Cutom::SQLTemplate> subclass.
 
     $dbi          = $dbi->sql_template(DBIx::Cutom::SQLTemplate->new);
     $sql_template = $dbi->sql_template;
 
-See also L<DBIx::Custom::SQLTemplate>.
+the instance of DBIx::Cutom::SQLTemplate is set to 
+this attribute by default.
 
 =head2 filters
 
 Filters
 
-    $dbi     = $dbi->filters({filter1 => sub { }, filter2 => sub {}});
+    $dbi     = $dbi->filters({%filters});
     $filters = $dbi->filters;
-    
-This method is generally used to get a filter.
 
-    $filter = $dbi->filters->{encode_utf8};
+encode_utf8 and decode_utf8 is set to this attribute by default.
 
-If you add filter, use register_filter method.
+    $encode_utf8 = $dbi->filters->{encode_utf8};
+    $decode_utf8 = $dbi->filters->{decode_utf8};
 
 =head2 default_query_filter
 
-Default query filter
+Default query filter.
 
-    $dbi                  = $dbi->default_query_filter($default_query_filter);
+    $dbi                  = $dbi->default_query_filter('encode_utf8');
     $default_query_filter = $dbi->default_query_filter
-
-Query filter example
-    
-    $dbi->register_filter(encode_utf8 => sub {
-        my $value = shift;
-        
-        require Encode 'encode_utf8';
-        
-        return encode_utf8($value);
-    });
-    
-    $dbi->default_query_filter('encode_utf8')
-
-Bind filter arguemts is
-
-    1. $value : Value
-    3. $dbi   : DBIx::Custom instance
 
 =head2 default_fetch_filter
 
-Fetching filter
+Fetching filter.
 
-    $dbi                  = $dbi->default_fetch_filter($default_fetch_filter);
+    $dbi                  = $dbi->default_fetch_filter('decode_utf8');
     $default_fetch_filter = $dbi->default_fetch_filter;
-
-Fetch filter example
-
-    $dbi->register_filter(decode_utf8 => sub {
-        my $value = shift;
-        
-        require Encode 'decode_utf8';
-        
-        return decode_utf8($value);
-    });
-
-    $dbi->default_fetch_filter('decode_utf8');
-
-Fetching filter arguemts is
-
-    1. Value
-    2. DBIx::Custom instance
 
 =head2 result_class
 
-Resultset class
+Result class.
 
     $dbi          = $dbi->result_class('DBIx::Custom::Result');
     $result_class = $dbi->result_class;
 
-Default is L<DBIx::Custom::Result>
+L<DBIx::Custom::Result> is set to this attribute by default.
 
 =head2 dbh
 
-Database handle
+Database handle.
     
     $dbi = $dbi->dbh($dbh);
     $dbh = $dbi->dbh;
     
-=head2 query_cache_max
-
-Query cache max
-
-    $class           = DBIx::Custom->query_cache_max(50);
-    $query_cache_max = DBIx::Custom->query_cache_max;
-
-Default value is 50
-
 =head1 METHODS
 
 This class is L<Object::Simple> subclass.
@@ -814,20 +700,29 @@ You can use all methods of L<Object::Simple>
 
 =head2 auto_commit
 
-Set and Get auto commit
+Auto commit.
 
-    $self        = $dbi->auto_commit($auto_commit);
+    $self        = $dbi->auto_commit(1);
     $auto_commit = $dbi->auto_commit;
-    
+
+This is equal to
+
+    $dbi->dbh->{AutoCommit} = 1;
+    $auto_commit = $dbi->dbh->{AutoCommit};
+
 =head2 connect
 
-Connect to database
+Connect to database.
+    
+    my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=books",
+                                    user => 'ken', password => '!LFKD%$&');
 
-    $dbi->connect;
+"AutoCommit" and "RaiseError" option is true, 
+and "PrintError" option is false by dfault.
 
 =head2 disconnect
 
-Disconnect database
+Disconnect database.
 
     $dbi->disconnect;
 
@@ -835,7 +730,7 @@ If database is already disconnected, this method do nothing.
 
 =head2 reconnect
 
-Reconnect to database
+Reconnect to database.
 
     $dbi->reconnect;
 
@@ -847,11 +742,11 @@ Check if database is connected.
     
 =head2 register_filter
 
-Resister filter
+Resister filter.
     
-    $dbi->register_filter($fname1 => $filter1, $fname => $filter2);
+    $dbi->register_filter(%filters);
     
-register_filter example
+Example.
 
     $dbi->register_filter(
         encode_utf8 => sub {
@@ -872,7 +767,7 @@ register_filter example
 
 =head2 create_query
     
-Create Query object parsing SQL template
+Create Query instance parsing SQL template
 
     my $query = $dbi->create_query("select * from authors where {= name} and {= age}");
 
@@ -1028,10 +923,6 @@ You can join multi tables
         {table1.id => 1},                    # where clase
         "where table1.id = table2.id",       # join clause (must start 'where')
     );
-
-=head1 DBIx::Custom default configuration
-
-By default, "AutoCommit" and "RaiseError" is true.
 
 =head1 AUTHOR
 

@@ -35,8 +35,7 @@ my $db_file;
 my $id;
 
 test 'connect_memory';
-$dbi = DBIx::Custom::SQLite->new;
-$dbi->connect_memory;
+$dbi = DBIx::Custom::SQLite->connect(database => ':memory:');
 $ret_val = $dbi->execute($CREATE_TABLE->{0});
 ok(defined $ret_val, $test);
 $dbi->insert(table => 'table1', param => {key1 => 'a', key2 => 2});

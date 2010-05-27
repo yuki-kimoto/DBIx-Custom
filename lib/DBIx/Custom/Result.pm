@@ -10,83 +10,59 @@ use Carp 'croak';
 __PACKAGE__->attr([qw/sth filters default_filter filter/]);
 
 sub fetch {
-    my ($self, $type) = @_;
-    
-    my $sth     = $self->{sth};
-    my $filters = $self->{filters} || {};
-    my $filter  = $self->{filter} || {};
+
+    $_[0]->{filters} ||= {};
+    $_[0]->{filter}  ||= {};
     
     # Fetch
-    my $row = $sth->fetchrow_arrayref;
+    my @row = $_[0]->{sth}->fetchrow_array;
     
     # Cannot fetch
-    return unless $row;
+    return unless @row;
 
-    # Key
-    my $columns  = $sth->{NAME_lc};
-    
     # Filter
-    for (my $i = 0; $i < @$columns; $i++) {
-        my $fname  = $filter->{$columns->[$i]} || $self->{default_filter} || '';
+    for (my $i = 0; $i < @{$_[0]->{sth}->{NAME_lc}}; $i++) {
+        my $fname  = $_[0]->{filter}->{$_[0]->{sth}->{NAME_lc}->[$i]} 
+                  || $_[0]->{default_filter};
         
-        if ($fname) {
-            my $filter;
-            
-            if (ref $fname) {
-                $filter = $fname;
-            }
-            else {
-                croak "Filter \"$fname\" is not registered."
-                  unless exists $filters->{$fname};
-                  
-                $filter = $filters->{$fname};
-            }
-            $row->[$i] = $filter->($row->[$i]);
-        }
+        croak "Filter \"$fname\" is not registered."
+          if $fname && ! exists $_[0]->{filters}->{$fname};
+        
+        next unless $fname;
+        
+        $row[$i] = ref $fname
+                   ? $fname->($row[$i]) 
+                   : $_[0]->{filters}->{$fname}->($row[$i]);
     }
 
-    return wantarray ? @$row : $row;
+    return wantarray ? @row : \@row;
 }
 
 sub fetch_hash {
-    my $self = shift;
 
-    my $sth            = $self->{sth};
-    my $filters        = $self->{filters} || {};
-    my $filter         = $self->{filter} || {};
+    $_[0]->{filters} ||= {};
+    $_[0]->{filter}  ||= {};
     
     # Fetch
-    my $row = $sth->fetchrow_arrayref;
+    my $row = $_[0]->{sth}->fetchrow_arrayref;
     
     # Cannot fetch
     return unless $row;
     
-    # Keys
-    my $columns  = $sth->{NAME_lc};
-    
     # Filter
     my $row_hash = {};
-    for (my $i = 0; $i < @$columns; $i++) {
+    for (my $i = 0; $i < @{$_[0]->{sth}->{NAME_lc}}; $i++) {
         
-        my $fname  = $filter->{$columns->[$i]} || $self->{default_filter} || '';
+        my $fname  = $_[0]->{filter}->{$_[0]->{sth}->{NAME_lc}->[$i]}
+                  || $_[0]->{default_filter};
         
-        if ($fname) {
-            my $filter;
-            
-            if (ref $fname) {
-                $filter = $fname;
-            }
-            else {
-                croak "Filter \"$fname\" is not registered."
-                  unless exists $filters->{$fname};
-                  
-                $filter = $filters->{$fname};
-            }
-            $row_hash->{$columns->[$i]} = $filter->($row->[$i]);
-        }
-        else {
-            $row_hash->{$columns->[$i]} = $row->[$i];
-        }
+        croak "Filter \"$fname\" is not registered."
+          if $fname && ! exists $_[0]->{filters}->{$fname};
+        
+        $row_hash->{$_[0]->{sth}->{NAME_lc}->[$i]}
+          = !$fname    ? $row->[$i] :
+            ref $fname ? $fname->($row->[$i]) :
+            $_[0]->{filters}->{$fname}->($row->[$i]);
     }
     
     return wantarray ? %$row_hash : $row_hash;

@@ -26,7 +26,6 @@ $dbi = DBIx::Custom->new(
     database => 'a',
     password => 'b',
     data_source => 'c',
-    options => {d => 1, e => 2},
     filters => {
         f => 3,
     },
@@ -36,7 +35,7 @@ $dbi = DBIx::Custom->new(
     sql_template => $SQL_TMPL->{0},
 );
 is_deeply($dbi,{user => 'a', database => 'a', password => 'b', data_source => 'c', 
-                options => {d => 1, e => 2}, filters => {f => 3}, default_bind_filter => 'f',
+                filters => {f => 3}, default_bind_filter => 'f',
                 default_fetch_filter => 'g', result_class => 'g',
                 sql_template => $SQL_TMPL->{0}}, $test);
 isa_ok($dbi, 'DBIx::Custom');
@@ -102,8 +101,3 @@ test 'register_filters';
 $dbi = DBIx::Custom->new;
 $dbi->register_filter(a => sub {1});
 is($dbi->filters->{a}->(), 1, $test);
-
-test 'Accessor';
-$dbi = DBIx::Custom->new;
-$dbi->options({opt1 => 1, opt2 => 2});
-is_deeply(scalar $dbi->options, {opt1 => 1, opt2 => 2}, "$test : options");

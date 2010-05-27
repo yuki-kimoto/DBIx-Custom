@@ -339,8 +339,6 @@ $dbi->delete(table => 'table1', where => {key1 => 1, key2 => 2});
 $rows = $dbi->select(table => 'table1')->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : delete multi key");
 
-__END__
-
 test 'delete error';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -368,20 +366,20 @@ $rows = $dbi->select(table => 'table1')->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2},
                   {key1 => 3, key2 => 4}], "$test : table");
 
-$rows = $dbi->select(table => 'table1', columns => ['key1'])->fetch_hash_all;
+$rows = $dbi->select(table => 'table1', column => ['key1'])->fetch_hash_all;
 is_deeply($rows, [{key1 => 1}, {key1 => 3}], "$test : table and columns and where key");
 
 $rows = $dbi->select(table => 'table1', where => {key1 => 1})->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : table and columns and where key");
 
-$rows = $dbi->select(table => 'table1', columns => ['key1'], where => {key1 => 3})->fetch_hash_all;
+$rows = $dbi->select(table => 'table1', column => ['key1'], where => {key1 => 3})->fetch_hash_all;
 is_deeply($rows, [{key1 => 3}], "$test : table and columns and where key");
 
 $rows = $dbi->select(table => 'table1', append => "order by key1 desc limit 1")->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : append statement");
 
 $dbi->register_filter(decrement => sub { $_[0] - 1 });
-$rows = $dbi->select(table => 'table1', {where => {key1 => 2}, filter => {key1 => 'decrement'})
+$rows = $dbi->select(table => 'table1', where => {key1 => 2}, filter => {key1 => 'decrement'})
             ->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : filter");
 
@@ -389,56 +387,11 @@ $dbi->execute($CREATE_TABLE->{2});
 $dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
 $rows = $dbi->select(
     table => [qw/table1 table2/],
-    columns => ['table1.key1 as table1_key1', 'table2.key1 as table2_key1', 'key2', 'key3'],
+    column => ['table1.key1 as table1_key1', 'table2.key1 as table2_key1', 'key2', 'key3'],
     where   => {'table1.key2' => 2},
     append  => "where table1.key1 = table2.key1"
 )->fetch_hash_all;
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "$test : join");
-
-test 'Cache';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-DBIx::Custom->query_cache_max(2);
-$dbi->execute($CREATE_TABLE->{0});
-delete $DBIx::Custom::CLASS_ATTRS->{_query_caches};
-delete $DBIx::Custom::CLASS_ATTRS->{_query_cache_keys};
-$tmpls[0] = "insert into table1 {insert key1 key2}";
-$queries[0] = $dbi->create_query($tmpls[0]);
-is(DBIx::Custom->_query_caches->{$tmpls[0]}{sql}, $queries[0]->sql, "$test : sql first");
-is(DBIx::Custom->_query_caches->{$tmpls[0]}{columns}, $queries[0]->columns, "$test : columns first");
-is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls], "$test : cache key first");
-
-$tmpls[1] = "select * from table1";
-$queries[1] = $dbi->create_query($tmpls[1]);
-is(DBIx::Custom->_query_caches->{$tmpls[0]}{sql}, $queries[0]->sql, "$test : sql first");
-is(DBIx::Custom->_query_caches->{$tmpls[0]}{columns}, $queries[0]->columns, "$test : columns first");
-is(DBIx::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql second");
-is(DBIx::Custom->_query_caches->{$tmpls[1]}{columns}, $queries[1]->columns, "$test : columns second");
-is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls], "$test : cache key second");
-
-$tmpls[2] = "select key1, key2 from table1";
-$queries[2] = $dbi->create_query($tmpls[2]);
-ok(!exists DBIx::Custom->_query_caches->{$tmpls[0]}, "$test : cache overflow deleted key");
-is(DBIx::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql cache overflow deleted key");
-is(DBIx::Custom->_query_caches->{$tmpls[1]}{columns}, $queries[1]->columns, "$test : columns cache overflow deleted key");
-is(DBIx::Custom->_query_caches->{$tmpls[2]}{sql}, $queries[2]->sql, "$test : sql cache overflow deleted key");
-is(DBIx::Custom->_query_caches->{$tmpls[2]}{columns}, $queries[2]->columns, "$test : columns cache overflow deleted key");
-is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls[1, 2]], "$test : cache key third");
-
-$queries[1] = $dbi->create_query($tmpls[1]);
-ok(!exists DBIx::Custom->_query_caches->{$tmpls[0]}, "$test : cache overflow deleted key");
-is(DBIx::Custom->_query_caches->{$tmpls[1]}{sql}, $queries[1]->sql, "$test : sql cache overflow deleted key");
-is_deeply(DBIx::Custom->_query_caches->{$tmpls[1]}{columns}, $queries[1]->columns, "$test : columns cache overflow deleted key");
-is(DBIx::Custom->_query_caches->{$tmpls[2]}{sql}, $queries[2]->sql, "$test : sql cache overflow deleted key");
-is_deeply(DBIx::Custom->_query_caches->{$tmpls[2]}{columns}, $queries[2]->columns, "$test : columns cache overflow deleted key");
-is_deeply(DBIx::Custom->_query_cache_keys, [@tmpls[1, 2]], "$test : cache key third");
-
-$query = $dbi->create_query($tmpls[0]);
-$query->filter('aaa');
-$query = $dbi->create_query($tmpls[0]);
-ok(!$query->filter, "$test : only cached sql and columns");
-$query->filter('bbb');
-$query = $dbi->create_query($tmpls[0]);
-ok(!$query->filter, "$test : only cached sql and columns");
 
 test 'fetch filter';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -457,8 +410,8 @@ is_deeply($row, {key1 => 3, key2 => 4}, "$test: default_fetch_filter and filter"
 test 'filters';
 $dbi = DBIx::Custom->new;
 
-ok($dbi->filters->{decode_utf8}->(encode_utf8('あ')),
-   'あ', "$test : decode_utf8;);
+is($dbi->filters->{decode_utf8}->(encode_utf8('あ')),
+   'あ', "$test : decode_utf8");
 
 is($dbi->filters->{encode_utf8}->('あ'),
    encode_utf8('あ'), "$test : encode_utf8");

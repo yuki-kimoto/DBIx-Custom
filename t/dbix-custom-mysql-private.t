@@ -44,4 +44,9 @@ $dbi = $CLASS->new(user => $USER, password => $PASSWORD,
 $dbi->connect;
 is(ref $dbi->dbh, 'DBI::db', $test);
 
-
+test 'attributes';
+$dbi = DBIx::Custom::MySQL->new;
+$dbi->host('a');
+is($dbi->host, 'a', "$test: host");
+$dbi->port('b');
+is($dbi->port, 'b', "$test: port");

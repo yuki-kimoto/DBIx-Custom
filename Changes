@@ -1,3 +1,22 @@
+0.1502
+  update document
+  moved host attribute to DBIx::Custom::MySQL
+  moved port attribute to DBIx::Custom::MySQL
+  moved database attribute to DBIx::Custom::MySQL and DBIx::Custom::SQLite
+  
+0.1501
+  removed register_format()
+  removed formats()
+  removed run_transaction()
+  removed create_table()
+  removed drop_table()
+  changed select() arguments
+  changed insert() arguments
+  changed update() arguments
+  changed update_all() arguments
+  changed delete() arguments
+  changed delete_all() arguments
+  changed execute() arguments
 0.1402
   remove finish(), error()
   can receive code ref to filter()

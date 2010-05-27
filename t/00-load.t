@@ -1,10 +1,9 @@
 #!perl -T
 
-use Test::More tests => 7;
+use Test::More tests => 6;
 
 BEGIN {
 	use_ok( 'DBIx::Custom' );
-	use_ok( 'DBIx::Custom::Basic' );
 	use_ok( 'DBIx::Custom::MySQL' );
 	use_ok( 'DBIx::Custom::Query' );
 	use_ok( 'DBIx::Custom::Result' );

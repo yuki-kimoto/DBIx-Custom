@@ -12,7 +12,7 @@ plan 'no_plan';
 use DBIx::Custom;
 use Scalar::Util 'blessed';
 {
-    my $dbi = DBIx::Custom->new(
+    my $dbi = DBIx::Custom->connect(
         user => $USER,
         password => $PASSWORD,
         data_source => "dbi:mysql:dbname=$DATABASE"

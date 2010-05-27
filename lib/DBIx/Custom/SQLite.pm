@@ -3,11 +3,17 @@ package DBIx::Custom::SQLite;
 use strict;
 use warnings;
 
-use base 'DBIx::Custom::Basic';
+use base 'DBIx::Custom';
+
 use Carp 'croak';
 
+__PACKAGE__->attr('database');
+
 sub connect {
-    my $self = shift;
+    my $proto = shift;
+    
+    # Create
+    my $self = ref $proto ? $proto : $proto->new(@_);
     
     # Create data source
     if (!$self->data_source && (my $database = $self->database)) {
@@ -60,28 +66,46 @@ sub last_insert_rowid {
 
 =head1 NAME
 
-DBIx::Custom::SQLite - DBIx::Custom SQLite implementation
+DBIx::Custom::SQLite - a SQLite implementation of DBIx::Custom
 
 =head1 SYNOPSYS
 
     use DBIx::Custom::SQLite;
     
-    # New
-    my $dbi = DBIx::Custom::SQLite->new(user => 'taro', $password => 'kl&@K',
-                                        database => 'sample');
+    # Connect
+    my $dbi = DBIx::Custom::SQLite->connect(user      => 'taro', 
+                                            password => 'kl&@K',
+                                            database  => 'your_database');
     
     # Connect memory database
-    my $dbi->connect_memory;
+    my $dbi = DBIx::Custom::SQLite->connect_memory;
     
+    # Reconnect memory database
+    $dbi->reconnect_memory;
+    
+    # Last insert row ID
+    my $id = $dbi->last_insert_rowid;
+    
+=head1 ATTRIBUTES
+
+This class is L<DBIx::Custom> subclass.
+You can use all attributes of L<DBIx::Custom>.
+
+=head2 database
+
+Database name
+
+    $dbi      = $dbi->database('your_database');
+    $database = $dbi->database;
 
 =head1 METHODS
 
-This class is L<DBIx::Custom::Basic> subclass.
-You can use all methods of L<DBIx::Custom::Basic>
+This class is L<DBIx::Custom> subclass.
+You can use all methods of L<DBIx::Custom>.
 
-=head2 connect
+=head2 connect - overridden
 
-Connect to database
+Connect to database.
 
     $dbi->connect;
 
@@ -89,29 +113,22 @@ If you set database, host, or port, data source is automatically created.
 
 =head2 connect_memory
 
-Connect memory database
+Connect memory database.
 
     $dbi->connect_memory;
 
 =head2 reconnect_memory
 
-Reconnect to memory databsse
+Reconnect to memory databsse.
 
     $dbi->reconnect_memory;
 
 =head2 last_insert_rowid
 
-Get last insert id
+Last insert row ID.
 
     $last_insert_rowid = $dbi->last_insert_rowid;
     
-The folloing is last_insert_rowid sample.
-
-    $dbi->insert('books', {title => 'Perl', author => 'taro'});
-    $last_insert_rowid = $dbi->last_insert_rowid;
-
-This is equal to SQLite function
-
-    last_insert_rowid()
+This is equal to SQLite last_insert_rowid() function.
 
 =cut
