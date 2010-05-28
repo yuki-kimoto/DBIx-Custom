@@ -20,19 +20,19 @@ DBIx::Custom::Query - query used by DBIx::Custom
     
 =head1 ATTRIBUTES
 
-=head2 sth
-
-Statement handle.
-
-    $query = $query->sth($sth);
-    $sth   = $query->sth;
-
 =head2 sql
 
 SQL statement.
 
     $query = $query->sql($sql);
     $sql   = $query->sql;
+
+=head2 columns
+
+Column names.
+
+    $query   = $query->columns([@columns]);
+    $columns = $query->columns;
 
 =head2 default_filter
 
@@ -48,12 +48,12 @@ Filter.
     $query  = $query->filter({%filter});
     $filter = $query->filter;
 
-=head2 columns
+=head2 sth
 
-Column names.
+Statement handle.
 
-    $query   = $query->columns([@columns]);
-    $columns = $query->columns;
+    $query = $query->sth($sth);
+    $sth   = $query->sth;
 
 =head1 METHODS
 

@@ -59,18 +59,6 @@ sub register_tag_processor {
     return $self;
 }
 
-sub clone {
-    my $self = shift;
-    my $new = $self->new;
-    
-    $new->tag_start($self->tag_start);
-    $new->tag_end($self->tag_end);
-    $new->tag_syntax($self->tag_syntax);
-    $new->tag_processors({%{$self->tag_processors || {}}});
-    
-    return $new;
-}
-
 sub create_query {
     my ($self, $template)  = @_;
     

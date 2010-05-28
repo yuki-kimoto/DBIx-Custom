@@ -42,19 +42,6 @@ $dbi->insert(table => 'table1', param => {key1 => 'a', key2 => 2});
 $rows = $dbi->select(table => 'table1', where => {key1 => 'a'})->fetch_hash_all;
 is_deeply($rows, [{key1 => 'a', key2 => 2}], "$test : select rows");
 
-test 'connect_memory error';
-eval{$dbi->connect_memory};
-like($@, qr/Already connected/, "$test : already connected");
-
-test 'reconnect_memory';
-$dbi = DBIx::Custom::SQLite->new;
-$dbi->reconnect_memory;
-$ret_val = $dbi->execute($CREATE_TABLE->{0});
-ok(defined $ret_val, "$test : connect first");
-$dbi->reconnect_memory;
-$ret_val = $dbi->execute($CREATE_TABLE->{2});
-ok(defined $ret_val, "$test : connect first");
-
 test 'connect';
 $db_file  = 't/test.db';
 unlink $db_file if -f $db_file;

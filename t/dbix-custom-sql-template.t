@@ -16,7 +16,6 @@ my $datas;
 my $sql_tmpl;
 my $query;
 my $ret_val;
-my $clone;
 
 test "Various template pattern";
 $datas = [
@@ -152,26 +151,4 @@ $sql_tmpl
   ->tag_end(']')
   ->tag_syntax('syntax')
   ->tag_processors({a => 1, b => 2});
-
-$clone = $sql_tmpl->clone;
-is($clone->tag_start, $sql_tmpl->tag_start, "$test : tag_start");
-is($clone->tag_end, $sql_tmpl->tag_end, "$test : tag_end");
-is($clone->tag_syntax, $sql_tmpl->tag_syntax, "$test : tag_syntax");
-
-is_deeply( scalar $clone->tag_processors, scalar $sql_tmpl->tag_processors,
-          "$test : tag_processors deep clone");
-
-isnt($clone->tag_processors, $sql_tmpl->tag_processors, 
-     "$test : tag_processors reference not copy");
-
-$sql_tmpl->tag_processors(undef);
-
-$clone = $sql_tmpl->clone;
-is_deeply(scalar $clone->tag_processors, {}, "$test tag_processor undef copy");
-
-
-
-__END__
-
-
 

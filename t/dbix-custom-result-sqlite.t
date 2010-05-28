@@ -53,14 +53,6 @@ while (my $row = $result->fetch) {
 is_deeply(\@rows, [[1, 2], [3, 4]], $test);
 
 
-test 'fetch list context';
-$result = query($dbh, $sql);
-@rows = ();
-while (my @row = $result->fetch) {
-    push @rows, [@row];
-}
-is_deeply(\@rows, [[1, 2], [3, 4]], $test);
-
 test 'fetch_hash scalar context';
 $result = query($dbh, $sql);
 @rows = ();
@@ -70,45 +62,20 @@ while (my $row = $result->fetch_hash) {
 is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], $test);
 
 
-test 'fetch hash list context';
+test 'fetch_first';
 $result = query($dbh, $sql);
-@rows = ();
-while (my %row = $result->fetch_hash) {
-    push @rows, {%row};
-}
-is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], $test);
-
-
-test 'fetch_single';
-$result = query($dbh, $sql);
-$row = $result->fetch_single;
+$row = $result->fetch_first;
 is_deeply($row, [1, 2], "$test : row");
 $row = $result->fetch;
 ok(!$row, "$test : finished");
 
 
-test 'fetch_single list context';
+test 'fetch_hash_first';
 $result = query($dbh, $sql);
-@row = $result->fetch_single;
-is_deeply([@row], [1, 2], "$test : row");
-@row = $result->fetch;
-ok(!@row, "$test : finished");
-
-
-test 'fetch_hash_single';
-$result = query($dbh, $sql);
-$row = $result->fetch_hash_single;
+$row = $result->fetch_hash_first;
 is_deeply($row, {key1 => 1, key2 => 2}, "$test : row");
 $row = $result->fetch_hash;
 ok(!$row, "$test : finished");
-
-
-test 'fetch_hash_single list context';
-$result = query($dbh, $sql);
-@row = $result->fetch_hash_single;
-is_deeply({@row}, {key1 => 1, key2 => 2}, "$test : row");
-@row = $result->fetch_hash;
-ok(!@row, "$test : finished");
 
 
 test 'fetch_multi';
@@ -126,20 +93,6 @@ $rows = $result->fetch_multi(2);
 is_deeply($rows, [[9, 10]], "$test : fetch_multi third");
 $rows = $result->fetch_multi(2);
 ok(!$rows);
-
-
-test 'fetch_multi list context';
-$result = query($dbh, $sql);
-@rows = $result->fetch_multi(2);
-is_deeply([@rows], [[1, 2],
-                  [3, 4]], "$test : fetch_multi first");
-@rows = $result->fetch_multi(2);
-is_deeply([@rows], [[5, 6],
-                  [7, 8]], "$test : fetch_multi secound");
-@rows = $result->fetch_multi(2);
-is_deeply([@rows], [[9, 10]], "$test : fetch_multi third");
-@rows = $result->fetch_multi(2);
-ok(!@rows);
 
 
 test 'fetch_multi error';
@@ -162,48 +115,24 @@ $rows = $result->fetch_hash_multi(2);
 ok(!$rows);
 
 
-test 'fetch_multi list context';
-$result = query($dbh, $sql);
-@rows = $result->fetch_hash_multi(2);
-is_deeply([@rows], [{key1 => 1, key2 => 2},
-                    {key1 => 3, key2 => 4}], "$test : fetch_multi first");
-@rows = $result->fetch_hash_multi(2);
-is_deeply([@rows], [{key1 => 5, key2 => 6},
-                    {key1 => 7, key2 => 8}], "$test : fetch_multi secound");
-@rows = $result->fetch_hash_multi(2);
-is_deeply([@rows], [{key1 => 9, key2 => 10}], "$test : fetch_multi third");
-@rows = $result->fetch_hash_multi(2);
-ok(!@rows);
-$dbh->do("delete from table1 where key1 = 5 or key1 = 7 or key1 = 9");
-
-
 test 'fetch_multi error';
 $result = query($dbh, $sql);
 eval {$result->fetch_hash_multi};
 like($@, qr/Row count must be specified/, "$test : Not specified row count");
 
+$dbh->do('delete from table1');
+$dbh->do("insert into table1 (key1, key2) values ('1', '2');");
+$dbh->do("insert into table1 (key1, key2) values ('3', '4');");
 
 test 'fetch_all';
 $result = query($dbh, $sql);
 $rows = $result->fetch_all;
 is_deeply($rows, [[1, 2], [3, 4]], $test);
 
-test 'fetch_all list context';
-$result = query($dbh, $sql);
-@rows = $result->fetch_all;
-is_deeply(\@rows, [[1, 2], [3, 4]], $test);
-
-
 test 'fetch_hash_all';
 $result = query($dbh, $sql);
-@rows = $result->fetch_hash_all;
-is_deeply($rows, [[1, 2], [3, 4]], $test);
-
-
-test 'fetch_hash_all list context';
-$result = query($dbh, $sql);
-@rows = $result->fetch_all;
-is_deeply(\@rows, [[1, 2], [3, 4]], $test);
+$rows = $result->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], $test);
 
 
 test 'fetch filter';

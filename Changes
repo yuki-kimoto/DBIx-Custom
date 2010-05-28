@@ -1,3 +1,10 @@
+0.1503
+  removed reconnect method
+  removed connected method
+  removed reconnect_memroy method
+  renamed fetch_single to fetch_first
+  renamed fetch_hash_single to fetch_hash_first
+  updated document
 0.1502
   added commit method
   added rollback method
@@ -5,7 +12,6 @@
   moved host attribute to DBIx::Custom::MySQL
   moved port attribute to DBIx::Custom::MySQL
   moved database attribute to DBIx::Custom::MySQL and DBIx::Custom::SQLite
-  
 0.1501
   removed register_format()
   removed formats()

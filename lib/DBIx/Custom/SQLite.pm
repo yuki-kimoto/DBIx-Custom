@@ -29,38 +29,13 @@ sub connect_memory {
     # Data source for memory database
     $self->data_source('dbi:SQLite:dbname=:memory:');
     
-    # Already connected
-    croak("Already connected") if $self->connected;
-    
     # Connect
     $self->connect;
     
     return $self;
 }
 
-sub reconnect_memory {
-    my $self = shift;
-
-    # Data source for memory database
-    $self->data_source('dbi:SQLite:dbname=:memory:');
-    
-    # Reconnect
-    $self->reconnect;
-    
-    return $self;
-}
-
-sub last_insert_rowid {
-    my $self = shift;
-    
-    # Not connected
-    croak "Not yet connected" unless $self->connected;
-    
-    # Get last insert row id
-    my $last_insert_rowid = $self->dbh->func('last_insert_rowid');
-    
-    return $last_insert_rowid;
-}
+sub last_insert_rowid { shift->dbh->func('last_insert_rowid') }
 
 1;
 
@@ -79,9 +54,6 @@ DBIx::Custom::SQLite - a SQLite implementation of DBIx::Custom
     
     # Connect memory database
     my $dbi = DBIx::Custom::SQLite->connect_memory;
-    
-    # Reconnect memory database
-    $dbi->reconnect_memory;
     
     # Last insert row ID
     my $id = $dbi->last_insert_rowid;
@@ -116,12 +88,6 @@ If you set database, host, or port, data source is automatically created.
 Connect memory database.
 
     $dbi->connect_memory;
-
-=head2 reconnect_memory
-
-Reconnect to memory databsse.
-
-    $dbi->reconnect_memory;
 
 =head2 last_insert_rowid
 

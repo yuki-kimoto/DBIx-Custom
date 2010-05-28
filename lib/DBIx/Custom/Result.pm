@@ -35,7 +35,54 @@ sub fetch {
                    : $_[0]->{filters}->{$fname}->($row[$i]);
     }
 
-    return wantarray ? @row : \@row;
+    return \@row;
+}
+
+sub fetch_first {
+    my $self = shift;
+    
+    # Fetch
+    my $row = $self->fetch;
+    
+    # Not exist
+    return unless $row;
+    
+    # Finish statement handle
+    $self->sth->finish;
+    
+    return $row;
+}
+
+sub fetch_multi {
+    my ($self, $count) = @_;
+    
+    # Not specified Row count
+    croak("Row count must be specified")
+      unless $count;
+    
+    # Fetch multi rows
+    my $rows = [];
+    for (my $i = 0; $i < $count; $i++) {
+        my $row = $self->fetch;
+        
+        last unless $row;
+        
+        push @$rows, $row;
+    }
+    
+    return unless @$rows;
+    return $rows;
+}
+
+sub fetch_all {
+    my $self = shift;
+    
+    # Fetch all rows
+    my $rows = [];
+    while(my $row = $self->fetch) {
+        push @$rows, $row;
+    }
+    return $rows;
 }
 
 sub fetch_hash {
@@ -65,25 +112,10 @@ sub fetch_hash {
             $_[0]->{filters}->{$fname}->($row->[$i]);
     }
     
-    return wantarray ? %$row_hash : $row_hash;
+    return $row_hash;
 }
 
-sub fetch_single {
-    my $self = shift;
-    
-    # Fetch
-    my $row = $self->fetch;
-    
-    # Not exist
-    return unless $row;
-    
-    # Finish statement handle
-    $self->sth->finish;
-    
-    return wantarray ? @$row : $row;
-}
-
-sub fetch_hash_single {
+sub fetch_hash_first {
     my $self = shift;
     
     # Fetch hash
@@ -95,28 +127,7 @@ sub fetch_hash_single {
     # Finish statement handle
     $self->sth->finish;
     
-    return wantarray ? %$row : $row;
-}
-
-sub fetch_multi {
-    my ($self, $count) = @_;
-    
-    # Not specified Row count
-    croak("Row count must be specified")
-      unless $count;
-    
-    # Fetch multi rows
-    my $rows = [];
-    for (my $i = 0; $i < $count; $i++) {
-        my @row = $self->fetch;
-        
-        last unless @row;
-        
-        push @$rows, \@row;
-    }
-    
-    return unless @$rows;
-    return wantarray ? @$rows : $rows;
+    return $row;
 }
 
 sub fetch_hash_multi {
@@ -129,26 +140,15 @@ sub fetch_hash_multi {
     # Fetch multi rows
     my $rows = [];
     for (my $i = 0; $i < $count; $i++) {
-        my %row = $self->fetch_hash;
+        my $row = $self->fetch_hash;
         
-        last unless %row;
+        last unless $row;
         
-        push @$rows, \%row;
+        push @$rows, $row;
     }
     
     return unless @$rows;
-    return wantarray ? @$rows : $rows;
-}
-
-sub fetch_all {
-    my $self = shift;
-    
-    # Fetch all rows
-    my $rows = [];
-    while(my @row = $self->fetch) {
-        push @$rows, [@row];
-    }
-    return wantarray ? @$rows : $rows;
+    return $rows;
 }
 
 sub fetch_hash_all {
@@ -156,10 +156,10 @@ sub fetch_hash_all {
     
     # Fetch all rows as hash
     my $rows = [];
-    while(my %row = $self->fetch_hash) {
-        push @$rows, {%row};
+    while(my $row = $self->fetch_hash) {
+        push @$rows, $row;
     }
-    return wantarray ? @$rows : $rows;
+    return $rows;
 }
 
 1;
@@ -169,177 +169,151 @@ sub fetch_hash_all {
 DBIx::Custom::Result - DBIx::Custom Resultset
 
 =head1 SYNOPSIS
-
-    my $result = $dbi->execute($query);
     
-    # Fetch
-    while (my @row = $result->fetch) {
-        # Do something
+    # Result
+    my $result = $dbi->select(table => 'books');
+    
+    # Fetch a row into array
+    while (my $row = $result->fetch) {
+        my $value1 = $row->[0];
+        my $valuu2 = $row->[1];
+        
+        # do something
     }
     
-    # Fetch hash
-    while (my %row = $result->fetch_hash) {
-        # Do something
+    # Fetch only first row into array
+    my $row = $result->fetch_first;
+    
+    # Fetch multiple rows into array of array
+    while (my $rows = $result->fetch_multi(5)) {
+        # do something
     }
+    
+    # Fetch all rows into array of array
+    my $rows = $result->fetch_all;
+    
+    # Fetch hash into hash
+    while (my $row = $result->fetch_hash) {
+        my $value1 = $row->{title};
+        my $value2 = $row->{author};
+        
+        # do something
+    }
+    
+    # Fetch only first row into hash
+    my $row = $result->fetch_hash_first;
+    
+    # Fetch multiple rows into array of hash
+    while (my $rows = $result->fetch_hash_multi) {
+        # do something
+    }
+    
+    # Fetch all rows into array of hash
+    my $rows = $result->fetch_hash_all;
 
 =head1 ATTRIBUTES
 
 =head2 sth
 
-Statement handle
+Statement handle.
 
     $result = $result->sth($sth);
     $sth    = $reuslt->sth
     
 =head2 default_filter
 
-Filter excuted when data is fetched
+Default filter.
 
-    $result         = $result->default_filter($default_filter);
+    $result         = $result->default_filter('decode_utf8');
     $default_filter = $result->default_filter;
 
 =head2 filter
 
-Filter excuted when data is fetched
+Filter
 
-    $result   = $result->filter($sth);
-    $filter   = $result->filter;
+    $result = $result->filter({title => 'decode_utf8'});
+    $filter = $result->filter;
 
 =head1 METHODS
 
 This class is L<Object::Simple> subclass.
 You can use all methods of L<Object::Simple>
 
-=head2 new
-
-    my $result = DBIx::Custom::Result->new;
-
 =head2 fetch
 
-Fetch a row
+Fetch a row into array
 
-    $row = $result->fetch; # array reference
-    @row = $result->fecth; # array
+    $row = $result->fetch;
 
-The following is fetch sample
+Example:
 
     while (my $row = $result->fetch) {
         # do something
-        my $val1 = $row->[0];
-        my $val2 = $row->[1];
+        my $value1 = $row->[0];
+        my $value2 = $row->[1];
     }
 
-=head2 fetch_hash
+=head2 fetch_first
 
-Fetch row as hash
+Fetch only first row into array and finish statment handle.
 
-    $row = $result->fetch_hash; # hash reference
-    %row = $result->fetch_hash; # hash
-
-The following is fetch_hash sample
-
-    while (my $row = $result->fetch_hash) {
-        # do something
-        my $val1 = $row->{key1};
-        my $val2 = $row->{key2};
-    }
-
-=head2 fetch_single
-
-Fetch only first row(Scalar context)
-
-    $row = $result->fetch_single; # array reference
-    @row = $result->fetch_single; # array
-    
-The following is fetch_single sample
-
-    $row = $result->fetch_single;
-    
-This method fetch only first row and finish statement handle
-
-=head2 fetch_hash_single
-    
-Fetch only first row as hash
-
-    $row = $result->fetch_hash_single; # hash reference
-    %row = $result->fetch_hash_single; # hash
-    
-The following is fetch_hash_single sample
-
-    $row = $result->fetch_hash_single;
-    
-This method fetch only single row and finish statement handle
+    $row = $result->fetch_first;
 
 =head2 fetch_multi
 
-Fetch rows
+Fetch multiple rows into array of array.
 
-    $rows = $result->fetch_multi($row_count); # array ref of array ref
-    @rows = $result->fetch_multi($row_count); # array of array ref
+    $rows = $result->fetch_multi($count);
     
-The following is fetch_multi sample
+Example:
 
     while(my $rows = $result->fetch_multi(10)) {
         # do someting
     }
 
+=head2 fetch_all
+
+Fetch all rows into array of array.
+
+    $rows = $result->fetch_all;
+
+=head2 fetch_hash
+
+Fetch a row into hash
+
+    $row = $result->fetch_hash;
+
+Example:
+
+    while (my $row = $result->fetch_hash) {
+        my $val1 = $row->{title};
+        my $val2 = $row->{author};
+        
+        # do something
+    }
+
+=head2 fetch_hash_first
+    
+Fetch only first row into hash and finish statment handle.
+
+    $row = $result->fetch_hash_first;
+
 =head2 fetch_hash_multi
 
-Fetch rows as hash
+Fetch multiple rows into array of hash
 
-    $rows = $result->fetch_hash_multi($row_count); # array ref of hash ref
-    @rows = $result->fetch_hash_multi($row_count); # array of hash ref
+    $rows = $result->fetch_hash_multi($count);
     
-The following is fetch_hash_multi sample
+Example:
 
     while(my $rows = $result->fetch_hash_multi(10)) {
         # do someting
     }
 
-=head2 fetch_all
-
-Fetch all rows
-
-    $rows = $result->fetch_all; # array ref of array ref
-    @rows = $result->fecth_all; # array of array ref
-
-The following is fetch_all sample
-
-    my $rows = $result->fetch_all;
-
 =head2 fetch_hash_all
 
-Fetch all row as array ref of hash ref (Scalar context)
+Fetch all rows into array of hash.
 
-    $rows = $result->fetch_hash_all; # array ref of hash ref
-    @rows = $result->fecth_all_hash; # array of hash ref
-
-The following is fetch_hash_all sample
-
-    my $rows = $result->fetch_hash_all;
-
-=head2 error
-
-Get error infomation
-
-    $error_messege = $result->error;
-    ($error_message, $error_number, $error_state) = $result->error;
-    
-
-You can get get information. This is same as the following.
-
-    $error_message : $result->sth->errstr
-    $error_number  : $result->sth->err
-    $error_state   : $result->sth->state
-
-=head2 finish
-
-Finish statement handle
-
-    $result->finish
-
-This is equel to
-
-    $result->sth->finish;
+    $rows = $result->fetch_hash_all;
 
 =cut

@@ -68,10 +68,6 @@ $dbi->disconnect;
 ok(!$dbi->dbh, $test);
 
 
-test 'connected';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-ok($dbi->connected, "$test : connected");
-
 # Prepare table
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -87,45 +83,22 @@ $result = $dbi->execute($query);
 while (my $row = $result->fetch) {
     push @rows, [@$row];
 }
-is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch scalar context");
-
-$result = $dbi->execute($query);
-@rows = ();
-while (my @row = $result->fetch) {
-    push @rows, [@row];
-}
-is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch list context");
+is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch");
 
 $result = $dbi->execute($query);
 @rows = ();
 while (my $row = $result->fetch_hash) {
     push @rows, {%$row};
 }
-is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : fetch_hash scalar context");
-
-$result = $dbi->execute($query);
-@rows = ();
-while (my %row = $result->fetch_hash) {
-    push @rows, {%row};
-}
-is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : fetch hash list context");
+is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : fetch_hash");
 
 $result = $dbi->execute($query);
 $rows = $result->fetch_all;
-is_deeply($rows, [[1, 2], [3, 4]], "$test : fetch_all scalar context");
+is_deeply($rows, [[1, 2], [3, 4]], "$test : fetch_all");
 
 $result = $dbi->execute($query);
-@rows = $result->fetch_all;
-is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch_all list context");
-
-$result = $dbi->execute($query);
-@rows = $result->fetch_hash_all;
-is_deeply($rows, [[1, 2], [3, 4]], "$test : fetch_hash_all scalar context");
-
-$result = $dbi->execute($query);
-@rows = $result->fetch_all;
-is_deeply(\@rows, [[1, 2], [3, 4]], "$test : fetch_hash_all list context");
-
+$rows = $result->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : fetch_hash_all");
 
 test 'Insert query return value';
 $dbi->execute($DROP_TABLE->{0});
@@ -411,7 +384,7 @@ $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1');
 $result->filter({key1 => 'three_times'});
-$row = $result->fetch_hash_single;
+$row = $result->fetch_hash_first;
 is_deeply($row, {key1 => 3, key2 => 4}, "$test: default_fetch_filter and filter");
 
 test 'filters';
@@ -441,4 +414,4 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->rollback;
 
 $result = $dbi->select(table => 'table1');
-ok(! $result->fetch_single, "$test: rollback");
+ok(! $result->fetch_first, "$test: rollback");

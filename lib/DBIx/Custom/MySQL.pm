@@ -30,17 +30,7 @@ sub connect {
     return $self->SUPER::connect;
 }
 
-sub last_insert_id {
-    my $self = shift;
-    
-    # Not connected
-    croak "Not yet connected" unless $self->connected;
-    
-    # Get last insert id
-    my $last_insert_id = $self->dbh->{mysql_insertid};
-    
-    return $last_insert_id;
-}
+sub last_insert_id { shift->dbh->{mysql_insertid} }
 
 1;
 
