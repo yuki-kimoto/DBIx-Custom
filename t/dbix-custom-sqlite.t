@@ -57,7 +57,7 @@ test 'last_insert_rowid';
 $dbi = DBIx::Custom::SQLite->new;
 $dbi->connect_memory;
 $ret_val = $dbi->execute($CREATE_TABLE->{0});
-$dbi->insert({table => 'table1', param => {key1 => 1, key2 => 2}});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is($dbi->last_insert_rowid, 1, "$test: first");
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is($dbi->last_insert_rowid, 2, "$test: second");

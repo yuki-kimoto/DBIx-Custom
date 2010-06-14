@@ -1,3 +1,6 @@
+0.1601
+  select, insert, update, update_all, delete, delete_all, execute only receive hash argument(not backword compatible)
+  
 0.1503
   removed reconnect method
   removed connected method

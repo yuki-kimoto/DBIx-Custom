@@ -19,7 +19,6 @@ our $SQL_TMPL = {
 };
 my $dbi;
 
-
 test 'Constructor';
 $dbi = DBIx::Custom->new(
     user => 'a',

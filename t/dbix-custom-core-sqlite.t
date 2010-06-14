@@ -67,7 +67,6 @@ $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->disconnect;
 ok(!$dbi->dbh, $test);
 
-
 # Prepare table
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
