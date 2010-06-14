@@ -414,3 +414,19 @@ $dbi->rollback;
 
 $result = $dbi->select(table => 'table1');
 ok(! $result->fetch_first, "$test: rollback");
+
+test 'cache';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$tmpl = 'select * from table1 where {= key1} and {= key2};';
+$dbi->create_query($tmpl);
+is_deeply($dbi->{_cached}->{$tmpl}, 
+          {sql => "select * from table1 where key1 = ? and key2 = ?;", columns => ['key1', 'key2']}, "$test : cache");
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->{_cached} = {};
+$dbi->cache(0);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+is(scalar keys %{$dbi->{_cached}}, 0, 'not cache');
+

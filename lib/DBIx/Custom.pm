@@ -25,6 +25,7 @@ __PACKAGE__->register_filter(
 
 __PACKAGE__->attr(result_class => 'DBIx::Custom::Result');
 __PACKAGE__->attr(sql_template => sub { DBIx::Custom::SQLTemplate->new });
+__PACKAGE__->attr(cache => 1);
 
 sub connect {
     my $proto = shift;
@@ -309,22 +310,19 @@ sub create_query {
     my $sql_template = $self->sql_template;
     
     # Get cached query
-    my $cache = $self->{_cache}->{$template};
+    my $cached = $self->{_cached}->{$template};
     
     # Create query
     my $query;
-    if ($cache) {
-        $query = DBIx::Custom::Query->new(
-            sql       => $cache->sql,
-            columns   => $cache->columns
-        );
+    if ($cached) {
+        $query = DBIx::Custom::Query->new($cached);
     }
     else {
         $query = eval{$sql_template->create_query($template)};
         croak($@) if $@;
         
-        $self->{_cache}->{$template} = $query
-          unless $self->{_cache}->{$template};
+        $self->{_cached}->{$template} = {sql => $query->sql, columns => $query->columns}
+          if $self->cache && ! $self->{_cached}->{$template};
     }
     
     # Prepare statement handle
