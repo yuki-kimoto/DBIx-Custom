@@ -1,7 +1,8 @@
+0.1602
+  added cache_method attribute
 0.1601
   added cache attribute
   select, insert, update, update_all, delete, delete_all, execute only receive hash argument(not backword compatible)
-  
 0.1503
   removed reconnect method
   removed connected method

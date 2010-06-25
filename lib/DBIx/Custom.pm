@@ -25,7 +25,22 @@ __PACKAGE__->register_filter(
 
 __PACKAGE__->attr(result_class => 'DBIx::Custom::Result');
 __PACKAGE__->attr(sql_template => sub { DBIx::Custom::SQLTemplate->new });
+
 __PACKAGE__->attr(cache => 1);
+__PACKAGE__->attr(cache_method => sub {
+    sub {
+        my $self = shift;
+        
+        $self->{_cached} ||= {};
+        
+        if (@_ > 1) {
+            $self->{_cached}{$_[0]} = $_[1] 
+        }
+        else {
+            return $self->{_cached}{$_[0]}
+        }
+    }
+});
 
 sub connect {
     my $proto = shift;
@@ -309,20 +324,30 @@ sub create_query {
     # Create query from SQL template
     my $sql_template = $self->sql_template;
     
-    # Get cached query
-    my $cached = $self->{_cached}->{$template};
+    my $cache = $self->cache;
     
     # Create query
     my $query;
-    if ($cached) {
-        $query = DBIx::Custom::Query->new($cached);
+    if ($cache) {
+        
+        # Cached query
+        my $q = $self->cache_method->($self, $template);
+        
+        # Create query
+        $query = DBIx::Custom::Query->new($q) if $q;
     }
-    else {
+    
+    unless ($query) {
+        
+        # Create query
         $query = eval{$sql_template->create_query($template)};
         croak($@) if $@;
         
-        $self->{_cached}->{$template} = {sql => $query->sql, columns => $query->columns}
-          if $self->cache && ! $self->{_cached}->{$template};
+        # Cache query
+        $self->cache_method->($self, $template,
+                             {sql     => $query->sql, 
+                              columns => $query->columns})
+          if $cache;
     }
     
     # Prepare statement handle
@@ -485,11 +510,11 @@ DBIx::Custom - DBI with hash parameter binding and filtering system
 
 =head1 VERSION
 
-Version 0.1503
+Version 0.1602
 
 =cut
 
-our $VERSION = '0.1503';
+our $VERSION = '0.1602';
 $VERSION = eval $VERSION;
 
 =head1 STABILITY
@@ -920,6 +945,39 @@ This is equal to
 
     $dbi->dbh->rollback;
 
+=head2 cache
+
+Cache the result of parsing SQL template.
+
+    $dbi   = $dbi->cache(1);
+    $cache = $dbi->cache;
+
+Default to 1.
+
+=head2 cache_method
+
+Method for cache.
+
+    $dbi          = $dbi->cache_method(sub { ... });
+    $cache_method = $dbi->cache_method
+
+Example:
+    
+    $dbi->cache_method(
+        sub {
+            my $self = shift;
+            
+            $self->{_cached} ||= {};
+            
+            if (@_ > 1) {
+                $self->{_cached}{$_[0]} = $_[1] 
+            }
+            else {
+                return $self->{_cached}{$_[0]}
+            }
+        }
+    );
+
 =head1 AUTHOR
 
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
@@ -932,3 +990,5 @@ This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
 
 =cut
+
+
