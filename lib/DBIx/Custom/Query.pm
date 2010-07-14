@@ -20,35 +20,35 @@ DBIx::Custom::Query - query used by DBIx::Custom
     
 =head1 ATTRIBUTES
 
-=head2 sql
+=head2 C<sql>
 
 SQL statement.
 
     $query = $query->sql($sql);
     $sql   = $query->sql;
 
-=head2 columns
+=head2 C<columns>
 
 Column names.
 
     $query   = $query->columns([@columns]);
     $columns = $query->columns;
 
-=head2 default_filter
+=head2 C<default_filter>
 
 Default filter.
 
     $query          = $query->default_filter($filter);
     $default_filter = $query->default_filter;
 
-=head2 filter
+=head2 C<filter>
 
 Filter.
 
     $query  = $query->filter({%filter});
     $filter = $query->filter;
 
-=head2 sth
+=head2 C<sth>
 
 Statement handle.
 

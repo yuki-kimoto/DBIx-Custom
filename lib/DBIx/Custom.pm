@@ -470,33 +470,6 @@ sub register_filter {
     return $invocant;
 }
 
-sub auto_commit {
-    my $self = shift;
-    
-    # Not connected
-    croak "Not connected" unless $self->dbh;
-    
-    if (@_) {
-        
-        # Set AutoCommit
-        $self->dbh->{AutoCommit} = $_[0];
-        
-        return $self;
-    }
-    return $self->dbh->{AutoCommit};
-}
-
-sub commit   { 
-    my $ret = eval { shift->dbh->commit };
-    croak $@ if $@;
-    return $ret;
-}
-sub rollback {
-    my $ret = eval { shift->dbh->rollback };
-    croak $@ if $@;
-    return $ret;
-}
-
 sub DESTROY {
     my $self = shift;
     
@@ -508,18 +481,13 @@ sub DESTROY {
 
 DBIx::Custom - DBI with hash parameter binding and filtering system
 
-=head1 VERSION
-
-Version 0.1602
-
 =cut
 
-our $VERSION = '0.1602';
-$VERSION = eval $VERSION;
+our $VERSION = '0.1603';
 
 =head1 STABILITY
 
-This module is not stable. Method name and functionality will be change.
+This module is not stable. Method name and implementations will be change.
 
 =head1 SYNOPSYS
     
@@ -632,28 +600,28 @@ And have useful method such as insert(), update(), delete(), and select().
 
 =head1 ATTRIBUTES
 
-=head2 user
+=head2 C<user>
 
 Database user name.
     
     $dbi  = $dbi->user('Ken');
     $user = $dbi->user;
     
-=head2 password
+=head2 C<password>
 
 Database password.
     
     $dbi      = $dbi->password('lkj&le`@s');
     $password = $dbi->password;
 
-=head2 data_source
+=head2 C<data_source>
 
 Database data source.
     
     $dbi         = $dbi->data_source("dbi:mysql:dbname=$database");
     $data_source = $dbi->data_source;
     
-=head2 dbh
+=head2 C<dbh>
 
 Database handle. This is the innstance of L<DBI>
     
@@ -665,7 +633,7 @@ You can use all methods of L<DBI>
     my $sth    = $dbi->dbh->prepare("...");
     my $errstr = $dbi->dbh->errstr;
     
-=head2 filters
+=head2 C<filters>
 
 Filters
 
@@ -677,21 +645,21 @@ encode_utf8 and decode_utf8 is set to this attribute by default.
     $encode_utf8 = $dbi->filters->{encode_utf8};
     $decode_utf8 = $dbi->filters->{decode_utf8};
 
-=head2 default_query_filter
+=head2 C<default_query_filter>
 
 Default query filter.
 
     $dbi                  = $dbi->default_query_filter('encode_utf8');
     $default_query_filter = $dbi->default_query_filter
 
-=head2 default_fetch_filter
+=head2 C<default_fetch_filter>
 
 Fetching filter.
 
     $dbi                  = $dbi->default_fetch_filter('decode_utf8');
     $default_fetch_filter = $dbi->default_fetch_filter;
 
-=head2 result_class
+=head2 C<result_class>
 
 Result class.
 
@@ -700,7 +668,7 @@ Result class.
 
 L<DBIx::Custom::Result> is set to this attribute by default.
 
-=head2 sql_template
+=head2 C<sql_template>
 
 SQLTemplate instance. sql_template attribute must be 
 the instance of L<DBIx::Cutom::SQLTemplate> subclass.
@@ -716,7 +684,7 @@ this attribute by default.
 This class is L<Object::Simple> subclass.
 You can use all methods of L<Object::Simple>
 
-=head2 connect
+=head2 C<connect>
 
 Connect to database.
     
@@ -726,7 +694,7 @@ Connect to database.
 "AutoCommit" and "RaiseError" option is true, 
 and "PrintError" option is false by dfault.
 
-=head2 disconnect
+=head2 C<disconnect>
 
 Disconnect database.
 
@@ -734,7 +702,7 @@ Disconnect database.
 
 If database is already disconnected, this method do nothing.
 
-=head2 insert
+=head2 C<insert>
 
 Insert row.
 
@@ -753,7 +721,7 @@ Example:
                  append => "some statement",
                  filter => {title => 'encode_utf8'})
 
-=head2 update
+=head2 C<update>
 
 Update rows.
 
@@ -774,7 +742,7 @@ Example:
                  append => "some statement",
                  filter => {title => 'encode_utf8'});
 
-=head2 update_all
+=head2 C<update_all>
 
 Update all rows.
 
@@ -792,7 +760,7 @@ Example:
                      param  => {author => 'taro'},
                      filter => {author => 'encode_utf8'});
 
-=head2 delete
+=head2 C<delete>
 
 Delete rows.
 
@@ -811,7 +779,7 @@ Example:
                  append => 'some statement',
                  filter => {id => 'encode_utf8'});
 
-=head2 delete_all
+=head2 C<delete_all>
 
 Delete all rows.
 
@@ -824,7 +792,7 @@ Example:
     # delete_all
     $dbi->delete_all(table => 'books');
 
-=head2 select
+=head2 C<select>
     
 Select rows.
 
@@ -861,23 +829,25 @@ Example:
         relation => {'books.id' => 'rental.book_id'}
     );
 
-=head2 create_query
+=head2 C<create_query>
     
+    my $query = $dbi->create_query(
+        "select * from authors where {= name} and {= age};"
+    );
+
 Create the instance of L<DBIx::Custom::Query>. 
 This receive the string written by SQL template.
 
-    my $query = $dbi->create_query("select * from authors where {= name} and {= age}");
+=head2 C<execute>
 
-=head2 execute
+    $result = $dbi->execute($query,    param => $params, filter => {%filter});
+    $result = $dbi->execute($template, param => $params, filter => {%filter});
 
 Execute the instace of L<DBIx::Custom::Query> or
 the string written by SQL template.
 Return value is the instance of L<DBIx::Custom::Result>.
 
-    $result = $dbi->execute($query,    param => $params, filter => {%filter});
-    $result = $dbi->execute($template, param => $params, filter => {%filter});
-
-Example:
+B<Example:>
 
     $result = $dbi->execute("select * from authors where {= name} and {= age}", 
                             param => {name => 'taro', age => 19});
@@ -888,13 +858,13 @@ Example:
 
 See also L<DBIx::Custom::SQLTemplate> to know how to write SQL template.
 
-=head2 register_filter
+=head2 C<register_filter>
 
-Resister filter.
-    
     $dbi->register_filter(%filters);
     
-Example:
+Resister filter.
+
+B<Example:>
 
     $dbi->register_filter(
         encode_utf8 => sub {
@@ -913,56 +883,23 @@ Example:
         }
     );
 
-=head2 auto_commit
-
-Auto commit.
-
-    $self        = $dbi->auto_commit(1);
-    $auto_commit = $dbi->auto_commit;
-
-This is equal to
-
-    $dbi->dbh->{AutoCommit} = 1;
-    $auto_commit = $dbi->dbh->{AutoCommit};
-
-=head2 commit
-
-Commit.
-
-    $dbi->commit;
-
-This is equal to
-
-    $dbi->dbh->commit;
-
-=head2 rollback
-
-Rollback.
-
-    $dbi->rollback
-
-This is equal to
-
-    $dbi->dbh->rollback;
-
-=head2 cache
-
-Cache the result of parsing SQL template.
+=head2 C<cache>
 
     $dbi   = $dbi->cache(1);
     $cache = $dbi->cache;
 
+Cache the result of parsing SQL template.
 Default to 1.
 
-=head2 cache_method
+=head2 C<cache_method>
+
+    $dbi          = $dbi->cache_method(\&cache_method);
+    $cache_method = $dbi->cache_method
 
 Method for cache.
 
-    $dbi          = $dbi->cache_method(sub { ... });
-    $cache_method = $dbi->cache_method
+B<Example:>
 
-Example:
-    
     $dbi->cache_method(
         sub {
             my $self = shift;

@@ -398,19 +398,19 @@ is($dbi->filters->{encode_utf8}->('あ'),
 test 'transaction';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
-$dbi->auto_commit(0);
+$dbi->dbh->begin_work;
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
-$dbi->commit;
+$dbi->dbh->commit;
 $result = $dbi->select(table => 'table1');
 is_deeply(scalar $result->fetch_hash_all, [{key1 => 1, key2 => 2}, {key1 => 2, key2 => 3}],
           "$test : commit");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
-$dbi->auto_commit(0);
+$dbi->dbh->begin_work(0);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->rollback;
+$dbi->dbh->rollback;
 
 $result = $dbi->select(table => 'table1');
 ok(! $result->fetch_first, "$test: rollback");

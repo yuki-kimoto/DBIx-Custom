@@ -213,21 +213,21 @@ DBIx::Custom::Result - DBIx::Custom Resultset
 
 =head1 ATTRIBUTES
 
-=head2 sth
+=head2 C<sth>
 
 Statement handle.
 
     $result = $result->sth($sth);
     $sth    = $reuslt->sth
     
-=head2 default_filter
+=head2 C<default_filter>
 
 Default filter.
 
     $result         = $result->default_filter('decode_utf8');
     $default_filter = $result->default_filter;
 
-=head2 filter
+=head2 C<filter>
 
 Filter
 
@@ -239,7 +239,7 @@ Filter
 This class is L<Object::Simple> subclass.
 You can use all methods of L<Object::Simple>
 
-=head2 fetch
+=head2 C<fetch>
 
 Fetch a row into array
 
@@ -253,13 +253,13 @@ Example:
         my $value2 = $row->[1];
     }
 
-=head2 fetch_first
+=head2 C<fetch_first>
 
 Fetch only first row into array and finish statment handle.
 
     $row = $result->fetch_first;
 
-=head2 fetch_multi
+=head2 C<fetch_multi>
 
 Fetch multiple rows into array of array.
 
@@ -271,13 +271,13 @@ Example:
         # do someting
     }
 
-=head2 fetch_all
+=head2 C<fetch_all>
 
 Fetch all rows into array of array.
 
     $rows = $result->fetch_all;
 
-=head2 fetch_hash
+=head2 C<fetch_hash>
 
 Fetch a row into hash
 
@@ -292,13 +292,13 @@ Example:
         # do something
     }
 
-=head2 fetch_hash_first
+=head2 C<fetch_hash_first>
     
 Fetch only first row into hash and finish statment handle.
 
     $row = $result->fetch_hash_first;
 
-=head2 fetch_hash_multi
+=head2 C<fetch_hash_multi>
 
 Fetch multiple rows into array of hash
 
@@ -310,7 +310,7 @@ Example:
         # do someting
     }
 
-=head2 fetch_hash_all
+=head2 C<fetch_hash_all>
 
 Fetch all rows into array of hash.
 

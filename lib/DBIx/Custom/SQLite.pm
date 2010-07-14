@@ -63,7 +63,7 @@ DBIx::Custom::SQLite - a SQLite implementation of DBIx::Custom
 This class is L<DBIx::Custom> subclass.
 You can use all attributes of L<DBIx::Custom>.
 
-=head2 database
+=head2 C<database>
 
 Database name
 
@@ -75,7 +75,7 @@ Database name
 This class is L<DBIx::Custom> subclass.
 You can use all methods of L<DBIx::Custom>.
 
-=head2 connect - overridden
+=head2 C<connect (overridden)>
 
 Connect to database.
 
@@ -83,13 +83,13 @@ Connect to database.
 
 If you set database, host, or port, data source is automatically created.
 
-=head2 connect_memory
+=head2 C<connect_memory>
 
 Connect memory database.
 
     $dbi->connect_memory;
 
-=head2 last_insert_rowid
+=head2 C<last_insert_rowid>
 
 Last insert row ID.
 

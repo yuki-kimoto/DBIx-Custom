@@ -53,14 +53,14 @@ DBIx::Custom::MySQL - a MySQL implementation of DBIx::Custom
 This class is L<DBIx::Custom> subclass.
 You can use all attributes of L<DBIx::Custom>
 
-=head2 database
+=head2 C<database>
 
 Database name
 
     $dbi      = $dbi->database('your_database');
     $database = $dbi->database;
 
-=head2 host
+=head2 C<host>
 
 Database host name.
 
@@ -71,7 +71,7 @@ IP address can be set to host attribute.
 
     $dbi->host('127.03.45.12');
 
-=head2 port
+=head2 C<port>
 
 Database port.
 
@@ -83,7 +83,7 @@ Database port.
 This class is L<DBIx::Custom> subclass.
 You can use all methods of L<DBIx::Custom>.
 
-=head2 connect - overridden
+=head2 C<connect (overridden)>
 
 Connect to database.
 
@@ -92,7 +92,7 @@ Connect to database.
                                            password => 'kliej&@K',
                                            database  => 'your_database');
 
-=head2 last_insert_id
+=head2 C<last_insert_id>
 
 Last insert ID.
 

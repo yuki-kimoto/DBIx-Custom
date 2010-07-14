@@ -1,3 +1,7 @@
+0.1603
+  removed DBIx::Custom commit method (not backword compatible)
+  removed DBIx::Custom rollback method (not backword compatible)
+  removed DBIx::Custom auto_commit method (not backword compatible)
 0.1602
   added cache_method attribute
 0.1601

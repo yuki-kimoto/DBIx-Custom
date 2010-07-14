@@ -222,27 +222,27 @@ DBIx::Custom::SQLTemplate - DBIx::Custom SQL Template
 
 =head1 ATTRIBUTES
 
-=head2 tag_processors
+=head2 C<tag_processors>
 
     $sql_tmpl       = $sql_tmpl->tag_processors($name1 => $tag_processor1
                                                 $name2 => $tag_processor2);
     $tag_processors = $sql_tmpl->tag_processors;
 
-=head2 tag_start
+=head2 C<tag_start>
     
     $sql_tmpl  = $sql_tmpl->tag_start('{');
     $tag_start = $sql_tmpl->tag_start;
 
 Default is '{'
 
-=head2 tag_end
+=head2 C<tag_end>
     
     $sql_tmpl    = $sql_tmpl->tag_start('}');
     $tag_end = $sql_tmpl->tag_start;
 
 Default is '}'
     
-=head2 tag_syntax
+=head2 C<tag_syntax>
     
     $sql_tmpl   = $sql_tmpl->tag_syntax($tag_syntax);
     $tag_syntax = $sql_tmpl->tag_syntax;
@@ -252,9 +252,9 @@ Default is '}'
 This class is L<Object::Simple> subclass.
 You can use all methods of L<Object::Simple>
 
-=head2 new
+=head2 C<new>
 
-=head2 create_query
+=head2 C<create_query>
     
 Create L<DBIx::Custom::Query> object parsing SQL template
 
@@ -285,7 +285,7 @@ query has two infomation
     1. sql       : SQL
     2. key_infos : Parameter access key information
 
-=head2 register_tag_processor
+=head2 C<register_tag_processor>
 
 Add tag processor
     
@@ -325,7 +325,7 @@ Key information is a little complex. so I will explan this in future.
 
 If you want to know more, Please see DBIx::Custom::SQLTemplate source code.
 
-=head2 clone
+=head2 C<clone>
 
 Clone DBIx::Custom::SQLTemplate object
 
