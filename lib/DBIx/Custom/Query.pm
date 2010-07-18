@@ -11,49 +11,48 @@ __PACKAGE__->attr([qw/sql columns default_filter filter sth/]);
 
 =head1 NAME
 
-DBIx::Custom::Query - query used by DBIx::Custom
+DBIx::Custom::Query - Query
 
 =head1 SYNOPSIS
     
-    # New
     my $query = DBIx::Custom::Query->new;
     
 =head1 ATTRIBUTES
 
 =head2 C<sql>
 
-SQL statement.
-
     $query = $query->sql($sql);
     $sql   = $query->sql;
 
-=head2 C<columns>
+SQL statement.
 
-Column names.
+=head2 C<columns>
 
     $query   = $query->columns([@columns]);
     $columns = $query->columns;
 
-=head2 C<default_filter>
+Column names.
 
-Default filter.
+=head2 C<default_filter>
 
     $query          = $query->default_filter($filter);
     $default_filter = $query->default_filter;
 
-=head2 C<filter>
+Default filter for value binding.
 
-Filter.
+=head2 C<filter>
 
     $query  = $query->filter({%filter});
     $filter = $query->filter;
 
-=head2 C<sth>
+Filters for value binding
 
-Statement handle.
+=head2 C<sth>
 
     $query = $query->sth($sth);
     $sth   = $query->sth;
+
+Statement handle.
 
 =head1 METHODS
 

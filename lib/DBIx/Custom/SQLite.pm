@@ -24,7 +24,7 @@ sub connect {
 }
 
 sub connect_memory {
-    my $self = shift;
+    my $self = shift->new(@_);
     
     # Data source for memory database
     $self->data_source('dbi:SQLite:dbname=:memory:');
@@ -41,21 +41,19 @@ sub last_insert_rowid { shift->dbh->func('last_insert_rowid') }
 
 =head1 NAME
 
-DBIx::Custom::SQLite - a SQLite implementation of DBIx::Custom
+DBIx::Custom::SQLite - Implementation for SQLite
 
 =head1 SYNOPSYS
 
     use DBIx::Custom::SQLite;
     
-    # Connect
-    my $dbi = DBIx::Custom::SQLite->connect(user      => 'taro', 
-                                            password => 'kl&@K',
-                                            database  => 'your_database');
+    # Connect to database
+    my $dbi = DBIx::Custom::SQLite->connect(database  => 'dbname');
     
-    # Connect memory database
+    # Connect to memory database
     my $dbi = DBIx::Custom::SQLite->connect_memory;
     
-    # Last insert row ID
+    # Get last insert row id
     my $id = $dbi->last_insert_rowid;
     
 =head1 ATTRIBUTES
@@ -65,10 +63,11 @@ You can use all attributes of L<DBIx::Custom>.
 
 =head2 C<database>
 
-Database name
-
     $dbi      = $dbi->database('your_database');
     $database = $dbi->database;
+
+Database name.
+This is used for connect().
 
 =head1 METHODS
 
@@ -76,25 +75,27 @@ This class is L<DBIx::Custom> subclass.
 You can use all methods of L<DBIx::Custom>.
 
 =head2 C<connect (overridden)>
+    
+    $dbi = DBIx::Custom::SQLite->connect(
+        data_source  => "dbi:SQLite:dbname=your_db"
+    );
+    
+    $dbi = DBIx::Custom::SQLite->connect(database  => 'your_db');
 
 Connect to database.
-
-    $dbi->connect;
-
-If you set database, host, or port, data source is automatically created.
+You can also specify database name, instead of data source.
 
 =head2 C<connect_memory>
 
-Connect memory database.
-
     $dbi->connect_memory;
+
+Connect to memory database.
 
 =head2 C<last_insert_rowid>
 
-Last insert row ID.
-
     $last_insert_rowid = $dbi->last_insert_rowid;
-    
+
+Get last insert row id.
 This is equal to SQLite last_insert_rowid() function.
 
 =cut

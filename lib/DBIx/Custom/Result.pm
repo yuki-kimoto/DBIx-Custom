@@ -166,7 +166,7 @@ sub fetch_hash_all {
 
 =head1 NAME
 
-DBIx::Custom::Result - DBIx::Custom Resultset
+DBIx::Custom::Result - Manipulate the result of select statement
 
 =head1 SYNOPSIS
     
@@ -215,24 +215,24 @@ DBIx::Custom::Result - DBIx::Custom Resultset
 
 =head2 C<sth>
 
-Statement handle.
-
     $result = $result->sth($sth);
     $sth    = $reuslt->sth
-    
-=head2 C<default_filter>
 
-Default filter.
+Statement handle.
+
+=head2 C<default_filter>
 
     $result         = $result->default_filter('decode_utf8');
     $default_filter = $result->default_filter;
 
-=head2 C<filter>
+Default filter for fetching.
 
-Filter
+=head2 C<filter>
 
     $result = $result->filter({title => 'decode_utf8'});
     $filter = $result->filter;
+
+Filters for fetching.
 
 =head1 METHODS
 
@@ -241,11 +241,9 @@ You can use all methods of L<Object::Simple>
 
 =head2 C<fetch>
 
-Fetch a row into array
-
     $row = $result->fetch;
 
-Example:
+Fetch a row into array
 
     while (my $row = $result->fetch) {
         # do something
@@ -255,17 +253,15 @@ Example:
 
 =head2 C<fetch_first>
 
-Fetch only first row into array and finish statment handle.
-
     $row = $result->fetch_first;
+
+Fetch only first row into array and finish statment handle.
 
 =head2 C<fetch_multi>
 
-Fetch multiple rows into array of array.
-
     $rows = $result->fetch_multi($count);
     
-Example:
+Fetch multiple rows into array of array.
 
     while(my $rows = $result->fetch_multi(10)) {
         # do someting
@@ -273,17 +269,15 @@ Example:
 
 =head2 C<fetch_all>
 
-Fetch all rows into array of array.
-
     $rows = $result->fetch_all;
+
+Fetch all rows into array of array.
 
 =head2 C<fetch_hash>
 
-Fetch a row into hash
-
     $row = $result->fetch_hash;
 
-Example:
+Fetch a row into hash
 
     while (my $row = $result->fetch_hash) {
         my $val1 = $row->{title};
@@ -294,17 +288,15 @@ Example:
 
 =head2 C<fetch_hash_first>
     
-Fetch only first row into hash and finish statment handle.
-
     $row = $result->fetch_hash_first;
+
+Fetch only first row into hash and finish statment handle.
 
 =head2 C<fetch_hash_multi>
 
-Fetch multiple rows into array of hash
-
     $rows = $result->fetch_hash_multi($count);
     
-Example:
+Fetch multiple rows into array of hash
 
     while(my $rows = $result->fetch_hash_multi(10)) {
         # do someting
@@ -312,8 +304,8 @@ Example:
 
 =head2 C<fetch_hash_all>
 
-Fetch all rows into array of hash.
-
     $rows = $result->fetch_hash_all;
+
+Fetch all rows into array of hash.
 
 =cut

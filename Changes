@@ -1,3 +1,7 @@
+0.1604
+  removed DESTROY method(not backword compatible)
+  removed disconnect method(not backword compatible)
+  fixed DBIx::Custom::MySQL connect_memory
 0.1603
   removed DBIx::Custom commit method (not backword compatible)
   removed DBIx::Custom rollback method (not backword compatible)

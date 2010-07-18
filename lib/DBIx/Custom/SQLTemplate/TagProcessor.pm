@@ -121,11 +121,11 @@ DBIx::Custom::SQLTemplate::TagProcessor - Tag processor
 
 =head1 FUNCTIONS
 
-=head2 expand_basic_tag
+=head2 C<expand_basic_tag>
 
-=head2 expand_in_tag
+=head2 C<expand_in_tag>
 
-=head2 expand_insert_tag
+=head2 C<expand_insert_tag>
 
-=head2 expand_update_tag
+=head2 C<expand_update_tag>
 

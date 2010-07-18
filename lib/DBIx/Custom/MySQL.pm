@@ -1,7 +1,7 @@
 package DBIx::Custom::MySQL;
 
-use warnings;
 use strict;
+use warnings;
 
 use base 'DBIx::Custom';
 
@@ -36,16 +36,16 @@ sub last_insert_id { shift->dbh->{mysql_insertid} }
 
 =head1 NAME
 
-DBIx::Custom::MySQL - a MySQL implementation of DBIx::Custom
+DBIx::Custom::MySQL - Implementation for MySQL
 
 =head1 SYNOPSYS
 
-    # Connect
-    my $dbi = DBIx::Custom::MySQL->connect(user      => 'taro', 
+    # Connect to database
+    my $dbi = DBIx::Custom::MySQL->connect(user     => 'taro', 
                                            password => 'kliej&@K',
-                                           database  => 'your_database');
+                                           database => 'your_database');
     
-    # Last insert id
+    # Get last insert id
     my $id = $dbi->last_insert_id;
 
 =head1 ATTRIBUTES
@@ -55,28 +55,29 @@ You can use all attributes of L<DBIx::Custom>
 
 =head2 C<database>
 
-Database name
-
     $dbi      = $dbi->database('your_database');
     $database = $dbi->database;
 
-=head2 C<host>
+Database name.
+This is used for connect().
 
-Database host name.
+=head2 C<host>
 
     $dbi  = $dbi->host('somehost.com');
     $host = $dbi->host;
 
-IP address can be set to host attribute.
+Database host name.
+You can also set IP address, instead of host name.
+This is used for connect().
 
     $dbi->host('127.03.45.12');
 
 =head2 C<port>
 
-Database port.
-
     $dbi  = $dbi->port(1198);
     $port = $dbi->port;
+
+Database port. This is used for connect().
 
 =head1 METHODS
 
@@ -85,20 +86,24 @@ You can use all methods of L<DBIx::Custom>.
 
 =head2 C<connect (overridden)>
 
-Connect to database.
+    $dbi = DBIx::Custom::MySQL->connect(
+        data_source => "dbi:mysql:database=books;host=somehost;port=2000"
+    );
+    
+    $dbi = DBIx::Custom::MySQL->connect(user     => 'taro', 
+                                        password => 'kliej&@K',
+                                        database => 'your_database',
+                                        host     => 'somehost',
+                                        port     => 2000);
 
-    # Connect
-    my $dbi = DBIx::Custom::MySQL->connect(user      => 'taro', 
-                                           password => 'kliej&@K',
-                                           database  => 'your_database');
+Connect to database. You can also specify database, host, and port
+(instead of data soruce).
 
 =head2 C<last_insert_id>
 
-Last insert ID.
-
     $last_insert_id = $dbi->last_insert_id;
 
+Get last insert id.
 This is equal to MySQL last_insert_id() function.
 
-    
 =cut

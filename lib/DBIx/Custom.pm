@@ -74,15 +74,14 @@ sub connect {
     return $self;
 }
 
-sub disconnect {
-    my $self = shift;
+sub register_filter {
+    my $invocant = shift;
     
-    # Disconnect
-    my $ret = eval { $self->dbh->disconnect };
-    croak $@ if $@;
-    $self->dbh(undef);
+    # Add filter
+    my $filters = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $invocant->filters({%{$invocant->filters}, %$filters});
     
-    return $ret;
+    return $invocant;
 }
 
 our %VALID_INSERT_ARGS = map { $_ => 1 } qw/table param append filter/;
@@ -110,7 +109,8 @@ sub insert {
       unless @insert_keys;
     
     # Templte for insert
-    my $template = "insert into $table {insert " . join(' ', @insert_keys) . '}';
+    my $template = "insert into $table {insert "
+                   . join(' ', @insert_keys) . '}';
     $template .= " $append" if $append;
     
     # Execute query
@@ -444,7 +444,8 @@ sub _build_bind_values {
             }
             else {
                 my $filters = $self->filters;
-                croak "Not exists filter \"$fname\"" unless exists $filters->{$fname};
+                croak "Not exists filter \"$fname\""
+                  unless exists $filters->{$fname};
                 $filter_func = $filters->{$fname};
             }            
         }
@@ -460,44 +461,23 @@ sub _build_bind_values {
     return \@bind_values;
 }
 
-sub register_filter {
-    my $invocant = shift;
-    
-    # Add filter
-    my $filters = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $invocant->filters({%{$invocant->filters}, %$filters});
-    
-    return $invocant;
-}
-
-sub DESTROY {
-    my $self = shift;
-    
-    # Disconnect
-    $self->disconnect if $self->dbh;
-}
-
 =head1 NAME
 
 DBIx::Custom - DBI with hash parameter binding and filtering system
 
 =cut
 
-our $VERSION = '0.1603';
+our $VERSION = '0.1604';
 
 =head1 STABILITY
 
-This module is not stable. Method name and implementations will be change.
+This module is not stable. Method name and implementations will be changed.
 
 =head1 SYNOPSYS
     
     # Connect
     my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=books",
                                     user => 'ken', password => '!LFKD%$&');
-    
-    # Disconnect
-    $dbi->disconnect
-
     # Insert 
     $dbi->insert(table  => 'books',
                  param  => {title => 'perl', author => 'Ken'},
@@ -569,7 +549,7 @@ This module is not stable. Method name and implementations will be change.
         
     }
     
-    # DBI instance
+    # Get DBI object
     my $dbh = $dbi->dbh;
 
 =head1 DESCRIPTION
@@ -590,11 +570,17 @@ And have useful method such as insert(), update(), delete(), and select().
 
 =over 4
 
-=item 1. Hash parameter binding.
+=item *
 
-=item 2. Value filtering.
+Hash parameter binding.
 
-=item 3. Useful methos such as insert(), update(), delete(), and select().
+=item *
+
+Value filtering.
+
+=item *
+
+Provide suger methods, such as insert(), update(), delete(), and select().
 
 =back
 
@@ -602,82 +588,83 @@ And have useful method such as insert(), update(), delete(), and select().
 
 =head2 C<user>
 
-Database user name.
-    
     $dbi  = $dbi->user('Ken');
     $user = $dbi->user;
+
+Database user name.
+This is used for connect().
     
 =head2 C<password>
 
-Database password.
-    
     $dbi      = $dbi->password('lkj&le`@s');
     $password = $dbi->password;
 
+Database password.
+This is used for connect().
+
 =head2 C<data_source>
 
-Database data source.
-    
     $dbi         = $dbi->data_source("dbi:mysql:dbname=$database");
     $data_source = $dbi->data_source;
-    
+
+Database data source.
+This is used for connect().
+
 =head2 C<dbh>
 
-Database handle. This is the innstance of L<DBI>
-    
     $dbi = $dbi->dbh($dbh);
     $dbh = $dbi->dbh;
 
-You can use all methods of L<DBI>
+Database handle. This is a L<DBI> object.
+You can call all methods of L<DBI>
 
     my $sth    = $dbi->dbh->prepare("...");
     my $errstr = $dbi->dbh->errstr;
+    $dbi->dbh->begin_work;
+    $dbi->dbh->commit;
+    $dbi->dbh->rollback;
     
 =head2 C<filters>
-
-Filters
 
     $dbi     = $dbi->filters({%filters});
     $filters = $dbi->filters;
 
-encode_utf8 and decode_utf8 is set to this attribute by default.
+Filter functions.
+By default, "encode_utf8" and "decode_utf8" is registered.
 
     $encode_utf8 = $dbi->filters->{encode_utf8};
     $decode_utf8 = $dbi->filters->{decode_utf8};
 
 =head2 C<default_query_filter>
 
-Default query filter.
-
     $dbi                  = $dbi->default_query_filter('encode_utf8');
     $default_query_filter = $dbi->default_query_filter
 
-=head2 C<default_fetch_filter>
+Default filter for value binding
 
-Fetching filter.
+=head2 C<default_fetch_filter>
 
     $dbi                  = $dbi->default_fetch_filter('decode_utf8');
     $default_fetch_filter = $dbi->default_fetch_filter;
 
-=head2 C<result_class>
+Default filter for fetching.
 
-Result class.
+=head2 C<result_class>
 
     $dbi          = $dbi->result_class('DBIx::Custom::Result');
     $result_class = $dbi->result_class;
 
-L<DBIx::Custom::Result> is set to this attribute by default.
+Result class for select statement.
+Default to L<DBIx::Custom::Result>
 
 =head2 C<sql_template>
-
-SQLTemplate instance. sql_template attribute must be 
-the instance of L<DBIx::Cutom::SQLTemplate> subclass.
 
     $dbi          = $dbi->sql_template(DBIx::Cutom::SQLTemplate->new);
     $sql_template = $dbi->sql_template;
 
-the instance of DBIx::Cutom::SQLTemplate is set to 
-this attribute by default.
+SQLTemplate instance. sql_template attribute must be 
+the instance of L<DBIx::Cutom::SQLTemplate> subclass.
+Default to DBIx::Cutom::SQLTemplate object
 
 =head1 METHODS
 
@@ -686,36 +673,25 @@ You can use all methods of L<Object::Simple>
 
 =head2 C<connect>
 
-Connect to database.
-    
     my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=books",
                                     user => 'ken', password => '!LFKD%$&');
 
+Connect to database.
 "AutoCommit" and "RaiseError" option is true, 
-and "PrintError" option is false by dfault.
-
-=head2 C<disconnect>
-
-Disconnect database.
-
-    $dbi->disconnect;
-
-If database is already disconnected, this method do nothing.
+and "PrintError" option is false by default.
 
 =head2 C<insert>
-
-Insert row.
 
     $affected = $dbi->insert(table  => $table, 
                              param  => {%param},
                              append => $append,
                              filter => {%filter});
 
-Retruned value is affected rows count.
+Insert row.
+Retrun value is the count of affected rows.
     
-Example:
+B<Example:>
 
-    # insert
     $dbi->insert(table  => 'books', 
                  param  => {title => 'Perl', author => 'Taro'},
                  append => "some statement",
@@ -723,19 +699,17 @@ Example:
 
 =head2 C<update>
 
-Update rows.
-
     $affected = $dbi->update(table  => $table, 
                              param  => {%params},
                              where  => {%where},
                              append => $append,
                              filter => {%filter})
 
-Retruned value is affected rows count
+Update rows.
+Retrun value is the count of affected rows.
 
-Example:
+B<Example:>
 
-    #update
     $dbi->update(table  => 'books',
                  param  => {title => 'Perl', author => 'Taro'},
                  where  => {id => 5},
@@ -744,36 +718,32 @@ Example:
 
 =head2 C<update_all>
 
-Update all rows.
-
     $affected = $dbi->update_all(table  => $table, 
                                  param  => {%params},
                                  filter => {%filter},
                                  append => $append);
 
-Retruned value is affected rows count.
+Update all rows.
+Retrun value is the count of affected rows.
 
-Example:
+B<Example:>
 
-    # update_all
     $dbi->update_all(table  => 'books', 
                      param  => {author => 'taro'},
                      filter => {author => 'encode_utf8'});
 
 =head2 C<delete>
 
-Delete rows.
-
     $affected = $dbi->delete(table  => $table,
                              where  => {%where},
                              append => $append,
                              filter => {%filter});
 
-Retrun value is affected rows count
+Delete rows.
+Retrun value is the count of affected rows.
     
-Example:
+B<Example:>
 
-    # delete
     $dbi->delete(table  => 'books',
                  where  => {id => 5},
                  append => 'some statement',
@@ -781,21 +751,17 @@ Example:
 
 =head2 C<delete_all>
 
-Delete all rows.
-
     $affected = $dbi->delete_all(table => $table);
 
-Retruned value is affected rows count.
+Delete all rows.
+Retrun value is the count of affected rows.
 
-Example:
+B<Example:>
     
-    # delete_all
     $dbi->delete_all(table => 'books');
 
 =head2 C<select>
     
-Select rows.
-
     $result = $dbi->select(table    => $table,
                            column   => [@column],
                            where    => {%where},
@@ -803,9 +769,10 @@ Select rows.
                            relation => {%relation},
                            filter   => {%filter});
 
+Select rows.
 Return value is the instance of L<DBIx::Custom::Result>.
 
-Example:
+B<Example:>
 
     # select * from books;
     $result = $dbi->select(table => 'books');
@@ -861,6 +828,7 @@ See also L<DBIx::Custom::SQLTemplate> to know how to write SQL template.
 =head2 C<register_filter>
 
     $dbi->register_filter(%filters);
+    $dbi->register_filter(\%filters);
     
 Resister filter.
 
@@ -914,6 +882,14 @@ B<Example:>
             }
         }
     );
+
+=head1 BUGS
+
+Please tell me bugs.
+
+C<< <kimoto.yuki at gmail.com> >>
+
+L<http://github.com/yuki-kimoto/DBIx-Custom>
 
 =head1 AUTHOR
 

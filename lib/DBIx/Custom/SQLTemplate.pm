@@ -209,7 +209,7 @@ sub _placeholder_count {
 
 =head1 NAME
 
-DBIx::Custom::SQLTemplate - DBIx::Custom SQL Template
+DBIx::Custom::SQLTemplate - SQL template system
 
 =head1 SYNOPSIS
     
