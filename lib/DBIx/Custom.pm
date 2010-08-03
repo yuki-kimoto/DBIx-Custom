@@ -626,7 +626,7 @@ You can call all methods of L<DBI>
 =head2 C<filters>
 
     my $filters = $dbi->filters;
-    $dbi        = $dbi->filters({%filters});
+    $dbi        = $dbi->filters(\%filters);
 
 Filter functions.
 By default, "encode_utf8" and "decode_utf8" is registered.
@@ -682,9 +682,9 @@ and "PrintError" option is false by default.
 =head2 C<insert>
 
     $affected = $dbi->insert(table  => $table, 
-                             param  => {%param},
+                             param  => \%param,
                              append => $append,
-                             filter => {%filter});
+                             filter => \%filter);
 
 Insert row.
 Retrun value is the count of affected rows.
@@ -699,10 +699,10 @@ B<Example:>
 =head2 C<update>
 
     $affected = $dbi->update(table  => $table, 
-                             param  => {%params},
-                             where  => {%where},
+                             param  => \%params,
+                             where  => \%where,
                              append => $append,
-                             filter => {%filter})
+                             filter => \%filter)
 
 Update rows.
 Retrun value is the count of affected rows.
@@ -718,8 +718,8 @@ B<Example:>
 =head2 C<update_all>
 
     $affected = $dbi->update_all(table  => $table, 
-                                 param  => {%params},
-                                 filter => {%filter},
+                                 param  => \%params,
+                                 filter => \%filter,
                                  append => $append);
 
 Update all rows.
@@ -734,9 +734,9 @@ B<Example:>
 =head2 C<delete>
 
     $affected = $dbi->delete(table  => $table,
-                             where  => {%where},
+                             where  => \%where,
                              append => $append,
-                             filter => {%filter});
+                             filter => \%filter);
 
 Delete rows.
 Retrun value is the count of affected rows.
@@ -763,10 +763,10 @@ B<Example:>
     
     $result = $dbi->select(table    => $table,
                            column   => [@column],
-                           where    => {%where},
+                           where    => \%where,
                            append   => $append,
-                           relation => {%relation},
-                           filter   => {%filter});
+                           relation => \%relation,
+                           filter   => \%filter);
 
 Select rows.
 Return value is the instance of L<DBIx::Custom::Result>.
@@ -806,8 +806,8 @@ using L<DBIx::Custom::QueryBuilder>.
 
 =head2 C<execute>
 
-    $result = $dbi->execute($query,    param => $params, filter => {%filter});
-    $result = $dbi->execute($source, param => $params, filter => {%filter});
+    $result = $dbi->execute($query,  param => $params, filter => \%filter);
+    $result = $dbi->execute($source, param => $params, filter => \%filter);
 
 Execute the instace of L<DBIx::Custom::Query> or
 the string written by SQL template.
