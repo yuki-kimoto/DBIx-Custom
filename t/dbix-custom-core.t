@@ -31,12 +31,12 @@ $dbi = DBIx::Custom->new(
     default_bind_filter => 'f',
     default_fetch_filter => 'g',
     result_class => 'g',
-    sql_template => $SQL_TMPL->{0},
+    sql_builder_class => $SQL_TMPL->{0},
 );
 is_deeply($dbi,{user => 'a', database => 'a', password => 'b', data_source => 'c', 
                 filters => {f => 3}, default_bind_filter => 'f',
                 default_fetch_filter => 'g', result_class => 'g',
-                sql_template => $SQL_TMPL->{0}}, $test);
+                sql_builder_class => $SQL_TMPL->{0}}, $test);
 isa_ok($dbi, 'DBIx::Custom');
 
 

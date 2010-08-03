@@ -1,4 +1,4 @@
-package DBIx::Custom::SQLTemplate::TagProcessors;
+package DBIx::Custom::QueryBuilder::TagProcessors;
 
 use strict;
 use warnings;
@@ -117,7 +117,7 @@ sub expand_update_tag {
 
 =head1 NAME
 
-DBIx::Custom::SQLTemplate::TagProcessor - Tag processor
+DBIx::Custom::SQLBuilder::TagProcessors - Tag processor
 
 =head1 FUNCTIONS
 

@@ -8,13 +8,13 @@ use base 'Object::Simple';
 use Carp 'croak';
 use DBI;
 use DBIx::Custom::Result;
-use DBIx::Custom::SQLTemplate;
+use DBIx::Custom::QueryBuilder;
 use DBIx::Custom::Query;
 use Encode qw/encode_utf8 decode_utf8/;
 
 __PACKAGE__->attr('dbh');
 __PACKAGE__->attr([qw/user password data_source/]);
-__PACKAGE__->attr([qw/default_query_filter default_fetch_filter/]);
+__PACKAGE__->attr([qw/default_bind_filter default_fetch_filter/]);
 
 __PACKAGE__->dual_attr('filters', default => sub { {} },
                                   inherit => 'hash_copy');
@@ -24,7 +24,7 @@ __PACKAGE__->register_filter(
 );
 
 __PACKAGE__->attr(result_class => 'DBIx::Custom::Result');
-__PACKAGE__->attr(sql_template => sub { DBIx::Custom::SQLTemplate->new });
+__PACKAGE__->attr(sql_builder  => sub {DBIx::Custom::QueryBuilder->new});
 
 __PACKAGE__->attr(cache => 1);
 __PACKAGE__->attr(cache_method => sub {
@@ -109,12 +109,12 @@ sub insert {
       unless @insert_keys;
     
     # Templte for insert
-    my $template = "insert into $table {insert "
+    my $source = "insert into $table {insert "
                    . join(' ', @insert_keys) . '}';
-    $template .= " $append" if $append;
+    $source .= " $append" if $append;
     
     # Execute query
-    my $ret_val = $self->execute($template, param  => $param, 
+    my $ret_val = $self->execute($source, param  => $param, 
                                             filter => $filter);
     
     return $ret_val;
@@ -171,8 +171,8 @@ sub update {
     }
     
     # Template for update
-    my $template = "update $table $update_clause $where_clause";
-    $template .= " $append_statement" if $append_statement;
+    my $source = "update $table $update_clause $where_clause";
+    $source .= " $append_statement" if $append_statement;
     
     # Rearrange parammeters
     foreach my $wkey (@where_keys) {
@@ -189,7 +189,7 @@ sub update {
     }
     
     # Execute query
-    my $ret_val = $self->execute($template, param  => $param, 
+    my $ret_val = $self->execute($source, param  => $param, 
                                             filter => $filter);
     
     return $ret_val;
@@ -234,11 +234,11 @@ sub delete {
     }
     
     # Template for delete
-    my $template = "delete from $table $where_clause";
-    $template .= " $append_statement" if $append_statement;
+    my $source = "delete from $table $where_clause";
+    $source .= " $append_statement" if $append_statement;
     
     # Execute query
-    my $ret_val = $self->execute($template, param  => $where, 
+    my $ret_val = $self->execute($source, param  => $where, 
                                             filter => $filter);
     
     return $ret_val;
@@ -269,82 +269,83 @@ sub select {
     my $param    = $args{param} || {};
     
     # SQL template for select statement
-    my $template = 'select ';
+    my $source = 'select ';
     
     # Column clause
     if (@$columns) {
         foreach my $column (@$columns) {
-            $template .= "$column, ";
+            $source .= "$column, ";
         }
-        $template =~ s/, $/ /;
+        $source =~ s/, $/ /;
     }
     else {
-        $template .= '* ';
+        $source .= '* ';
     }
     
     # Table
-    $template .= 'from ';
+    $source .= 'from ';
     foreach my $table (@$tables) {
-        $template .= "$table, ";
+        $source .= "$table, ";
     }
-    $template =~ s/, $/ /;
+    $source =~ s/, $/ /;
     
     # Where clause
     my @where_keys = keys %$where;
     if (@where_keys) {
-        $template .= 'where ';
+        $source .= 'where ';
         foreach my $where_key (@where_keys) {
-            $template .= "{= $where_key} and ";
+            $source .= "{= $where_key} and ";
         }
     }
-    $template =~ s/ and $//;
+    $source =~ s/ and $//;
     
     # Relation
     if ($relation) {
-        $template .= @where_keys ? "and " : "where ";
+        $source .= @where_keys ? "and " : "where ";
         foreach my $rkey (keys %$relation) {
-            $template .= "$rkey = " . $relation->{$rkey} . " and ";
+            $source .= "$rkey = " . $relation->{$rkey} . " and ";
         }
     }
-    $template =~ s/ and $//;
+    $source =~ s/ and $//;
     
     # Append some statement
-    $template .= " $append" if $append;
+    $source .= " $append" if $append;
     
     # Execute query
-    my $result = $self->execute($template, param  => $where, 
+    my $result = $self->execute($source, param  => $where, 
                                            filter => $filter);
     
     return $result;
 }
 
-sub create_query {
-    my ($self, $template) = @_;
+sub build_query {
+    my ($self, $source) = @_;
     
-    # Create query from SQL template
-    my $sql_template = $self->sql_template;
-    
+    # Cache
     my $cache = $self->cache;
     
     # Create query
     my $query;
     if ($cache) {
         
-        # Cached query
-        my $q = $self->cache_method->($self, $template);
+        # Get query
+        my $q = $self->cache_method->($self, $source);
         
         # Create query
         $query = DBIx::Custom::Query->new($q) if $q;
     }
     
     unless ($query) {
+
+        # Create SQL object
+        my $builder = $self->sql_builder;
         
         # Create query
-        $query = eval{$sql_template->create_query($template)};
+        $query = eval{$builder->build_query($source)};
         croak($@) if $@;
         
         # Cache query
-        $self->cache_method->($self, $template,
+        $self->cache_method->($self, $source,
                              {sql     => $query->sql, 
                               columns => $query->columns})
           if $cache;
@@ -375,14 +376,14 @@ sub execute{
     
     # First argument is SQL template
     unless (ref $query eq 'DBIx::Custom::Query') {
-        my $template;
+        my $source;
         
         if (ref $query eq 'ARRAY') {
-            $template = $query->[0];
+            $source = $query->[0];
         }
-        else { $template = $query }
+        else { $source = $query }
         
-        $query = $self->create_query($template);
+        $query = $self->build_query($source);
     }
     
     my $filter = $args{filter} || $query->filter || {};
@@ -398,15 +399,13 @@ sub execute{
     # Return resultset if select statement is executed
     if ($sth->{NUM_OF_FIELDS}) {
         
-        # Get result class
-        my $result_class = $self->result_class;
-        
         # Create result
-        my $result = $result_class->new({
-            sth             => $sth,
-            default_filter  => $self->default_fetch_filter,
-            filters         => $self->filters
-        });
+        my $result = $self->result_class->new(
+            sth            => $sth,
+            default_filter => $self->default_fetch_filter,
+            filters        => $self->filters
+        );
+
         return $result;
     }
     return $affected;
@@ -434,7 +433,7 @@ sub _build_bind_values {
         $filter ||= {};
         
         # Filter name
-        my $fname = $filter->{$column} || $self->default_query_filter || '';
+        my $fname = $filter->{$column} || $self->default_bind_filter || '';
         
         my $filter_func;
         if ($fname) {
@@ -530,13 +529,13 @@ This module is not stable. Method name and implementations will be changed.
                   filter => {tilte => 'encode_utf8'});
 
     # Create query and execute it
-    my $query = $dbi->create_query(
+    my $query = $dbi->build_query(
         "select id from books where {= author} && {like title}"
     );
     $dbi->execute($query, param => {author => 'ken', title => '%Perl%'})
     
     # Default filter
-    $dbi->default_query_filter('encode_utf8');
+    $dbi->default_bind_filter('encode_utf8');
     $dbi->default_fetch_filter('decode_utf8');
     
     # Fetch
@@ -635,10 +634,10 @@ By default, "encode_utf8" and "decode_utf8" is registered.
     $encode_utf8 = $dbi->filters->{encode_utf8};
     $decode_utf8 = $dbi->filters->{decode_utf8};
 
-=head2 C<default_query_filter>
+=head2 C<default_bind_filter>
 
-    $dbi                  = $dbi->default_query_filter('encode_utf8');
-    $default_query_filter = $dbi->default_query_filter
+    $dbi                 = $dbi->default_bind_filter('encode_utf8');
+    $default_bind_filter = $dbi->default_bind_filter
 
 Default filter for value binding
 
@@ -655,16 +654,16 @@ Default filter for fetching.
     $result_class = $dbi->result_class;
 
 Result class for select statement.
-Default to L<DBIx::Custom::Result>
+Default to L<DBIx::Custom::Result>.
 
-=head2 C<sql_template>
+=head2 C<sql_builder>
 
-    $dbi          = $dbi->sql_template(DBIx::Cutom::SQLTemplate->new);
-    $sql_template = $dbi->sql_template;
+    $dbi       = $dbi->sql_builder('DBIx::Cutom::QueryBuilder);
+    $sql_class = $dbi->sql_builder;
 
-SQLTemplate instance. sql_template attribute must be 
-the instance of L<DBIx::Cutom::SQLTemplate> subclass.
-Default to DBIx::Cutom::SQLTemplate object
+SQL builder. sql_builder_class must be 
+the instance of L<DBIx::Cutom::QueryBuilder> subclass
+Default to DBIx::Custom::QueryBuilder.
 
 =head1 METHODS
 
@@ -796,19 +795,19 @@ B<Example:>
         relation => {'books.id' => 'rental.book_id'}
     );
 
-=head2 C<create_query>
+=head2 C<build_query>
     
-    my $query = $dbi->create_query(
+    my $query = $dbi->build_query(
         "select * from authors where {= name} and {= age};"
     );
 
-Create the instance of L<DBIx::Custom::Query>. 
-This receive the string written by SQL template.
+Build the instance of L<DBIx::Custom::Query>
+using L<DBIx::Custom::QueryBuilder>.
 
 =head2 C<execute>
 
     $result = $dbi->execute($query,    param => $params, filter => {%filter});
-    $result = $dbi->execute($template, param => $params, filter => {%filter});
+    $result = $dbi->execute($source, param => $params, filter => {%filter});
 
 Execute the instace of L<DBIx::Custom::Query> or
 the string written by SQL template.
@@ -822,8 +821,6 @@ B<Example:>
     while (my $row = $result->fetch) {
         # do something
     }
-
-See also L<DBIx::Custom::SQLTemplate> to know how to write SQL template.
 
 =head2 C<register_filter>
 
