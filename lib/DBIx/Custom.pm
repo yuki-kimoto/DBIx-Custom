@@ -77,7 +77,7 @@ sub connect {
 sub register_filter {
     my $invocant = shift;
     
-    # Add filter
+    # Register filter
     my $filters = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $invocant->filters({%{$invocant->filters}, %$filters});
     
@@ -91,7 +91,7 @@ sub insert {
 
     # Check arguments
     foreach my $name (keys %args) {
-        croak "\"$name\" is invalid name"
+        croak qq{"$name" is invalid name}
           unless $VALID_INSERT_ARGS{$name};
     }
     
@@ -103,10 +103,6 @@ sub insert {
     
     # Insert keys
     my @insert_keys = keys %$param;
-    
-    # Not exists insert keys
-    croak("Key-value pairs for insert must be specified to 'insert' second argument")
-      unless @insert_keys;
     
     # Templte for insert
     my $source = "insert into $table {insert "
@@ -128,7 +124,7 @@ sub update {
     
     # Check arguments
     foreach my $name (keys %args) {
-        croak "\"$name\" is invalid name"
+        croak qq{"$name" is invalid name}
           unless $VALID_UPDATE_ARGS{$name};
     }
     
@@ -143,15 +139,11 @@ sub update {
     # Update keys
     my @update_keys = keys %$param;
     
-    # Not exists update kyes
-    croak("Key-value pairs for update must be specified to 'update' second argument")
-      unless @update_keys;
-    
     # Where keys
     my @where_keys = keys %$where;
     
     # Not exists where keys
-    croak("Key-value pairs for where clause must be specified to 'update' third argument")
+    croak qq{"where" must contain column-value pair}
       if !@where_keys && !$allow_update_all;
     
     # Update clause
@@ -174,7 +166,7 @@ sub update {
     my $source = "update $table $update_clause $where_clause";
     $source .= " $append_statement" if $append_statement;
     
-    # Rearrange parammeters
+    # Rearrange parameters
     foreach my $wkey (@where_keys) {
         
         if (exists $param->{$wkey}) {
@@ -205,7 +197,7 @@ sub delete {
     
     # Check arguments
     foreach my $name (keys %args) {
-        croak "\"$name\" is invalid name"
+        croak qq{"$name" is invalid name}
           unless $VALID_DELETE_ARGS{$name};
     }
     
@@ -220,7 +212,7 @@ sub delete {
     my @where_keys = keys %$where;
     
     # Not exists where keys
-    croak("Key-value pairs for where clause must be specified to 'delete' second argument")
+    croak qq{Key-value pairs for where clause must be specified to "delete" second argument}
       if !@where_keys && !$allow_delete_all;
     
     # Where clause
@@ -254,7 +246,7 @@ sub select {
     
     # Check arguments
     foreach my $name (keys %args) {
-        croak "\"$name\" is invalid name"
+        croak qq{"$name" is invalid name}
           unless $VALID_SELECT_ARGS{$name};
     }
     
@@ -342,7 +334,7 @@ sub build_query {
         
         # Create query
         $query = eval{$builder->build_query($source)};
-        croak($@) if $@;
+        croak $@ if $@;
         
         # Cache query
         $self->cache_method->($self, $source,
@@ -368,23 +360,15 @@ sub execute{
     
     # Check arguments
     foreach my $name (keys %args) {
-        croak "\"$name\" is invalid name"
+        croak qq{"$name" is invalid name}
           unless $VALID_EXECUTE_ARGS{$name};
     }
     
     my $params = $args{param} || {};
     
     # First argument is SQL template
-    unless (ref $query eq 'DBIx::Custom::Query') {
-        my $source;
-        
-        if (ref $query eq 'ARRAY') {
-            $source = $query->[0];
-        }
-        else { $source = $query }
-        
-        $query = $self->build_query($source);
-    }
+    $query = $self->build_query($query)
+      unless ref $query;
     
     my $filter = $args{filter} || $query->filter || {};
     
@@ -421,7 +405,7 @@ sub _build_bind_values {
     my $count = {};
     foreach my $column (@{$query->columns}) {
         
-        croak "\"$column\" is not exists in params"
+        croak qq{"$column" is not exists in params}
           unless exists $params->{$column};
         
         # Value
@@ -443,7 +427,7 @@ sub _build_bind_values {
             }
             else {
                 my $filters = $self->filters;
-                croak "Not exists filter \"$fname\""
+                croak qq{Not exists filter "$fname"}
                   unless exists $filters->{$fname};
                 $filter_func = $filters->{$fname};
             }            

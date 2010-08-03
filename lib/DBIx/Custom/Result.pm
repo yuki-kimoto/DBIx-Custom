@@ -10,29 +10,29 @@ use Carp 'croak';
 __PACKAGE__->attr([qw/sth filters default_filter filter/]);
 
 sub fetch {
-
-    $_[0]->{filters} ||= {};
-    $_[0]->{filter}  ||= {};
+    my $self = shift;
+    
+    $self->{filters} ||= {};
+    $self->{filter}  ||= {};
     
     # Fetch
-    my @row = $_[0]->{sth}->fetchrow_array;
+    my @row = $self->{sth}->fetchrow_array;
     
     # Cannot fetch
     return unless @row;
 
     # Filter
-    for (my $i = 0; $i < @{$_[0]->{sth}->{NAME_lc}}; $i++) {
-        my $fname  = $_[0]->{filter}->{$_[0]->{sth}->{NAME_lc}->[$i]} 
-                  || $_[0]->{default_filter};
+    for (my $i = 0; $i < @{$self->{sth}->{NAME_lc}}; $i++) {
         
-        croak "Filter \"$fname\" is not registered."
-          if $fname && ! exists $_[0]->{filters}->{$fname};
+        # Filter name
+        my $column = $self->{sth}->{NAME_lc}->[$i];
+        my $fname  = exists $self->{filter}->{$column}
+                   ? $self->{filter}->{$column}
+                   : $self->{default_filter};
         
-        next unless $fname;
-        
-        $row[$i] = ref $fname
-                   ? $fname->($row[$i]) 
-                   : $_[0]->{filters}->{$fname}->($row[$i]);
+        # Filter
+        $row[$i] = $self->{filters}->{$fname}->($row[$i])
+          if $fname;
     }
 
     return \@row;
@@ -57,7 +57,7 @@ sub fetch_multi {
     my ($self, $count) = @_;
     
     # Not specified Row count
-    croak("Row count must be specified")
+    croak 'Row count must be specified'
       unless $count;
     
     # Fetch multi rows
@@ -86,30 +86,31 @@ sub fetch_all {
 }
 
 sub fetch_hash {
-
-    $_[0]->{filters} ||= {};
-    $_[0]->{filter}  ||= {};
+    my $self = shift;
+    
+    $self->{filters} ||= {};
+    $self->{filter}  ||= {};
     
     # Fetch
-    my $row = $_[0]->{sth}->fetchrow_arrayref;
+    my $row = $self->{sth}->fetchrow_arrayref;
     
     # Cannot fetch
     return unless $row;
     
     # Filter
     my $row_hash = {};
-    for (my $i = 0; $i < @{$_[0]->{sth}->{NAME_lc}}; $i++) {
+    for (my $i = 0; $i < @{$self->{sth}->{NAME_lc}}; $i++) {
         
-        my $fname  = $_[0]->{filter}->{$_[0]->{sth}->{NAME_lc}->[$i]}
-                  || $_[0]->{default_filter};
+        # Filter name
+        my $column = $self->{sth}->{NAME_lc}->[$i];
+        my $fname  = exists $self->{filter}->{$column}
+                   ? $self->{filter}->{$column}
+                   : $self->{default_filter};
         
-        croak "Filter \"$fname\" is not registered."
-          if $fname && ! exists $_[0]->{filters}->{$fname};
-        
-        $row_hash->{$_[0]->{sth}->{NAME_lc}->[$i]}
-          = !$fname    ? $row->[$i] :
-            ref $fname ? $fname->($row->[$i]) :
-            $_[0]->{filters}->{$fname}->($row->[$i]);
+        # Filter
+        $row_hash->{$column}
+          = $fname ? $self->{filters}->{$fname}->($row->[$i]) 
+                   : $row->[$i];
     }
     
     return $row_hash;
@@ -134,7 +135,7 @@ sub fetch_hash_multi {
     my ($self, $count) = @_;
     
     # Not specified Row count
-    croak("Row count must be specified")
+    croak 'Row count must be specified'
       unless $count;
     
     # Fetch multi rows
@@ -159,6 +160,7 @@ sub fetch_hash_all {
     while(my $row = $self->fetch_hash) {
         push @$rows, $row;
     }
+    
     return $rows;
 }
 

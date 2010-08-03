@@ -227,6 +227,10 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, append => '   '
 $rows = $dbi->select(table => 'table1')->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], 'insert append');
 
+eval{$dbi->insert(table => 'table1', noexist => 1)};
+like($@, qr/noexist/, "$test: invalid name");
+
+
 test 'update';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});
@@ -261,8 +265,14 @@ is_deeply($rows, [{key1 => 1, key2 => 22, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "$test : filter");
 
-
 $result = $dbi->update(table => 'table1', param => {key2 => 11}, where => {key1 => 1}, append => '   ');
+
+eval{$dbi->update(table => 'table1', noexist => 1)};
+like($@, qr/noexist/, "$test: invalid name");
+
+eval{$dbi->update(table => 'table1')};
+like($@, qr/where/, "$test: not contain where");
+
 
 test 'update_all';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -306,11 +316,15 @@ $dbi->delete(table => 'table1', where => {key1 => 1, key2 => 2});
 $rows = $dbi->select(table => 'table1')->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "$test : delete multi key");
 
+eval{$dbi->delete(table => 'table1', noexist => 1)};
+like($@, qr/noexist/, "$test: invalid name");
+
+
 test 'delete error';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 eval{$dbi->delete(table => 'table1')};
-like($@, qr/Key-value pairs for where clause must be specified to 'delete' second argument/,
+like($@, qr/Key-value pairs for where clause must be specified to "delete" second argument/,
          "$test : where key-value pairs not specified");
 
 test 'delete_all';
@@ -366,6 +380,10 @@ $rows = $dbi->select(
     relation  => {'table1.key1' => 'table2.key1'}
 )->fetch_hash_all;
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "$test : relation : no exists where");
+
+eval{$dbi->select(table => 'table1', noexist => 1)};
+like($@, qr/noexist/, "$test: invalid name");
+
 
 test 'fetch filter';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -424,4 +442,5 @@ $dbi->{_cached} = {};
 $dbi->cache(0);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is(scalar keys %{$dbi->{_cached}}, 0, 'not cache');
+
 

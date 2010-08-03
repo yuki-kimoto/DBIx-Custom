@@ -5,8 +5,6 @@ use warnings;
 
 use base 'DBIx::Custom';
 
-use Carp 'croak';
-
 __PACKAGE__->attr('database');
 
 sub connect {

@@ -12,13 +12,13 @@ use DBIx::Custom::QueryBuilder::TagProcessor;
 __PACKAGE__->dual_attr('tag_processors', default => sub { {} }, inherit => 'hash_copy');
 __PACKAGE__->register_tag_processor(
     '?'      => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_placeholder_tag,
-    '='      => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_basic_tag,
-    '<>'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_basic_tag,
-    '>'      => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_basic_tag,
-    '<'      => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_basic_tag,
-    '>='     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_basic_tag,
-    '<='     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_basic_tag,
-    'like'   => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_basic_tag,
+    '='      => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_equal_tag,
+    '<>'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_not_equal_tag,
+    '>'      => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_greater_than_tag,
+    '<'      => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_lower_than_tag,
+    '>='     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_greater_than_equal_tag,
+    '<='     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_lower_than_equal_tag,
+    'like'   => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_like_tag,
     'in'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_in_tag,
     'insert' => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_insert_tag,
     'update' => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_update_tag
@@ -29,26 +29,29 @@ __PACKAGE__->attr(tag_end   => '}');
 
 __PACKAGE__->attr('tag_syntax' => <<'EOS');
 [tag]                     [expand]
-{? name}                  ?
-{= name}                  name = ?
-{<> name}                 name <> ?
+{? NAME}                  ?
+{= NAME}                  NAME = ?
+{<> NAME}                 NAME <> ?
 
-{< name}                  name < ?
-{> name}                  name > ?
-{>= name}                 name >= ?
-{<= name}                 name <= ?
+{< NAME}                  NAME < ?
+{> NAME}                  NAME > ?
+{>= NAME}                 NAME >= ?
+{<= NAME}                 NAME <= ?
 
-{like name}               name like ?
-{in name number}          name in [?, ?, ..]
+{like NAME}               NAME like ?
+{in NAME number}          NAME in [?, ?, ..]
 
-{insert key1 key2} (key1, key2) values (?, ?)
-{update key1 key2}    set key1 = ?, key2 = ?
+{insert NAME1 NAME2}      (NAME1, NAME2) values (?, ?)
+{update NAME1 NAME2}      set NAME1 = ?, NAME2 = ?
 EOS
 
 sub register_tag_processor {
     my $self = shift;
+    
+    # Merge
     my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $self->tag_processors({%{$self->tag_processors}, %{$tag_processors}});
+    
     return $self;
 }
 
@@ -67,9 +70,6 @@ sub build_query {
 sub _parse {
     my ($self, $source) = @_;
     
-    if (ref $source eq 'ARRAY') {
-        $source = $source->[1];
-    }
     $source ||= '';
     
     my $tree = [];
@@ -99,17 +99,18 @@ sub _parse {
             # Tag processor is exist?
             unless ($self->tag_processors->{$tag_name}) {
                 my $tag_syntax = $self->tag_syntax;
-                croak("Tag '{$tag}' is not registerd.\n\n" .
+                croak qq{Tag "{$tag}" is not registerd.\n\n} .
                       "<SQL builder syntax>\n" .
                       "$tag_syntax\n" .
                       "<Your source>\n" .
-                      "$original\n\n");
+                      "$original\n\n";
             }
             
             # Check tag arguments
             foreach my $tag_arg (@tag_args) {
+            
                 # Cannot cantain placehosder '?'
-                croak("Tag '{t }' arguments cannot contain '?'")
+                croak qq{Tag cannot contain "?"}
                   if $tag_arg =~ /\?/;
             }
             
@@ -130,7 +131,7 @@ sub _build_query {
     # SQL
     my $sql = '';
     
-    # All parameter key infomation
+    # All Columns
     my $all_columns = [];
     
     # Build SQL 
@@ -154,22 +155,21 @@ sub _build_query {
             my $tag_processor = $self->tag_processors->{$tag_name};
             
             # Tag processor is code ref?
-            croak("Tag processor '$tag_name' must be code reference")
+            croak qq{Tag processor "$tag_name" must be code reference}
               unless ref $tag_processor eq 'CODE';
             
             # Expand tag using tag processor
-            my ($expand, $columns) = $tag_processor->($tag_name, $tag_args);
+            my ($expand, $columns) = @{$tag_processor->($tag_args)};
             
             # Check tag processor return value
-            croak("Tag processor '$tag_name' must return (\$expand, \$columns)")
+            croak qq{Tag processor "$tag_name" must return [\$expand, \$columns]}
               if !defined $expand || ref $columns ne 'ARRAY';
             
             # Check placeholder count
-            croak("Placeholder count in SQL created by tag processor '$tag_name' " .
-                  "must be same as key informations count")
+            croak qq{Count of Placeholder must be same as count of columns in "$tag_name"}
               unless $self->_placeholder_count($expand) eq @$columns;
             
-            # Add key information
+            # Add columns
             push @$all_columns, @$columns;
             
             # Join expand tag to SQL
@@ -188,8 +188,9 @@ sub _build_query {
 
 sub _placeholder_count {
     my ($self, $expand) = @_;
-    $expand ||= '';
     
+    # Count
+    $expand ||= '';
     my $count = 0;
     my $pos   = -1;
     while (($pos = index($expand, '?', $pos + 1)) != -1) {

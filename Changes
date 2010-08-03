@@ -1,4 +1,5 @@
 0.1604
+  changed argument of tag processor(not backword compatible)
   renamed default_query_filter to default_bind_filter(not backword compatible)
   renamed DBIx::Custom::SQLTemplate to DBIx::Custom::SQLBuilder(not backword compatible)
   renamed create_query to build_query(not backword compatible)

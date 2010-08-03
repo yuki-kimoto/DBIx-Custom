@@ -100,3 +100,7 @@ test 'register_filters';
 $dbi = DBIx::Custom->new;
 $dbi->register_filter(a => sub {1});
 is($dbi->filters->{a}->(), 1, $test);
+$dbi->register_filter({b => sub {2}});
+is($dbi->filters->{b}->(), 2, $test);
+
+
