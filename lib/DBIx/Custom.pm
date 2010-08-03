@@ -587,32 +587,32 @@ Provide suger methods, such as insert(), update(), delete(), and select().
 
 =head2 C<user>
 
-    $dbi  = $dbi->user('Ken');
-    $user = $dbi->user;
+    my $user = $dbi->user;
+    $dbi     = $dbi->user('Ken');
 
 Database user name.
 This is used for connect().
     
 =head2 C<password>
 
-    $dbi      = $dbi->password('lkj&le`@s');
-    $password = $dbi->password;
+    my $password = $dbi->password;
+    $dbi         = $dbi->password('lkj&le`@s');
 
 Database password.
 This is used for connect().
 
 =head2 C<data_source>
 
-    $dbi         = $dbi->data_source("dbi:mysql:dbname=$database");
-    $data_source = $dbi->data_source;
+    my $data_source = $dbi->data_source;
+    $dbi            = $dbi->data_source("dbi:mysql:dbname=$database");
 
 Database data source.
 This is used for connect().
 
 =head2 C<dbh>
 
-    $dbi = $dbi->dbh($dbh);
-    $dbh = $dbi->dbh;
+    my $dbh = $dbi->dbh;
+    $dbi    = $dbi->dbh($dbh);
 
 Database handle. This is a L<DBI> object.
 You can call all methods of L<DBI>
@@ -625,8 +625,8 @@ You can call all methods of L<DBI>
     
 =head2 C<filters>
 
-    $dbi     = $dbi->filters({%filters});
-    $filters = $dbi->filters;
+    my $filters = $dbi->filters;
+    $dbi        = $dbi->filters({%filters});
 
 Filter functions.
 By default, "encode_utf8" and "decode_utf8" is registered.
@@ -636,33 +636,33 @@ By default, "encode_utf8" and "decode_utf8" is registered.
 
 =head2 C<default_bind_filter>
 
-    $dbi                 = $dbi->default_bind_filter('encode_utf8');
-    $default_bind_filter = $dbi->default_bind_filter
+    my $default_bind_filter = $dbi->default_bind_filter
+    $dbi                    = $dbi->default_bind_filter('encode_utf8');
 
 Default filter for value binding
 
 =head2 C<default_fetch_filter>
 
-    $dbi                  = $dbi->default_fetch_filter('decode_utf8');
-    $default_fetch_filter = $dbi->default_fetch_filter;
+    my $default_fetch_filter = $dbi->default_fetch_filter;
+    $dbi                     = $dbi->default_fetch_filter('decode_utf8');
 
 Default filter for fetching.
 
 =head2 C<result_class>
 
-    $dbi          = $dbi->result_class('DBIx::Custom::Result');
-    $result_class = $dbi->result_class;
+    my $result_class = $dbi->result_class;
+    $dbi             = $dbi->result_class('DBIx::Custom::Result');
 
 Result class for select statement.
 Default to L<DBIx::Custom::Result>.
 
 =head2 C<sql_builder>
 
-    $dbi       = $dbi->sql_builder('DBIx::Cutom::QueryBuilder);
-    $sql_class = $dbi->sql_builder;
+    my $sql_class = $dbi->sql_builder;
+    $dbi          = $dbi->sql_builder(DBIx::Custom::QueryBuilder->new);
 
-SQL builder. sql_builder_class must be 
-the instance of L<DBIx::Cutom::QueryBuilder> subclass
+SQL builder. sql_builder must be 
+the instance of L<DBIx::Custom::QueryBuilder> subclass
 Default to DBIx::Custom::QueryBuilder.
 
 =head1 METHODS

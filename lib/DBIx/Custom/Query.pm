@@ -21,36 +21,36 @@ DBIx::Custom::Query - Query
 
 =head2 C<sql>
 
-    $query = $query->sql($sql);
-    $sql   = $query->sql;
+    my $sql = $query->sql;
+    $query  = $query->sql($sql);
 
 SQL statement.
 
 =head2 C<columns>
 
-    $query   = $query->columns([@columns]);
-    $columns = $query->columns;
+    my $columns = $query->columns;
+    $query      = $query->columns(\@columns);
 
 Column names.
 
 =head2 C<default_filter>
 
-    $query          = $query->default_filter($filter);
-    $default_filter = $query->default_filter;
+    my $default_filter = $query->default_filter;
+    $query             = $query->default_filter($filter);
 
 Default filter for value binding.
 
 =head2 C<filter>
 
-    $query  = $query->filter({%filter});
-    $filter = $query->filter;
+    my $filter = $query->filter;
+    $query     = $query->filter(\%filter);
 
 Filters for value binding
 
 =head2 C<sth>
 
-    $query = $query->sth($sth);
-    $sth   = $query->sth;
+    my $sth = $query->sth;
+    $query  = $query->sth($sth);
 
 Statement handle.
 

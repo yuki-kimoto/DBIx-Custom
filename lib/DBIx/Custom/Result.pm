@@ -166,7 +166,7 @@ sub fetch_hash_all {
 
 =head1 NAME
 
-DBIx::Custom::Result - Manipulate the result of select statement
+DBIx::Custom::Result - Result of select
 
 =head1 SYNOPSIS
     
@@ -215,22 +215,22 @@ DBIx::Custom::Result - Manipulate the result of select statement
 
 =head2 C<sth>
 
+    my $sth = $reuslt->sth
     $result = $result->sth($sth);
-    $sth    = $reuslt->sth
 
 Statement handle.
 
 =head2 C<default_filter>
 
-    $result         = $result->default_filter('decode_utf8');
-    $default_filter = $result->default_filter;
+    my $default_filter = $result->default_filter;
+    $result            = $result->default_filter('decode_utf8');
 
 Default filter for fetching.
 
 =head2 C<filter>
 
+    my $filter = $result->filter;
     $result = $result->filter({title => 'decode_utf8'});
-    $filter = $result->filter;
 
 Filters for fetching.
 

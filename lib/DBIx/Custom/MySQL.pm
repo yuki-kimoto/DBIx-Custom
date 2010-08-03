@@ -36,7 +36,7 @@ sub last_insert_id { shift->dbh->{mysql_insertid} }
 
 =head1 NAME
 
-DBIx::Custom::MySQL - Implementation for MySQL
+DBIx::Custom::MySQL - MySQL implementation
 
 =head1 SYNOPSYS
 
@@ -55,16 +55,16 @@ You can use all attributes of L<DBIx::Custom>
 
 =head2 C<database>
 
-    $dbi      = $dbi->database('your_database');
-    $database = $dbi->database;
+    my $database = $dbi->database;
+    $dbi         = $dbi->database('your_database');
 
 Database name.
 This is used for connect().
 
 =head2 C<host>
 
-    $dbi  = $dbi->host('somehost.com');
-    $host = $dbi->host;
+    my $host = $dbi->host;
+    $dbi     = $dbi->host('somehost.com');
 
 Database host name.
 You can also set IP address, instead of host name.
@@ -74,8 +74,8 @@ This is used for connect().
 
 =head2 C<port>
 
-    $dbi  = $dbi->port(1198);
-    $port = $dbi->port;
+    my $port = $dbi->port;
+    $dbi     = $dbi->port(1198);
 
 Database port. This is used for connect().
 

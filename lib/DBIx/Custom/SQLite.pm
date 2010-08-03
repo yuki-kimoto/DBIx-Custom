@@ -41,7 +41,7 @@ sub last_insert_rowid { shift->dbh->func('last_insert_rowid') }
 
 =head1 NAME
 
-DBIx::Custom::SQLite - Implementation for SQLite
+DBIx::Custom::SQLite - SQLite implementation
 
 =head1 SYNOPSYS
 
@@ -63,8 +63,8 @@ You can use all attributes of L<DBIx::Custom>.
 
 =head2 C<database>
 
-    $dbi      = $dbi->database('your_database');
-    $database = $dbi->database;
+    my $database = $dbi->database;
+    $dbi         = $dbi->database('your_database');
 
 Database name.
 This is used for connect().
