@@ -96,7 +96,7 @@ and implements the following new ones.
     );
 
 Create a new L<DBIx::Custom::MySQL> object and connect to the database.
-This method override C<DBIx::Custom::connect()> method.
+This method overrides C<DBIx::Custom::connect()> method.
 You can specify all attributes of L<DBIx::Custom>
 and L<DBIx::Custom::MySQL>, such as C<database>, C<host>, C<port>.
 

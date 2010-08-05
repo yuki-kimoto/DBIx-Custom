@@ -22,41 +22,42 @@ DBIx::Custom::Query - Query
 =head2 C<sql>
 
     my $sql = $query->sql;
-    $query  = $query->sql($sql);
+    $query  = $query->sql('select * from books where author = ?;');
 
 SQL statement.
 
 =head2 C<columns>
 
     my $columns = $query->columns;
-    $query      = $query->columns(\@columns);
+    $query      = $query->columns(['auhtor', 'title']);
 
 Column names.
 
 =head2 C<default_filter>
 
     my $default_filter = $query->default_filter;
-    $query             = $query->default_filter($filter);
+    $query             = $query->default_filter('encode_utf8');
 
-Default filter for value binding.
+Default filter when parameter binding is executed.
 
 =head2 C<filter>
 
     my $filter = $query->filter;
-    $query     = $query->filter(\%filter);
+    $query     = $query->filter({author => 'encode_utf8',
+                                 title  => 'encode_utf8'});
 
-Filters for value binding
+Filters when parameter binding is executed.
+This overrides C<default_filter>.
 
 =head2 C<sth>
 
     my $sth = $query->sth;
     $query  = $query->sth($sth);
 
-Statement handle.
+Statement handle of L<DBI>
 
 =head1 METHODS
 
-This class is L<Object::Simple> subclass.
-You can use all methods of L<Object::Simple>.
+L<DBIx::Custom::Query> inherits all methods from L<Object::Simple>.
 
 =cut

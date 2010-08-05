@@ -78,7 +78,7 @@ and implements the following new ones.
     my $dbi = DBIx::Custom::SQLite->connect(database  => 'dbname');
 
 Create a new L<DBIx::Custom::SQLite> object and connect to the database.
-This method override C<DBIx::Custom::connect()> method.
+This method overrides C<DBIx::Custom::connect()> method.
 You can specify all attributes of L<DBIx::Custom>
 and L<DBIx::Custom::SQLite>, such as C<database>.
 
