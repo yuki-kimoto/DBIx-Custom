@@ -450,7 +450,7 @@ DBIx::Custom - DBI with hash parameter binding and filtering system
 
 =cut
 
-our $VERSION = '0.1604';
+our $VERSION = '0.1605';
 
 =head1 STABILITY
 

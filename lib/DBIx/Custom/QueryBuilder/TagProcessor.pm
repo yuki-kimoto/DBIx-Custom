@@ -5,11 +5,8 @@ use warnings;
 
 use Carp 'croak';
 
-sub expand_basic_tag {
-    my ($name, $args) = @_;
-    
-    # Column
-    my $column = $args->[0];
+sub _basic {
+    my ($name, $column) = @_;
     
     # Check arguments
     croak qq{Column must be specified in tag "{$name }"}
@@ -18,19 +15,16 @@ sub expand_basic_tag {
     return ["$column $name ?", [$column]];
 }
 
-sub expand_equal_tag              { expand_basic_tag('=', @_) }
-sub expand_not_equal_tag          { expand_basic_tag('<>', @_) }
-sub expand_greater_than_tag       { expand_basic_tag('>', @_) }
-sub expand_lower_than_tag         { expand_basic_tag('<', @_) }
-sub expand_greater_than_equal_tag { expand_basic_tag('>=', @_) }
-sub expand_lower_than_equal_tag   { expand_basic_tag('<=', @_) }
-sub expand_like_tag               { expand_basic_tag('like', @_) }
+sub equal              { _basic('=',    @_) }
+sub not_equal          { _basic('<>',   @_) }
+sub greater_than       { _basic('>',    @_) }
+sub lower_than         { _basic('<',    @_) }
+sub greater_than_equal { _basic('>=',   @_) }
+sub lower_than_equal   { _basic('<=',   @_) }
+sub like               { _basic('like', @_) }
 
-sub expand_placeholder_tag {
-    my $tag_args = shift;
-    
-    # Column
-    my $column = $tag_args->[0];
+sub placeholder {
+    my $column = shift;
     
     # Check arguments
     croak qq{Column must be specified in tag "{? }"}
@@ -39,8 +33,8 @@ sub expand_placeholder_tag {
     return ['?', [$column]];
 }
 
-sub expand_in_tag {
-    my ($column, $count) = @{$_[0]};
+sub in {
+    my ($column, $count) = @_;
     
     # Check arguments
     croak qq{Column and count of values must be specified in tag "{in }"}
@@ -61,31 +55,31 @@ sub expand_in_tag {
     return [$expand, $columns];
 }
 
-sub expand_insert_tag {
-    my $columns = shift;
+sub insert {
+    my @columns = @_;
     
     # Insert
     my $expand = '(';
-    $expand .= "$_, " for @$columns;
+    $expand .= "$_, " for @columns;
     $expand =~ s/, $//;
     $expand .= ') ';
     $expand .= 'values (';
-    $expand .= "?, " for @$columns;
+    $expand .= "?, " for @columns;
     $expand =~ s/, $//;
     $expand .= ')';
     
-    return [$expand, [@$columns]];
+    return [$expand, \@columns];
 }
 
-sub expand_update_tag {
-    my $columns = shift;
+sub update {
+    my @columns = @_;
     
     # Update
     my $expand = 'set ';
-    $expand .= "$_ = ?, " for @$columns;
+    $expand .= "$_ = ?, " for @columns;
     $expand =~ s/, $//;
     
-    return [$expand, [@$columns]];
+    return [$expand, \@columns];
 }
 
 1;
@@ -96,25 +90,25 @@ DBIx::Custom::SQLBuilder::TagProcessors - Tag processor
 
 =head1 FUNCTIONS
 
-=head2 C<expand_basic_tag>
+=head2 C<placeholder>
 
-=head2 C<expand_equal_tag>
+=head2 C<equal>
 
-=head2 C<expand_not_equal_tag>
+=head2 C<not_equal>
 
-=head2 C<expand_greater_than_tag>
+=head2 C<greater_than>
 
-=head2 C<expand_lower_than_tag>
+=head2 C<lower_than>
 
-=head2 C<expand_greater_than_equal_tag>
+=head2 C<greater_than_equal>
 
-=head2 C<expand_lower_than_equal_tag>
+=head2 C<lower_than_equal>
 
-=head2 C<expand_like_tag>
+=head2 C<like>
 
-=head2 C<expand_in_tag>
+=head2 C<in>
 
-=head2 C<expand_insert_tag>
+=head2 C<insert>
 
-=head2 C<expand_update_tag>
+=head2 C<update>
 
