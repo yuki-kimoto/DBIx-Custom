@@ -1,6 +1,8 @@
 0.1605
-  changed arguments of tag processor
-  remaned DBIx::Custom::QueryBuilder::TagProcessors functions
+  remove DBIx::Custom::QueryBuilder::tag_syntax()  (not backword compatible)
+  renamed DBIx::Custom::TagProcessor to DBIx::Custom::TagProcessors (not backword compatible)
+  changed arguments of tag processor(not backword compatible)
+  renamed DBIx::Custom::QueryBuilder::TagProcessors functions(not backword compatible)
 0.1604
   changed argument of tag processor(not backword compatible)
   renamed default_query_filter to default_bind_filter(not backword compatible)

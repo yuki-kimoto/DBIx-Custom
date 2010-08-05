@@ -7,7 +7,7 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 use DBIx::Custom::Query;
-use DBIx::Custom::QueryBuilder::TagProcessor;
+use DBIx::Custom::QueryBuilder::TagProcessors;
 
 __PACKAGE__->dual_attr('tag_processors', default => sub { {} }, inherit => 'hash_copy');
 __PACKAGE__->register_tag_processor(
@@ -27,28 +27,10 @@ __PACKAGE__->register_tag_processor(
 __PACKAGE__->attr(tag_start => '{');
 __PACKAGE__->attr(tag_end   => '}');
 
-__PACKAGE__->attr('tag_syntax' => <<'EOS');
-[tag]                     [expand]
-{? NAME}                  ?
-{= NAME}                  NAME = ?
-{<> NAME}                 NAME <> ?
-
-{< NAME}                  NAME < ?
-{> NAME}                  NAME > ?
-{>= NAME}                 NAME >= ?
-{<= NAME}                 NAME <= ?
-
-{like NAME}               NAME like ?
-{in NAME number}          NAME in [?, ?, ..]
-
-{insert NAME1 NAME2}      (NAME1, NAME2) values (?, ?)
-{update NAME1 NAME2}      set NAME1 = ?, NAME2 = ?
-EOS
-
 sub register_tag_processor {
     my $self = shift;
     
-    # Merge
+    # Merge tag processor
     my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $self->tag_processors({%{$self->tag_processors}, %{$tag_processors}});
     
@@ -70,18 +52,26 @@ sub build_query {
 sub _parse {
     my ($self, $source) = @_;
     
+    # Source
     $source ||= '';
     
+    # Tree
     my $tree = [];
     
-    # Tags
+    # Start tag
     my $tag_start = quotemeta $self->tag_start;
+    croak qq{tag_start must be a charactor}
+      if !$tag_start || length $tag_start == 1;
+    
+    # End tag
     my $tag_end   = quotemeta $self->tag_end;
+    croak qq{tag_end must be a charactor}
+      if !$tag_end || length $tag_end == 1;
     
     # Tokenize
     my $state = 'text';
     
-    # Save original
+    # Save original source
     my $original = $source;
     
     # Parse
@@ -96,31 +86,27 @@ sub _parse {
             # Get tag name and arguments
             my ($tag_name, @tag_args) = split /\s+/, $tag;
             
-            # Tag processor is exist?
-            unless ($self->tag_processors->{$tag_name}) {
-                my $tag_syntax = $self->tag_syntax;
-                croak qq{Tag "{$tag}" is not registerd.\n\n} .
-                      "<SQL builder syntax>\n" .
-                      "$tag_syntax\n" .
-                      "<Your source>\n" .
-                      "$original\n\n";
-            }
+            # Tag processor not registerd
+            croak qq{Tag "$tag" in "$original" is not registerd}
+               unless $self->tag_processors->{$tag_name};
             
             # Check tag arguments
             foreach my $tag_arg (@tag_args) {
             
                 # Cannot cantain placehosder '?'
-                croak qq{Tag cannot contain "?"}
+                croak qq{Tag cannot contains "?"}
                   if $tag_arg =~ /\?/;
             }
             
             # Add tag to parsing tree
-            push @$tree, {type => 'tag', tag_name => $tag_name, tag_args => [@tag_args]};
+            push @$tree, {type => 'tag', tag_name => $tag_name,
+                          tag_args => [@tag_args]};
         }
     }
     
     # Add text to parsing tree 
-    push @$tree, {type => 'text', tag_args => [$source]} if $source;
+    push @$tree, {type => 'text', tag_args => [$source]}
+      if $source;
     
     return $tree;
 }
@@ -154,26 +140,26 @@ sub _build_query {
             # Get tag processor
             my $tag_processor = $self->tag_processors->{$tag_name};
             
-            # Tag processor is code ref?
-            croak qq{Tag processor "$tag_name" must be code reference}
+            # Tag processor not sub reference
+            croak qq{Tag processor "$tag_name" must be sub reference}
               unless ref $tag_processor eq 'CODE';
             
-            # Expand tag using tag processor
-            my ($expand, $columns) = @{$tag_processor->(@$tag_args)};
+            # Execute tag processor
+            my ($part, $columns) = @{$tag_processor->(@$tag_args)};
             
             # Check tag processor return value
-            croak qq{Tag processor "$tag_name" must return [\$expand, \$columns]}
-              if !defined $expand || ref $columns ne 'ARRAY';
+            croak qq{Tag processor "$tag_name" must return [STRING, ARRAY_REFERENCE]}
+              if !defined $part || ref $columns ne 'ARRAY';
             
             # Check placeholder count
-            croak qq{Count of Placeholder must be same as count of columns in "$tag_name"}
-              unless $self->_placeholder_count($expand) eq @$columns;
+            croak qq{Count of Placeholders must be same as count of columns in "$tag_name"}
+              unless $self->_placeholder_count($part) eq @$columns;
             
             # Add columns
             push @$all_columns, @$columns;
             
-            # Join expand tag to SQL
-            $sql .= $expand;
+            # Join part tag to SQL
+            $sql .= $part;
         }
     }
     
@@ -208,11 +194,9 @@ DBIx::Custom::QueryBuilder - Query builder
 =head1 SYNOPSIS
     
     my $builder = DBIx::Custom::QueryBuilder->new;
-    
-    my $source = "select from table {= k1} && {<> k2} || {like k3}";
-    my $param = {k1 => 1, k2 => 2, k3 => 3};
-    
-    my $query = $sql_builder->build_query($source);
+    my $query = $builder->build_query(
+        "select from table {= k1} && {<> k2} || {like k3}"
+    );
 
 =head1 ATTRIBUTES
 
@@ -228,77 +212,66 @@ Tag processors.
     my $tag_start = $builder->tag_start;
     $builder      = $builder->tag_start('{');
 
-String of tag start.
-Default to '{'
+Tag start charactor.
+Default to '{'.
 
 =head2 C<tag_end>
     
     my $tag_end = $builder->tag_start;
     $builder    = $builder->tag_start('}');
 
-String of tag end.
-Default to '}'
+Tag end charactor.
+Default to '}'.
     
-=head2 C<tag_syntax>
-    
-    my $tag_syntax = $builder->tag_syntax;
-    $builder       = $builder->tag_syntax($tag_syntax);
-
-Tag syntax.
-
 =head1 METHODS
 
-This class is L<Object::Simple> subclass.
-You can use all methods of L<Object::Simple>
-
-=head2 C<new>
-
-    my $builder = DBIx::Custom::SQLBuilder->new;
-    my $builder = DBIx::Custom::SQLBuilder->new(%attrs);
-    my $builder = DBIx::Custom::SQLBuilder->new(\%attrs);
-
-Create a instance.
+L<DBIx::Custom::QueryBuilder> inherits all methods from L<Object::Simple>
+and implements the following new ones.
 
 =head2 C<build_query>
     
     my $query = $builder->build_query($source);
 
-Build L<DBIx::Custom::Query> object.
+Create a new L<DBIx::Custom::Query> object from SQL source.
+SQL source contains tags, such as {= title}, {like author}.
 
 B<Example:>
 
-Source:
+SQL source
 
-    my $query = $builder->build_query(
-      "select * from table where {= title} && {like author} || {<= price}")
+      "select * from table where {= title} && {like author} || {<= price}"
 
-Query:
+Query
 
-    $qeury->sql : "select * from table where title = ? && author like ? price <= ?;"
-    $query->columns : ['title', 'author', 'price']
+    {
+        sql     => "select * from table where title = ? && author like ? price <= ?;"
+        columns => ['title', 'author', 'price']
+    }
 
 =head2 C<register_tag_processor>
 
-    $builder = $builder->register_tag_processor($tag_processor);
+    $builder->register_tag_processor(\%tag_processors);
+    $builder->register_tag_processor(%tag_processors);
 
 Register tag processor.
 
+B<Examples:>
+
     $builder->register_tag_processor(
         '?' => sub {
-            my $args = shift;
+            my $column = shift;
             
-            # Do something
-            
-            # Expanded tag and column names
-            return ($expand, $columns);
+            return ['?', [$column]];
         }
     );
 
-Tag processor receive arguments in tags
-and must return expanded tag and column names.
+See L<DBIx::Custom::QueryBuilder::TagProcessors> about tag processor.
 
 =head1 Tags
 
+You can use the following tags in SQL source.
+    
+    [Tags]           [Replaced]
     {? NAME}    ->   ?
     {= NAME}    ->   NAME = ?
     {<> NAME}   ->   NAME <> ?
@@ -311,5 +284,5 @@ and must return expanded tag and column names.
     {like NAME}       ->   NAME like ?
     {in NAME COUNT}   ->   NAME in [?, ?, ..]
     
-    {insert NAME1 NAME2 NAME3}   ->   (NAME1, NAME2, NAME3) values (?, ?, ?)
-    {update NAME1 NAME2 NAME3}   ->   set NAME1 = ?, NAME2 = ?, NAME3 = ?
+    {insert NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
+    {update NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?
