@@ -10,10 +10,10 @@ __PACKAGE__->attr('database');
 sub connect {
     my $proto = shift;
     
-    # Create
+    # Create a new object
     my $self = ref $proto ? $proto : $proto->new(@_);
     
-    # Create data source
+    # Data source
     if (!$self->data_source && (my $database = $self->database)) {
         $self->data_source("dbi:SQLite:dbname=$database");
     }
@@ -24,10 +24,10 @@ sub connect {
 sub connect_memory {
     my $self = shift->new(@_);
     
-    # Data source for memory database
+    # Data source
     $self->data_source('dbi:SQLite:dbname=:memory:');
     
-    # Connect
+    # Connect to database
     $self->connect;
     
     return $self;
@@ -45,10 +45,10 @@ DBIx::Custom::SQLite - SQLite implementation
 
     use DBIx::Custom::SQLite;
     
-    # Connect to database
+    # Connect to the database
     my $dbi = DBIx::Custom::SQLite->connect(database  => 'dbname');
     
-    # Connect to memory database
+    # Connect to the memory database
     my $dbi = DBIx::Custom::SQLite->connect_memory;
     
     # Get last insert row id
@@ -56,44 +56,43 @@ DBIx::Custom::SQLite - SQLite implementation
     
 =head1 ATTRIBUTES
 
-This class is L<DBIx::Custom> subclass.
-You can use all attributes of L<DBIx::Custom>.
+L<DBIx::Custom::SQLite> inherits all attributes from L<DBIx::Custom>
+and implements the following new ones.
 
 =head2 C<database>
 
     my $database = $dbi->database;
-    $dbi         = $dbi->database('your_database');
+    $dbi         = $dbi->database('dbname');
 
 Database name.
-This is used for connect().
+C<connect()> method use this value to connect the database
+if C<data_source> is not specified.
 
 =head1 METHODS
 
-This class is L<DBIx::Custom> subclass.
-You can use all methods of L<DBIx::Custom>.
+L<DBIx::Custom::SQLite> inherits all methods from L<DBIx::Custom>
+and implements the following new ones.
 
-=head2 C<connect (overridden)>
+=head2 C<connect>
     
-    $dbi = DBIx::Custom::SQLite->connect(
-        data_source  => "dbi:SQLite:dbname=your_db"
-    );
-    
-    $dbi = DBIx::Custom::SQLite->connect(database  => 'your_db');
+    my $dbi = DBIx::Custom::SQLite->connect(database  => 'dbname');
 
-Connect to database.
-You can also specify database name, instead of data source.
+Create a new L<DBIx::Custom::SQLite> object and connect to database.
+This method override C<DBIx::Custom::connect()> method.
+You can specify all attributes of L<DBIx::Custom>
+and L<DBIx::Custom::SQLite>, such as C<database>.
 
 =head2 C<connect_memory>
 
-    $dbi->connect_memory;
+    my $dbi = DBIx::Custom::SQLite->connect_memory;
 
-Connect to memory database.
+Create a new L<DBIx::Custom::SQLite> object and connect to the memory database.
 
 =head2 C<last_insert_rowid>
 
-    $last_insert_rowid = $dbi->last_insert_rowid;
+    my $last_insert_rowid = $dbi->last_insert_rowid;
 
 Get last insert row id.
-This is equal to SQLite last_insert_rowid() function.
+This is same as C<last_insert_rowid()> function in SQLite.
 
 =cut
