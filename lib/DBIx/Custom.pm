@@ -8,8 +8,8 @@ use base 'Object::Simple';
 use Carp 'croak';
 use DBI;
 use DBIx::Custom::Result;
-use DBIx::Custom::QueryBuilder;
 use DBIx::Custom::Query;
+use DBIx::Custom::QueryBuilder;
 use Encode qw/encode_utf8 decode_utf8/;
 
 __PACKAGE__->attr('dbh');
@@ -457,10 +457,15 @@ our $VERSION = '0.1605';
 This module is not stable. Method name and implementations will be changed.
 
 =head1 SYNOPSYS
-    
+
+Connect to database.
+
     # Connect
     my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=books",
                                     user => 'ken', password => '!LFKD%$&');
+
+Insert, update, delete statement.
+
     # Insert 
     $dbi->insert(table  => 'books',
                  param  => {title => 'perl', author => 'Ken'},
@@ -484,7 +489,9 @@ This module is not stable. Method name and implementations will be changed.
     
     # Delete all
     $dbi->delete_all(table => 'books');
-    
+
+Select statement.
+
     # Select
     my $result = $dbi->select(table => 'books');
     
@@ -503,8 +510,10 @@ This module is not stable. Method name and implementations will be changed.
         column => ['books.name as book_name']
         relation => {'books.id' => 'rental.book_id'}
     );
-    
-    # Execute SQL
+
+Execute SQL source.
+
+    # Execute from SQL source
     $dbi->execute("select title from books");
     
     # Execute SQL with parameters and filter
@@ -517,11 +526,18 @@ This module is not stable. Method name and implementations will be changed.
         "select id from books where {= author} && {like title}"
     );
     $dbi->execute($query, param => {author => 'ken', title => '%Perl%'})
-    
+
+More features.
+
     # Default filter
     $dbi->default_bind_filter('encode_utf8');
     $dbi->default_fetch_filter('decode_utf8');
-    
+
+    # Get DBI object
+    my $dbh = $dbi->dbh;
+
+Fetch row.
+
     # Fetch
     while (my $row = $result->fetch) {
         # ...
@@ -532,8 +548,6 @@ This module is not stable. Method name and implementations will be changed.
         
     }
     
-    # Get DBI object
-    my $dbh = $dbi->dbh;
 
 =head1 DESCRIPTION
 
@@ -574,32 +588,31 @@ Provide suger methods, such as insert(), update(), delete(), and select().
     my $user = $dbi->user;
     $dbi     = $dbi->user('Ken');
 
-Database user name.
-This is used for connect().
+User name.
+C<connect()> method use this value to connect the database.
     
 =head2 C<password>
 
     my $password = $dbi->password;
     $dbi         = $dbi->password('lkj&le`@s');
 
-Database password.
-This is used for connect().
+Password.
+C<connect()> method use this value to connect the database.
 
 =head2 C<data_source>
 
     my $data_source = $dbi->data_source;
-    $dbi            = $dbi->data_source("dbi:mysql:dbname=$database");
+    $dbi            = $dbi->data_source("DBI:mysql:database=dbname");
 
-Database data source.
-This is used for connect().
+Data source.
+C<connect()> method use this value to connect the database.
 
 =head2 C<dbh>
 
     my $dbh = $dbi->dbh;
     $dbi    = $dbi->dbh($dbh);
 
-Database handle. This is a L<DBI> object.
-You can call all methods of L<DBI>
+L<DBI> object. You can call all methods of L<DBI>.
 
     my $sth    = $dbi->dbh->prepare("...");
     my $errstr = $dbi->dbh->errstr;
@@ -615,22 +628,19 @@ You can call all methods of L<DBI>
 Filter functions.
 By default, "encode_utf8" and "decode_utf8" is registered.
 
-    $encode_utf8 = $dbi->filters->{encode_utf8};
-    $decode_utf8 = $dbi->filters->{decode_utf8};
-
 =head2 C<default_bind_filter>
 
     my $default_bind_filter = $dbi->default_bind_filter
     $dbi                    = $dbi->default_bind_filter('encode_utf8');
 
-Default filter for value binding
+Default filter when parameter binding is executed.
 
 =head2 C<default_fetch_filter>
 
     my $default_fetch_filter = $dbi->default_fetch_filter;
     $dbi                     = $dbi->default_fetch_filter('decode_utf8');
 
-Default filter for fetching.
+Default filter when row is fetched.
 
 =head2 C<result_class>
 
@@ -647,28 +657,60 @@ Default to L<DBIx::Custom::Result>.
 
 SQL builder. sql_builder must be 
 the instance of L<DBIx::Custom::QueryBuilder> subclass
-Default to DBIx::Custom::QueryBuilder.
+Default to L<DBIx::Custom::QueryBuilder>.
+
+=head2 C<cache>
+
+    my $cache = $dbi->cache;
+    $dbi      = $dbi->cache(1);
+
+Enable cache of the query after parsing SQL source.
+Default to 1.
+
+=head2 C<cache_method>
+
+    $dbi          = $dbi->cache_method(\&cache_method);
+    $cache_method = $dbi->cache_method
+
+Method for cache.
+
+B<Example:>
+
+    $dbi->cache_method(
+        sub {
+            my $self = shift;
+            
+            $self->{_cached} ||= {};
+            
+            if (@_ > 1) {
+                $self->{_cached}{$_[0]} = $_[1] 
+            }
+            else {
+                return $self->{_cached}{$_[0]}
+            }
+        }
+    );
 
 =head1 METHODS
 
-This class is L<Object::Simple> subclass.
-You can use all methods of L<Object::Simple>
+L<DBIx::Custom> inherits all methods from L<Object::Simple>
+and implements the following new ones.
 
 =head2 C<connect>
 
-    my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=books",
+    my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=dbname",
                                     user => 'ken', password => '!LFKD%$&');
 
-Connect to database.
-"AutoCommit" and "RaiseError" option is true, 
-and "PrintError" option is false by default.
+Create a new L<DBIx::Custom> object and connect to the database.
+By default, "AutoCommit" and "RaiseError" option is true, 
+and "PrintError" option is false.
 
 =head2 C<insert>
 
-    $affected = $dbi->insert(table  => $table, 
-                             param  => \%param,
-                             append => $append,
-                             filter => \%filter);
+    $dbi->insert(table  => $table, 
+                 param  => \%param,
+                 append => $append,
+                 filter => \%filter);
 
 Insert row.
 Retrun value is the count of affected rows.
@@ -682,11 +724,11 @@ B<Example:>
 
 =head2 C<update>
 
-    $affected = $dbi->update(table  => $table, 
-                             param  => \%params,
-                             where  => \%where,
-                             append => $append,
-                             filter => \%filter)
+    $dbi->update(table  => $table, 
+                 param  => \%params,
+                 where  => \%where,
+                 append => $append,
+                 filter => \%filter)
 
 Update rows.
 Retrun value is the count of affected rows.
@@ -701,10 +743,10 @@ B<Example:>
 
 =head2 C<update_all>
 
-    $affected = $dbi->update_all(table  => $table, 
-                                 param  => \%params,
-                                 filter => \%filter,
-                                 append => $append);
+    $dbi->update_all(table  => $table, 
+                     param  => \%params,
+                     filter => \%filter,
+                     append => $append);
 
 Update all rows.
 Retrun value is the count of affected rows.
@@ -717,10 +759,10 @@ B<Example:>
 
 =head2 C<delete>
 
-    $affected = $dbi->delete(table  => $table,
-                             where  => \%where,
-                             append => $append,
-                             filter => \%filter);
+    $dbi->delete(table  => $table,
+                 where  => \%where,
+                 append => $append,
+                 filter => \%filter);
 
 Delete rows.
 Retrun value is the count of affected rows.
@@ -734,7 +776,7 @@ B<Example:>
 
 =head2 C<delete_all>
 
-    $affected = $dbi->delete_all(table => $table);
+    $dbi->delete_all(table => $table);
 
 Delete all rows.
 Retrun value is the count of affected rows.
@@ -745,12 +787,12 @@ B<Example:>
 
 =head2 C<select>
     
-    $result = $dbi->select(table    => $table,
-                           column   => [@column],
-                           where    => \%where,
-                           append   => $append,
-                           relation => \%relation,
-                           filter   => \%filter);
+    my $result = $dbi->select(table    => $table,
+                              column   => [@column],
+                              where    => \%where,
+                              append   => $append,
+                              relation => \%relation,
+                              filter   => \%filter);
 
 Select rows.
 Return value is the instance of L<DBIx::Custom::Result>.
@@ -758,13 +800,13 @@ Return value is the instance of L<DBIx::Custom::Result>.
 B<Example:>
 
     # select * from books;
-    $result = $dbi->select(table => 'books');
+    my $result = $dbi->select(table => 'books');
     
     # select * from books where title = 'Perl';
-    $result = $dbi->select(table => 'books', where => {title => 1});
+    my $result = $dbi->select(table => 'books', where => {title => 1});
     
     # select title, author from books where id = 1 for update;
-    $result = $dbi->select(
+    my $result = $dbi->select(
         table  => 'books',
         column => ['title', 'author'],
         where  => {id => 1},
@@ -790,8 +832,8 @@ using L<DBIx::Custom::QueryBuilder>.
 
 =head2 C<execute>
 
-    $result = $dbi->execute($query,  param => $params, filter => \%filter);
-    $result = $dbi->execute($source, param => $params, filter => \%filter);
+    my $result = $dbi->execute($query,  param => $params, filter => \%filter);
+    my $result = $dbi->execute($source, param => $params, filter => \%filter);
 
 Execute the instace of L<DBIx::Custom::Query> or
 the string written by SQL template.
@@ -799,7 +841,7 @@ Return value is the instance of L<DBIx::Custom::Result>.
 
 B<Example:>
 
-    $result = $dbi->execute("select * from authors where {= name} and {= age}", 
+    my $result = $dbi->execute("select * from authors where {= name} and {= age}", 
                             param => {name => 'taro', age => 19});
     
     while (my $row = $result->fetch) {
@@ -829,38 +871,6 @@ B<Example:>
             require Encode;
             
             return Encode::decode('UTF-8', $value)
-        }
-    );
-
-=head2 C<cache>
-
-    $dbi   = $dbi->cache(1);
-    $cache = $dbi->cache;
-
-Cache the result of parsing SQL template.
-Default to 1.
-
-=head2 C<cache_method>
-
-    $dbi          = $dbi->cache_method(\&cache_method);
-    $cache_method = $dbi->cache_method
-
-Method for cache.
-
-B<Example:>
-
-    $dbi->cache_method(
-        sub {
-            my $self = shift;
-            
-            $self->{_cached} ||= {};
-            
-            if (@_ > 1) {
-                $self->{_cached}{$_[0]} = $_[1] 
-            }
-            else {
-                return $self->{_cached}{$_[0]}
-            }
         }
     );
 
