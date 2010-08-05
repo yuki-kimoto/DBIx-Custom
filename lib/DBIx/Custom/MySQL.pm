@@ -10,10 +10,10 @@ __PACKAGE__->attr([qw/database host port/]);
 sub connect {
     my $proto = shift;
     
-    # Create
+    # Create a new object
     my $self = ref $proto ? $proto : $proto->new(@_);
     
-    # Create data source
+    # Data source
     if (!$self->data_source) {
         my $database = $self->database;
         my $host     = $self->host;
@@ -38,70 +38,73 @@ DBIx::Custom::MySQL - MySQL implementation
 
 =head1 SYNOPSYS
 
-    # Connect to database
-    my $dbi = DBIx::Custom::MySQL->connect(user     => 'taro', 
-                                           password => 'kliej&@K',
-                                           database => 'your_database');
+    # Connect to the database
+    my $dbi = DBIx::Custom::MySQL->connect(
+        user     => 'taro', 
+        password => 'kliej&@K',
+        database => 'dbname'
+    );
     
     # Get last insert id
-    my $id = $dbi->last_insert_id;
+    my $last_insert_id = $dbi->last_insert_id;
 
 =head1 ATTRIBUTES
 
-This class is L<DBIx::Custom> subclass.
-You can use all attributes of L<DBIx::Custom>
+L<DBIx::Custom::MySQL> inherits all attributes from L<DBIx::Custom>
+and implements the following new ones.
 
 =head2 C<database>
 
     my $database = $dbi->database;
-    $dbi         = $dbi->database('your_database');
+    $dbi         = $dbi->database('dbname');
 
 Database name.
-This is used for connect().
+C<connect()> method use this value to connect the database
+if C<data_source> is not specified.
 
 =head2 C<host>
 
     my $host = $dbi->host;
-    $dbi     = $dbi->host('somehost.com');
+    $dbi     = $dbi->host('somehost');
 
-Database host name.
-You can also set IP address, instead of host name.
-This is used for connect().
-
-    $dbi->host('127.03.45.12');
+Host name or IP address.
+C<connect()> method use this value to connect the database
+if C<data_source> is not specified.
 
 =head2 C<port>
 
     my $port = $dbi->port;
     $dbi     = $dbi->port(1198);
 
-Database port. This is used for connect().
+Port number.
+C<connect()> method use this value to connect the database
+if C<data_source> is not specified.
 
 =head1 METHODS
 
-This class is L<DBIx::Custom> subclass.
-You can use all methods of L<DBIx::Custom>.
+L<DBIx::Custom::MySQL> inherits all methods from L<DBIx::Custom>
+and implements the following new ones.
 
-=head2 C<connect (overridden)>
+=head2 C<connect>
 
-    $dbi = DBIx::Custom::MySQL->connect(
-        data_source => "dbi:mysql:database=books;host=somehost;port=2000"
+    my $dbi = DBIx::Custom::MySQL->connect(
+         user     => 'taro', 
+         password => 'kliej&@K',
+         database => 'dbname',
+         host     => 'somehost',
+         port     => 2000
     );
-    
-    $dbi = DBIx::Custom::MySQL->connect(user     => 'taro', 
-                                        password => 'kliej&@K',
-                                        database => 'your_database',
-                                        host     => 'somehost',
-                                        port     => 2000);
 
-Connect to database. You can also specify database, host, and port
-(instead of data soruce).
+Create a new L<DBIx::Custom::MySQL> object and connect to the database.
+This method override C<DBIx::Custom::connect()> method.
+You can specify all attributes of L<DBIx::Custom>
+and L<DBIx::Custom::MySQL>, such as C<database>, C<host>, C<port>.
 
 =head2 C<last_insert_id>
 
-    $last_insert_id = $dbi->last_insert_id;
+    my $last_insert_id = $dbi->last_insert_id;
 
 Get last insert id.
-This is equal to MySQL last_insert_id() function.
+This is same as C<last_insert_id()> function in MySQL.
 
 =cut
