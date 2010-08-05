@@ -40,75 +40,122 @@ sub in {
     croak qq{Column and count of values must be specified in tag "{in }"}
       unless $column && $count && $count =~ /^\d+$/;
 
-    # Expand
-    my $expand = "$column in (";
+    # Part of statement
+    my $s = "$column in (";
     for (my $i = 0; $i < $count; $i++) {
-        $expand .= '?, ';
+        $s .= '?, ';
     }
-    $expand =~ s/, $//;
-    $expand .= ')';
+    $s =~ s/, $//;
+    $s .= ')';
     
     # Columns
     my $columns = [];
     push @$columns, $column for (0 .. $count - 1);
     
-    return [$expand, $columns];
+    return [$s, $columns];
 }
 
 sub insert {
     my @columns = @_;
     
-    # Insert
-    my $expand = '(';
-    $expand .= "$_, " for @columns;
-    $expand =~ s/, $//;
-    $expand .= ') ';
-    $expand .= 'values (';
-    $expand .= "?, " for @columns;
-    $expand =~ s/, $//;
-    $expand .= ')';
+    # Part of insert statement
+    my $s = '(';
+    $s .= "$_, " for @columns;
+    $s =~ s/, $//;
+    $s .= ') ';
+    $s .= 'values (';
+    $s .= "?, " for @columns;
+    $s =~ s/, $//;
+    $s .= ')';
     
-    return [$expand, \@columns];
+    return [$s, \@columns];
 }
 
 sub update {
     my @columns = @_;
     
-    # Update
-    my $expand = 'set ';
-    $expand .= "$_ = ?, " for @columns;
-    $expand =~ s/, $//;
+    # Part of update statement
+    my $s = 'set ';
+    $s .= "$_ = ?, " for @columns;
+    $s =~ s/, $//;
     
-    return [$expand, \@columns];
+    return [$s, \@columns];
 }
 
 1;
 
 =head1 NAME
 
-DBIx::Custom::SQLBuilder::TagProcessors - Tag processor
+DBIx::Custom::SQLBuilder::TagProcessors - Tag processors
 
-=head1 FUNCTIONS
+=head1 Processors
+
+Processor is function,
+which receive arguments and return a part of SQL statment
+and column names.
+The part of SQL statment contains placeholders.
+the count of placeholders must be
+same as the count of column names.
+
+    sub processor_name {
+        my @args = @_;
+        
+        # Part of statment, which constains placeholders
+        my $s;
+        
+        # Column names
+        my $columns = [];
+        
+        # Do something
+        # ...
+        
+        return [$s, $columns];
+    }
 
 =head2 C<placeholder>
 
+    ('NAME')  ->  ['?', ['NAME']]
+
 =head2 C<equal>
+
+    ('NAME')  ->  ['NAME = ?', ['NAME']]
 
 =head2 C<not_equal>
 
+    ('NAME')  ->  ['NAME <> ?', ['NAME']]
+
 =head2 C<greater_than>
+
+    ('NAME')  ->  ['NAME > ?', ['NAME']]
 
 =head2 C<lower_than>
 
+    ('NAME')  ->  ['NAME < ?', ['NAME']]
+
 =head2 C<greater_than_equal>
+
+    ('NAME')  ->  ['NAME >= ?', ['NAME']]
 
 =head2 C<lower_than_equal>
 
+    ('NAME')  ->  ['NAME <= ?', ['NAME']]
+
 =head2 C<like>
+
+    ('NAME')  ->  ['NAME like ?', ['NAME']]
 
 =head2 C<in>
 
+    ('NAME', 3)  -> ['NAME in (?, ?, ?)', ['NAME', 'NAME', 'NAME']]
+
 =head2 C<insert>
+
+    ('NAME1', 'NAME2')
+      ->  ['(NAME1, NAME2) values (?, ?, ?)', ['NAME1', 'NAME2']]
 
 =head2 C<update>
 
+    ('NAME1', 'NAME2')
+      ->  ['set NAME1 = ?, NAME2 = ?', ['NAME1', 'NAME2']]
+
+=cut
