@@ -47,7 +47,7 @@ Default filter when parameter binding is executed.
                                  title  => 'encode_utf8'});
 
 Filters when parameter binding is executed.
-This overrides C<default_filter>.
+This overwrites C<default_filter>.
 
 =head2 C<sth>
 

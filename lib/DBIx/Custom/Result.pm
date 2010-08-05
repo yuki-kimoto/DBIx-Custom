@@ -12,25 +12,27 @@ __PACKAGE__->attr([qw/sth filters default_filter filter/]);
 sub fetch {
     my $self = shift;
     
+    # Filters
     $self->{filters} ||= {};
     $self->{filter}  ||= {};
     
     # Fetch
     my @row = $self->{sth}->fetchrow_array;
     
-    # Cannot fetch
+    # No row
     return unless @row;
 
-    # Filter
-    for (my $i = 0; $i < @{$self->{sth}->{NAME_lc}}; $i++) {
+    # Filtering
+    my $columns = $self->{sth}->{NAME_lc};
+    for (my $i = 0; $i < @$columns; $i++) {
         
         # Filter name
-        my $column = $self->{sth}->{NAME_lc}->[$i];
+        my $column = $columns->[$i];
         my $fname  = exists $self->{filter}->{$column}
                    ? $self->{filter}->{$column}
                    : $self->{default_filter};
         
-        # Filter
+        # Filtering
         $row[$i] = $self->{filters}->{$fname}->($row[$i])
           if $fname;
     }
@@ -44,7 +46,7 @@ sub fetch_first {
     # Fetch
     my $row = $self->fetch;
     
-    # Not exist
+    # No row
     return unless $row;
     
     # Finish statement handle
@@ -56,7 +58,7 @@ sub fetch_first {
 sub fetch_multi {
     my ($self, $count) = @_;
     
-    # Not specified Row count
+    # Row count not specifed
     croak 'Row count must be specified'
       unless $count;
     
@@ -64,9 +66,7 @@ sub fetch_multi {
     my $rows = [];
     for (my $i = 0; $i < $count; $i++) {
         my $row = $self->fetch;
-        
         last unless $row;
-        
         push @$rows, $row;
     }
     
@@ -88,6 +88,7 @@ sub fetch_all {
 sub fetch_hash {
     my $self = shift;
     
+    # Filters
     $self->{filters} ||= {};
     $self->{filter}  ||= {};
     
@@ -99,15 +100,16 @@ sub fetch_hash {
     
     # Filter
     my $row_hash = {};
-    for (my $i = 0; $i < @{$self->{sth}->{NAME_lc}}; $i++) {
+    my $columns = $self->{sth}->{NAME_lc};
+    for (my $i = 0; $i < @$columns; $i++) {
         
         # Filter name
-        my $column = $self->{sth}->{NAME_lc}->[$i];
+        my $column = $columns->[$i];
         my $fname  = exists $self->{filter}->{$column}
                    ? $self->{filter}->{$column}
                    : $self->{default_filter};
         
-        # Filter
+        # Filtering
         $row_hash->{$column}
           = $fname ? $self->{filters}->{$fname}->($row->[$i]) 
                    : $row->[$i];
@@ -122,7 +124,7 @@ sub fetch_hash_first {
     # Fetch hash
     my $row = $self->fetch_hash;
     
-    # Not exist
+    # No row
     return unless $row;
     
     # Finish statement handle
@@ -134,7 +136,7 @@ sub fetch_hash_first {
 sub fetch_hash_multi {
     my ($self, $count) = @_;
     
-    # Not specified Row count
+    # Row count not specified
     croak 'Row count must be specified'
       unless $count;
     
@@ -142,9 +144,7 @@ sub fetch_hash_multi {
     my $rows = [];
     for (my $i = 0; $i < $count; $i++) {
         my $row = $self->fetch_hash;
-        
         last unless $row;
-        
         push @$rows, $row;
     }
     
@@ -168,46 +168,58 @@ sub fetch_hash_all {
 
 =head1 NAME
 
-DBIx::Custom::Result - Result of select
+DBIx::Custom::Result - Result of select statement
 
 =head1 SYNOPSIS
-    
+
+Get the result of select statement.
+
     # Result
     my $result = $dbi->select(table => 'books');
+
+Fetch row into array.
     
     # Fetch a row into array
     while (my $row = $result->fetch) {
-        my $value1 = $row->[0];
-        my $valuu2 = $row->[1];
+        my $author = $row->[0];
+        my $title  = $row->[1];
         
-        # do something
     }
     
-    # Fetch only first row into array
+    # Fetch only a first row into array
     my $row = $result->fetch_first;
     
     # Fetch multiple rows into array of array
     while (my $rows = $result->fetch_multi(5)) {
-        # do something
+        my $first_author  = $rows->[0][0];
+        my $first_title   = $rows->[0][1];
+        my $second_author = $rows->[1][0];
+        my $second_value  = $rows->[1][1];
+    
     }
     
     # Fetch all rows into array of array
     my $rows = $result->fetch_all;
-    
-    # Fetch hash into hash
+
+Fetch row into hash.
+
+    # Fetch a row into hash
     while (my $row = $result->fetch_hash) {
-        my $value1 = $row->{title};
-        my $value2 = $row->{author};
+        my $title  = $row->{title};
+        my $author = $row->{author};
         
-        # do something
     }
     
-    # Fetch only first row into hash
+    # Fetch only a first row into hash
     my $row = $result->fetch_hash_first;
     
     # Fetch multiple rows into array of hash
-    while (my $rows = $result->fetch_hash_multi) {
-        # do something
+    while (my $rows = $result->fetch_hash_multi(5)) {
+        my $first_title   = $rows->[0]{title};
+        my $first_author  = $rows->[0]{author};
+        my $second_title  = $rows->[1]{title};
+        my $second_author = $rows->[1]{author};
+    
     }
     
     # Fetch all rows into array of hash
@@ -220,93 +232,76 @@ DBIx::Custom::Result - Result of select
     my $sth = $reuslt->sth
     $result = $result->sth($sth);
 
-Statement handle.
+Statement handle of L<DBI>.
 
 =head2 C<default_filter>
 
     my $default_filter = $result->default_filter;
     $result            = $result->default_filter('decode_utf8');
 
-Default filter for fetching.
+Default filter when a row is fetched.
 
 =head2 C<filter>
 
     my $filter = $result->filter;
-    $result = $result->filter({title => 'decode_utf8'});
+    $result    = $result->filter({title  => 'decode_utf8',
+                                  author => 'decode_utf8'});
 
-Filters for fetching.
+Filters when a row is fetched.
+This overwrites C<default_filter>.
 
 =head1 METHODS
 
-This class is L<Object::Simple> subclass.
-You can use all methods of L<Object::Simple>
+L<DBIx::Custom::Resutl> inherits all methods from L<Object::Simple>
+and implements the following new ones.
 
 =head2 C<fetch>
 
-    $row = $result->fetch;
+    my $row = $result->fetch;
 
-Fetch a row into array
-
-    while (my $row = $result->fetch) {
-        # do something
-        my $value1 = $row->[0];
-        my $value2 = $row->[1];
-    }
+Fetch a row into array.
 
 =head2 C<fetch_first>
 
-    $row = $result->fetch_first;
+    my $row = $result->fetch_first;
 
-Fetch only first row into array and finish statment handle.
+Fetch only a first row into array and finish statment handle.
 
 =head2 C<fetch_multi>
 
-    $rows = $result->fetch_multi($count);
+    my $rows = $result->fetch_multi(5);
     
 Fetch multiple rows into array of array.
-
-    while(my $rows = $result->fetch_multi(10)) {
-        # do someting
-    }
+Row count must be specified.
 
 =head2 C<fetch_all>
 
-    $rows = $result->fetch_all;
+    my $rows = $result->fetch_all;
 
 Fetch all rows into array of array.
 
 =head2 C<fetch_hash>
 
-    $row = $result->fetch_hash;
+    my $row = $result->fetch_hash;
 
 Fetch a row into hash
 
-    while (my $row = $result->fetch_hash) {
-        my $val1 = $row->{title};
-        my $val2 = $row->{author};
-        
-        # do something
-    }
-
 =head2 C<fetch_hash_first>
     
-    $row = $result->fetch_hash_first;
+    my $row = $result->fetch_hash_first;
 
 Fetch only first row into hash and finish statment handle.
 
 =head2 C<fetch_hash_multi>
 
-    $rows = $result->fetch_hash_multi($count);
+    my $rows = $result->fetch_hash_multi(5);
     
 Fetch multiple rows into array of hash
-
-    while(my $rows = $result->fetch_hash_multi(10)) {
-        # do someting
-    }
+Row count must be specified.
 
 =head2 C<fetch_hash_all>
 
-    $rows = $result->fetch_hash_all;
+    my $rows = $result->fetch_hash_all;
 
 Fetch all rows into array of hash.
 
