@@ -9,7 +9,7 @@ sub _basic {
     my ($name, $column) = @_;
     
     # Check arguments
-    croak qq{Column must be specified in tag "{$name }"}
+    croak qq{Column name must be specified in tag "{$name }"}
       unless $column;
     
     return ["$column $name ?", [$column]];
@@ -37,7 +37,7 @@ sub in {
     my ($column, $count) = @_;
     
     # Check arguments
-    croak qq{Column and count of values must be specified in tag "{in }"}
+    croak qq{Column name and count of values must be specified in tag "{in }"}
       unless $column && $count && $count =~ /^\d+$/;
 
     # Part of statement

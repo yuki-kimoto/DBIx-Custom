@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use DBIx::Custom;
-use DBIx::Custom::SQLTemplate;
+use DBIx::Custom::QueryBuilder;
 
 # Function for test name
 my $test;
@@ -13,9 +13,9 @@ sub test {
 
 # Variables for test
 our $SQL_TMPL = {
-    0 => DBIx::Custom::SQLTemplate->new->tag_start(0),
-    1 => DBIx::Custom::SQLTemplate->new->tag_start(1),
-    2 => DBIx::Custom::SQLTemplate->new->tag_start(2)
+    0 => DBIx::Custom::QueryBuilder->new->tag_start(0),
+    1 => DBIx::Custom::QueryBuilder->new->tag_start(1),
+    2 => DBIx::Custom::QueryBuilder->new->tag_start(2)
 };
 my $dbi;
 
@@ -31,12 +31,12 @@ $dbi = DBIx::Custom->new(
     default_bind_filter => 'f',
     default_fetch_filter => 'g',
     result_class => 'g',
-    sql_builder_class => $SQL_TMPL->{0},
+    sql_builder => $SQL_TMPL->{0},
 );
 is_deeply($dbi,{user => 'a', database => 'a', password => 'b', data_source => 'c', 
                 filters => {f => 3}, default_bind_filter => 'f',
                 default_fetch_filter => 'g', result_class => 'g',
-                sql_builder_class => $SQL_TMPL->{0}}, $test);
+                sql_builder => $SQL_TMPL->{0}}, $test);
 isa_ok($dbi, 'DBIx::Custom');
 
 

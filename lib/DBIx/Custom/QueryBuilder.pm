@@ -54,7 +54,7 @@ sub _parse {
     
     # Source
     $source ||= '';
-    
+
     # Tree
     my $tree = [];
     
@@ -86,17 +86,9 @@ sub _parse {
             # Get tag name and arguments
             my ($tag_name, @tag_args) = split /\s+/, $tag;
             
-            # Tag processor not registerd
-            croak qq{Tag "$tag" in "$original" is not registerd}
+            # Tag processor not registered
+            croak qq{Tag "$tag_name" in "$original" is not registered}
                unless $self->tag_processors->{$tag_name};
-            
-            # Check tag arguments
-            foreach my $tag_arg (@tag_args) {
-            
-                # Cannot cantain placehosder '?'
-                croak qq{Tag cannot contains "?"}
-                  if $tag_arg =~ /\?/;
-            }
             
             # Add tag to parsing tree
             push @$tree, {type => 'tag', tag_name => $tag_name,
@@ -145,15 +137,14 @@ sub _build_query {
               unless ref $tag_processor eq 'CODE';
             
             # Execute tag processor
-            my ($part, $columns) = @{$tag_processor->(@$tag_args)};
+            my $r = $tag_processor->(@$tag_args);
             
             # Check tag processor return value
             croak qq{Tag processor "$tag_name" must return [STRING, ARRAY_REFERENCE]}
-              if !defined $part || ref $columns ne 'ARRAY';
+              unless ref $r eq 'ARRAY' && defined $r->[0] && ref $r->[1] eq 'ARRAY';
             
-            # Check placeholder count
-            croak qq{Count of Placeholders must be same as count of columns in "$tag_name"}
-              unless $self->_placeholder_count($part) eq @$columns;
+            # Part of SQL statement and colum names
+            my ($part, $columns) = @$r;
             
             # Add columns
             push @$all_columns, @$columns;
@@ -162,6 +153,12 @@ sub _build_query {
             $sql .= $part;
         }
     }
+
+    # Check placeholder count
+    my $placeholder_count = $self->_placeholder_count($sql);
+    my $column_count      = @$all_columns;
+    croak qq{Placeholder count in "$sql" must be same as column count $column_count}
+      unless $placeholder_count eq @$all_columns;
     
     # Add semicolon
     $sql .= ';' unless $sql =~ /;$/;
