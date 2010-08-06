@@ -255,7 +255,7 @@ Query
 
 Register tag processor.
 
-B<Examples:>
+B<Example:>
 
     $builder->register_tag_processor(
         '?' => sub {
@@ -265,11 +265,11 @@ B<Examples:>
         }
     );
 
-See L<DBIx::Custom::QueryBuilder::TagProcessors> about tag processor.
+See also L<DBIx::Custom::QueryBuilder::TagProcessors> to know tag processor.
 
 =head1 Tags
 
-You can use the following tags in SQL source.
+The following tags is available.
     
     [Tags]           [Replaced]
     {? NAME}    ->   ?

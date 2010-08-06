@@ -252,7 +252,7 @@ This overwrites C<default_filter>.
 
 =head1 METHODS
 
-L<DBIx::Custom::Resutl> inherits all methods from L<Object::Simple>
+L<DBIx::Custom::Result> inherits all methods from L<Object::Simple>
 and implements the following new ones.
 
 =head2 C<fetch>

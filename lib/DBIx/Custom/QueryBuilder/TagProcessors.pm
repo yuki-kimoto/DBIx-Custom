@@ -88,9 +88,9 @@ sub update {
 
 DBIx::Custom::SQLBuilder::TagProcessors - Tag processors
 
-=head1 Processors
+=head1 Tag processors
 
-Processor is function,
+Tag processor is function,
 which receive arguments and return a part of SQL statment
 and column names.
 The part of SQL statment contains placeholders.

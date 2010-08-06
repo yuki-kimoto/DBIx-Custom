@@ -1,3 +1,7 @@
+0.1607
+  renamed build_query to create_query(not backword compatible)
+0.1606
+  fix testing bug
 0.1605
   remove DBIx::Custom::QueryBuilder::tag_syntax()  (not backword compatible)
   renamed DBIx::Custom::TagProcessor to DBIx::Custom::TagProcessors (not backword compatible)

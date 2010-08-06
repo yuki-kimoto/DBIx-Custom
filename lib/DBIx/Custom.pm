@@ -310,7 +310,7 @@ sub select {
     return $result;
 }
 
-sub build_query {
+sub create_query {
     my ($self, $source) = @_;
     
     # Cache
@@ -367,7 +367,7 @@ sub execute{
     my $params = $args{param} || {};
     
     # First argument is SQL template
-    $query = $self->build_query($query)
+    $query = $self->create_query($query)
       unless ref $query;
     
     my $filter = $args{filter} || $query->filter || {};
@@ -446,25 +446,26 @@ sub _build_bind_values {
 
 =head1 NAME
 
-DBIx::Custom - DBI with hash parameter binding and filtering system
+DBIx::Custom - DBI interface, having hash parameter binding and filtering system
 
 =cut
 
-our $VERSION = '0.1605';
+our $VERSION = '0.1606';
 
 =head1 STABILITY
 
-This module is not stable. Method name and implementations will be changed.
+B<This module is not stable>. 
+Method name and implementations will be changed for a while.
 
 =head1 SYNOPSYS
 
-Connect to database.
-
-    # Connect
+Connect to the database.
+    
+    use DBIx::Custom;
     my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=books",
                                     user => 'ken', password => '!LFKD%$&');
 
-Insert, update, delete statement.
+Insert, update, and delete
 
     # Insert 
     $dbi->insert(table  => 'books',
@@ -490,39 +491,39 @@ Insert, update, delete statement.
     # Delete all
     $dbi->delete_all(table => 'books');
 
-Select statement.
+Select
 
     # Select
     my $result = $dbi->select(table => 'books');
     
-    # Select(more complex)
+    # Select, more complex
     my $result = $dbi->select(
         table  => 'books',
         column => [qw/author title/],
         where  => {author => 'Ken'},
         append => 'order by id limit 1',
-        filter => {tilte => 'encode_utf8'}
+        filter => {title => 'encode_utf8'}
     );
     
-    # Select(Join table)
+    # Select, join table
     my $result = $dbi->select(
-        table => ['books', 'rental'],
-        column => ['books.name as book_name']
+        table    => ['books', 'rental'],
+        column   => ['books.name as book_name']
         relation => {'books.id' => 'rental.book_id'}
     );
 
-Execute SQL source.
+Execute SQL
 
-    # Execute from SQL source
+    # Execute SQL
     $dbi->execute("select title from books");
     
-    # Execute SQL with parameters and filter
+    # Execute SQL with hash binding and filtering
     $dbi->execute("select id from books where {= author} && {like title}",
                   param  => {author => 'ken', title => '%Perl%'},
-                  filter => {tilte => 'encode_utf8'});
+                  filter => {title => 'encode_utf8'});
 
     # Create query and execute it
-    my $query = $dbi->build_query(
+    my $query = $dbi->create_query(
         "select id from books where {= author} && {like title}"
     );
     $dbi->execute($query, param => {author => 'ken', title => '%Perl%'})
@@ -551,35 +552,49 @@ Fetch row.
 
 =head1 DESCRIPTION
 
-L<DBIx::Custom> is useful L<DBI> extention.
-This module have hash parameter binding and filtering system.
+=head2 1. Features
 
-Normally, binding parameter is array.
-L<DBIx::Custom> enable you to pass binding parameter as hash.
+L<DBIx::Custom> is one of L<DBI> interface modules,
+such as L<DBIx::Class>, L<DBIx::Simple>.
 
-This module also provide filtering system.
-You can filter the binding parameter
-or the value of fetching row.
+This module is not O/R mapper. O/R mapper is useful,
+but you must learn many syntax of the O/R mapper,
+which is almost another language
+Create SQL statement is offten not effcient and damage SQL performance.
+so you have to execute raw SQL in the end.
 
-And have useful method such as insert(), update(), delete(), and select().
+L<DBIx::Custom> is middle area between L<DBI> and O/R mapper.
+L<DBIx::Custom> provide flexible hash parameter binding adn filtering system,
+and suger method, such as C<select()>, C<update()>, C<delete()>, C<select()>
+to execute a query easily.
 
-=head2 Features
+L<DBIx::Custom> respects SQL. SQL is not beautiful, but de-facto standard,
+so all people learing database system know it.
+If you know SQL statement,
+you learn a little thing about L<DBIx::Custom> to do your works.
 
-=over 4
+=head2 2. Basic usage
 
-=item *
+=head3 connect to the database
 
-Hash parameter binding.
+C<connect()> method create a new L<DBIx::Custom>
+object and connect to the database.
 
-=item *
+    use DBIx::Custom;
+    my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=books",
+                                    user => 'ken', password => '!LFKD%$&');
 
-Value filtering.
+=head3 Suger methods
 
-=item *
+L<DBIx::Custom> has suger methods, such as C<insert()>, C<update()>,
+C<delete()> and C<select()>. If you want to do simple works,
+You don't have to create SQL statement.
 
-Provide suger methods, such as insert(), update(), delete(), and select().
+B<Execute insert statement:>
 
-=back
+
+
+
 
 =head1 ATTRIBUTES
 
@@ -614,19 +629,13 @@ C<connect()> method use this value to connect the database.
 
 L<DBI> object. You can call all methods of L<DBI>.
 
-    my $sth    = $dbi->dbh->prepare("...");
-    my $errstr = $dbi->dbh->errstr;
-    $dbi->dbh->begin_work;
-    $dbi->dbh->commit;
-    $dbi->dbh->rollback;
-    
 =head2 C<filters>
 
     my $filters = $dbi->filters;
     $dbi        = $dbi->filters(\%filters);
 
 Filter functions.
-By default, "encode_utf8" and "decode_utf8" is registered.
+"encode_utf8" and "decode_utf8" is registered by default.
 
 =head2 C<default_bind_filter>
 
@@ -656,15 +665,15 @@ Default to L<DBIx::Custom::Result>.
     $dbi          = $dbi->sql_builder(DBIx::Custom::QueryBuilder->new);
 
 SQL builder. sql_builder must be 
-the instance of L<DBIx::Custom::QueryBuilder> subclass
-Default to L<DBIx::Custom::QueryBuilder>.
+the instance of L<DBIx::Custom::QueryBuilder> subclass.
+Default to L<DBIx::Custom::QueryBuilder> object.
 
 =head2 C<cache>
 
     my $cache = $dbi->cache;
     $dbi      = $dbi->cache(1);
 
-Enable cache of the query after parsing SQL source.
+Enable parsed L<DBIx::Custom::Query> object caching.
 Default to 1.
 
 =head2 C<cache_method>
@@ -672,7 +681,7 @@ Default to 1.
     $dbi          = $dbi->cache_method(\&cache_method);
     $cache_method = $dbi->cache_method
 
-Method for cache.
+Method to set and get caches.
 
 B<Example:>
 
@@ -702,8 +711,9 @@ and implements the following new ones.
                                     user => 'ken', password => '!LFKD%$&');
 
 Create a new L<DBIx::Custom> object and connect to the database.
-By default, "AutoCommit" and "RaiseError" option is true, 
-and "PrintError" option is false.
+L<DBIx::Custom> is a wrapper of L<DBI>.
+C<AutoCommit> and C<RaiseError> option is true, 
+and C<PrintError> option is false by default. 
 
 =head2 C<insert>
 
@@ -712,9 +722,16 @@ and "PrintError" option is false.
                  append => $append,
                  filter => \%filter);
 
-Insert row.
-Retrun value is the count of affected rows.
-    
+Execute insert statement.
+C<insert> method have C<table>, C<param>, C<append>
+and C<filter> arguments.
+C<table> is a table name.
+C<param> is column-value pairs. this must be hash reference.
+C<append> is a string added at the end of the SQL statement.
+C<filter> is filters when parameter binding is executed.
+This is overwrites C<default_bind_filter>.
+Return value of C<insert> is the count of affected rows.
+
 B<Example:>
 
     $dbi->insert(table  => 'books', 
@@ -730,15 +747,23 @@ B<Example:>
                  append => $append,
                  filter => \%filter)
 
-Update rows.
-Retrun value is the count of affected rows.
+Execute update statement.
+C<update> method have C<table>, C<param>, C<where>, C<append>
+and C<filter> arguments.
+C<table> is a table name.
+C<param> is column-value pairs. this must be hash reference.
+C<where> is where clause. this must be hash reference.
+C<append> is a string added at the end of the SQL statement.
+C<filter> is filters when parameter binding is executed.
+This is overwrites C<default_bind_filter>.
+Return value of C<update> is the count of affected rows.
 
 B<Example:>
 
     $dbi->update(table  => 'books',
                  param  => {title => 'Perl', author => 'Taro'},
                  where  => {id => 5},
-                 append => "some statement",
+                 append => "for update",
                  filter => {title => 'encode_utf8'});
 
 =head2 C<update_all>
@@ -748,8 +773,10 @@ B<Example:>
                      filter => \%filter,
                      append => $append);
 
-Update all rows.
-Retrun value is the count of affected rows.
+Execute update statement to update all rows.
+Arguments is same as C<update> method,
+except that C<update_all> don't have C<where> argument.
+Return value of C<update_all> is the count of affected rows.
 
 B<Example:>
 
@@ -764,9 +791,14 @@ B<Example:>
                  append => $append,
                  filter => \%filter);
 
-Delete rows.
-Retrun value is the count of affected rows.
-    
+Execute delete statement.
+C<delete> method have C<table>, C<where>, C<append>, and C<filter> arguments.
+C<table> is a table name.
+C<where> is where clause. this must be hash reference.
+C<append> is a string added at the end of the SQL statement.
+C<filter> is filters when parameter binding is executed.
+Return value of C<delete> is the count of affected rows.
+
 B<Example:>
 
     $dbi->delete(table  => 'books',
@@ -778,8 +810,10 @@ B<Example:>
 
     $dbi->delete_all(table => $table);
 
-Delete all rows.
-Retrun value is the count of affected rows.
+Execute delete statement to delete all rows.
+Arguments is same as C<delete> method,
+except that C<delete_all> don't have C<where> argument.
+Return value of C<delete_all> is the count of affected rows.
 
 B<Example:>
     
@@ -794,18 +828,24 @@ B<Example:>
                               relation => \%relation,
                               filter   => \%filter);
 
-Select rows.
-Return value is the instance of L<DBIx::Custom::Result>.
+Execute select statement.
+C<select> method have C<table>, C<column>, C<where>, C<append>
+C<relation> and C<filter> arguments.
+C<table> is a table name.
+C<where> is where clause. this must be hash reference
+or a string containing such tags as "{= title} or {= author}".
+C<append> is a string added at the end of the SQL statement.
+C<filter> is filters when parameter binding is executed.
 
 B<Example:>
 
     # select * from books;
     my $result = $dbi->select(table => 'books');
     
-    # select * from books where title = 'Perl';
-    my $result = $dbi->select(table => 'books', where => {title => 1});
+    # select * from books where title = ?;
+    my $result = $dbi->select(table => 'books', where => {title => 'Perl'});
     
-    # select title, author from books where id = 1 for update;
+    # select title, author from books where id = ? for update;
     my $result = $dbi->select(
         table  => 'books',
         column => ['title', 'author'],
@@ -821,23 +861,22 @@ B<Example:>
         relation => {'books.id' => 'rental.book_id'}
     );
 
-=head2 C<build_query>
+=head2 C<create_query>
     
-    my $query = $dbi->build_query(
+    my $query = $dbi->create_query(
         "select * from authors where {= name} and {= age};"
     );
 
-Build the instance of L<DBIx::Custom::Query>
-using L<DBIx::Custom::QueryBuilder>.
+Create the instance of L<DBIx::Custom::Query> from SQL source.
 
 =head2 C<execute>
 
     my $result = $dbi->execute($query,  param => $params, filter => \%filter);
     my $result = $dbi->execute($source, param => $params, filter => \%filter);
 
-Execute the instace of L<DBIx::Custom::Query> or
-the string written by SQL template.
-Return value is the instance of L<DBIx::Custom::Result>.
+Execute query or SQL source. Query is L<DBIx::Csutom::Query> object.
+Return value is L<DBIx::Custom::Result> in select statement,
+or the count of affected rows in insert, update, delete statement.
 
 B<Example:>
 
@@ -853,7 +892,42 @@ B<Example:>
     $dbi->register_filter(%filters);
     $dbi->register_filter(\%filters);
     
-Resister filter.
+Register filter. Registered filters is available in the following methods
+or arguments.
+
+=over 4
+
+=item *
+
+C<default_bind_filter()>
+
+=item *
+
+C<default_fetch_filter()>
+
+=item *
+
+C<filter> argument of C<insert()>, C<update()>,
+C<update_all()>, C<delete()>, C<delete_all()>, C<select()>,
+C<execute> method.
+
+=item *
+
+C<DBIx::Custom::Query::default_filter()>
+
+=item *
+
+C<DBIx::Csutom::Query::filter()>
+
+=item *
+
+C<DBIx::Custom::Result::default_filter()>
+
+=item *
+
+C<DBIx::Custom::Result::filter()>
+
+=back
 
 B<Example:>
 
@@ -876,7 +950,7 @@ B<Example:>
 
 =head1 BUGS
 
-Please tell me bugs.
+Please tell me bugs if found.
 
 C<< <kimoto.yuki at gmail.com> >>
 

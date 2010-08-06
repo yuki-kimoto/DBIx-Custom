@@ -43,8 +43,8 @@ my $NEW_ARGS = {
 # Variables
 my $dbi;
 my $sth;
-my $tmpl;
-my @tmpls;
+my $source;
+my @sources;
 my $select_tmpl;
 my $insert_tmpl;
 my $update_tmpl;
@@ -69,8 +69,8 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
 
 test 'DBIx::Custom::Result test';
-$tmpl = "select key1, key2 from table1";
-$query = $dbi->build_query($tmpl);
+$source = "select key1, key2 from table1";
+$query = $dbi->create_query($source);
 $result = $dbi->execute($query);
 
 @rows = ();
@@ -97,8 +97,8 @@ is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : fetc
 test 'Insert query return value';
 $dbi->execute($DROP_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{0});
-$tmpl = "insert into table1 {insert key1 key2}";
-$query = $dbi->build_query($tmpl);
+$source = "insert into table1 {insert key1 key2}";
+$query = $dbi->create_query($source);
 $ret_val = $dbi->execute($query, param => {key1 => 1, key2 => 2});
 ok($ret_val, $test);
 
@@ -119,7 +119,7 @@ $dbi->register_filter(twice       => sub { $_[0] * 2},
                     three_times => sub { $_[0] * 3});
 
 $insert_tmpl  = "insert into table1 {insert key1 key2};";
-$insert_query = $dbi->build_query($insert_tmpl);
+$insert_query = $dbi->create_query($insert_tmpl);
 $insert_query->filter({key1 => 'twice'});
 $dbi->execute($insert_query, param => {key1 => 1, key2 => 2});
 $result = $dbi->execute($SELECT_TMPLS->{0});
@@ -130,10 +130,10 @@ $dbi->execute($DROP_TABLE->{0});
 test 'Filter in';
 $dbi->execute($CREATE_TABLE->{0});
 $insert_tmpl  = "insert into table1 {insert key1 key2};";
-$insert_query = $dbi->build_query($insert_tmpl);
+$insert_query = $dbi->create_query($insert_tmpl);
 $dbi->execute($insert_query, param => {key1 => 2, key2 => 4});
 $select_tmpl = "select * from table1 where {in table1.key1 2} and {in table1.key2 2}";
-$select_query = $dbi->build_query($select_tmpl);
+$select_query = $dbi->create_query($select_tmpl);
 $select_query->filter({'table1.key1' => 'twice'});
 $result = $dbi->execute($select_query, param => {'table1.key1' => [1,5], 'table1.key2' => [2,4]});
 $rows = $result->fetch_hash_all;
@@ -145,14 +145,14 @@ $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 
-$tmpl = "select * from table1 where {= key1} and {<> key2} and {< key3} and {> key4} and {>= key5};";
-$query = $dbi->build_query($tmpl);
+$source = "select * from table1 where {= key1} and {<> key2} and {< key3} and {> key4} and {>= key5};";
+$query = $dbi->create_query($source);
 $result = $dbi->execute($query, param => {key1 => 1, key2 => 3, key3 => 4, key4 => 3, key5 => 5});
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag1");
 
-$tmpl = "select * from table1 where {<= key1} and {like key2};";
-$query = $dbi->build_query($tmpl);
+$source = "select * from table1 where {<= key1} and {like key2};";
+$query = $dbi->create_query($source);
 $result = $dbi->execute($query, param => {key1 => 1, key2 => '%2%'});
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic tag2");
@@ -163,8 +163,8 @@ $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 
-$tmpl = "select * from table1 where {in key1 2};";
-$query = $dbi->build_query($tmpl);
+$source = "select * from table1 where {in key1 2};";
+$query = $dbi->create_query($source);
 $result = $dbi->execute($query, param => {key1 => [9, 1]});
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$test : basic");
@@ -197,8 +197,8 @@ eval {DBIx::Custom->connect(data_source => 'dbi:SQLit')};
 ok($@, "$test : connect error");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-eval{$dbi->build_query("{p }")};
-ok($@, "$test : build_query invalid SQL template");
+eval{$dbi->create_query("{p }")};
+ok($@, "$test : create_query invalid SQL template");
 
 test 'insert';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -431,9 +431,9 @@ ok(! $result->fetch_first, "$test: rollback");
 test 'cache';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
-$tmpl = 'select * from table1 where {= key1} and {= key2};';
-$dbi->build_query($tmpl);
-is_deeply($dbi->{_cached}->{$tmpl}, 
+$source = 'select * from table1 where {= key1} and {= key2};';
+$dbi->create_query($source);
+is_deeply($dbi->{_cached}->{$source}, 
           {sql => "select * from table1 where key1 = ? and key2 = ?;", columns => ['key1', 'key2']}, "$test : cache");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
