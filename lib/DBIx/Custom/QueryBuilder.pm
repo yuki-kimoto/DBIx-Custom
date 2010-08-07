@@ -11,17 +11,17 @@ use DBIx::Custom::QueryBuilder::TagProcessors;
 
 __PACKAGE__->dual_attr('tag_processors', default => sub { {} }, inherit => 'hash_copy');
 __PACKAGE__->register_tag_processor(
-    '?'      => \&DBIx::Custom::QueryBuilder::TagProcessors::placeholder,
-    '='      => \&DBIx::Custom::QueryBuilder::TagProcessors::equal,
-    '<>'     => \&DBIx::Custom::QueryBuilder::TagProcessors::not_equal,
-    '>'      => \&DBIx::Custom::QueryBuilder::TagProcessors::greater_than,
-    '<'      => \&DBIx::Custom::QueryBuilder::TagProcessors::lower_than,
-    '>='     => \&DBIx::Custom::QueryBuilder::TagProcessors::greater_than_equal,
-    '<='     => \&DBIx::Custom::QueryBuilder::TagProcessors::lower_than_equal,
-    'like'   => \&DBIx::Custom::QueryBuilder::TagProcessors::like,
-    'in'     => \&DBIx::Custom::QueryBuilder::TagProcessors::in,
-    'insert' => \&DBIx::Custom::QueryBuilder::TagProcessors::insert,
-    'update' => \&DBIx::Custom::QueryBuilder::TagProcessors::update
+    '?'      => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_placeholder_tag,
+    '='      => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_equal_tag,
+    '<>'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_not_equal_tag,
+    '>'      => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_greater_than_tag,
+    '<'      => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_lower_than_tag,
+    '>='     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_greater_than_equal_tag,
+    '<='     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_lower_than_equal_tag,
+    'like'   => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_like_tag,
+    'in'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_in_tag,
+    'insert' => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_insert_tag,
+    'update' => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_update_tag
 );
 
 __PACKAGE__->attr(tag_start => '{');
@@ -267,19 +267,69 @@ See also L<DBIx::Custom::QueryBuilder::TagProcessors> to know tag processor.
 =head1 Tags
 
 The following tags is available.
-    
-    [Tags]           [Replaced]
+
+=head2 C<?>
+
+Placeholder tag.
+
     {? NAME}    ->   ?
+
+=head2 C<=>
+
+Equal tag.
+
     {= NAME}    ->   NAME = ?
+
+=head2 C<E<lt>E<gt>>
+
+Not equal tag.
+
     {<> NAME}   ->   NAME <> ?
-    
+
+=head2 C<E<lt>>
+
+Lower than tag
+
     {< NAME}    ->   NAME < ?
+
+=head2 C<E<gt>>
+
+Greater than tag
+
     {> NAME}    ->   NAME > ?
+
+=head2 C<E<gt>=>
+
+Greater than or equal tag
+
     {>= NAME}   ->   NAME >= ?
+
+=head2 C<E<lt>=>
+
+Lower than or equal tag
+
     {<= NAME}   ->   NAME <= ?
-    
-    {like NAME}       ->   NAME like ?
+
+=head2 C<like>
+
+Like tag
+
+    {like NAME}   ->   NAME like ?
+
+=head2 C<in>
+
+In tag.
+
     {in NAME COUNT}   ->   NAME in [?, ?, ..]
-    
+
+=head2 C<insert>
+
+Insert tag.
+
     {insert NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
+
+=head2 C<update>
+
+Updata tag.
+
     {update NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?

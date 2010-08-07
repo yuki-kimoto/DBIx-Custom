@@ -353,6 +353,9 @@ is_deeply($rows, [{key1 => 1}, {key1 => 3}], "$test : table and columns and wher
 $rows = $dbi->select(table => 'table1', where => {key1 => 1})->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : table and columns and where key");
 
+$rows = $dbi->select(table => 'table1', where => ['{= key1} and {= key2}', {key1 => 1, key2 => 2}])->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2}], "$test : table and columns and where string");
+
 $rows = $dbi->select(table => 'table1', column => ['key1'], where => {key1 => 3})->fetch_hash_all;
 is_deeply($rows, [{key1 => 3}], "$test : table and columns and where key");
 

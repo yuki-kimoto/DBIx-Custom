@@ -5,7 +5,7 @@ use warnings;
 
 use Carp 'croak';
 
-sub _basic {
+sub _expand_basic_tag {
     my ($name, $column) = @_;
     
     # Check arguments
@@ -15,15 +15,15 @@ sub _basic {
     return ["$column $name ?", [$column]];
 }
 
-sub equal              { _basic('=',    @_) }
-sub not_equal          { _basic('<>',   @_) }
-sub greater_than       { _basic('>',    @_) }
-sub lower_than         { _basic('<',    @_) }
-sub greater_than_equal { _basic('>=',   @_) }
-sub lower_than_equal   { _basic('<=',   @_) }
-sub like               { _basic('like', @_) }
+sub expand_equal_tag              { _expand_basic_tag('=',    @_) }
+sub expand_not_equal_tag          { _expand_basic_tag('<>',   @_) }
+sub expand_greater_than_tag       { _expand_basic_tag('>',    @_) }
+sub expand_lower_than_tag         { _expand_basic_tag('<',    @_) }
+sub expand_greater_than_equal_tag { _expand_basic_tag('>=',   @_) }
+sub expand_lower_than_equal_tag   { _expand_basic_tag('<=',   @_) }
+sub expand_like_tag               { _expand_basic_tag('like', @_) }
 
-sub placeholder {
+sub expand_placeholder_tag {
     my $column = shift;
     
     # Check arguments
@@ -33,7 +33,7 @@ sub placeholder {
     return ['?', [$column]];
 }
 
-sub in {
+sub expand_in_tag {
     my ($column, $count) = @_;
     
     # Check arguments
@@ -55,7 +55,7 @@ sub in {
     return [$s, $columns];
 }
 
-sub insert {
+sub expand_insert_tag {
     my @columns = @_;
     
     # Part of insert statement
@@ -71,7 +71,7 @@ sub insert {
     return [$s, \@columns];
 }
 
-sub update {
+sub expand_update_tag {
     my @columns = @_;
     
     # Part of update statement
@@ -112,48 +112,48 @@ same as the count of column names.
         return [$s, $columns];
     }
 
-=head2 C<placeholder>
+=head2 C<expand_placeholder_tag>
 
     ('NAME')  ->  ['?', ['NAME']]
 
-=head2 C<equal>
+=head2 C<expand_equal_tag>
 
     ('NAME')  ->  ['NAME = ?', ['NAME']]
 
-=head2 C<not_equal>
+=head2 C<expand_not_equal_tag>
 
     ('NAME')  ->  ['NAME <> ?', ['NAME']]
 
-=head2 C<greater_than>
+=head2 C<expand_greater_than_tag>
 
     ('NAME')  ->  ['NAME > ?', ['NAME']]
 
-=head2 C<lower_than>
+=head2 C<expand_lower_than_tag>
 
     ('NAME')  ->  ['NAME < ?', ['NAME']]
 
-=head2 C<greater_than_equal>
+=head2 C<expand_greater_than_equal_tag>
 
     ('NAME')  ->  ['NAME >= ?', ['NAME']]
 
-=head2 C<lower_than_equal>
+=head2 C<expand_lower_than_equal_tag>
 
     ('NAME')  ->  ['NAME <= ?', ['NAME']]
 
-=head2 C<like>
+=head2 C<expand_like_tag>
 
     ('NAME')  ->  ['NAME like ?', ['NAME']]
 
-=head2 C<in>
+=head2 C<expand_in_tag>
 
     ('NAME', 3)  -> ['NAME in (?, ?, ?)', ['NAME', 'NAME', 'NAME']]
 
-=head2 C<insert>
+=head2 C<expand_insert_tag>
 
     ('NAME1', 'NAME2')
       ->  ['(NAME1, NAME2) values (?, ?, ?)', ['NAME1', 'NAME2']]
 
-=head2 C<update>
+=head2 C<expand_update_tag>
 
     ('NAME1', 'NAME2')
       ->  ['set NAME1 = ?, NAME2 = ?', ['NAME1', 'NAME2']]
