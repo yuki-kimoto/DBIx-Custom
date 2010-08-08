@@ -489,7 +489,7 @@ DBIx::Custom - DBI interface, having hash parameter binding and filtering system
 
 =cut
 
-our $VERSION = '0.1609';
+our $VERSION = '0.1610';
 
 =head1 STABILITY
 
@@ -977,6 +977,15 @@ In fetch filter, column name must be lower case even if column conatain upper ca
 
 =head2 6. Performance
 
+=head3 Disable filter checking
+
+C<filter_check> is 1 by defaut. This is useful in debug.
+
+This filter check maybe damege performance.
+If you require performance, set C<filter_check> to 0.
+
+=head3 Using execute() method instead suger methods
+
 If you execute insert statement by using select() method,
 you sometimes can't meet performance requirment.
 
@@ -1006,6 +1015,8 @@ Execute query repeatedly
     }
 
 This is faster than C<insert()> and C<update()> method.
+
+=head2 caching
 
 C<execute()> method cache the parsing result of SQL soruce.
 Default to 1
