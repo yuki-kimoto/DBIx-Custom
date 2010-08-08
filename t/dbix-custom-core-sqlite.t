@@ -513,11 +513,20 @@ eval{$result->fetch_hash_first};
 ok(!$@, "$test : hash : filter_check off");
 
 
-test 'filter_check in binding parameter';
+test 'filter_check in parameter binding';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 
+$dbi->default_bind_filter('not_exists');
+eval{$dbi->select(table => 'table1')};
+like($@, qr/\QDefault bind filter "not_exists" is not registered/, "$test : default_bind_filter");
 
+$dbi->default_bind_filter(undef);
+eval{$dbi->select(table => 'table1', filter => {key1 => 'not_exists'})};
+like($@, qr/\QBind filter "not_exists" is not registered/, "$test : bind_filter");
 
+eval{$dbi->select(table => 'table1', filter => {not_exists => 'encode_utf8'})};
+like($@, qr/\QColumn name "not_exists" in bind filter is not found in paramters/,
+     "$test : fetch_filter");
 

@@ -410,6 +410,17 @@ sub _build_bind_values {
     
     # binding values
     my @bind_values;
+
+    # Filter
+    $filter ||= {};
+    
+    # Parameter
+    $params ||= {};
+    
+    # Check filter
+    $self->_check_filter($self->filters, $filter,
+                         $self->default_bind_filter, $params)
+      if $self->filter_check;
     
     # Build bind values
     my $count = {};
@@ -422,9 +433,6 @@ sub _build_bind_values {
         my $value = ref $params->{$column} eq 'ARRAY'
                   ? $params->{$column}->[$count->{$column} || 0]
                   : $params->{$column};
-        
-        # Filter
-        $filter ||= {};
         
         # Filter name
         my $fname = $filter->{$column} || $self->default_bind_filter || '';
@@ -452,6 +460,27 @@ sub _build_bind_values {
     }
     
     return \@bind_values;
+}
+
+sub _check_filter {
+    my ($self, $filters, $filter, $default_filter, $params) = @_;
+    
+    # Filter name not exists
+    foreach my $fname (values %$filter) {
+        croak qq{Bind filter "$fname" is not registered}
+          unless exists $filters->{$fname};
+    }
+    
+    # Default filter name not exists
+    croak qq{Default bind filter "$default_filter" is not registered}
+      if $default_filter && ! exists $filters->{$default_filter};
+    
+    # Column name not exists
+    foreach my $column (keys %$filter) {
+        
+        croak qq{Column name "$column" in bind filter is not found in paramters}
+          unless exists $params->{$column};
+    }
 }
 
 =head1 NAME
