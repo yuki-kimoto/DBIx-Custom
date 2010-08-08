@@ -447,3 +447,77 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is(scalar keys %{$dbi->{_cached}}, 0, 'not cache');
 
 
+test 'filter_check in fetching';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->default_fetch_filter('not_exists');
+$result = $dbi->select(table => 'table1');
+eval{$result->fetch_first};
+like($@, qr/\QDefault fetch filter "not_exists" is not registered/, "$test : array :default_fetch_filter");
+
+$dbi->default_fetch_filter(undef);
+$result = $dbi->select(table => 'table1');
+$result->filter({key1 => 'not_exists'});
+eval{$result->fetch_first};
+like($@, qr/\QFetch filter "not_exists" is not registered/, "$test :  array :fetch_filter");
+
+$result = $dbi->select(table => 'table1');
+$result->filter({not_exists => 'encode_utf8'});
+eval{$result->fetch_first};
+like($@, qr/\QColumn name "not_exists" in fetch filter is not found in result columns/,
+     "$test :  array : fetch_filter");
+
+$result = $dbi->select(table => 'table1');
+$result->filter({Key1 => 'encode_utf8'});
+eval{$result->fetch_first};
+like($@, qr/\QColumn name "Key1" in fetch filter must lower case string/,
+     "$test :  array : contain upper case charactor");
+
+$dbi->filter_check(0);
+$result = $dbi->select(table => 'table1');
+$result->filter({Key1 => 'encode_utf8'});
+eval{$result->fetch_first};
+ok(!$@, "$test : array : filter_check off");
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->default_fetch_filter('not_exists');
+$result = $dbi->select(table => 'table1');
+eval{$result->fetch_hash_first};
+like($@, qr/\QDefault fetch filter "not_exists" is not registered/, "$test : hash :default_fetch_filter");
+
+$dbi->default_fetch_filter(undef);
+$result = $dbi->select(table => 'table1');
+$result->filter({key1 => 'not_exists'});
+eval{$result->fetch_hash_first};
+like($@, qr/\QFetch filter "not_exists" is not registered/, "$test : hash :fetch_filter");
+
+$result = $dbi->select(table => 'table1');
+$result->filter({not_exists => 'encode_utf8'});
+eval{$result->fetch_hash_first};
+like($@, qr/\QColumn name "not_exists" in fetch filter is not found in result columns/,
+     "$test : hash : fetch_filter");
+
+$result = $dbi->select(table => 'table1');
+$result->filter({Key1 => 'encode_utf8'});
+eval{$result->fetch_hash_first};
+like($@, qr/\QColumn name "Key1" in fetch filter must lower case string/,
+     "$test : hash : contain upper case charactor");
+
+$dbi->filter_check(0);
+$result = $dbi->select(table => 'table1');
+$result->filter({Key1 => 'encode_utf8'});
+eval{$result->fetch_hash_first};
+ok(!$@, "$test : hash : filter_check off");
+
+
+test 'filter_check in binding parameter';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+
+
+
+

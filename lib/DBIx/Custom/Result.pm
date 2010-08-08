@@ -7,33 +7,38 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 
-__PACKAGE__->attr([qw/sth filters default_filter filter/]);
+__PACKAGE__->attr([qw/sth filters default_filter filter filter_check/]);
 
 sub fetch {
     my $self = shift;
     
     # Filters
-    $self->{filters} ||= {};
-    $self->{filter}  ||= {};
+    my $filters = $self->{filters} || {};
+    my $filter  = $self->{filter}  || {};
     
     # Fetch
     my @row = $self->{sth}->fetchrow_array;
     
     # No row
     return unless @row;
-
+    
+    # Check filter
+    $self->_check_filter($filters, $filter, 
+                         $self->default_filter, $self->sth)
+      if $self->{filter_check};
+    
     # Filtering
     my $columns = $self->{sth}->{NAME_lc};
     for (my $i = 0; $i < @$columns; $i++) {
         
         # Filter name
         my $column = $columns->[$i];
-        my $fname  = exists $self->{filter}->{$column}
-                   ? $self->{filter}->{$column}
+        my $fname  = exists $filter->{$column}
+                   ? $filter->{$column}
                    : $self->{default_filter};
         
         # Filtering
-        $row[$i] = $self->{filters}->{$fname}->($row[$i])
+        $row[$i] = $filters->{$fname}->($row[$i])
           if $fname;
     }
 
@@ -89,15 +94,20 @@ sub fetch_hash {
     my $self = shift;
     
     # Filters
-    $self->{filters} ||= {};
-    $self->{filter}  ||= {};
+    my $filters = $self->{filters} || {};
+    my $filter  = $self->{filter}  || {};
     
     # Fetch
     my $row = $self->{sth}->fetchrow_arrayref;
     
     # Cannot fetch
     return unless $row;
-    
+
+    # Check filter
+    $self->_check_filter($filters, $filter, 
+                         $self->default_filter, $self->sth)
+      if $self->{filter_check};
+
     # Filter
     my $row_hash = {};
     my $columns = $self->{sth}->{NAME_lc};
@@ -105,13 +115,13 @@ sub fetch_hash {
         
         # Filter name
         my $column = $columns->[$i];
-        my $fname  = exists $self->{filter}->{$column}
-                   ? $self->{filter}->{$column}
+        my $fname  = exists $filter->{$column}
+                   ? $filter->{$column}
                    : $self->{default_filter};
         
         # Filtering
         $row_hash->{$column}
-          = $fname ? $self->{filters}->{$fname}->($row->[$i]) 
+          = $fname ? $filters->{$fname}->($row->[$i]) 
                    : $row->[$i];
     }
     
@@ -162,6 +172,30 @@ sub fetch_hash_all {
     }
     
     return $rows;
+}
+
+sub _check_filter {
+    my ($self, $filters, $filter, $default_filter, $sth) = @_;
+    
+    # Filter name not exists
+    foreach my $fname (values %$filter) {
+        croak qq{Fetch filter "$fname" is not registered}
+          unless exists $filters->{$fname};
+    }
+    
+    # Default filter name not exists
+    croak qq{Default fetch filter "$default_filter" is not registered}
+      if $default_filter && ! exists $filters->{$default_filter};
+    
+    # Column name not exists
+    my %columns = map {$_ => 1} @{$self->sth->{NAME_lc}};
+    foreach my $column (keys %$filter) {
+        croak qq{Column name "$column" in fetch filter must lower case string}
+          unless $column eq lc $column;
+        
+        croak qq{Column name "$column" in fetch filter is not found in result columns}
+          unless $columns{$column};
+    }
 }
 
 1;

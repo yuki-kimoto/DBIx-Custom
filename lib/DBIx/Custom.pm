@@ -42,6 +42,8 @@ __PACKAGE__->attr(cache_method => sub {
     }
 });
 
+__PACKAGE__->attr(filter_check => 1);
+
 sub connect {
     my $proto = shift;
     
@@ -394,7 +396,8 @@ sub execute{
         my $result = $self->result_class->new(
             sth            => $sth,
             default_filter => $self->default_fetch_filter,
-            filters        => $self->filters
+            filters        => $self->filters,
+            filter_check   => $self->filter_check
         );
 
         return $result;
@@ -941,6 +944,8 @@ This is same as the following one.
     );
     $result->filter({title => 'decode_utf8', author => 'to_upper_case'});
 
+In fetch filter, column name must be lower case even if column conatain upper case charactor. This is requirment not to depend database systems.
+
 =head2 6. Performance
 
 If you execute insert statement by using select() method,
@@ -1150,6 +1155,16 @@ B<Example:>
             }
         }
     );
+
+=head2 C<filter_check>
+
+    my $filter_check = $dbi->filter_check;
+    $dbi             = $dbi->filter_check(0);
+
+Enable filter check. 
+Default to 1.
+This check maybe damege performance.
+If you require performance, set C<filter_check> to 0.
 
 =head1 METHODS
 
