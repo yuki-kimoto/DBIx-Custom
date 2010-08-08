@@ -457,11 +457,11 @@ DBIx::Custom - DBI interface, having hash parameter binding and filtering system
 
 =cut
 
-our $VERSION = '0.1608';
+our $VERSION = '0.1609';
 
 =head1 STABILITY
 
-B<This module is not stable>. 
+B<This module is not stable>.
 Method name and implementations will be changed for a while.
 
 =head1 SYNOPSYS
@@ -508,7 +508,7 @@ Select
         table  => 'books',
         column => [qw/author title/],
         where  => {author => 'Ken'},
-        append => 'order by id limit 1',
+        append => 'order by id limit 5',
         filter => {title => 'encode_utf8'}
     );
     
@@ -518,6 +518,13 @@ Select
         column   => ['books.name as book_name']
         relation => {'books.id' => 'rental.book_id'}
     );
+    
+    # Select, more flexible where
+    my $result = $dbi->select(
+        table  => 'books',
+        where  => ['{= author} and {like title}', 
+                   {author => 'Ken', title => '%Perl%'}]
+    );
 
 Execute SQL
 
@@ -525,17 +532,17 @@ Execute SQL
     $dbi->execute("select title from books");
     
     # Execute SQL with hash binding and filtering
-    $dbi->execute("select id from books where {= author} && {like title}",
+    $dbi->execute("select id from books where {= author} and {like title}",
                   param  => {author => 'ken', title => '%Perl%'},
                   filter => {title => 'encode_utf8'});
 
     # Create query and execute it
     my $query = $dbi->create_query(
-        "select id from books where {= author} && {like title}"
+        "select id from books where {= author} and {like title}"
     );
-    $dbi->execute($query, param => {author => 'ken', title => '%Perl%'})
+    $dbi->execute($query, param => {author => 'Ken', title => '%Perl%'})
 
-More features.
+Other features.
 
     # Default filter
     $dbi->default_bind_filter('encode_utf8');
@@ -556,7 +563,6 @@ Fetch row.
         
     }
     
-
 =head1 DESCRIPTION
 
 =head2 1. Features
@@ -566,19 +572,20 @@ such as L<DBIx::Class>, L<DBIx::Simple>.
 
 This module is not O/R mapper. O/R mapper is useful,
 but you must learn many syntax of the O/R mapper,
-which is almost another language
-Create SQL statement is offten not effcient and damage SQL performance.
+which is almost another language.
+Created SQL statement is offten not effcient and damage SQL performance.
 so you have to execute raw SQL in the end.
 
 L<DBIx::Custom> is middle area between L<DBI> and O/R mapper.
-L<DBIx::Custom> provide flexible hash parameter binding adn filtering system,
-and suger method, such as C<select()>, C<update()>, C<delete()>, C<select()>
-to execute a query easily.
+L<DBIx::Custom> provide flexible hash parameter binding and filtering system,
+and suger methods, such as C<select()>, C<update()>, C<delete()>, C<select()>
+to execute SQL easily.
 
-L<DBIx::Custom> respects SQL. SQL is not beautiful, but de-facto standard,
-so all people learing database system know it.
-If you know SQL statement,
-you learn a little thing about L<DBIx::Custom> to do your works.
+L<DBIx::Custom> respects SQL. SQL is very complex and not beautiful,
+but de-facto standard,
+so all people learing database know it.
+If you know SQL,
+you learn a little thing to do your works, using L<DBIx::Custom>
 
 =head2 1. Connect to the database
 
@@ -594,7 +601,7 @@ If database is SQLite, use L<DBIx::Custom::SQLite>. you connect database easy wa
     use DBIx::Custom::SQLite;
     my $dbi = DBIx::Custom->connect(database => 'books');
     
-If database is  MySQL, use L<DBIx::Costm::MySQL>.
+If database is  MySQL, use L<DBIx::Costom::MySQL>.
 
     use DBIx::Custom::MySQL;
     my $dbi = DBIx::Custom->connect(database => 'books',
@@ -603,23 +610,28 @@ If database is  MySQL, use L<DBIx::Costm::MySQL>.
 =head2 2. Suger methods
 
 L<DBIx::Custom> has suger methods, such as C<insert()>, C<update()>,
-C<delete()> and C<select()>. If you want to do simple works,
-You don't have to create SQL statement.
+C<delete()> and C<select()>. If you want to do small works,
+You don't have to create SQL statements.
 
 =head3 insert()
+
+Execute insert statement.
 
     $dbi->insert(table  => 'books',
                  param  => {title => 'perl', author => 'Ken'});
 
 The following SQL is executed.
 
-    insert into (title, author) values (?, ?)
+    insert into (title, author) values (?, ?);
 
 The values of C<title> and C<author> is embedded into placeholders.
 
-C<append> and C<filter> argument can be specified if you need.
+C<append> and C<filter> argument can be specified
+to C<insert()> method if you need.
 
 =head3 update()
+
+Execute update statement.
 
     $dbi->update(table  => 'books', 
                  param  => {title => 'aaa', author => 'Ken'}, 
@@ -631,11 +643,14 @@ The following SQL is executed.
 
 The values of C<title> and C<author> is embedded into placeholders.
 
+C<append> and C<filter> argument can be specified
+to C<update()> method if you need.
+
 If you want to update all rows, use C<update_all()> method instead.
 
-C<append> and C<filter> argument can be specified if you need.
-
 =head3 delete()
+
+Execute delete statement.
 
     $dbi->delete(table  => 'books',
                  where  => {author => 'Ken'});
@@ -644,15 +659,16 @@ The following SQL is executed.
 
     delete from books where id = ?;
 
-The value of C<id> is embedded into a placehodler.
+The value of C<id> is embedded into the placehodler.
 
-C<append> and C<filter> argument can be specified if you need.
+C<append> and C<filter> argument can be specified
+to C<delete()> method if you need.
 
 If you want to delete all rows, use C<delete_all()> method instead.
 
 =head3 select()
 
-Specify only table:
+Execute select statement, only C<table> argument specified :
 
     my $result = $dbi->select(table => 'books');
 
@@ -661,7 +677,7 @@ The following SQL is executed.
     select * from books;
 
 the result of C<select()> method is L<DBIx::Custom::Result> object.
-use C<fetch()> method to fetch a row.
+You can fetch row.
 
     while (my $row = $result->fetch) {
         my $title  = $row->[0];
@@ -669,9 +685,9 @@ use C<fetch()> method to fetch a row.
     }
 
 L<DBIx::Custom::Result> has various methods to fetch row.
-See "3. Result of select statement".
+See "3. Fetch row".
 
-Specify C<column> and C<where> arguments:
+Specify C<column> and C<where> arguments.
 
     my $result = $dbi->select(
         table  => 'books',
@@ -684,7 +700,7 @@ The following SQL is executed.
 
 the value of C<author> is embdded into placeholder.
 
-If C<relation> argument is specifed, you can join tables.
+If you want to join tables, specify C<relation> argument. 
 
     my $result = $dbi->select(
         table    => ['books', 'rental'],
@@ -698,7 +714,7 @@ The following SQL is executed.
     where books.id = rental.book_id;
 
 C<append> argument add a string to the end of SQL statement.
-It is useful to add "order by" or "limit" cluase.
+You can add "order by" or "limit" cluase.
 
     # Select, more complex
     my $result = $dbi->select(
@@ -711,12 +727,13 @@ The following SQL is executed.
 
     select * books where author = ? order by price limit 5;
 
-C<filter> argument can be specified if you need.
+C<filter> argument can be specified to filter parameters
+if you need.
 
-=head2 3. Result of select statement
+=head2 3. Fetch row
 
-C<select> method reurn L<DBIx::Custom::Result> object.
-Using various methods, you can fetch row.
+C<select()> method return L<DBIx::Custom::Result> object.
+You can fetch row by various methods.
 
 Fetch row into array.
     
@@ -771,7 +788,7 @@ Fetch all rows into array of hash
 
     my $rows = $result->fetch_hash_all;
 
-If you want to access row statement handle of L<DBI>, use sth() attribute.
+If you want to access raw statement handle of L<DBI>, use C<sth()> attribute.
 
     my $sth = $result->sth;
 
@@ -788,11 +805,11 @@ At frist, I show normal way of parameter binding.
     );
     $sth->execute('Ken', '%Perl%');
 
-This is very good way because database system enable SQL caching,
-and parameter is quoted automatically.
+This is very good way because database system can enable SQL caching,
+and parameter is quoted automatically, it is secure.
 
-L<DBIx::Custom>hash parameter binding system improve normal parameter binding to
-specify hash parameter.
+L<DBIx::Custom> hash parameter binding system improve
+normal parameter binding way to specify hash parameter.
 
     my $result = $dbi->execute(
         "select * from books where {= author} and {like title};"
@@ -800,12 +817,40 @@ specify hash parameter.
     );
 
 This is same as the normal way, execpt that the parameter is hash.
-{= author} is called C<tag>. tag is expand to placeholder internally.
+{= author} is called C<tag>. tag is expand to placeholder string internally.
 
     select * from books where {= author} and {like title}
       -> select * from books where author = ? and title like ?;
 
-See L<DBIx::Custom::QueryBuilder> to know all tags.
+The following tags is available.
+
+=head1 Tags
+
+The following tags is available.
+
+    [TAG]                       [REPLACED]
+    {? NAME}               ->   ?
+    {= NAME}               ->   NAME = ?
+    {<> NAME}              ->   NAME <> ?
+    
+    {< NAME}               ->   NAME < ?
+    {> NAME}               ->   NAME > ?
+    {>= NAME}              ->   NAME >= ?
+    {<= NAME}              ->   NAME <= ?
+    
+    {like NAME}            ->   NAME like ?
+    {in NAME COUNT}        ->   NAME in [?, ?, ..]
+    
+    {insert NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
+    {update NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?
+
+See also L<DBIx::Custom::QueryBuilder>.
+
+Default start tag is '{'. end tag is '}'.
+You can change this tag.
+
+    $dbi->query_builder->start_tag('|');
+    $dbi->query_builder->end_tag('|');
 
 =head2 5. Filtering
 
@@ -814,7 +859,7 @@ If you want to save the string to database, You must encode the string.
 Filtering system help you to convert a data to another data
 when you save to the data and get the data form database.
 
-If you want to register filter, use register_filter() method.
+If you want to register filter, use C<register_filter()> method.
 
     $dbi->register_filter(
         to_upper_case => sub {
@@ -829,7 +874,7 @@ You can specify these filters to C<filter> argument of C<execute()> method.
 
     my $result = $dbi->execute(
         "select * from books where {= author} and {like title};"
-        param => {author => 'Ken', title => '%Perl%'});
+        param  => {author => 'Ken', title => '%Perl%'},
         filter => {author => 'to_upper_case, title => 'encode_utf8'}
     );
 
@@ -848,8 +893,7 @@ delete(), delete_all(), select().
         filter => {title => 'encode_utf8'}
     );
 
-Filter work to each parmeter, but you prepare default filter for all parameters.
-you can use C<default_bind_filter()> attribute.
+Filter works each parmeter, but you prepare default filter for all parameters.
 
     $dbi->default_bind_filter('encode_utf8');
 
@@ -870,7 +914,7 @@ This is same as the following one.
         filter => {title => 'encode_uft8' author => 'to_upper_case'}
     );
 
-You can also specify filter when the row is fetching. This is reverse of bindig filter.
+You can also specify filter when the row is fetched. This is reverse of bind filter.
 
     my $result = $dbi->select(table => 'books');
     $result->filter({title => 'decode_utf8', author => 'to_upper_case'});
@@ -879,7 +923,7 @@ you can specify C<default_fetch_filter()>.
 
     $dbi->default_fetch_filter('decode_utf8');
 
-C<DBIx::Custom::Result::filter> overwrites the filter specified
+C<DBIx::Custom::Result::filter()> overwrites the filter specified
 by C<default_fetch_filter()>
 
     $dbi->default_fetch_filter('decode_utf8');
@@ -896,6 +940,112 @@ This is same as the following one.
         columns => ['title', 'author', 'price']
     );
     $result->filter({title => 'decode_utf8', author => 'to_upper_case'});
+
+=head2 6. Performance
+
+If you execute insert statement by using select() method,
+you sometimes can't meet performance requirment.
+
+C<insert()> method is a little slow because SQL statement and statement handle
+is created every time.
+
+In that case, you can prepare a query by C<create_query()> method.
+    
+    my $query = $dbi->create_query(
+        "insert into books {insert title author};"
+    );
+    
+    # (In the case of update statement)
+    my $query = $dbi->create_query(
+        "update books {update author};";
+    );
+
+Execute query repeatedly
+    
+    my $inputs = [
+        {title => 'Perl',      author => 'Ken'},
+        {title => 'Good days', author => 'Mike'}
+    ];
+    
+    foreach my $input (@$inputs) {
+        $dbi->execute($query, $input);
+    }
+
+This is faster than C<insert()> and C<update()> method.
+
+C<execute()> method cache the parsing result of SQL soruce.
+Default to 1
+
+    $dbi->cache(1);
+
+Caching is on memory, but you can change this by C<cache_method()>.
+First argument is L<DBIx::Custom> object.
+Second argument is SQL source,
+such as "select * from books where {=title} and {=author};";
+Third argument is parsed result, such as
+{sql => "select * from books where title = ? and author = ?",
+ columns => ['title', 'author']}, this is hash reference.
+If argument is more than two, this is called ti set cache.
+otherwise, called to get cache.
+
+    $dbi->cache_mehod(sub {
+        sub {
+            my $self = shift;
+            
+            $self->{_cached} ||= {};
+            
+            # Set cache
+            if (@_ > 1) {
+                $self->{_cached}{$_[0]} = $_[1] 
+            }
+            
+            # Get cache
+            else {
+                return $self->{_cached}{$_[0]}
+            }
+        }
+    });
+
+=head2 7. More features
+
+=head3 Get DBI object
+
+You can get L<DBI> object and call any method of L<DBI>.
+
+    $dbi->dbh->begin_work;
+    $dbi->dbh->commit;
+    $dbi->dbh->rollback;
+
+=head3 Change Result class
+
+You can change Result class if you need.
+
+    package Your::Result;
+    use base 'DBIx::Custom::Result';
+    
+    sub some_method { ... }
+
+    1;
+    
+    package main;
+    
+    use Your::Result;
+    
+    my $dbi = DBIx::Custom->connect(...);
+    $dbi->result_class('Your::Result');
+
+=head3 Custamize SQL builder object
+
+You can custamize SQL builder object
+
+    my $dbi = DBIx::Custom->connect(...);
+    $dbi->query_builder->start_tag('|');
+    $dbi->query_builder->end_tag('|');
+    $dbi->query_builder->register_tag_processor(
+        name => sub {
+           ...
+        }
+    );
 
 =head1 ATTRIBUTES
 
