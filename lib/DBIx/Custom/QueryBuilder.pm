@@ -322,13 +322,13 @@ In tag.
 
     {in NAME COUNT}   ->   NAME in [?, ?, ..]
 
-=head2 C<insert>
+=head2 C<insert_param>
 
 Insert parameter tag.
 
     {insert_param NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
 
-=head2 C<update>
+=head2 C<update_param>
 
 Updata parameter tag.
 
