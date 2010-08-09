@@ -55,10 +55,10 @@ sub expand_in_tag {
     return [$s, $columns];
 }
 
-sub expand_insert_tag {
+sub expand_insert_param_tag {
     my @columns = @_;
     
-    # Part of insert statement
+    # Insert parameters
     my $s = '(';
     $s .= "$_, " for @columns;
     $s =~ s/, $//;
@@ -71,10 +71,10 @@ sub expand_insert_tag {
     return [$s, \@columns];
 }
 
-sub expand_update_tag {
+sub expand_update_param_tag {
     my @columns = @_;
     
-    # Part of update statement
+    # Update paramters
     my $s = 'set ';
     $s .= "$_ = ?, " for @columns;
     $s =~ s/, $//;
@@ -148,12 +148,12 @@ same as the count of column names.
 
     ('NAME', 3)  -> ['NAME in (?, ?, ?)', ['NAME', 'NAME', 'NAME']]
 
-=head2 C<expand_insert_tag>
+=head2 C<expand_insert_param_tag>
 
     ('NAME1', 'NAME2')
       ->  ['(NAME1, NAME2) values (?, ?, ?)', ['NAME1', 'NAME2']]
 
-=head2 C<expand_update_tag>
+=head2 C<expand_update_param_tag>
 
     ('NAME1', 'NAME2')
       ->  ['set NAME1 = ?, NAME2 = ?', ['NAME1', 'NAME2']]

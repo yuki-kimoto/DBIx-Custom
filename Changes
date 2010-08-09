@@ -1,3 +1,7 @@
+0.1611
+  renamed update tag to update_param
+  renamed insert tag to insert_param
+  renamed sql_builder to query_builder
 0.1610
   added filter_check attribute.
 0.1609

@@ -97,7 +97,7 @@ is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : fetc
 test 'Insert query return value';
 $dbi->execute($DROP_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{0});
-$source = "insert into table1 {insert key1 key2}";
+$source = "insert into table1 {insert_param key1 key2}";
 $query = $dbi->create_query($source);
 $ret_val = $dbi->execute($query, param => {key1 => 1, key2 => 2});
 ok($ret_val, $test);
@@ -106,7 +106,7 @@ ok($ret_val, $test);
 test 'Direct query';
 $dbi->execute($DROP_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{0});
-$insert_tmpl = "insert into table1 {insert key1 key2}";
+$insert_tmpl = "insert into table1 {insert_param key1 key2}";
 $dbi->execute($insert_tmpl, param => {key1 => 1, key2 => 2});
 $result = $dbi->execute($SELECT_TMPLS->{0});
 $rows = $result->fetch_hash_all;
@@ -118,7 +118,7 @@ $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice       => sub { $_[0] * 2}, 
                     three_times => sub { $_[0] * 3});
 
-$insert_tmpl  = "insert into table1 {insert key1 key2};";
+$insert_tmpl  = "insert into table1 {insert_param key1 key2};";
 $insert_query = $dbi->create_query($insert_tmpl);
 $insert_query->filter({key1 => 'twice'});
 $dbi->execute($insert_query, param => {key1 => 1, key2 => 2});
@@ -129,7 +129,7 @@ $dbi->execute($DROP_TABLE->{0});
 
 test 'Filter in';
 $dbi->execute($CREATE_TABLE->{0});
-$insert_tmpl  = "insert into table1 {insert key1 key2};";
+$insert_tmpl  = "insert into table1 {insert_param key1 key2};";
 $insert_query = $dbi->create_query($insert_tmpl);
 $dbi->execute($insert_query, param => {key1 => 2, key2 => 4});
 $select_tmpl = "select * from table1 where {in table1.key1 2} and {in table1.key2 2}";
@@ -171,7 +171,7 @@ is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$te
 
 test 'DBIx::Custom::SQLTemplate insert tag';
 $dbi->execute("delete from table1");
-$insert_tmpl = 'insert into table1 {insert key1 key2 key3 key4 key5}';
+$insert_tmpl = 'insert into table1 {insert_param key1 key2 key3 key4 key5}';
 $dbi->execute($insert_tmpl, param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 
 $result = $dbi->execute($SELECT_TMPLS->{0});
@@ -180,11 +180,11 @@ is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "$te
 
 test 'DBIx::Custom::SQLTemplate update tag';
 $dbi->execute("delete from table1");
-$insert_tmpl = "insert into table1 {insert key1 key2 key3 key4 key5}";
+$insert_tmpl = "insert into table1 {insert_param key1 key2 key3 key4 key5}";
 $dbi->execute($insert_tmpl, param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->execute($insert_tmpl, param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 
-$update_tmpl = 'update table1 {update key1 key2 key3 key4} where {= key5}';
+$update_tmpl = 'update table1 {update_param key1 key2 key3 key4} where {= key5}';
 $dbi->execute($update_tmpl, param => {key1 => 1, key2 => 1, key3 => 1, key4 => 1, key5 => 5});
 
 $result = $dbi->execute($SELECT_TMPLS->{0});
