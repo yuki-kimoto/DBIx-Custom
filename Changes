@@ -1,5 +1,8 @@
+0.1613
+  added experimental register_method() method
+  added experimental methods attribute
 0.1612
-  add tests
+  added tests
   updated document
   removed DBIx::Custom::SQLite last_insert_rawid() mehtod(not backword compatible)
   removed DBIx::Custom::MySQL last_insert_id() method(not backword compatible)

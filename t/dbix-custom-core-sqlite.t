@@ -21,6 +21,8 @@ sub test {
     $test = shift;
 }
 
+use DBIx::Custom::SQLite;
+
 # Constant varialbes for test
 my $CREATE_TABLE = {
     0 => 'create table table1 (key1 char(255), key2 char(255));',
@@ -554,3 +556,14 @@ ok($@, "$test: execute fail");
 eval{$dbi->create_query('select * from table1 where {0 key1}')};
 like($@, qr/\Q.t /, "$test : caller spec");
 
+
+test 'register_method';
+$dbi = DBIx::Custom::SQLite->new;
+$dbi->register_method(
+    one => sub { 1 },
+);
+$dbi->register_method({
+    two => sub { 2 }
+});
+is($dbi->one, 1, "$test : hash");
+is($dbi->two, 2, "$test : hash reference");

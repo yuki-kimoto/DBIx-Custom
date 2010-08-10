@@ -474,13 +474,39 @@ sub _check_filter {
     }
 }
 
+__PACKAGE__->attr('methods' => sub { {} });
+
+sub register_method {
+    my $self = shift;
+    
+    # Register method
+    my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $self->methods({%{$self->methods}, %$methods});
+    
+    return $self;
+}
+
+our $AUTOLOAD;
+sub AUTOLOAD {
+    my $self = shift;
+    my $method = $AUTOLOAD;
+    $method =~ s/.*:://;
+   
+   return if $method eq 'DESTROY';
+   
+   croak qq{Method "$method" is not registered"}
+     unless $self->methods->{$method};
+   
+   return $self->methods->{$method}->($self, @_);
+}
+
 =head1 NAME
 
 DBIx::Custom - DBI interface, having hash parameter binding and filtering system
 
 =cut
 
-our $VERSION = '0.1612';
+our $VERSION = '0.1613';
 
 =head1 STABILITY
 
@@ -1213,6 +1239,13 @@ Default to 1.
 This check maybe damege performance.
 If you require performance, set C<filter_check> attribute to 0.
 
+=head2 C<(experimental) methods>
+
+    my $methods = $dbi->methods;
+    $dbi        = $dbi->methods(\%methods);
+
+Additional methods.
+
 =head1 METHODS
 
 L<DBIx::Custom> inherits all methods from L<Object::Simple>
@@ -1474,6 +1507,21 @@ B<Example:>
             return Encode::decode('UTF-8', $value)
         }
     );
+
+=head2 C<(experimental) register_method>
+
+    $dbi->register_method(
+        begin_work => sub { shift->dbh->begin_work },
+        commit     => sub { shift->dbh->commit },
+        rollback   => sub { shift->dbh->rollback}
+    );
+
+Register methods to the object. You can call these methods
+from the object.
+
+    $dbi->begin_work;
+    $dbi->commit;
+    $dbi->rollback;
 
 =head1 BUGS
 
