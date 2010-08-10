@@ -30,18 +30,17 @@ sub connect_info {
 }
 
 
-# Constat variables for tests
-my $CLASS = 'DBIx::Custom::MySQL';
-
 # Varialbes for tests
 my $dbi;
+my $dbname;
 
 use DBIx::Custom::MySQL;
 
 test 'connect';
-$dbi = $CLASS->new(user => $USER, password => $PASSWORD,
-                    database => $DATABASE);
+$dbi = DBIx::Custom::MySQL->new(user => $USER, password => $PASSWORD,
+                    database => $DATABASE, host => 'localhost', port => '10000');
 $dbi->connect;
+like($dbi->data_source, qr/dbi:mysql:database=.*;host=localhost;port=10000;/, "$test : created data source");
 is(ref $dbi->dbh, 'DBI::db', $test);
 
 test 'attributes';

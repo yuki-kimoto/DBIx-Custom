@@ -1,3 +1,8 @@
+0.1612
+  add tests
+  updated document
+  removed DBIx::Custom::SQLite last_insert_rawid() mehtod(not backword compatible)
+  removed DBIx::Custom::MySQL last_insert_id() method(not backword compatible)
 0.1611
   renamed update tag to update_param
   renamed insert tag to insert_param

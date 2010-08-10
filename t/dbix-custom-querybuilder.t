@@ -84,6 +84,8 @@ isa_ok($ret_val, 'DBIx::Custom::QueryBuilder');
 test "Tag processor error case";
 $builder = DBIx::Custom::QueryBuilder->new;
 
+eval{$builder->build_query('{? }')};
+like($@, qr/\QColumn name must be specified in tag "{? }"/, "$test : ? not arguments");
 
 eval{$builder->build_query("{a }")};
 like($@, qr/\QTag "a" in "{a }" is not registered/, "$test : tag_processor not exist");

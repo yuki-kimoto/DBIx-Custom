@@ -137,7 +137,11 @@ sub _build_query {
               unless ref $tag_processor eq 'CODE';
             
             # Execute tag processor
-            my $r = $tag_processor->(@$tag_args);
+            my $r;
+            {
+                local $Carp::CarpLevel += 1;
+                $r = $tag_processor->(@$tag_args);
+            }
             
             # Check tag processor return value
             croak qq{Tag processor "$tag_name" must return [STRING, ARRAY_REFERENCE]}

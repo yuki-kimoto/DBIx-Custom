@@ -13,3 +13,4 @@
 \.gz$
 ^\.git
 ^cover_db/
+\.db$

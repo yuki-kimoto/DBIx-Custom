@@ -27,7 +27,7 @@ sub expand_placeholder_tag {
     my $column = shift;
     
     # Check arguments
-    croak qq{Column must be specified in tag "{? }"}
+    croak qq{Column name must be specified in tag "{? }"}
       unless $column;
     
     return ['?', [$column]];

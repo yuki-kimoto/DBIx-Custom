@@ -44,7 +44,7 @@ $dbh->do("insert into table1 (key1, key2) values ('3', '4');");
 
 $sql = "select key1, key2 from table1";
 
-test 'fetch scalar context';
+test 'fetch';
 $result = query($dbh, $sql);
 @rows = ();
 while (my $row = $result->fetch) {
@@ -53,7 +53,7 @@ while (my $row = $result->fetch) {
 is_deeply(\@rows, [[1, 2], [3, 4]], $test);
 
 
-test 'fetch_hash scalar context';
+test 'fetch_hash';
 $result = query($dbh, $sql);
 @rows = ();
 while (my $row = $result->fetch_hash) {
@@ -76,6 +76,11 @@ $row = $result->fetch_hash_first;
 is_deeply($row, {key1 => 1, key2 => 2}, "$test : row");
 $row = $result->fetch_hash;
 ok(!$row, "$test : finished");
+
+$result = query($dbh, 'create table table2 (key1, key2);');
+$result = query($dbh, 'select * from table2');
+$row = $result->fetch_hash_first;
+ok(!$row, "$test : no row fetch");
 
 
 test 'fetch_multi';

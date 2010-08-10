@@ -51,13 +51,11 @@ ok(-f $db_file, "$test : database file");
 $ret_val = $dbi->execute($CREATE_TABLE->{0});
 ok(defined $ret_val, "$test : database");
 $dbi->dbh->disconnect;
-unlink $db_file if -f $db_file;
 
-test 'last_insert_rowid';
-$dbi = DBIx::Custom::SQLite->connect_memory;
-$ret_val = $dbi->execute($CREATE_TABLE->{0});
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-is($dbi->last_insert_rowid, 1, "$test: first");
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-is($dbi->last_insert_rowid, 2, "$test: second");
-$dbi->dbh->disconnect;
+unlink $db_file if -f $db_file;
+$dbi = DBIx::Custom::SQLite->connect(database => $db_file);
+ok($dbi, "$test : called from class name");
+
+unlink $db_file if -f $db_file;
+$dbi = DBIx::Custom::SQLite->connect(data_source => "dbi:SQLite:dbname=$db_file");
+ok($dbi, "$test : specified data source");

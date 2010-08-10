@@ -9,3 +9,4 @@ blib/*
 *.tar.gz
 cover_db/*
 *.tmp
+t/*.db

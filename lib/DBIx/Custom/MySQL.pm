@@ -28,8 +28,6 @@ sub connect {
     return $self->SUPER::connect;
 }
 
-sub last_insert_id { shift->dbh->{mysql_insertid} }
-
 1;
 
 =head1 NAME
@@ -99,12 +97,5 @@ Create a new L<DBIx::Custom::MySQL> object and connect to the database.
 This method overrides C<DBIx::Custom::connect()> method.
 You can specify all attributes of L<DBIx::Custom>
 and L<DBIx::Custom::MySQL>, such as C<database>, C<host>, C<port>.
-
-=head2 C<last_insert_id>
-
-    my $last_insert_id = $dbi->last_insert_id;
-
-Get last insert id.
-This is same as C<last_insert_id()> function in MySQL.
 
 =cut

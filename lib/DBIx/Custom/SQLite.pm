@@ -14,8 +14,9 @@ sub connect {
     my $self = ref $proto ? $proto : $proto->new(@_);
     
     # Data source
-    if (!$self->data_source && (my $database = $self->database)) {
-        $self->data_source("dbi:SQLite:dbname=$database");
+    my $database = $self->database;
+    if (!$self->data_source && $database) {
+        $self->data_source("dbi:SQLite:dbname=$database")
     }
     
     return $self->SUPER::connect;
@@ -32,8 +33,6 @@ sub connect_memory {
     
     return $self;
 }
-
-sub last_insert_rowid { shift->dbh->func('last_insert_rowid') }
 
 1;
 
@@ -87,12 +86,5 @@ and L<DBIx::Custom::SQLite>, such as C<database>.
     my $dbi = DBIx::Custom::SQLite->connect_memory;
 
 Create a new L<DBIx::Custom::SQLite> object and connect to the memory database.
-
-=head2 C<last_insert_rowid>
-
-    my $last_insert_rowid = $dbi->last_insert_rowid;
-
-Get last insert row id.
-This is same as C<last_insert_rowid()> function in SQLite.
 
 =cut

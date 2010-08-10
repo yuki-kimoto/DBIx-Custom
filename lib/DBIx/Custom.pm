@@ -93,7 +93,7 @@ sub insert {
 
     # Check arguments
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid name}
+        croak qq{"$name" is invalid argument}
           unless $VALID_INSERT_ARGS{$name};
     }
     
@@ -126,7 +126,7 @@ sub update {
     
     # Check arguments
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid name}
+        croak qq{"$name" is invalid argument}
           unless $VALID_UPDATE_ARGS{$name};
     }
     
@@ -134,7 +134,7 @@ sub update {
     my $table            = $args{table} || '';
     my $param            = $args{param} || {};
     my $where            = $args{where} || {};
-    my $append_statement = $args{append} || '';
+    my $append = $args{append} || '';
     my $filter           = $args{filter};
     my $allow_update_all = $args{allow_update_all};
     
@@ -145,7 +145,8 @@ sub update {
     my @where_keys = keys %$where;
     
     # Not exists where keys
-    croak qq{"where" must contain the pairs of column name and value}
+    croak qq{"where" argument must be specified and } .
+          qq{contains the pairs of column name and value}
       if !@where_keys && !$allow_update_all;
     
     # Update clause
@@ -157,16 +158,13 @@ sub update {
     
     if (@where_keys) {
         $where_clause = 'where ';
-        foreach my $where_key (@where_keys) {
-            
-            $where_clause .= "{= $where_key} and ";
-        }
+        $where_clause .= "{= $_} and " for @where_keys;
         $where_clause =~ s/ and $//;
     }
     
-    # Template for update
+    # Source of SQL
     my $source = "update $table $update_clause $where_clause";
-    $source .= " $append_statement" if $append_statement;
+    $source .= " $append" if $append;
     
     # Rearrange parameters
     foreach my $wkey (@where_keys) {
@@ -184,7 +182,7 @@ sub update {
     
     # Execute query
     my $ret_val = $self->execute($source, param  => $param, 
-                                            filter => $filter);
+                                 filter => $filter);
     
     return $ret_val;
 }
@@ -199,14 +197,14 @@ sub delete {
     
     # Check arguments
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid name}
+        croak qq{"$name" is invalid argument}
           unless $VALID_DELETE_ARGS{$name};
     }
     
     # Arguments
     my $table            = $args{table} || '';
     my $where            = $args{where} || {};
-    my $append_statement = $args{append};
+    my $append = $args{append};
     my $filter           = $args{filter};
     my $allow_delete_all = $args{allow_delete_all};
     
@@ -214,26 +212,25 @@ sub delete {
     my @where_keys = keys %$where;
     
     # Not exists where keys
-    croak qq{Key-value pairs for where clause must be specified to "delete" second argument}
+    croak qq{"where" argument must be specified and } .
+          qq{contains the pairs of column name and value}
       if !@where_keys && !$allow_delete_all;
     
     # Where clause
     my $where_clause = '';
     if (@where_keys) {
         $where_clause = 'where ';
-        foreach my $wkey (@where_keys) {
-            $where_clause .= "{= $wkey} and ";
-        }
+        $where_clause .= "{= $_} and " for @where_keys;
         $where_clause =~ s/ and $//;
     }
     
-    # Template for delete
+    # Source of SQL
     my $source = "delete from $table $where_clause";
-    $source .= " $append_statement" if $append_statement;
+    $source .= " $append" if $append;
     
     # Execute query
     my $ret_val = $self->execute($source, param  => $where, 
-                                            filter => $filter);
+                                 filter => $filter);
     
     return $ret_val;
 }
@@ -248,7 +245,7 @@ sub select {
     
     # Check arguments
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid name}
+        croak qq{"$name" is invalid argument}
           unless $VALID_SELECT_ARGS{$name};
     }
     
@@ -261,7 +258,7 @@ sub select {
     my $append   = $args{append};
     my $filter   = $args{filter};
     
-    # SQL template for select statement
+    # Source of SQL
     my $source = 'select ';
     
     # Column clause
@@ -342,9 +339,10 @@ sub create_query {
         my $builder = $self->query_builder;
         
         # Create query
-        $query = eval{$builder->build_query($source)};
-        croak $@ if $@;
-        
+        {
+            local $Carp::CarpLevel += 1;
+            $query = $builder->build_query($source);
+        }
         # Cache query
         $self->cache_method->($self, $source,
                              {sql     => $query->sql, 
@@ -353,8 +351,13 @@ sub create_query {
     }
     
     # Prepare statement handle
-    my $sth = eval {$self->dbh->prepare($query->{sql})};
-    croak qq{$@ SQL: "$query->{sql}"} if $@;
+    my $sth;
+    eval { $sth = $self->dbh->prepare($query->{sql})};
+    if ($@) {
+        my $error = $@;
+        $error =~ s/\s+at\s+.*?\s+line\s+\d+.*$//s;
+        croak qq{$error. SQL: "$query->{sql}"};
+    }
     
     # Set statement handle
     $query->sth($sth);
@@ -369,13 +372,13 @@ sub execute{
     
     # Check arguments
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid name}
+        croak qq{"$name" is invalid argument}
           unless $VALID_EXECUTE_ARGS{$name};
     }
     
     my $params = $args{param} || {};
     
-    # First argument is SQL template
+    # First argument is the soruce of SQL
     $query = $self->create_query($query)
       unless ref $query;
     
@@ -386,8 +389,13 @@ sub execute{
     
     # Execute
     my $sth      = $query->sth;
-    my $affected = eval {$sth->execute(@$bind_values)};
-    croak $@ if $@;
+    my $affected;
+    eval {$affected = $sth->execute(@$bind_values)};
+    if ($@) {
+        my $error = $@;
+        $error =~ s/\s+at\s+.*?\s+line\s+\d+.*$//s;
+        croak $error;
+    }
     
     # Return resultset if select statement is executed
     if ($sth->{NUM_OF_FIELDS}) {
@@ -426,31 +434,14 @@ sub _build_bind_values {
     my $count = {};
     foreach my $column (@{$query->columns}) {
         
-        croak qq{"$column" is not exists in params}
-          unless exists $params->{$column};
-        
         # Value
         my $value = ref $params->{$column} eq 'ARRAY'
                   ? $params->{$column}->[$count->{$column} || 0]
                   : $params->{$column};
         
-        # Filter name
+        # Filtering
         my $fname = $filter->{$column} || $self->default_bind_filter || '';
-        
-        my $filter_func;
-        if ($fname) {
-            
-            if (ref $fname eq 'CODE') {
-                $filter_func = $fname;
-            }
-            else {
-                my $filters = $self->filters;
-                croak qq{Not exists filter "$fname"}
-                  unless exists $filters->{$fname};
-                $filter_func = $filters->{$fname};
-            }            
-        }
-        
+        my $filter_func = $fname ? $self->filters->{$fname} : undef;
         push @bind_values, $filter_func
                          ? $filter_func->($value)
                          : $value;
@@ -489,7 +480,7 @@ DBIx::Custom - DBI interface, having hash parameter binding and filtering system
 
 =cut
 
-our $VERSION = '0.1611';
+our $VERSION = '0.1612';
 
 =head1 STABILITY
 
