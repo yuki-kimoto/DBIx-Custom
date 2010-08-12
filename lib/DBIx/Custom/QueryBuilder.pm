@@ -71,6 +71,7 @@ sub _parse {
     my $pos;
     
     # Parse
+    my $original = $source;
     while (my $c = substr($source, 0, 1, '')) {
         
         # State is text
@@ -112,7 +113,7 @@ sub _parse {
                 # Unexpected
                 else {
                     croak qq/Parsing error. unexpected "}". / .
-                          qq/pos $pos of "$source"/;
+                          qq/pos $pos of "$original"/;
                 }
             }
             
@@ -121,7 +122,7 @@ sub _parse {
         }
         
         # State is tags
-        elsif ($state eq 'tag') {
+        else {
             
             # Tag start charactor
             if ($c eq '{') {
@@ -135,7 +136,7 @@ sub _parse {
                 # Unexpected
                 else {
                     croak qq/Parsing error. unexpected "{". / .
-                          qq/pos $pos of "$source"/;
+                          qq/pos $pos of "$original"/;
                 }
             }
             
@@ -176,7 +177,7 @@ sub _parse {
     }
     
     # Tag not finished
-    croak qq{Tag not finished. "$source"}
+    croak qq{Tag not finished. "$original"}
       if $state eq 'tag';
     
     # Add rest text
@@ -198,17 +199,11 @@ sub _build_query {
     # Build SQL 
     foreach my $node (@$tree) {
         
-        # Get type, tag name, and arguments
-        my $type = $node->{type};
-        
         # Text
-        if ($type eq 'text') {
-            # Join text
-            $sql .= $node->{value};
-        }
+        if ($node->{type} eq 'text') { $sql .= $node->{value} }
         
         # Tag
-        elsif ($type eq 'tag') {
+        else {
             
             # Tag name
             my $tag_name = $node->{tag_name};
