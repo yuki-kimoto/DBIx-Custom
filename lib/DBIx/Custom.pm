@@ -339,10 +339,8 @@ sub create_query {
         my $builder = $self->query_builder;
         
         # Create query
-        {
-            local $Carp::CarpLevel += 1;
-            $query = $builder->build_query($source);
-        }
+        $query = $builder->build_query($source);
+
         # Cache query
         $self->cache_method->($self, $source,
                              {sql     => $query->sql, 
@@ -506,7 +504,7 @@ DBIx::Custom - DBI interface, having hash parameter binding and filtering system
 
 =cut
 
-our $VERSION = '0.1613';
+our $VERSION = '0.1614';
 
 =head1 STABILITY
 

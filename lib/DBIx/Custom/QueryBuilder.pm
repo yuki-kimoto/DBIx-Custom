@@ -9,6 +9,9 @@ use Carp 'croak';
 use DBIx::Custom::Query;
 use DBIx::Custom::QueryBuilder::TagProcessors;
 
+# Carp trust relationship
+push @DBIx::Custom::CARP_NOT, __PACKAGE__;
+
 __PACKAGE__->dual_attr('tag_processors', default => sub { {} }, inherit => 'hash_copy');
 __PACKAGE__->register_tag_processor(
     '?'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_placeholder_tag,
@@ -137,11 +140,7 @@ sub _build_query {
               unless ref $tag_processor eq 'CODE';
             
             # Execute tag processor
-            my $r;
-            {
-                local $Carp::CarpLevel += 1;
-                $r = $tag_processor->(@$tag_args);
-            }
+            my $r = $tag_processor->(@$tag_args);
             
             # Check tag processor return value
             croak qq{Tag processor "$tag_name" must return [STRING, ARRAY_REFERENCE]}

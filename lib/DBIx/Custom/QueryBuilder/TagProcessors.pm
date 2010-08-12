@@ -5,6 +5,9 @@ use warnings;
 
 use Carp 'croak';
 
+# Carp trust relationship
+push @DBIx::Custom::QueryBuilder::CARP_NOT, __PACKAGE__;
+
 sub _expand_basic_tag {
     my ($name, $column) = @_;
     
