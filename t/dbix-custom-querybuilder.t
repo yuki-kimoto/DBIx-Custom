@@ -142,3 +142,7 @@ eval{$builder->build_query("{in a r}")};
 like($@, qr/\QColumn name and count of values must be specified in tag "{in }"/,
      "$test : in : key not exist");
 
+test '_parse';
+
+
+

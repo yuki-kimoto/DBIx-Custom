@@ -1,4 +1,6 @@
 0.1614
+  removed DBIx::Custom::Query start_tag and end tag attributes
+  enable escaping '{' and '}' in the source of SQL
   fixed Carp Carp trust relationship
 0.1613
   added experimental register_method() method

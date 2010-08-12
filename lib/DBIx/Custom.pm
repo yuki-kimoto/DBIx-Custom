@@ -896,11 +896,11 @@ The following tags is available.
 
 See also L<DBIx::Custom::QueryBuilder>.
 
-Default start tag is '{'. end tag is '}'.
-You can change this tag.
+C<{> and C<}> is reserved. If you use these charactors,
+you must escape them using '\'. Note that '\' is
+already perl escaped charactor, so you must write '\\'. 
 
-    $dbi->query_builder->start_tag('|');
-    $dbi->query_builder->end_tag('|');
+    'select * from books \\{ something statement \\}'
 
 =head2 6. Filtering
 
@@ -1115,8 +1115,6 @@ You can change Result class if you need.
 You can custamize SQL builder object
 
     my $dbi = DBIx::Custom->connect(...);
-    $dbi->query_builder->start_tag('|');
-    $dbi->query_builder->end_tag('|');
     $dbi->query_builder->register_tag_processor(
         name => sub {
            ...

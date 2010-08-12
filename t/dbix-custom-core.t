@@ -12,14 +12,11 @@ sub test {
 }
 
 # Variables for test
-our $SQL_TMPL = {
-    0 => DBIx::Custom::QueryBuilder->new->tag_start(0),
-    1 => DBIx::Custom::QueryBuilder->new->tag_start(1),
-    2 => DBIx::Custom::QueryBuilder->new->tag_start(2)
-};
 my $dbi;
+my $query_builder;
 
 test 'Constructor';
+$query_builder = DBIx::Custom::QueryBuilder->new;
 $dbi = DBIx::Custom->new(
     user => 'a',
     database => 'a',
@@ -31,12 +28,12 @@ $dbi = DBIx::Custom->new(
     default_bind_filter => 'f',
     default_fetch_filter => 'g',
     result_class => 'g',
-    sql_builder => $SQL_TMPL->{0},
+    query_builder => $query_builder,
 );
 is_deeply($dbi,{user => 'a', database => 'a', password => 'b', data_source => 'c', 
                 filters => {f => 3}, default_bind_filter => 'f',
                 default_fetch_filter => 'g', result_class => 'g',
-                sql_builder => $SQL_TMPL->{0}}, $test);
+                query_builder => $query_builder}, $test);
 isa_ok($dbi, 'DBIx::Custom');
 
 
