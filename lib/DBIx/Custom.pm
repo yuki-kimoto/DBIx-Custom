@@ -1,5 +1,8 @@
 package DBIx::Custom;
 
+our $VERSION = '0.1615';
+
+use 5.008001;
 use strict;
 use warnings;
 
@@ -498,13 +501,11 @@ sub AUTOLOAD {
    return $self->methods->{$method}->($self, @_);
 }
 
+1;
+
 =head1 NAME
 
 DBIx::Custom - DBI interface, having hash parameter binding and filtering system
-
-=cut
-
-our $VERSION = '0.1614';
 
 =head1 STABILITY
 

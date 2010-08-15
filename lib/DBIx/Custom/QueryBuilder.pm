@@ -68,11 +68,14 @@ sub _parse {
     my $before = '';
 
     # Position
-    my $pos;
+    my $pos = 0;
     
     # Parse
     my $original = $source;
-    while (my $c = substr($source, 0, 1, '')) {
+    while (defined(my $c = substr($source, $pos, 1))) {
+        
+        # Last
+        last unless length $c;
         
         # State is text
         if ($state eq 'text') {

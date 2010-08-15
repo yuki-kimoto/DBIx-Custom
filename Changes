@@ -1,3 +1,6 @@
+0.1615
+  fixed DBIx::Custom::QueryBuilder build_query() bug
+  required Perl 5.008001 to use @CARP_NOT 
 0.1614
   removed DBIx::Custom::Query start_tag and end tag attributes
   enable escaping '{' and '}' in the source of SQL
