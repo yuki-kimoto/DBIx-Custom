@@ -1,3 +1,5 @@
+0.1616
+  removed experimental register_method(), and methods attribute, because it is too magical
 0.1615
   fixed DBIx::Custom::QueryBuilder build_query() bug
   required Perl 5.008001 to use @CARP_NOT 

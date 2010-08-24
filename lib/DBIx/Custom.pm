@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1615';
+our $VERSION = '0.1616';
 
 use 5.008001;
 use strict;
@@ -57,6 +57,7 @@ sub connect {
     my $data_source = $self->data_source;
     my $user        = $self->user;
     my $password    = $self->password;
+    
     
     # Connect
     my $dbh = eval {DBI->connect(
@@ -116,7 +117,7 @@ sub insert {
     
     # Execute query
     my $ret_val = $self->execute($source, param  => $param, 
-                                            filter => $filter);
+                                          filter => $filter);
     
     return $ret_val;
 }
@@ -354,16 +355,31 @@ sub create_query {
     # Prepare statement handle
     my $sth;
     eval { $sth = $self->dbh->prepare($query->{sql})};
-    if ($@) {
-        my $error = $@;
-        $error =~ s/\s+at\s+.*?\s+line\s+\d+.*$//s;
-        croak qq{$error. SQL: "$query->{sql}"};
-    }
+    $self->_croak($@, qq{. SQL: "$query->{sql}"}) if $@;
     
     # Set statement handle
     $query->sth($sth);
     
     return $query;
+}
+
+sub _croak {
+    my ($self, $error, $append) = @_;
+    $append ||= "";
+    
+    # Verbose
+    if ($Carp::Verbose) { croak $error }
+    
+    # Not verbose
+    else {
+        
+        # Remove line and module infromation
+        my $at_pos = rindex($error, ' at ');
+        $error = substr($error, 0, $at_pos);
+        $error =~ s/\s+$//;
+        
+        croak "$error$append";
+    }
 }
 
 our %VALID_EXECUTE_ARGS = map { $_ => 1 } qw/param filter/;
@@ -392,11 +408,7 @@ sub execute{
     my $sth      = $query->sth;
     my $affected;
     eval {$affected = $sth->execute(@$bind_values)};
-    if ($@) {
-        my $error = $@;
-        $error =~ s/\s+at\s+.*?\s+line\s+\d+.*$//s;
-        croak $error;
-    }
+    $self->_croak($@) if $@;
     
     # Return resultset if select statement is executed
     if ($sth->{NUM_OF_FIELDS}) {
@@ -475,42 +487,11 @@ sub _check_filter {
     }
 }
 
-__PACKAGE__->attr('methods' => sub { {} });
-
-sub register_method {
-    my $self = shift;
-    
-    # Register method
-    my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $self->methods({%{$self->methods}, %$methods});
-    
-    return $self;
-}
-
-our $AUTOLOAD;
-sub AUTOLOAD {
-    my $self = shift;
-    my $method = $AUTOLOAD;
-    $method =~ s/.*:://;
-   
-   return if $method eq 'DESTROY';
-   
-   croak qq{Method "$method" is not registered"}
-     unless $self->methods->{$method};
-   
-   return $self->methods->{$method}->($self, @_);
-}
-
 1;
 
 =head1 NAME
 
 DBIx::Custom - DBI interface, having hash parameter binding and filtering system
-
-=head1 STABILITY
-
-B<This module is not stable>.
-Method name and implementations will be changed for a while.
 
 =head1 SYNOPSYS
 
@@ -1236,13 +1217,6 @@ Default to 1.
 This check maybe damege performance.
 If you require performance, set C<filter_check> attribute to 0.
 
-=head2 C<(experimental) methods>
-
-    my $methods = $dbi->methods;
-    $dbi        = $dbi->methods(\%methods);
-
-Additional methods.
-
 =head1 METHODS
 
 L<DBIx::Custom> inherits all methods from L<Object::Simple>
@@ -1504,21 +1478,6 @@ B<Example:>
             return Encode::decode('UTF-8', $value)
         }
     );
-
-=head2 C<(experimental) register_method>
-
-    $dbi->register_method(
-        begin_work => sub { shift->dbh->begin_work },
-        commit     => sub { shift->dbh->commit },
-        rollback   => sub { shift->dbh->rollback}
-    );
-
-Register methods to the object. You can call these methods
-from the object.
-
-    $dbi->begin_work;
-    $dbi->commit;
-    $dbi->rollback;
 
 =head1 BUGS
 

@@ -542,8 +542,17 @@ like($@, qr/\QColumn name "not_exists" in bind filter is not found in paramters/
 test 'execute';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
-eval{$dbi->execute('select * frm table1')};
-like($@, qr/\Qselect * frm table1;/, "$test : fail prepare");
+{
+    local $Carp::Verbose = 0;
+    eval{$dbi->execute('select * frm table1')};
+    like($@, qr/\Qselect * frm table1;/, "$test : fail prepare");
+    like($@, qr/\.t /, "$test: fail : not verbose");
+}
+{
+    local $Carp::Verbose = 1;
+    eval{$dbi->execute('select * frm table1')};
+    like($@, qr/Custom.*\.t /s, "$test : fail : verbose");
+}
 
 eval{$dbi->execute('select * from table1', no_exists => 1)};
 like($@, qr/\Q"no_exists" is invalid argument/, "$test : invald SQL");
@@ -553,17 +562,13 @@ $dbi->dbh->disconnect;
 eval{$dbi->execute($query, param => {key1 => {a => 1}})};
 ok($@, "$test: execute fail");
 
-eval{$dbi->create_query('select * from table1 where {0 key1}')};
-like($@, qr/\Q.t /, "$test : caller spec");
-
-
-test 'register_method';
-$dbi = DBIx::Custom::SQLite->new;
-$dbi->register_method(
-    one => sub { 1 },
-);
-$dbi->register_method({
-    two => sub { 2 }
-});
-is($dbi->one, 1, "$test : hash");
-is($dbi->two, 2, "$test : hash reference");
+{
+    local $Carp::Verbose = 0;
+    eval{$dbi->create_query('select * from table1 where {0 key1}')};
+    like($@, qr/\Q.t /, "$test : caller spec : not vebose");
+}
+{
+    local $Carp::Verbose = 1;
+    eval{$dbi->create_query('select * from table1 where {0 key1}')};
+    like($@, qr/QueryBuilder.*\.t /s, "$test : caller spec : not vebose");
+}
