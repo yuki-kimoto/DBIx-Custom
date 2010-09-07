@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1616';
+our $VERSION = '0.1617';
 
 use 5.008001;
 use strict;
@@ -1478,6 +1478,10 @@ B<Example:>
             return Encode::decode('UTF-8', $value)
         }
     );
+
+=head1 STABILITY
+
+L<DBIx::Custom> is now stable. APIs keep backword compatible in the feature.
 
 =head1 BUGS
 
