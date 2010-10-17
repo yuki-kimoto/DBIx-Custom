@@ -608,3 +608,26 @@ eval{ $dbi->begin_work };
 ok($@, "$test : exception");
 $dbi->dbh->{AutoCommit} = 1;
 
+
+test 'helper';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->helper(
+    one => sub { 1 }
+);
+$dbi->helper(
+    two => sub { 2 }
+);
+$dbi->helper({
+    twice => sub {
+        my $self = shift;
+        return $_[0] * 2;
+    }
+});
+
+is($dbi->one, 1, "$test : first");
+is($dbi->two, 2, "$test : second");
+is($dbi->twice(5), 10 , "$test : second");
+
+eval {$dbi->XXXXXX};
+like($@, qr/\QCan't locate object method "XXXXXX" via "DBIx::Custom"/, "$test : not exists");
+

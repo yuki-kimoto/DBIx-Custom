@@ -59,6 +59,33 @@ __PACKAGE__->register_filter(
     decode_utf8 => sub { decode_utf8($_[0]) }
 );
 
+our $AUTOLOAD;
+
+sub AUTOLOAD {
+    my $self = shift;
+
+    # Method
+    my ($package, $method) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
+
+    # Helper
+    $self->{_helpers} ||= {};
+    croak qq/Can't locate object method "$method" via "$package"/
+      unless my $helper = $self->{_helpers}->{$method};
+
+    # Run
+    return $self->$helper(@_);
+}
+
+sub helper {
+    my $self = shift;
+    
+    # Merge
+    my $helpers = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $self->{_helpers} = {%{$self->{_helpers} || {}}, %$helpers};
+    
+    return $self;
+}
+
 sub connect {
     my $proto = shift;
     
@@ -182,6 +209,8 @@ sub delete {
 }
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
+
+sub DESTROY { }
 
 our %VALID_EXECUTE_ARGS = map { $_ => 1 } qw/param filter/;
 
@@ -1330,6 +1359,24 @@ Return value of C<delete_all()> is the count of affected rows.
 B<Example:>
     
     $dbi->delete_all(table => 'books');
+
+=head2 C<(experimental) helper>
+
+    $dbi->helper(
+        update_or_insert => sub {
+            my $self = shift;
+            # do something
+        },
+        find_or_create   => sub {
+            my $self = shift;
+            # do something
+        }
+    );
+
+Register helper methods. These method is called from L<DBIx::Custom> object directory.
+
+    $dbi->update_or_insert;
+    $dbi->find_or_create;
 
 =head2 C<insert>
 
