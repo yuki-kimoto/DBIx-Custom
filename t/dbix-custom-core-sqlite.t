@@ -21,8 +21,6 @@ sub test {
     $test = shift;
 }
 
-use DBIx::Custom::SQLite;
-
 # Constant varialbes for test
 my $CREATE_TABLE = {
     0 => 'create table table1 (key1 char(255), key2 char(255));',
@@ -572,3 +570,41 @@ ok($@, "$test: execute fail");
     eval{$dbi->create_query('select * from table1 where {0 key1}')};
     like($@, qr/QueryBuilder.*\.t /s, "$test : caller spec : not vebose");
 }
+
+
+test 'transaction';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+
+$dbi->begin_work;
+
+eval {
+    $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+    die "Error";
+    $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+};
+
+$dbi->rollback if $@;
+
+$result = $dbi->select(table => 'table1');
+$rows = $result->fetch_hash_all;
+is_deeply($rows, [], "$test : rollback");
+
+$dbi->begin_work;
+
+eval {
+    $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+    $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+};
+
+$dbi->commit unless $@;
+
+$result = $dbi->select(table => 'table1');
+$rows = $result->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "$test : commit");
+
+$dbi->dbh->{AutoCommit} = 0;
+eval{ $dbi->begin_work };
+ok($@, "$test : exception");
+$dbi->dbh->{AutoCommit} = 1;
+

@@ -5,7 +5,7 @@ use warnings;
 
 use base 'Object::Simple';
 
-__PACKAGE__->attr([qw/sql columns default_filter filter sth/]);
+__PACKAGE__->attr([qw/columns default_filter filter sql sth/]);
 
 1;
 
@@ -18,13 +18,6 @@ DBIx::Custom::Query - Query
     my $query = DBIx::Custom::Query->new;
     
 =head1 ATTRIBUTES
-
-=head2 C<sql>
-
-    my $sql = $query->sql;
-    $query  = $query->sql('select * from books where author = ?;');
-
-SQL statement.
 
 =head2 C<columns>
 
@@ -48,6 +41,13 @@ Default filter when parameter binding is executed.
 
 Filters when parameter binding is executed.
 This overwrites C<default_filter>.
+
+=head2 C<sql>
+
+    my $sql = $query->sql;
+    $query  = $query->sql('select * from books where author = ?;');
+
+SQL statement.
 
 =head2 C<sth>
 

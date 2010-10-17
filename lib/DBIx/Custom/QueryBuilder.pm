@@ -12,7 +12,10 @@ use DBIx::Custom::QueryBuilder::TagProcessors;
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
+# Attributes
 __PACKAGE__->dual_attr('tag_processors', default => sub { {} }, inherit => 'hash_copy');
+
+# Resister tag processor
 __PACKAGE__->register_tag_processor(
     '?'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_placeholder_tag,
     '='     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_equal_tag,
@@ -27,6 +30,18 @@ __PACKAGE__->register_tag_processor(
     'update_param' => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_update_param_tag
 );
 
+sub build_query {
+    my ($self, $source)  = @_;
+    
+    # Parse
+    my $tree = $self->_parse($source);
+    
+    # Build query
+    my $query = $self->_build_query($tree);
+    
+    return $query;
+}
+
 sub register_tag_processor {
     my $self = shift;
     
@@ -37,14 +52,70 @@ sub register_tag_processor {
     return $self;
 }
 
-sub build_query {
-    my ($self, $source)  = @_;
+sub _build_query {
+    my ($self, $tree) = @_;
     
-    # Parse
-    my $tree = $self->_parse($source);
+    # SQL
+    my $sql = '';
     
-    # Build query
-    my $query = $self->_build_query($tree);
+    # All Columns
+    my $all_columns = [];
+    
+    # Build SQL 
+    foreach my $node (@$tree) {
+        
+        # Text
+        if ($node->{type} eq 'text') { $sql .= $node->{value} }
+        
+        # Tag
+        else {
+            
+            # Tag name
+            my $tag_name = $node->{tag_name};
+            
+            # Tag arguments
+            my $tag_args = $node->{tag_args};
+            
+            # Get tag processor
+            my $tag_processor = $self->tag_processors->{$tag_name};
+            
+            # Tag processor is not registered
+            croak qq{Tag "$tag_name" in "{a }" is not registered}
+              unless $tag_processor;
+            
+            # Tag processor not sub reference
+            croak qq{Tag processor "$tag_name" must be sub reference}
+              unless ref $tag_processor eq 'CODE';
+            
+            # Execute tag processor
+            my $r = $tag_processor->(@$tag_args);
+            
+            # Check tag processor return value
+            croak qq{Tag processor "$tag_name" must return [STRING, ARRAY_REFERENCE]}
+              unless ref $r eq 'ARRAY' && defined $r->[0] && ref $r->[1] eq 'ARRAY';
+            
+            # Part of SQL statement and colum names
+            my ($part, $columns) = @$r;
+            
+            # Add columns
+            push @$all_columns, @$columns;
+            
+            # Join part tag to SQL
+            $sql .= $part;
+        }
+    }
+
+    # Check placeholder count
+    my $placeholder_count = $self->_placeholder_count($sql);
+    my $column_count      = @$all_columns;
+    croak qq{Placeholder count in "$sql" must be same as column count $column_count}
+      unless $placeholder_count eq @$all_columns;
+    
+    # Add semicolon
+    $sql .= ';' unless $sql =~ /;$/;
+    
+    # Query
+    my $query = DBIx::Custom::Query->new(sql => $sql, columns => $all_columns);
     
     return $query;
 }
@@ -188,74 +259,6 @@ sub _parse {
       if $value;
     
     return \@tree;
-}
-
-sub _build_query {
-    my ($self, $tree) = @_;
-    
-    # SQL
-    my $sql = '';
-    
-    # All Columns
-    my $all_columns = [];
-    
-    # Build SQL 
-    foreach my $node (@$tree) {
-        
-        # Text
-        if ($node->{type} eq 'text') { $sql .= $node->{value} }
-        
-        # Tag
-        else {
-            
-            # Tag name
-            my $tag_name = $node->{tag_name};
-            
-            # Tag arguments
-            my $tag_args = $node->{tag_args};
-            
-            # Get tag processor
-            my $tag_processor = $self->tag_processors->{$tag_name};
-            
-            # Tag processor is not registered
-            croak qq{Tag "$tag_name" in "{a }" is not registered}
-              unless $tag_processor;
-            
-            # Tag processor not sub reference
-            croak qq{Tag processor "$tag_name" must be sub reference}
-              unless ref $tag_processor eq 'CODE';
-            
-            # Execute tag processor
-            my $r = $tag_processor->(@$tag_args);
-            
-            # Check tag processor return value
-            croak qq{Tag processor "$tag_name" must return [STRING, ARRAY_REFERENCE]}
-              unless ref $r eq 'ARRAY' && defined $r->[0] && ref $r->[1] eq 'ARRAY';
-            
-            # Part of SQL statement and colum names
-            my ($part, $columns) = @$r;
-            
-            # Add columns
-            push @$all_columns, @$columns;
-            
-            # Join part tag to SQL
-            $sql .= $part;
-        }
-    }
-
-    # Check placeholder count
-    my $placeholder_count = $self->_placeholder_count($sql);
-    my $column_count      = @$all_columns;
-    croak qq{Placeholder count in "$sql" must be same as column count $column_count}
-      unless $placeholder_count eq @$all_columns;
-    
-    # Add semicolon
-    $sql .= ';' unless $sql =~ /;$/;
-    
-    # Query
-    my $query = DBIx::Custom::Query->new(sql => $sql, columns => $all_columns);
-    
-    return $query;
 }
 
 sub _placeholder_count {

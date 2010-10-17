@@ -8,33 +8,9 @@ use Carp 'croak';
 # Carp trust relationship
 push @DBIx::Custom::QueryBuilder::CARP_NOT, __PACKAGE__;
 
-sub _expand_basic_tag {
-    my ($name, $column) = @_;
-    
-    # Check arguments
-    croak qq{Column name must be specified in tag "{$name }"}
-      unless $column;
-    
-    return ["$column $name ?", [$column]];
-}
-
 sub expand_equal_tag              { _expand_basic_tag('=',    @_) }
-sub expand_not_equal_tag          { _expand_basic_tag('<>',   @_) }
-sub expand_greater_than_tag       { _expand_basic_tag('>',    @_) }
-sub expand_lower_than_tag         { _expand_basic_tag('<',    @_) }
 sub expand_greater_than_equal_tag { _expand_basic_tag('>=',   @_) }
-sub expand_lower_than_equal_tag   { _expand_basic_tag('<=',   @_) }
-sub expand_like_tag               { _expand_basic_tag('like', @_) }
-
-sub expand_placeholder_tag {
-    my $column = shift;
-    
-    # Check arguments
-    croak qq{Column name must be specified in tag "{? }"}
-      unless $column;
-    
-    return ['?', [$column]];
-}
+sub expand_greater_than_tag       { _expand_basic_tag('>',    @_) }
 
 sub expand_in_tag {
     my ($column, $count) = @_;
@@ -74,6 +50,21 @@ sub expand_insert_param_tag {
     return [$s, \@columns];
 }
 
+sub expand_like_tag               { _expand_basic_tag('like', @_) }
+sub expand_lower_than_equal_tag   { _expand_basic_tag('<=',   @_) }
+sub expand_lower_than_tag         { _expand_basic_tag('<',    @_) }
+sub expand_not_equal_tag          { _expand_basic_tag('<>',   @_) }
+
+sub expand_placeholder_tag {
+    my $column = shift;
+    
+    # Check arguments
+    croak qq{Column name must be specified in tag "{? }"}
+      unless $column;
+    
+    return ['?', [$column]];
+}
+
 sub expand_update_param_tag {
     my @columns = @_;
     
@@ -83,6 +74,16 @@ sub expand_update_param_tag {
     $s =~ s/, $//;
     
     return [$s, \@columns];
+}
+
+sub _expand_basic_tag {
+    my ($name, $column) = @_;
+    
+    # Check arguments
+    croak qq{Column name must be specified in tag "{$name }"}
+      unless $column;
+    
+    return ["$column $name ?", [$column]];
 }
 
 1;
@@ -115,37 +116,29 @@ same as the count of column names.
         return [$s, $columns];
     }
 
-=head2 C<expand_placeholder_tag>
-
-    ('NAME')  ->  ['?', ['NAME']]
-
 =head2 C<expand_equal_tag>
 
     ('NAME')  ->  ['NAME = ?', ['NAME']]
-
-=head2 C<expand_not_equal_tag>
-
-    ('NAME')  ->  ['NAME <> ?', ['NAME']]
-
-=head2 C<expand_greater_than_tag>
-
-    ('NAME')  ->  ['NAME > ?', ['NAME']]
-
-=head2 C<expand_lower_than_tag>
-
-    ('NAME')  ->  ['NAME < ?', ['NAME']]
 
 =head2 C<expand_greater_than_equal_tag>
 
     ('NAME')  ->  ['NAME >= ?', ['NAME']]
 
-=head2 C<expand_lower_than_equal_tag>
+=head2 C<expand_greater_than_tag>
 
-    ('NAME')  ->  ['NAME <= ?', ['NAME']]
+    ('NAME')  ->  ['NAME > ?', ['NAME']]
 
 =head2 C<expand_like_tag>
 
     ('NAME')  ->  ['NAME like ?', ['NAME']]
+
+=head2 C<expand_lower_than_equal_tag>
+
+    ('NAME')  ->  ['NAME <= ?', ['NAME']]
+
+=head2 C<expand_lower_than_tag>
+
+    ('NAME')  ->  ['NAME < ?', ['NAME']]
 
 =head2 C<expand_in_tag>
 
@@ -155,6 +148,14 @@ same as the count of column names.
 
     ('NAME1', 'NAME2')
       ->  ['(NAME1, NAME2) values (?, ?, ?)', ['NAME1', 'NAME2']]
+
+=head2 C<expand_not_equal_tag>
+
+    ('NAME')  ->  ['NAME <> ?', ['NAME']]
+
+=head2 C<expand_placeholder_tag>
+
+    ('NAME')  ->  ['?', ['NAME']]
 
 =head2 C<expand_update_param_tag>
 

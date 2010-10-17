@@ -7,7 +7,7 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 
-__PACKAGE__->attr([qw/sth filters default_filter filter filter_check/]);
+__PACKAGE__->attr([qw/default_filter filter filter_check filters sth/]);
 
 sub fetch {
     my $self = shift;
@@ -45,6 +45,17 @@ sub fetch {
     return \@row;
 }
 
+sub fetch_all {
+    my $self = shift;
+    
+    # Fetch all rows
+    my $rows = [];
+    while(my $row = $self->fetch) {
+        push @$rows, $row;
+    }
+    return $rows;
+}
+
 sub fetch_first {
     my $self = shift;
     
@@ -58,36 +69,6 @@ sub fetch_first {
     $self->sth->finish;
     
     return $row;
-}
-
-sub fetch_multi {
-    my ($self, $count) = @_;
-    
-    # Row count not specifed
-    croak 'Row count must be specified'
-      unless $count;
-    
-    # Fetch multi rows
-    my $rows = [];
-    for (my $i = 0; $i < $count; $i++) {
-        my $row = $self->fetch;
-        last unless $row;
-        push @$rows, $row;
-    }
-    
-    return unless @$rows;
-    return $rows;
-}
-
-sub fetch_all {
-    my $self = shift;
-    
-    # Fetch all rows
-    my $rows = [];
-    while(my $row = $self->fetch) {
-        push @$rows, $row;
-    }
-    return $rows;
 }
 
 sub fetch_hash {
@@ -128,6 +109,18 @@ sub fetch_hash {
     return $row_hash;
 }
 
+sub fetch_hash_all {
+    my $self = shift;
+    
+    # Fetch all rows as hash
+    my $rows = [];
+    while(my $row = $self->fetch_hash) {
+        push @$rows, $row;
+    }
+    
+    return $rows;
+}
+
 sub fetch_hash_first {
     my $self = shift;
     
@@ -162,15 +155,22 @@ sub fetch_hash_multi {
     return $rows;
 }
 
-sub fetch_hash_all {
-    my $self = shift;
+sub fetch_multi {
+    my ($self, $count) = @_;
     
-    # Fetch all rows as hash
+    # Row count not specifed
+    croak 'Row count must be specified'
+      unless $count;
+    
+    # Fetch multi rows
     my $rows = [];
-    while(my $row = $self->fetch_hash) {
+    for (my $i = 0; $i < $count; $i++) {
+        my $row = $self->fetch;
+        last unless $row;
         push @$rows, $row;
     }
     
+    return unless @$rows;
     return $rows;
 }
 
@@ -261,13 +261,6 @@ Fetch row into hash.
 
 =head1 ATTRIBUTES
 
-=head2 C<sth>
-
-    my $sth = $reuslt->sth
-    $result = $result->sth($sth);
-
-Statement handle of L<DBI>.
-
 =head2 C<default_filter>
 
     my $default_filter = $result->default_filter;
@@ -284,6 +277,27 @@ Default filter when a row is fetched.
 Filters when a row is fetched.
 This overwrites C<default_filter>.
 
+=head2 C<filters>
+
+    my $filters = $result->filters;
+    $result     = $result->filters(\%filters);
+
+Resistered filters.
+
+=head2 C<filter_check>
+
+    my $filter_check = $result->filter_check;
+    $result          = $result->filter_check;
+
+Enable filter validation.
+
+=head2 C<sth>
+
+    my $sth = $reuslt->sth
+    $result = $result->sth($sth);
+
+Statement handle of L<DBI>.
+
 =head1 METHODS
 
 L<DBIx::Custom::Result> inherits all methods from L<Object::Simple>
@@ -295,30 +309,29 @@ and implements the following new ones.
 
 Fetch a row into array.
 
-=head2 C<fetch_first>
-
-    my $row = $result->fetch_first;
-
-Fetch only a first row into array and finish statment handle.
-
-=head2 C<fetch_multi>
-
-    my $rows = $result->fetch_multi(5);
-    
-Fetch multiple rows into array of array.
-Row count must be specified.
-
 =head2 C<fetch_all>
 
     my $rows = $result->fetch_all;
 
 Fetch all rows into array of array.
 
+=head2 C<fetch_first>
+
+    my $row = $result->fetch_first;
+
+Fetch only a first row into array and finish statment handle.
+
 =head2 C<fetch_hash>
 
     my $row = $result->fetch_hash;
 
 Fetch a row into hash
+
+=head2 C<fetch_hash_all>
+
+    my $rows = $result->fetch_hash_all;
+
+Fetch all rows into array of hash.
 
 =head2 C<fetch_hash_first>
     
@@ -333,10 +346,11 @@ Fetch only first row into hash and finish statment handle.
 Fetch multiple rows into array of hash
 Row count must be specified.
 
-=head2 C<fetch_hash_all>
+=head2 C<fetch_multi>
 
-    my $rows = $result->fetch_hash_all;
-
-Fetch all rows into array of hash.
+    my $rows = $result->fetch_multi(5);
+    
+Fetch multiple rows into array of array.
+Row count must be specified.
 
 =cut
