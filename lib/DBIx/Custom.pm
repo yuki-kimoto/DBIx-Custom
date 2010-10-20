@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1618';
+our $VERSION = '0.1619';
 
 use 5.008001;
 use strict;
@@ -254,6 +254,21 @@ sub execute{
         return $result;
     }
     return $affected;
+}
+
+sub expand {
+    my $self = shift;
+    my $source = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    my $table = (keys %$source)[0];
+    my $param = $source->{$table};
+    
+    # Expand table name
+    my $expand = {};
+    foreach my $column (keys %$param) {
+        $expand->{"$table.$column"} = $param->{$column};
+    }
+    
+    return %$expand;
 }
 
 our %VALID_INSERT_ARGS = map { $_ => 1 } qw/table param append filter/;
@@ -646,7 +661,7 @@ so you have to execute raw SQL in the end.
 
 L<DBIx::Custom> is middle area between L<DBI> and O/R mapper.
 L<DBIx::Custom> provide flexible hash parameter binding and filtering system,
-and suger methods, such as C<select()>, C<update()>, C<delete()>, C<select()>
+and suger methods, such as C<insert()>, C<update()>, C<delete()>, C<select()>
 to execute SQL easily.
 
 L<DBIx::Custom> respects SQL. SQL is very complex and not beautiful,
@@ -838,6 +853,22 @@ B<Example:>
         my $title  = $row->[1];
     }
 
+=head2 C<(experimental) expand>
+
+    my %expand = $dbi->expand($source);
+
+The following hash
+
+    {books => {title => 'Perl', author => 'Ken'}}
+
+is expanded to
+
+    ('books.title' => 'Perl', 'books.author' => 'Ken')
+
+This is used in C<select()>
+
+
+    
 =head2 C<delete>
 
     $dbi->delete(table  => $table,

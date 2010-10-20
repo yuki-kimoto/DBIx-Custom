@@ -1,3 +1,6 @@
+0.1619
+  updated document
+  added experimental expand method
 0.1618
   added helper method
   added begin_work, commit, and rollback method

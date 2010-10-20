@@ -1,6 +1,6 @@
 DBIx-Custom
 
-Custamizable DBI
+DBI interface, having hash parameter binding and filtering system
 
 INSTALLATION
 

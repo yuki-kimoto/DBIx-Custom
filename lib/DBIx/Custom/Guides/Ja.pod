@@ -1,0 +1,594 @@
+=encoding utf8
+
+=head1 名前
+
+DBIx::Custom::Guides::Ja - DBIx::Customの日本語のガイド
+
+=head1 ガイド
+
+L<DBIx::Custom>はデータベースへのクエリの発行を簡単に行うための
+クラスです。L<DBIx::Class>やL<DBIx::Simple>と同じように
+L<DBI>のラッパクラスになっています。
+
+L<DBIx::Custom>はO/Rマッパーではありません。O/Rマッパーは
+便利ですが、O/Rマッパのたくさんの文法を覚える必要があります。
+また、O/Rマッパによって生成されたSQLは非効率なことがあり、
+生のSQLを発行しなければならないこともあります。
+
+L<DBIx::Custom>はO/RマッパとL<DBI>の中間に位置するモジュールです。
+L<DBIx::Custom>は柔軟なハッシュパラメータバインディングとフィルタリング
+のシステムを提供します。またSQLを簡単に実行するための、
+C<insert()>, C<update()>, C<delete()>,C<select()>などの
+シュガーメソッドも提供します。
+
+L<DBIx::Custom>はSQLを尊重します。SQLはとても複雑で、美しくはありません。
+けれども、SQLはデファクトスタンダードな技術です。
+ですので、データベースを学ぶすべての人はSQLを知っています。
+あなたがすでにSQLを知っているなら、L<DBIx::Custom>を使って
+何かを行うために覚えることはとても少ないです。
+
+では使い方を解説します。
+
+=head2 1. データベースへの接続
+
+L<DBIx::Custom>オブジェクトを生成し、データベースに接続するには
+C<connect()>メソッドを使用します。
+
+    use DBIx::Custom;
+    my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=dbname",
+                                    user => 'ken', password => '!LFKD%$&');
+
+データベースがSQLiteであれば、代わりにL<DBIx::Custom::SQLite>を使うと
+データベースへの接続が簡単です。
+
+    use DBIx::Custom::SQLite;
+    my $dbi = DBIx::Custom::SQLite->connect(database => 'dbname');
+
+データベースがMySQLであれば、代わりにL<DBIx::Custom::MySQL>を使うと
+データベースへの接続が簡単です。
+
+    use DBIx::Custom::MySQL;
+    my $dbi = DBIx::Custom::MySQL->connect(
+        database => 'dbname',
+        user     => 'ken',
+        password => '!LFKD%$&'
+    );
+
+L<DBIx::Custom>はL<DBI>のラッパです。
+L<DBI>オブジェクトはC<dbh>で取得することができます。
+
+    my $dbh = $dbi->dbh;
+
+データベースハンドル属性にはデフォルトで次のものが設定されます。
+    
+    $dbi->dbh->{RaiseError} = 1;
+    $dbi->dbh->{PrintError} = 0;
+    $dbi->dbh->{AutoCommit} = 1;
+
+この設定を行っているので、致命的なエラーが起こると、
+例外が発生しプログラムは終了します。
+またクエリが発行されると自動的にコミットされます。
+
+=head2 2. シュガーメソッド
+
+L<DBIx::Custom>は、
+C<insert()>、C<update()>、C<delete()>、C<select()>
+のようなシュガーメソッドを持っています。
+小さなことを行うのであれば、SQL文を
+作成する必要はありません。
+
+=head3 C<insert()>
+
+C<insert>メソッドです。データベースにデータを挿入します。
+
+    $dbi->insert(table  => 'books',
+                 param  => {title => 'Perl', author => 'Ken'});
+
+これは次のL<DBI>の操作と同じです。
+
+    my $sth = $dbh->prepare('insert into (title, author) values (?, ?);');
+    $sth->execute('Perl', 'Ken');
+
+=head3 C<update()>
+
+C<update>メソッドです。データベースのデータを更新します。
+
+    $dbi->update(table  => 'books', 
+                 param  => {title => 'Perl', author => 'Ken'}, 
+                 where  => {id => 5});
+
+これは次のL<DBI>の操作と同じです。
+
+    my $sth = $dbh->prepare(
+        'update books set title = ?, author = ? where id = ?;');
+    $sth->execute('Perl', 'Ken', 5);
+
+C<update>メソッドは安全のため
+where句のないSQLを発行することを許可していません。
+もしすべての行を更新したい場合は
+C<update_all()>メソッドを使用してください。
+
+    $dbi->update_all(table  => 'books', 
+                     param  => {title => 'Perl', author => 'Ken'});
+
+=head3 C<delete()>
+
+C<delete>メソッドです。データベースのデータを削除します。
+
+    $dbi->delete(table  => 'books',
+                 where  => {author => 'Ken'});
+
+これは次のL<DBI>の操作と同じです。
+
+    my $sth = $dbh->prepare('delete from books where id = ?;');
+    $sth->execute('Ken');
+
+C<delete>メソッドは安全のため
+where句のないSQLを発行することを許可していません。
+もしすべての行を削除したい場合は
+C<delete_all()>メソッドを使用してください。
+
+    $dbi->delete_all(table  => 'books');
+
+=head3 C<select()>
+
+C<select>メソッドです。テーブル名だけを指定しています。
+
+    my $result = $dbi->select(table => 'books');
+
+これは次のL<DBI>の操作と同じです。
+
+    my $sth = $dbh->prepare('select * from books;);
+    $sth->execute;
+
+C<select()>メソッドの戻り値はL<DBIx::Custom::Result>
+オブジェクトです。C<fetch>メソッドを使用して
+行をフェッチすることができます。
+
+    while (my $row = $result->fetch) {
+        my $title  = $row->[0];
+        my $author = $row->[1];
+    }
+
+次のC<select>は行の名前とwhere句を指定したものです。
+
+    my $result = $dbi->select(
+        table  => 'books',
+        column => [qw/author title/],
+        where  => {author => 'Ken'}
+    );
+
+次のL<DBI>の操作と同じです。
+    
+    my $sth = $dbh->prepare(
+        'select author, title from books where author = ?;');
+    $sht->execute('Ken');
+
+テーブルをjoinしたい場合はC<relation>を使用します。
+
+    my $result = $dbi->select(
+        table    => ['books', 'rental'],
+        column   => ['books.name as book_name']
+        relation => {'books.id' => 'rental.book_id'}
+    );
+
+次のL<DBI>の操作と同じです。
+
+    my $sth = $dbh->prepare(
+        'select books.name as book_name from books, rental' .
+        'where books.id = rental.book_id;');
+    $sth->execute;
+
+=head3 C<append>オプション
+
+SQL文の末尾に文字列を追加したい場合は<append>オプションを使用します。
+
+    my $result = $dbi->select(
+        table  => 'books',
+        where  => {author => 'Ken'},
+        append => 'order by price limit 5',
+    );
+
+次のL<DBI>の操作と同じです。
+
+    my $sth = $dbh->prepare(
+        'select * books where author = ? order by price limit 5;');
+    $sth->execute;
+
+C<append>オプションは、C<insert()>、C<update()>、C<update_all()>
+C<delete()>、C<select>メソッドで使用することが
+できます。
+
+=head3 C<filter>オプション
+
+この後のフィルタリングの解説で詳しく扱いますが、値をフィルタリングしたい
+場合はC<filter>オプションを使用することができます。
+
+    $dbi->insert(table  => 'books',
+                 param  => {title => 'Perl', author => 'Ken'});
+                 filter => {title  => 'encode_utf8',
+                            author => 'encode_utf8'});
+
+C<filter>オプションは、C<insert()>、C<update()>、C<update_all()>
+C<delete()>、C<select>メソッドで使用することが
+できます。
+
+=head2 3. 行のフェッチ
+
+C<select()>メソッドの戻り値であるL<DBIx::Custom::Result>
+には行をフェッチするためのさまざまなメソッドが
+用意されています。
+(このセクションの解説では「配列」は「配列のリファレンス」を
+「ハッシュ」は「ハッシュのリファレンス」を意味しますので
+注意してください。)
+
+=head3 C<fetch>
+
+一行フェッチして配列に格納します。
+
+    while (my $row = $result->fetch) {
+        my $author = $row->[0];
+        my $title  = $row->[1];
+    }
+
+=head3 C<fetch_first>
+
+一行だけフェッチして配列に格納します。
+
+    my $row = $result->fetch_first;
+
+フェッチが終わった後は、ステートメントハンドルからC<finish()>
+メソッドが呼び出されてそれ以上フェッチできなくなります。
+
+=head3 C<fetch_multi>
+
+複数行をフェッチして配列の配列に格納します。
+
+    while (my $rows = $result->fetch_multi(5)) {
+        my $first_author  = $rows->[0][0];
+        my $first_title   = $rows->[0][1];
+        my $second_author = $rows->[1][0];
+        my $second_value  = $rows->[1][1];
+    }
+
+=head3 C<fetch_all>
+
+すべての行をフェッチして配列の配列に格納します。
+
+    my $rows = $result->fetch_all;
+
+=head3 C<fetch_hash>
+
+一行フェッチしてハッシュに格納します。
+
+    while (my $row = $result->fetch_hash) {
+        my $title  = $row->{title};
+        my $author = $row->{author};
+    }
+
+=head3 C<fetch_hash_first>
+
+一行だけフェッチしてハッシュに格納します。
+
+    my $row = $result->fetch_hash_first;
+
+フェッチが終わった後は、ステートメントハンドルからC<finish()>
+メソッドが呼び出されてそれ以上フェッチできなくなります。
+
+=head3 C<fetch_hash_multi>
+
+複数行をフェッチしてハッシュの配列に格納します。
+
+    while (my $rows = $result->fetch_hash_multi(5)) {
+        my $first_title   = $rows->[0]{title};
+        my $first_author  = $rows->[0]{author};
+        my $second_title  = $rows->[1]{title};
+        my $second_author = $rows->[1]{author};
+    }
+
+=head3 C<fetch_all>
+
+すべての行をフェッチしてハッシュの配列に格納します。
+
+    my $rows = $result->fetch_hash_all;
+
+=head3 C<sth>
+
+L<DBI>のステートメントハンドルにアクセスしたい場合は
+<sth>を使用します。
+
+    my $sth = $result->sth;
+
+=head2 4. Hash parameter binding
+
+L<DBIx::Custom> provides hash parameter binding.
+
+At frist, I show normal parameter binding.
+
+    use DBI;
+    my $dbh = DBI->connect(...);
+    my $sth = $dbh->prepare(
+        "select * from books where author = ? and title like ?;"
+    );
+    $sth->execute('Ken', '%Perl%');
+
+This is very good way because database system can enable SQL caching,
+and parameter is quoted automatically. this is secure.
+
+L<DBIx::Custom> hash parameter binding system improve
+normal parameter binding to use hash parameter.
+
+    my $result = $dbi->execute(
+        "select * from books where {= author} and {like title};"
+        param => {author => 'Ken', title => '%Perl%'}
+    );
+
+This is same as the normal way, execpt that the parameter is hash.
+{= author} and {like title} is called C<tag>.
+tag is expand to placeholder string internally.
+
+    select * from books where {= author} and {like title}
+      -> select * from books where author = ? and title like ?;
+
+The following tags is available.
+
+    [TAG]                       [REPLACED]
+    {? NAME}               ->   ?
+    {= NAME}               ->   NAME = ?
+    {<> NAME}              ->   NAME <> ?
+    
+    {< NAME}               ->   NAME < ?
+    {> NAME}               ->   NAME > ?
+    {>= NAME}              ->   NAME >= ?
+    {<= NAME}              ->   NAME <= ?
+    
+    {like NAME}            ->   NAME like ?
+    {in NAME COUNT}        ->   NAME in [?, ?, ..]
+    
+    {insert_param NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
+    {update_param NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?
+
+See also L<DBIx::Custom::QueryBuilder>.
+
+C<{> and C<}> is reserved. If you use these charactors,
+you must escape them using '\'. Note that '\' is
+already perl escaped charactor, so you must write '\\'. 
+
+    'select * from books \\{ something statement \\}'
+
+=head2 5. Filtering
+
+Usually, Perl string is kept as internal string.
+If you want to save the string to database, You must encode the string.
+Filtering system help you to convert a data to another data
+when you save to the data and get the data form database.
+
+If you want to register filter, use C<register_filter()> method.
+
+    $dbi->register_filter(
+        to_upper_case => sub {
+            my $value = shift;
+            return uc $value;
+        }
+    );
+
+C<encode_utf8> and C<decode_utf8> filter is registerd by default.
+
+You can specify these filters to C<filter> argument of C<execute()> method.
+
+    my $result = $dbi->execute(
+        "select * from books where {= author} and {like title};"
+        param  => {author => 'Ken', title => '%Perl%'},
+        filter => {author => 'to_upper_case, title => 'encode_utf8'}
+    );
+
+C<filter> argument can be specified to suger methods, such as
+C<insert()>, C<update()>, C<update_all()>,
+C<delete()>, C<delete_all()>, C<select()>.
+
+    # insert(), having filter argument
+    $dbi->insert(table  => 'books',
+                 param  => {title => 'Perl', author => 'Ken'},
+                 filter => {title => 'encode_utf8'});
+    
+    # select(), having filter argument
+    my $result = $dbi->select(
+        table  => 'books',
+        column => [qw/author title/],
+        where  => {author => 'Ken'},
+        append => 'order by id limit 1',
+        filter => {title => 'encode_utf8'}
+    );
+
+Filter works each parmeter, but you prepare default filter for all parameters.
+
+    $dbi->default_bind_filter('encode_utf8');
+
+C<filter()> argument overwrites this default filter.
+    
+    $dbi->default_bind_filter('encode_utf8');
+    $dbi->insert(
+        table  => 'books',
+        param  => {title => 'Perl', author => 'Ken', price => 1000},
+        filter => {author => 'to_upper_case', price => undef}
+    );
+
+This is same as the following example.
+
+    $dbi->insert(
+        table  => 'books',
+        param  => {title => 'Perl', author => 'Ken', price => 1000},
+        filter => {title => 'encode_uft8' author => 'to_upper_case'}
+    );
+
+You can also specify filter when the row is fetched. This is reverse of bind filter.
+
+    my $result = $dbi->select(table => 'books');
+    $result->filter({title => 'decode_utf8', author => 'to_upper_case'});
+
+Filter works each column value, but you prepare a default filter
+for all clumn value.
+
+    $dbi->default_fetch_filter('decode_utf8');
+
+C<filter()> method of L<DBIx::Custom::Result>
+overwrites this default filter.
+
+    $dbi->default_fetch_filter('decode_utf8');
+    my $result = $dbi->select(
+        table => 'books',
+        columns => ['title', 'author', 'price']
+    );
+    $result->filter({author => 'to_upper_case', price => undef});
+
+This is same as the following one.
+
+    my $result = $dbi->select(
+        table => 'books',
+        columns => ['title', 'author', 'price']
+    );
+    $result->filter({title => 'decode_utf8', author => 'to_upper_case'});
+
+Note that in fetch filter, column names must be lower case
+even if the column name conatains upper case charactors.
+This is requirment not to depend database systems.
+
+=head2 6. Get high performance
+
+=head3 Disable filter checking
+
+Filter checking is executed by default.
+This is done to check right filter name is specified,
+but sometimes damage performance.
+
+If you disable this filter checking,
+Set C<filter_check> attribute to 0.
+
+    $dbi->filter_check(0);
+
+=head3 Use execute() method instead suger methods
+
+If you execute insert statement by C<insert()> method,
+you sometimes can't get required performance.
+
+C<insert()> method is a little slow because SQL statement and statement handle
+is created every time.
+
+In that case, you can prepare a query by C<create_query()> method.
+    
+    my $query = $dbi->create_query(
+        "insert into books {insert_param title author};"
+    );
+
+Return value of C<create_query()> is L<DBIx::Custom::Query> object.
+This keep the information of SQL and column names.
+
+    {
+        sql     => 'insert into books (title, author) values (?, ?);',
+        columns => ['title', 'author']
+    }
+
+Execute query repeatedly.
+    
+    my $inputs = [
+        {title => 'Perl',      author => 'Ken'},
+        {title => 'Good days', author => 'Mike'}
+    ];
+    
+    foreach my $input (@$inputs) {
+        $dbi->execute($query, $input);
+    }
+
+This is faster than C<insert()> method.
+
+=head3 caching
+
+C<execute()> method caches the parsed result of the source of SQL.
+Default to 1
+
+    $dbi->cache(1);
+
+Caching is on memory, but you can change this by C<cache_method()>.
+First argument is L<DBIx::Custom> object.
+Second argument is a source of SQL,
+such as "select * from books where {= title} and {= author};";
+Third argument is parsed result, such as
+{sql => "select * from books where title = ? and author = ?",
+ columns => ['title', 'author']}, this is hash reference.
+If arguments is more than two, this method is called to set cache.
+If not, this method is called to get cache.
+
+    $dbi->cache_method(sub {
+        sub {
+            my $self = shift;
+            
+            $self->{_cached} ||= {};
+            
+            # Set cache
+            if (@_ > 1) {
+                $self->{_cached}{$_[0]} = $_[1] 
+            }
+            
+            # Get cache
+            else {
+                return $self->{_cached}{$_[0]}
+            }
+        }
+    });
+
+=head2 7. More features
+
+=head3 トランザクション
+
+
+=head3 Change Result class
+
+You can change Result class if you need.
+
+    package Your::Result;
+    use base 'DBIx::Custom::Result';
+    
+    sub some_method { ... }
+
+    1;
+    
+    package main;
+    
+    use Your::Result;
+    
+    my $dbi = DBIx::Custom->connect(...);
+    $dbi->result_class('Your::Result');
+
+=head3 Custamize SQL builder object
+
+You can custamize SQL builder object
+
+    my $dbi = DBIx::Custom->connect(...);
+    $dbi->query_builder->register_tag_processor(
+        name => sub {
+           ...
+        }
+    );
+
+=head3 Resister helper method
+
+You can resiter helper method.
+
+    $dbi->helper(
+        update_or_insert => sub {
+            my $self = shift;
+            # do something
+        },
+        find_or_create   => sub {
+            my $self = shift;
+            # do something
+        }
+    );
+
+Register helper methods.
+These method can be called from L<DBIx::Custom> object directory.
+
+    $dbi->update_or_insert;
+    $dbi->find_or_create;
+
+=cut

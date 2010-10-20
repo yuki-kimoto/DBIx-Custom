@@ -1,4 +1,4 @@
-use Test::More 'no_plan';
+use Test::More tests => 15;
 use strict;
 use warnings;
 
@@ -100,4 +100,18 @@ is($dbi->filters->{a}->(), 1, $test);
 $dbi->register_filter({b => sub {2}});
 is($dbi->filters->{b}->(), 2, $test);
 
+
+test 'expand';
+{
+    $dbi = DBIx::Custom->new;
+    my $source = {books => {title => 'Perl', author => 'Ken'}};
+    is_deeply({$dbi->expand($source)}, 
+              {'books.title' => 'Perl', 'books.author' => 'Ken'});
+}
+{
+    $dbi = DBIx::Custom->new;
+    my %source = (books => {title => 'Perl', author => 'Ken'});
+    is_deeply({$dbi->expand(%source)}, 
+              {'books.title' => 'Perl', 'books.author' => 'Ken'});
+}
 
