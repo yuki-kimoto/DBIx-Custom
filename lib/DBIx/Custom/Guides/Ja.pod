@@ -179,8 +179,6 @@ C<select()>メソッドの戻り値はL<DBIx::Custom::Result>
         'where books.id = rental.book_id;');
     $sth->execute;
 
-=head3 C<append>オプション
-
 SQL文の末尾に文字列を追加したい場合は<append>オプションを使用します。
 
     my $result = $dbi->select(
@@ -199,8 +197,6 @@ C<append>オプションは、C<insert()>、C<update()>、C<update_all()>
 C<delete()>、C<select>メソッドで使用することが
 できます。
 
-=head3 C<filter>オプション
-
 この後のフィルタリングの解説で詳しく扱いますが、値をフィルタリングしたい
 場合はC<filter>オプションを使用することができます。
 
@@ -212,6 +208,19 @@ C<delete()>、C<select>メソッドで使用することが
 C<filter>オプションは、C<insert()>、C<update()>、C<update_all()>
 C<delete()>、C<select>メソッドで使用することが
 できます。
+
+C<select()>メソッドのC<where>オプションではハッシュの代わりに
+タグを利用することもできます。これによって柔軟な
+条件を指定することができます。
+
+    # Select, more flexible where
+    my $result = $dbi->select(
+        table  => 'books',
+        where  => ['{= author} and {like title}', 
+                   {author => 'Ken', title => '%Perl%'}]
+    );
+
+タグについては以降で解説します。
 
 =head2 3. 行のフェッチ
 
@@ -292,18 +301,16 @@ C<select()>メソッドの戻り値であるL<DBIx::Custom::Result>
 
     my $rows = $result->fetch_hash_all;
 
-=head3 C<sth>
-
-L<DBI>のステートメントハンドルにアクセスしたい場合は
+L<DBI>のステートメントハンドルに直接アクセスしたい場合は
 <sth>を使用します。
 
     my $sth = $result->sth;
 
-=head2 4. Hash parameter binding
+=head2 4. ハッシュパラメタバインド
 
-L<DBIx::Custom> provides hash parameter binding.
+L<DBIx::Custom>はハッシュパラメタバインドを提供します。
 
-At frist, I show normal parameter binding.
+まず最初にL<DBI>による通常のパラメタバインドをご覧ください。
 
     use DBI;
     my $dbh = DBI->connect(...);
@@ -312,25 +319,31 @@ At frist, I show normal parameter binding.
     );
     $sth->execute('Ken', '%Perl%');
 
-This is very good way because database system can enable SQL caching,
-and parameter is quoted automatically. this is secure.
+これはデータベースシステムがSQLをキャッシュすることができ、
+パラメータは自動的にクォートされるので、
+パフォーマンス面でも、セキュリティ面でも
+とても良い方法です。
 
-L<DBIx::Custom> hash parameter binding system improve
-normal parameter binding to use hash parameter.
+
+L<DBIx::Custom>はこれを改善して、ハッシュで
+パラメタを指定できるようにしました。
 
     my $result = $dbi->execute(
         "select * from books where {= author} and {like title};"
         param => {author => 'Ken', title => '%Perl%'}
     );
 
-This is same as the normal way, execpt that the parameter is hash.
-{= author} and {like title} is called C<tag>.
-tag is expand to placeholder string internally.
+C<{= author}>とC<{like title}>はタグと呼ばれます。
+タグは内部ではプレースホルダを含む文字列に置き換えられます。
 
     select * from books where {= author} and {like title}
-      -> select * from books where author = ? and title like ?;
 
-The following tags is available.
+という文は以下のSQLに置き換えられます。
+
+    select * from books where author = ? and title like ?;
+
+このようにタグを使ってSQL文を表現するのがL<DBIx::Custom>の
+特徴です。以下のタグが利用可能です。
 
     [TAG]                       [REPLACED]
     {? NAME}               ->   ?
@@ -348,22 +361,29 @@ The following tags is available.
     {insert_param NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
     {update_param NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?
 
-See also L<DBIx::Custom::QueryBuilder>.
+これらの変換はL<DBIx::Custom::QueryBuilder>によって行われます。
 
-C<{> and C<}> is reserved. If you use these charactors,
-you must escape them using '\'. Note that '\' is
-already perl escaped charactor, so you must write '\\'. 
+C<{>とC<}>は予約語です。これらの文字を使いたい場合は
+「\」を使ってエスケープする必要があります。
+'\'はPerlのエスケープ文字なので、
+エスケープするためには'\\'と書く必要があることに注意
+してください。
 
     'select * from books \\{ something statement \\}'
 
-=head2 5. Filtering
+=head2 5. フィルタリング
 
-Usually, Perl string is kept as internal string.
-If you want to save the string to database, You must encode the string.
-Filtering system help you to convert a data to another data
-when you save to the data and get the data form database.
+=head3 パラメタバインド時のフィルタリング
 
-If you want to register filter, use C<register_filter()> method.
+データベースに登録するデータをフィルタリングしたい場合
+があります。たとえば、内部文字列で文字列を保持している場合は
+データベースにデータを登録する前に、バイト文字列に変換する
+必要があります。L<DBIx::Custom>のフィルタリングシステムは
+あるデータを他のデータに変換するのを手助けしてくれます。
+
+フィルタリングを利用するにはまず、
+C<register_filter()>メソッドを使用して
+フィルタを登録しておく必要があります。
 
     $dbi->register_filter(
         to_upper_case => sub {
@@ -372,9 +392,11 @@ If you want to register filter, use C<register_filter()> method.
         }
     );
 
-C<encode_utf8> and C<decode_utf8> filter is registerd by default.
+デフォルトのフィルタとしてC<encode_utf8>とC<decode_utf8>
+が登録されています。
 
-You can specify these filters to C<filter> argument of C<execute()> method.
+登録されているフィルタはC<execute()>メソッドのC<filter>オプション
+で指定することができます。
 
     my $result = $dbi->execute(
         "select * from books where {= author} and {like title};"
@@ -382,16 +404,20 @@ You can specify these filters to C<filter> argument of C<execute()> method.
         filter => {author => 'to_upper_case, title => 'encode_utf8'}
     );
 
-C<filter> argument can be specified to suger methods, such as
-C<insert()>, C<update()>, C<update_all()>,
-C<delete()>, C<delete_all()>, C<select()>.
+この例ではC<author>の値はバインドされるときに大文字に変換され、
+C<title>の値はバイト文字列に変換されます。
 
-    # insert(), having filter argument
+C<filter>オプションは
+C<insert()>、C<update()>、 C<update_all()>,
+C<delete()>、C<select()>
+メソッドにおいても使用することができます。
+
+    # insert() with filter option
     $dbi->insert(table  => 'books',
                  param  => {title => 'Perl', author => 'Ken'},
                  filter => {title => 'encode_utf8'});
     
-    # select(), having filter argument
+    # select() with filter option
     my $result = $dbi->select(
         table  => 'books',
         column => [qw/author title/],
@@ -400,11 +426,13 @@ C<delete()>, C<delete_all()>, C<select()>.
         filter => {title => 'encode_utf8'}
     );
 
-Filter works each parmeter, but you prepare default filter for all parameters.
+C<filter>で指定されたフィルタはそれぞれのパラメータの値に働きますが、
+すべてのパラメータのためのデフォルトのフィルタを設定することもできます。
 
     $dbi->default_bind_filter('encode_utf8');
 
-C<filter()> argument overwrites this default filter.
+C<filter()>オプションで指定されたフィルタは、
+デフォルトのフィルタを上書きます。
     
     $dbi->default_bind_filter('encode_utf8');
     $dbi->insert(
@@ -413,26 +441,25 @@ C<filter()> argument overwrites this default filter.
         filter => {author => 'to_upper_case', price => undef}
     );
 
-This is same as the following example.
+C<title>の値にはデフォルトのフィルタであるC<encode_utf8>が適用され
+C<author>の値にはC<to_upper_case>が適用されます。
+C<price>にはundefを設定しているのでフィルタが解除されます。
 
-    $dbi->insert(
-        table  => 'books',
-        param  => {title => 'Perl', author => 'Ken', price => 1000},
-        filter => {title => 'encode_uft8' author => 'to_upper_case'}
-    );
+=head3 行のフェッチ時のフィルタリング
 
-You can also specify filter when the row is fetched. This is reverse of bind filter.
+行をフェッチするときのフィルタも設定することができます。
+これはL<DBIx::Custom::Result>クラスのC<filter>メソッドを使って
+行います。
 
     my $result = $dbi->select(table => 'books');
     $result->filter({title => 'decode_utf8', author => 'to_upper_case'});
 
-Filter works each column value, but you prepare a default filter
-for all clumn value.
+フィルタはそれぞれの列の値に作用しますが、
+すべての列のためのデフォルのトフィルタを設定することもできます。
 
     $dbi->default_fetch_filter('decode_utf8');
 
-C<filter()> method of L<DBIx::Custom::Result>
-overwrites this default filter.
+C<filter>メソッドで設定されたフィルタはデフォルトのフィルタを上書きます。
 
     $dbi->default_fetch_filter('decode_utf8');
     my $result = $dbi->select(
@@ -441,54 +468,54 @@ overwrites this default filter.
     );
     $result->filter({author => 'to_upper_case', price => undef});
 
-This is same as the following one.
+C<title>の値にはデフォルトのフィルタであるC<decode_utf8>が適用され
+C<author>の値にはC<to_upper_case>が適用されます。
+C<price>にはundefを設定しているのでフィルタが解除されます。
 
-    my $result = $dbi->select(
-        table => 'books',
-        columns => ['title', 'author', 'price']
-    );
-    $result->filter({title => 'decode_utf8', author => 'to_upper_case'});
+フェッチのためのフィルタにおいて、
+たとえ、列名が大文字を含む場合であっても
+列名は小文字であることに注意してください。
+これはデータベースシステムに依存させないための要件です。
 
-Note that in fetch filter, column names must be lower case
-even if the column name conatains upper case charactors.
-This is requirment not to depend database systems.
+=head2 6. パフォーマンスの改善
 
-=head2 6. Get high performance
+=head3 フィルタのチェックを無効にする
 
-=head3 Disable filter checking
+フィルタのチェックがデフォルトでは有効になっています。
+これは正しいフィルタ名が指定されているかどうかをチェック
+するためのものですが、ときにはパフォーマンスに影響を
+及ぼす可能性があります。
 
-Filter checking is executed by default.
-This is done to check right filter name is specified,
-but sometimes damage performance.
-
-If you disable this filter checking,
-Set C<filter_check> attribute to 0.
+フィルタのチェックを無効にするにはC<filter_check>
+に0を設定してください。
 
     $dbi->filter_check(0);
 
-=head3 Use execute() method instead suger methods
+=head3 シュガーメソッドを使わない
 
-If you execute insert statement by C<insert()> method,
-you sometimes can't get required performance.
+もしC<insert()>メソッドを使用してインサートを実行した場合、
+必要なパフォーマンスを得られない場合があるかもしれません。
+C<insert()>メソッドは、SQL文とステートメントハンドルを
+毎回作成するためすこし遅いです。
 
-C<insert()> method is a little slow because SQL statement and statement handle
-is created every time.
-
-In that case, you can prepare a query by C<create_query()> method.
+そのような場合は、C<create_query()>メソッドによって
+クエリを用意しておくことができます。
     
     my $query = $dbi->create_query(
         "insert into books {insert_param title author};"
     );
 
-Return value of C<create_query()> is L<DBIx::Custom::Query> object.
-This keep the information of SQL and column names.
+戻り値はL<DBIx::Custom::Query>オブジェクトです。
+このオブジェクトはSQL文とパラメータバインド時の列名を
+保持しています。またステートメントハンドルも保持しています。
 
     {
         sql     => 'insert into books (title, author) values (?, ?);',
-        columns => ['title', 'author']
+        columns => ['title', 'author'],
+        sth     => $sth
     }
 
-Execute query repeatedly.
+クエリオブジェクトを使って繰り返し実行するには次のようにします。
     
     my $inputs = [
         {title => 'Perl',      author => 'Ken'},
@@ -499,24 +526,18 @@ Execute query repeatedly.
         $dbi->execute($query, $input);
     }
 
-This is faster than C<insert()> method.
+C<execute>メソッドの第一引数にクエリオブジェトを渡すことができます。
+これはC<insert()>メソッドよりも高速です。
 
-=head3 caching
+=head3 キャッシング
 
-C<execute()> method caches the parsed result of the source of SQL.
-Default to 1
+C<execute()>メソッドはデフォルトでSQL文への解析結果をキャッシュします。
 
     $dbi->cache(1);
 
-Caching is on memory, but you can change this by C<cache_method()>.
-First argument is L<DBIx::Custom> object.
-Second argument is a source of SQL,
-such as "select * from books where {= title} and {= author};";
-Third argument is parsed result, such as
-{sql => "select * from books where title = ? and author = ?",
- columns => ['title', 'author']}, this is hash reference.
-If arguments is more than two, this method is called to set cache.
-If not, this method is called to get cache.
+キャッシングはメモリ上で行われますが、C<cache_method()>
+を使って変更することができます。これはキャッシュされるデータの保存と取得
+のためのメソッドを定義するのに利用されます。
 
     $dbi->cache_method(sub {
         sub {
@@ -536,14 +557,44 @@ If not, this method is called to get cache.
         }
     });
 
-=head2 7. More features
+最初の引数はL<DBIx::Custom>です。第二引数は、
+"select * from books where {= title} and {= author};";
+のようなSQL文の源です。
+第三引数は
+{sql => "select * from books where title = ? and author = ?",
+ columns => ['title', 'author']}
+のような解析後のデータです。これはハッシュリファレンスである必要
+があります。
+もし引数がふたつより大きい場合は、このメソッドはキャッシュを保存
+するのに利用されます。そうでない場合はキャッシュを取得するのに
+利用されます。
+
+=head2 7. その他の機能
 
 =head3 トランザクション
 
+トランザクションを便利に利用するために、
+C<begin_work()>、C<commit()>、C<rollback()>
+という三つのメソッドが容易されています。
+これはL<DBI>の同名のメソッドと同じ機能を持ちます。
 
-=head3 Change Result class
+    $dbi->begin_work;
+    
+    eval {
+        $dbi->update(...);
+        $dbi->update(...);
+    };
+    
+    if ($@) {
+        $dbi->rollback;
+    }
+    else {
+        $dbi->commit;
+    }
 
-You can change Result class if you need.
+=head3 selectメソッドの結果クラスの変更
+
+必要ならばC<select()>メソッドの結果クラスを変更することができます。
 
     package Your::Result;
     use base 'DBIx::Custom::Result';
@@ -559,9 +610,10 @@ You can change Result class if you need.
     my $dbi = DBIx::Custom->connect(...);
     $dbi->result_class('Your::Result');
 
-=head3 Custamize SQL builder object
+=head3 L<DBIx::Custom::QueryBuilder>の機能の拡張
 
-You can custamize SQL builder object
+新しいタグが欲しい場合はL<DBIx::Custom::QueryBuilder>の機能を拡張
+することができます。
 
     my $dbi = DBIx::Custom->connect(...);
     $dbi->query_builder->register_tag_processor(
@@ -570,9 +622,9 @@ You can custamize SQL builder object
         }
     );
 
-=head3 Resister helper method
+=head3 ヘルパーメソッドの登録
 
-You can resiter helper method.
+ヘルパーメソッドを登録することができます。
 
     $dbi->helper(
         update_or_insert => sub {
@@ -585,10 +637,33 @@ You can resiter helper method.
         }
     );
 
-Register helper methods.
-These method can be called from L<DBIx::Custom> object directory.
+<helper()>メソッドで登録したメソッドは
+L<DBIx::Custom>オブジェクトから直接呼び出すことができます。
 
     $dbi->update_or_insert;
     $dbi->find_or_create;
+
+=head3 ユーティリティメソッド(実験的)
+
+C<expand>メソッドを使用すると次のようなハッシュに含まれる
+テーブル名と列名を結合することができます。
+
+    my %expanded = $dbi->expand(\%source);
+
+以下のハッシュ
+
+    {books => {title => 'Perl', author => 'Ken'}}
+
+は次のように展開されます。
+
+    ('books.title' => 'Perl', 'books.author' => 'Ken')
+
+これはテーブル名を含むselect文で利用すると便利です。
+
+    my $param = {title => 'Perl', author => '%Ken%'};
+    $dbi->execute(
+        'select * from books where {= books.title} && {like books.author};',
+        param => {$dbi->expand({books => $param})}
+    );
 
 =cut
