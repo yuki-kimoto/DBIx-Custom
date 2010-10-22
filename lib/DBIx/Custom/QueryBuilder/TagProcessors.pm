@@ -90,9 +90,23 @@ sub _expand_basic_tag {
 
 =head1 NAME
 
-DBIx::Custom::SQLBuilder::TagProcessors - Tag processors
+DBIx::Custom::QueryBuilder::TagProcessors - Tag processors
 
-=head1 Tag processors
+=head1 SYNOPSYS
+
+    my $expanded = expand_equal_tag($source);
+    my $expanded = expand_greater_than_equal_tag($source);
+    my $expanded = expand_greater_than_tag($source);
+    my $expanded = expand_like_tag($source);
+    my $expanded = expand_lower_than_equal_tag($source);
+    my $expanded = expand_lower_than_tag($source);
+    my $expanded = expand_in_tag($source);
+    my $expanded = expand_insert_param_tag($source);
+    my $expanded = expand_not_equal_tag($source);
+    my $expanded = expand_placeholder_tag($source);
+    my $expanded = expand_update_param_tag($source);
+
+=head1 TAG PROCESSORS
 
 Tag processor is function,
 which receive arguments and return a part of SQL statment

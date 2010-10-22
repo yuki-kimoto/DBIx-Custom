@@ -1,8 +1,8 @@
 =encoding utf8
 
-=head1 名前
+=head1 NAME
 
-DBIx::Custom::Guides::Ja - DBIx::Customの日本語のガイド
+DBIx::Custom::Guides::Ja - DBIx::Customの日本語ガイド
 
 =head1 ガイド
 
