@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1620';
+our $VERSION = '0.1621';
 
 use 5.008001;
 use strict;
@@ -34,8 +34,12 @@ __PACKAGE__->attr(cache_method => sub {
     }
 });
 
-__PACKAGE__->dual_attr('filters', default => sub { {} },
-                                  inherit => 'hash_copy');
+__PACKAGE__->attr(filters => sub {
+    {
+        encode_utf8 => sub { encode_utf8($_[0]) },
+        decode_utf8 => sub { decode_utf8($_[0]) }
+    }
+});
 __PACKAGE__->attr(filter_check => 1);
 __PACKAGE__->attr(query_builder  => sub {DBIx::Custom::QueryBuilder->new});
 __PACKAGE__->attr(result_class => 'DBIx::Custom::Result');
@@ -52,12 +56,6 @@ foreach my $method (qw/begin_work commit rollback/) {
     my $pkg = __PACKAGE__;
     *{"${pkg}::$method"} = $code;
 };
-
-# Regster filter
-__PACKAGE__->register_filter(
-    encode_utf8 => sub { encode_utf8($_[0]) },
-    decode_utf8 => sub { decode_utf8($_[0]) }
-);
 
 our $AUTOLOAD;
 

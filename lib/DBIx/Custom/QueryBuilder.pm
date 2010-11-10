@@ -13,22 +13,21 @@ use DBIx::Custom::QueryBuilder::TagProcessors;
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
 # Attributes
-__PACKAGE__->dual_attr('tag_processors', default => sub { {} }, inherit => 'hash_copy');
-
-# Resister tag processor
-__PACKAGE__->register_tag_processor(
-    '?'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_placeholder_tag,
-    '='     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_equal_tag,
-    '<>'    => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_not_equal_tag,
-    '>'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_greater_than_tag,
-    '<'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_lower_than_tag,
-    '>='    => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_greater_than_equal_tag,
-    '<='    => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_lower_than_equal_tag,
-    'like'  => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_like_tag,
-    'in'    => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_in_tag,
-    'insert_param' => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_insert_param_tag,
-    'update_param' => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_update_param_tag
-);
+__PACKAGE__->attr('tag_processors' => sub {
+    {
+        '?'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_placeholder_tag,
+        '='     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_equal_tag,
+        '<>'    => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_not_equal_tag,
+        '>'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_greater_than_tag,
+        '<'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_lower_than_tag,
+        '>='    => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_greater_than_equal_tag,
+        '<='    => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_lower_than_equal_tag,
+        'like'  => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_like_tag,
+        'in'    => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_in_tag,
+        'insert_param' => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_insert_param_tag,
+        'update_param' => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_update_param_tag
+    }
+});
 
 sub build_query {
     my ($self, $source)  = @_;

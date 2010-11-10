@@ -1,4 +1,4 @@
-use Test::More tests => 15;
+use Test::More tests => 11;
 use strict;
 use warnings;
 
@@ -42,9 +42,6 @@ test 'Sub class constructor';
     package DBIx::Custom::T1;
     use base 'DBIx::Custom';
     
-    __PACKAGE__
-      ->filters({f => 3})
-    ;
 }
 $dbi = DBIx::Custom::T1->new(
     filters => {
@@ -53,19 +50,12 @@ $dbi = DBIx::Custom::T1->new(
 );
 is_deeply(scalar $dbi->filters, {fo => 30}, "$test : filters");
 
-test 'Sub class constructor default';
-$dbi = DBIx::Custom::T1->new;
-is_deeply($dbi->filters, {f => 3}, "$test : filters");
-isa_ok($dbi, 'DBIx::Custom::T1');
-
-
 test 'Sub sub class constructor default';
 {
     package DBIx::Custom::T1_2;
     use base 'DBIx::Custom::T1';
 }
 $dbi = DBIx::Custom::T1_2->new;
-is_deeply(scalar $dbi->filters, {f => 3}, "$test : filters");
 isa_ok($dbi, 'DBIx::Custom::T1_2');
 
 
@@ -74,12 +64,8 @@ test 'Customized sub class constructor default';
     package DBIx::Custom::T1_3;
     use base 'DBIx::Custom::T1';
     
-    __PACKAGE__
-      ->filters({fo => 30})
-    ;
 }
 $dbi = DBIx::Custom::T1_3->new;
-is_deeply(scalar $dbi->filters, {fo => 30}, "$test : filters");
 isa_ok($dbi, 'DBIx::Custom::T1_3');
 
 
