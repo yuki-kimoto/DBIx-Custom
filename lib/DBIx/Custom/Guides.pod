@@ -13,20 +13,34 @@ object and connect to the database.
     my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=dbname",
                                     user => 'ken', password => '!LFKD%$&');
 
-If database is SQLite, use L<DBIx::Custom::SQLite> instead.
-you connect database easily.
+B<Data source exmaples:>
 
-    use DBIx::Custom::SQLite;
-    my $dbi = DBIx::Custom::SQLite->connect(database => 'dbname');
-    
-If database is  MySQL, use L<DBIx::Custom::MySQL>.
+MySQL
 
-    use DBIx::Custom::MySQL;
-    my $dbi = DBIx::Custom::MySQL->connect(
-        database => 'dbname',
-        user     => 'ken',
-        password => '!LFKD%$&'
-    );
+    "dbi:mysql:database=$database"
+    "dbi:mysql:database=$database;host=$hostname;port=$port"
+
+SQLite
+
+    "dbi:SQLite:dbname=$database"
+    "dbi:SQLite:dbname=:memory:"
+
+PostgreSQL
+
+    "dbi:Pg:dbname=$dbname"
+
+Oracle
+
+    "dbi:Oracle:$dbname"
+    "dbi:Oracle:host=$host;sid=$sid"
+
+ODBC(Microsoft Access)
+
+    "dbi:ODBC:driver=Microsoft Access Driver (*.mdb);dbq=hoge.mdb"
+
+ODBC(SQL Server)
+
+   "dbi:ODBC:driver={SQL Server};Server=(local);database=test;Trusted_Connection=yes;AutoTranslate=No;"
 
 =head2 2. Suger methods
 

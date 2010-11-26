@@ -38,21 +38,34 @@ C<connect()>メソッドを使用します。
     my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=dbname",
                                     user => 'ken', password => '!LFKD%$&');
 
-データベースがSQLiteであれば、代わりにL<DBIx::Custom::SQLite>を使うと
-データベースへの接続が簡単です。
+B<Data sourceのサンプル:>
 
-    use DBIx::Custom::SQLite;
-    my $dbi = DBIx::Custom::SQLite->connect(database => 'dbname');
+MySQL
 
-データベースがMySQLであれば、代わりにL<DBIx::Custom::MySQL>を使うと
-データベースへの接続が簡単です。
+    "dbi:mysql:database=$database"
+    "dbi:mysql:database=$database;host=$hostname;port=$port"
 
-    use DBIx::Custom::MySQL;
-    my $dbi = DBIx::Custom::MySQL->connect(
-        database => 'dbname',
-        user     => 'ken',
-        password => '!LFKD%$&'
-    );
+SQLite
+
+    "dbi:SQLite:dbname=$database"
+    "dbi:SQLite:dbname=:memory:"
+
+PostgreSQL
+
+    "dbi:Pg:dbname=$dbname"
+
+Oracle
+
+    "dbi:Oracle:$dbname"
+    "dbi:Oracle:host=$host;sid=$sid"
+
+ODBC(Microsoft Access)
+
+    "dbi:ODBC:driver=Microsoft Access Driver (*.mdb);dbq=hoge.mdb"
+
+ODBC(SQL Server)
+
+   "dbi:ODBC:driver={SQL Server};Server=(local);database=test;Trusted_Connection=yes;AutoTranslate=No;"
 
 L<DBIx::Custom>はL<DBI>のラッパです。
 L<DBI>オブジェクトはC<dbh>で取得することができます。

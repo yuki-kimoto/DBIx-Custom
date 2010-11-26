@@ -40,6 +40,11 @@ sub connect_memory {
 
 DBIx::Custom::SQLite - SQLite implementation
 
+=head1 CAUTION
+
+B<This module is deprecated now> because This module is not very useful
+I expected. Please use DBIx::Custom instead.>
+
 =head1 SYNOPSYS
 
     use DBIx::Custom::SQLite;

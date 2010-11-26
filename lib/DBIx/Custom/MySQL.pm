@@ -34,6 +34,11 @@ sub connect {
 
 DBIx::Custom::MySQL - MySQL implementation
 
+=head1 CAUTION
+
+B<This module is deprecated now> because This module is not very useful
+I expected. Please use DBIx::Custom instead.>
+
 =head1 SYNOPSYS
 
     # Connect to the database
