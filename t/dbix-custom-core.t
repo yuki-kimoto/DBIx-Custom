@@ -1,4 +1,4 @@
-use Test::More tests => 11;
+use Test::More tests => 12;
 use strict;
 use warnings;
 
@@ -19,7 +19,6 @@ test 'Constructor';
 $query_builder = DBIx::Custom::QueryBuilder->new;
 $dbi = DBIx::Custom->new(
     user => 'a',
-    database => 'a',
     password => 'b',
     data_source => 'c',
     filters => {
@@ -30,7 +29,7 @@ $dbi = DBIx::Custom->new(
     result_class => 'g',
     query_builder => $query_builder,
 );
-is_deeply($dbi,{user => 'a', database => 'a', password => 'b', data_source => 'c', 
+is_deeply($dbi,{user => 'a', password => 'b', data_source => 'c', 
                 filters => {f => 3}, default_bind_filter => 'f',
                 default_fetch_filter => 'g', result_class => 'g',
                 query_builder => $query_builder}, $test);
@@ -101,3 +100,6 @@ test 'expand';
               {'books.title' => 'Perl', 'books.author' => 'Ken'});
 }
 
+test 'invalid attribute name';
+eval {$dbi = DBIx::Custom->new(a => 1) };
+like ($@, qr/"a" is invalid attribute name/, $test);

@@ -1,6 +1,7 @@
 0.1622
   deprecated DBIx::Custom::SQLite and DBIx::Custom::MySQL
-  
+  added dbi_options attribute
+  checked attributes passed to connect method
 0.1621
   cleanup (removed undocumented features)
 0.1620

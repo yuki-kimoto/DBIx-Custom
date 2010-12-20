@@ -21,6 +21,20 @@ use Scalar::Util 'blessed';
     
     ok(blessed $dbi->dbh);
     can_ok($dbi->dbh, qw/prepare/);
+    ok($dbi->dbh->{AutoCommit});
+    ok(!$dbi->dbh->{mysql_enable_utf8});
+}
+
+{
+    my $dbi = DBIx::Custom->connect(
+        user => $USER,
+        password => $PASSWORD,
+        data_source => "dbi:mysql:dbname=$DATABASE",
+        dbi_options => {AutoCommit => 0, mysql_enable_utf8 => 1}
+    );
+    $dbi->connect;
+    ok(!$dbi->dbh->{AutoCommit});
+    ok($dbi->dbh->{mysql_enable_utf8});
 }
 
 sub connect_info {
