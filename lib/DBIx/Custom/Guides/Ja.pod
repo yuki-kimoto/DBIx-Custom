@@ -458,6 +458,52 @@ C<title>の値にはデフォルトのフィルタであるC<encode_utf8>が適�
 C<author>の値にはC<to_upper_case>が適用されます。
 C<price>にはundefを設定しているのでフィルタが解除されます。
 
+B<フィルタのサンプル>
+
+MySQL
+
+    # Time::Piece object to DATETIME format
+    tp_to_datetime => sub {
+        return shift->strftime('%Y-%m-%d %H:%M:%S');
+    }
+    
+    # Time::Piece object to DATE format
+    tp_to_date => sub {
+        return shift->strftime('%Y-%m-%d');
+    }
+    
+    # DATETIME to Time::Piece object
+    datetime_to_tp => sub {
+        return Time::Piece->strptime(shift, '%Y-%m-%d %H:%M:%S');
+    }
+    
+    # DATE to Time::Piece object
+    date_to_tp => sub {
+        return Time::Piece->strptime(shift, '%Y-%m-%d');
+    }
+
+SQLite
+    
+    # Time::Piece object to DATETIME format
+    tp_to_datetime => sub {
+        return shift->strftime('%Y-%m-%d %H:%M:%S');
+    }
+    
+    # Time::Piece object to DATE format
+    tp_to_date => sub {
+        return shift->strftime('%Y-%m-%d');
+    }
+    
+    # DATETIME to Time::Piece object
+    datetime_to_tp => sub {
+        return Time::Piece->strptime(shift, $FORMATS->{db_datetime});
+    }
+    
+    # DATE to Time::Piece object
+    date_to_tp => sub {
+        return Time::Piece->strptime(shift, $FORMATS->{db_date});
+    }
+
 =head3 行のフェッチ時のフィルタリング
 
 行をフェッチするときのフィルタも設定することができます。

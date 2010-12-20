@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1621';
+our $VERSION = '0.1622';
 
 use 5.008001;
 use strict;
@@ -16,7 +16,7 @@ use DBIx::Custom::QueryBuilder;
 use Encode qw/encode_utf8 decode_utf8/;
 
 __PACKAGE__->attr([qw/data_source dbh default_bind_filter
-                      default_fetch_filter password user/]);
+                      dbi_options default_fetch_filter password user/]);
 
 __PACKAGE__->attr(cache => 1);
 __PACKAGE__->attr(cache_method => sub {
@@ -84,6 +84,19 @@ sub helper {
     return $self;
 }
 
+#sub new {
+#    my $self = shift->SUPER::new(@_);
+#    
+#    # Check attribute names
+#    my @attrs = keys %$self;
+#    foreach my $attr (@attrs) {
+#        croak qq{"$attr" is invalid attribute name"}
+#          unless $self->can($attr);
+#    }
+#    
+#    return $self;
+#}
+
 sub connect {
     my $proto = shift;
     
@@ -92,9 +105,12 @@ sub connect {
     
     # Information
     my $data_source = $self->data_source;
+    
+    croak qq{"data_source" must be specfied to connect method"}
+      unless $data_source;
+    
     my $user        = $self->user;
     my $password    = $self->password;
-    
     
     # Connect
     my $dbh = eval {DBI->connect(

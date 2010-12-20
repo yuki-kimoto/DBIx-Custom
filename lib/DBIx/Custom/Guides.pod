@@ -383,6 +383,52 @@ Note that in fetch filter, column names must be lower case
 even if the column name conatains upper case charactors.
 This is requirment not to depend database systems.
 
+B<Filter examples>
+
+MySQL
+
+    # Time::Piece object to DATETIME format
+    tp_to_datetime => sub {
+        return shift->strftime('%Y-%m-%d %H:%M:%S');
+    }
+    
+    # Time::Piece object to DATE format
+    tp_to_date => sub {
+        return shift->strftime('%Y-%m-%d');
+    },
+    
+    # DATETIME to Time::Piece object
+    datetime_to_tp => sub {
+        return Time::Piece->strptime(shift, '%Y-%m-%d %H:%M:%S');
+    }
+    
+    # DATE to Time::Piece object
+    date_to_tp => sub {
+        return Time::Piece->strptime(shift, '%Y-%m-%d');
+    }
+
+SQLite
+    
+    # Time::Piece object to DATETIME format
+    tp_to_datetime => sub {
+        return shift->strftime('%Y-%m-%d %H:%M:%S');
+    }
+    
+    # Time::Piece object to DATE format
+    tp_to_date => sub {
+        return shift->strftime('%Y-%m-%d');
+    },
+    
+    # DATETIME to Time::Piece object
+    datetime_to_tp => sub {
+        return Time::Piece->strptime(shift, $FORMATS->{db_datetime});
+    }
+    
+    # DATE to Time::Piece object
+    date_to_tp => sub {
+        return Time::Piece->strptime(shift, $FORMATS->{db_date});
+    }
+    
 =head2 6. Get high performance
 
 =head3 Disable filter checking
