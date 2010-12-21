@@ -1,7 +1,10 @@
 0.1623
   added experimental auto_filter method
   deprecated default_bind_filter and default_fetch_filter because these are global effect.
-  weakend filter_check for usability
+  changed defautl_bind_filter and default_fetch_filter attributes to methods.
+  changed DBIx::Custom::Result default_filter attribute to method
+  changed DBIx::Custom::Result filter attribute to method.
+  filter_check is always done for usability
 0.1622
   deprecated DBIx::Custom::SQLite and DBIx::Custom::MySQL
   added dbi_options attribute

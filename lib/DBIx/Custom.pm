@@ -15,8 +15,8 @@ use DBIx::Custom::Query;
 use DBIx::Custom::QueryBuilder;
 use Encode qw/encode_utf8 decode_utf8/;
 
-__PACKAGE__->attr([qw/data_source dbh default_bind_filter
-                      dbi_options default_fetch_filter password user/]);
+__PACKAGE__->attr([qw/data_source dbh
+                      dbi_options password user/]);
 
 __PACKAGE__->attr(cache => 1);
 __PACKAGE__->attr(cache_method => sub {
@@ -98,21 +98,38 @@ sub auto_filter {
         
         # Bind filter
         my $bind_filter  = $c->[1];
-        croak qq{"$bind_filter" is not registered}
-          unless $self->filters->{$bind_filter};
-        $self->{_auto_bind_filter}{$table}{$column}
-          = $self->filters->{$bind_filter};
-        $self->{_auto_bind_filter}{$table}{"$table.$column"}
-          = $self->filters->{$bind_filter};
+        if (ref $bind_filter eq 'CODE') {
+	        $self->{_auto_bind_filter}{$table}{$column}
+	          = $bind_filter;
+	        $self->{_auto_bind_filter}{$table}{"$table.$column"}
+	          = $bind_filter;
+        }
+        else {
+	        croak qq{"$bind_filter" is not registered}
+	          unless exists $self->filters->{$bind_filter};
+	        
+	        $self->{_auto_bind_filter}{$table}{$column}
+	          = $self->filters->{$bind_filter};
+	        $self->{_auto_bind_filter}{$table}{"$table.$column"}
+	          = $self->filters->{$bind_filter};
+	    }
         
         # Fetch filter
         my $fetch_filter = $c->[2];
-        croak qq{"$fetch_filter" is not registered}
-          unless $self->filters->{$fetch_filter};
-        $self->{_auto_fetch_filter}{$table}{$column}
-          = $self->filters->{$fetch_filter};
-        $self->{_auto_fetch_filter}{$table}{"$table.$column"}
-          = $self->filters->{$fetch_filter};
+        if (ref $fetch_filter eq 'CODE') {
+	        $self->{_auto_fetch_filter}{$table}{$column}
+	          = $fetch_filter;
+	        $self->{_auto_fetch_filter}{$table}{"$table.$column"}
+	          = $fetch_filter;
+        }
+        else {
+            croak qq{"$fetch_filter" is not registered}
+              unless exists $self->filters->{$fetch_filter};
+            $self->{_auto_fetch_filter}{$table}{$column}
+              = $self->filters->{$fetch_filter};
+            $self->{_auto_fetch_filter}{$table}{"$table.$column"}
+              = $self->filters->{$fetch_filter};
+        }
     }
     
     return $self;
@@ -209,6 +226,40 @@ sub create_query {
     return $query;
 }
 
+sub default_bind_filter {
+    my $self = shift;
+    my $fname = $_[0];
+    
+    if (@_ && !$fname) {
+        $self->{_default_bind_filter} = undef;
+    }
+    else {
+        croak qq{"$fname" is not registered}
+          unless exists $self->filters->{$fname};
+    
+        $self->{_default_bind_filter} = $self->filters->{$fname};
+    }
+    
+    return $self;
+}
+
+sub default_fetch_filter {
+    my $self = shift;
+    my $fname = $_[0];
+    
+    if (@_ && !$fname) {
+        $self->{_default_fetch_filter} = undef;
+    }
+    else {
+        croak qq{"$fname" is not registered}
+          unless exists $self->filters->{$fname};
+    
+        $self->{_default_fetch_filter} = $self->filters->{$fname};
+    }
+    
+    return $self;
+}
+
 our %VALID_DELETE_ARGS
   = map { $_ => 1 } qw/auto_filter_table table where append filter allow_delete_all/;
 
@@ -294,6 +345,15 @@ sub execute{
     
     # Filter
     my $filter = $args{filter} || $query->filter || {};
+    foreach my $column (keys %$filter) {
+        my $fname = $filter->{$column};
+        unless (ref $fname eq 'CODE') {
+          croak qq{"$fname" is not registered"}
+            unless exists $self->filters->{$fname};
+          
+          $filter->{$column} = $self->filters->{$fname};
+        }
+    }
     $filter = {%$auto_filter, %$filter};
     
     # Create bind value
@@ -320,10 +380,10 @@ sub execute{
 		# Result
 		my $result = $self->result_class->new(
             sth            => $sth,
-            default_filter => $self->default_fetch_filter,
             filters        => $self->filters,
             filter_check   => $self->filter_check,
-            _auto_filter   => $auto_fetch_filter || {}
+            _auto_filter   => $auto_fetch_filter || {},
+            _default_filter => $self->{_default_fetch_filter}
         );
 
         return $result;
@@ -594,14 +654,9 @@ sub _build_bind_values {
                   : $params->{$column};
         
         # Filtering
-        my $fname = $filter->{$column} || $self->default_bind_filter || '';
-        my $filter_func = ref $fname ? $fname
-                        : $fname ? $self->filters->{$fname}
-                        : undef;
+        my $f = $filter->{$column} || $self->{_default_bind_filter} || '';
         
-        push @bind_values, $filter_func
-                         ? $filter_func->($value)
-                         : $value;
+        push @bind_values, $f ? $f->($value) : $value;
         
         # Count up 
         $count->{$column}++;
@@ -715,10 +770,6 @@ Execute SQL
 
 Other features.
 
-    # Default filter
-    $dbi->default_bind_filter('encode_utf8');
-    $dbi->default_fetch_filter('decode_utf8');
-
     # Get DBI object
     my $dbh = $dbi->dbh;
 
@@ -815,18 +866,6 @@ L<DBI> object. You can call all methods of L<DBI>.
 DBI options.
 C<connect()> method use this value to connect the database.
 
-=head2 C<default_bind_filter>
-
-    my $default_bind_filter = $dbi->default_bind_filter
-    $dbi                    = $dbi->default_bind_filter('encode_utf8');
-
-Default filter when parameter binding is executed.
-
-=head2 C<default_fetch_filter>
-
-    my $default_fetch_filter = $dbi->default_fetch_filter;
-    $dbi                     = $dbi->default_fetch_filter('decode_utf8');
-
 Default filter when row is fetched.
 
 =head2 C<filters>
@@ -894,8 +933,17 @@ and implements the following new ones.
 
 C<auto_filter> is automatically filter for columns of table.
 This have effect C<insert>, C<update>, C<delete>. C<select>
-and L<DBIx::Custom::Result> object.
+and L<DBIx::Custom::Result> object. but this has'nt C<execute> method.
 
+If you want to have effect <execute< method, use C<auto_filter_table>
+arguments.
+
+    $result = $dbi->execute(
+        "select * from table1 where {= key1} and {= key2};",
+         param => {key1 => 1, key2 => 2},
+         auto_filter_table => ['table1']
+    );
+    
 B<Example:>
 
     $dbi->auto_filter('books', 'sale_date', 'to_date', 'date_to');
@@ -939,6 +987,16 @@ use C<create_query()> method and execute it by C<execute()> method
 instead of suger methods.
 
     $dbi->execute($query, {author => 'Ken', title => '%Perl%'});
+
+=head2 C<(deprecated) default_bind_filter>
+
+    $dbi = $dbi->default_bind_filter($fname);
+
+Default filter when parameter binding is executed.
+
+=head2 C<(deprecated) default_fetch_filter>
+
+    $dbi = $dbi->default_fetch_filter($fname);
 
 =head2 C<execute>
 
@@ -1071,10 +1129,6 @@ Register filter. Registered filters is available in the following attributes
 or arguments.
 
 =over 4
-
-=item *
-
-C<default_bind_filter>, C<default_fetch_filter>
 
 =item *
 

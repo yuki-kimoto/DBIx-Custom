@@ -7,15 +7,50 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 
-__PACKAGE__->attr([qw/default_filter filter
-                      filter_check filters sth/]);
+__PACKAGE__->attr([qw/filter_check filters sth/]);
+
+sub default_filter {
+    my $self = shift;
+    my $fname = $_[0];
+    
+    if (@_ && !$fname) {
+        $self->{_default_filter} = undef;
+    }
+    else {
+        croak qq{"$fname" is not registered}
+          unless exists $self->filters->{$fname};
+    
+        $self->{_default_filter} = $self->filters->{$fname};
+    }
+    
+    return $self;
+}
+
+sub filter {
+    my $self = shift;
+    my $filter = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    
+    foreach my $column (keys %$filter) {
+        my $fname = $filter->{$column};
+        unless (ref $fname eq 'CODE') {
+          croak qq{"$fname" is not registered"}
+            unless exists $self->filters->{$fname};
+          
+          $filter->{$column} = $self->filters->{$fname};
+        }
+    }
+    
+    $self->{_filter} = $filter;
+    
+    return $self;
+}
 
 sub fetch {
     my $self = shift;
     
     # Filters
     my $filters = $self->{filters} || {};
-    my $filter  = $self->{filter}  || {};
+    my $filter  = $self->{_filter}  || {};
     my $auto_filter = $self->{_auto_filter} || {};
     $filter = {%$auto_filter, %$filter};
     
@@ -31,14 +66,12 @@ sub fetch {
         
         # Filter name
         my $column = $columns->[$i];
-        my $fname  = exists $filter->{$column}
-                   ? $filter->{$column}
-                   : $self->{default_filter};
+        my $f  = exists $filter->{$column}
+               ? $filter->{$column}
+               : $self->{_default_filter};
         
         # Filtering
-        $row[$i] = ref $fname ? $fname->($row[$i]) 
-                 : $filters->{$fname}->($row[$i])
-          if $fname;
+        $row[$i] = $f->($row[$i]) if $f;
     }
 
     return \@row;
@@ -75,7 +108,7 @@ sub fetch_hash {
     
     # Filters
     my $filters = $self->{filters} || {};
-    my $filter  = $self->{filter}  || {};
+    my $filter  = $self->{_filter}  || {};
     my $auto_filter = $self->{_auto_filter} || {};
     $filter = {%$auto_filter, %$filter};
     
@@ -92,15 +125,12 @@ sub fetch_hash {
         
         # Filter name
         my $column = $columns->[$i];
-        my $fname  = exists $filter->{$column}
-                   ? $filter->{$column}
-                   : $self->{default_filter};
+        my $f  = exists $filter->{$column}
+               ? $filter->{$column}
+               : $self->{_default_filter};
         
         # Filtering
-        $row_hash->{$column}
-          = ref $fname ? $fname->($row->[$i])
-          : $fname     ? $filters->{$fname}->($row->[$i]) 
-          : $row->[$i];
+        $row_hash->{$column} = $f ? $f->($row->[$i]) : $row->[$i];
     }
     
     return $row_hash;
@@ -234,19 +264,6 @@ Fetch row into hash.
 
 =head1 ATTRIBUTES
 
-=head2 C<default_filter>
-
-    my $default_filter = $result->default_filter;
-    $result            = $result->default_filter('decode_utf8');
-
-Default filter when a row is fetched.
-
-=head2 C<filter>
-
-    my $filter = $result->filter;
-    $result    = $result->filter({title  => 'decode_utf8',
-                                  author => 'decode_utf8'});
-
 Filters when a row is fetched.
 This overwrites C<default_filter>.
 
@@ -275,6 +292,12 @@ Statement handle of L<DBI>.
 
 L<DBIx::Custom::Result> inherits all methods from L<Object::Simple>
 and implements the following new ones.
+
+=head2 C<(deprecated) default_filter>
+
+    $result = $result->default_filter($filter);
+
+Default filter when a row is fetched.
 
 =head2 C<fetch>
 
@@ -325,5 +348,10 @@ Row count must be specified.
     
 Fetch multiple rows into array of array.
 Row count must be specified.
+
+=head2 C<filter>
+
+    $result    = $result->filter(title  => 'decode_utf8',
+                                 author => 'decode_utf8');
 
 =cut
