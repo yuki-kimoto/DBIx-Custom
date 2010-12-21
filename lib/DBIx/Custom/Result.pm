@@ -7,7 +7,8 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 
-__PACKAGE__->attr([qw/default_filter filter filter_check filters sth/]);
+__PACKAGE__->attr([qw/default_filter filter
+                      filter_check filters sth/]);
 
 sub fetch {
     my $self = shift;
@@ -15,6 +16,8 @@ sub fetch {
     # Filters
     my $filters = $self->{filters} || {};
     my $filter  = $self->{filter}  || {};
+    my $auto_filter = $self->{_auto_filter} || {};
+    $filter = {%$auto_filter, %$filter};
     
     # Fetch
     my @row = $self->{sth}->fetchrow_array;
@@ -77,6 +80,8 @@ sub fetch_hash {
     # Filters
     my $filters = $self->{filters} || {};
     my $filter  = $self->{filter}  || {};
+    my $auto_filter = $self->{_auto_filter} || {};
+    $filter = {%$auto_filter, %$filter};
     
     # Fetch
     my $row = $self->{sth}->fetchrow_arrayref;
@@ -186,16 +191,6 @@ sub _check_filter {
     # Default filter name not exists
     croak qq{Default fetch filter "$default_filter" is not registered}
       if $default_filter && ! exists $filters->{$default_filter};
-    
-    # Column name not exists
-    my %columns = map {$_ => 1} @{$self->sth->{NAME_lc}};
-    foreach my $column (keys %$filter) {
-        croak qq{Column name "$column" in fetch filter must lower case string}
-          unless $column eq lc $column;
-        
-        croak qq{Column name "$column" in fetch filter is not found in result columns}
-          unless $columns{$column};
-    }
 }
 
 1;
