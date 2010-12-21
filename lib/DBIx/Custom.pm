@@ -100,15 +100,19 @@ sub auto_filter {
         my $bind_filter  = $c->[1];
         croak qq{"$bind_filter" is not registered}
           unless $self->filters->{$bind_filter};
-        $self->{_auto_bind_filter}{$table}{$column} = $bind_filter;
-        $self->{_auto_bind_filter}{$table}{"$table.$column"} = $bind_filter;
+        $self->{_auto_bind_filter}{$table}{$column}
+          = $self->filters->{$bind_filter};
+        $self->{_auto_bind_filter}{$table}{"$table.$column"}
+          = $self->filters->{$bind_filter};
         
         # Fetch filter
         my $fetch_filter = $c->[2];
         croak qq{"$fetch_filter" is not registered}
           unless $self->filters->{$fetch_filter};
-        $self->{_auto_fetch_filter}{$table}{$column} = $fetch_filter;
-        $self->{_auto_fetch_filter}{$table}{"$table.$column"} = $fetch_filter;
+        $self->{_auto_fetch_filter}{$table}{$column}
+          = $self->filters->{$fetch_filter};
+        $self->{_auto_fetch_filter}{$table}{"$table.$column"}
+          = $self->filters->{$fetch_filter};
     }
     
     return $self;
@@ -580,11 +584,6 @@ sub _build_bind_values {
     # Parameter
     $params ||= {};
     
-    # Check filter
-    $self->_check_filter($self->filters, $filter,
-                         $self->default_bind_filter, $params)
-      if $self->filter_check;
-    
     # Build bind values
     my $count = {};
     foreach my $column (@{$query->columns}) {
@@ -596,7 +595,10 @@ sub _build_bind_values {
         
         # Filtering
         my $fname = $filter->{$column} || $self->default_bind_filter || '';
-        my $filter_func = $fname ? $self->filters->{$fname} : undef;
+        my $filter_func = ref $fname ? $fname
+                        : $fname ? $self->filters->{$fname}
+                        : undef;
+        
         push @bind_values, $filter_func
                          ? $filter_func->($value)
                          : $value;
@@ -606,20 +608,6 @@ sub _build_bind_values {
     }
     
     return \@bind_values;
-}
-
-sub _check_filter {
-    my ($self, $filters, $filter, $default_filter, $params) = @_;
-    
-    # Filter name not exists
-    foreach my $fname (values %$filter) {
-        croak qq{Bind filter "$fname" is not registered}
-          unless exists $filters->{$fname};
-    }
-    
-    # Default filter name not exists
-    croak qq{Default bind filter "$default_filter" is not registered}
-      if $default_filter && ! exists $filters->{$default_filter};
 }
 
 sub _croak {
@@ -854,10 +842,8 @@ Filter functions.
     my $filter_check = $dbi->filter_check;
     $dbi             = $dbi->filter_check(0);
 
-Enable filter check. 
-Default to 1.
-This check maybe damege performance.
-If you require performance, set C<filter_check> attribute to 0.
+B<this attribute is now deprecated and has no mean
+because check is always done>. 
 
 =head2 C<password>
 

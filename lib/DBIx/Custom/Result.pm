@@ -25,11 +25,6 @@ sub fetch {
     # No row
     return unless @row;
     
-    # Check filter
-    $self->_check_filter($filters, $filter, 
-                         $self->default_filter, $self->sth)
-      if $self->{filter_check};
-    
     # Filtering
     my $columns = $self->{sth}->{NAME_lc};
     for (my $i = 0; $i < @$columns; $i++) {
@@ -41,7 +36,8 @@ sub fetch {
                    : $self->{default_filter};
         
         # Filtering
-        $row[$i] = $filters->{$fname}->($row[$i])
+        $row[$i] = ref $fname ? $fname->($row[$i]) 
+                 : $filters->{$fname}->($row[$i])
           if $fname;
     }
 
@@ -89,11 +85,6 @@ sub fetch_hash {
     # Cannot fetch
     return unless $row;
 
-    # Check filter
-    $self->_check_filter($filters, $filter, 
-                         $self->default_filter, $self->sth)
-      if $self->{filter_check};
-
     # Filter
     my $row_hash = {};
     my $columns = $self->{sth}->{NAME_lc};
@@ -107,8 +98,9 @@ sub fetch_hash {
         
         # Filtering
         $row_hash->{$column}
-          = $fname ? $filters->{$fname}->($row->[$i]) 
-                   : $row->[$i];
+          = ref $fname ? $fname->($row->[$i])
+          : $fname     ? $filters->{$fname}->($row->[$i]) 
+          : $row->[$i];
     }
     
     return $row_hash;
@@ -177,20 +169,6 @@ sub fetch_multi {
     
     return unless @$rows;
     return $rows;
-}
-
-sub _check_filter {
-    my ($self, $filters, $filter, $default_filter, $sth) = @_;
-    
-    # Filter name not exists
-    foreach my $fname (values %$filter) {
-        croak qq{Fetch filter "$fname" is not registered}
-          unless exists $filters->{$fname};
-    }
-    
-    # Default filter name not exists
-    croak qq{Default fetch filter "$default_filter" is not registered}
-      if $default_filter && ! exists $filters->{$default_filter};
 }
 
 1;
