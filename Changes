@@ -1,3 +1,5 @@
+0.1624
+  added experimental iterate_all_columns method.
 0.1623
   added experimental auto_filter method
   deprecated default_bind_filter and default_fetch_filter because these are global effect.

@@ -61,7 +61,7 @@ sub fetch {
     return unless @row;
     
     # Filtering
-    my $columns = $self->{sth}->{NAME_lc};
+    my $columns = $self->{sth}->{NAME};
     for (my $i = 0; $i < @$columns; $i++) {
         
         # Filter name
@@ -120,7 +120,7 @@ sub fetch_hash {
 
     # Filter
     my $row_hash = {};
-    my $columns = $self->{sth}->{NAME_lc};
+    my $columns = $self->{sth}->{NAME};
     for (my $i = 0; $i < @$columns; $i++) {
         
         # Filter name

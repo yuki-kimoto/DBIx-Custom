@@ -447,6 +447,25 @@ sub insert {
     return $ret_val;
 }
 
+sub iterate_all_columns {
+    my ($self, $cb) = @_;
+    
+    # Iterate all tables
+    my $sth_tables = $self->dbh->table_info;
+    while (my $table_info = $sth_tables->fetchrow_hashref) {
+        
+        # Table
+        my $table = $table_info->{TABLE_NAME};
+        
+        # Iterate all columns
+        my $sth_columns = $self->dbh->column_info(undef, undef, $table, '%');
+        while (my $column_info = $sth_columns->fetchrow_hashref) {
+            my $column = $column_info->{COLUMN_NAME};
+            $cb->($table, $column, $column_info);
+        }
+    }
+}
+
 sub new {
     my $self = shift->SUPER::new(@_);
     
@@ -1119,6 +1138,19 @@ B<Example:>
                                     user => 'ken', password => '!LFKD%$&');
 
 Create a new L<DBIx::Custom> object.
+
+=head2 C<(experimental) iterate_all_columns>
+
+    $dbi->iterate_all_columns(
+        sub {
+            my ($table, $column, $column_info) = @_;
+            
+            # do something;
+        }
+    );
+
+Iterate all columns of all tables. Argument is callback.
+You can do anything by callback.
 
 =head2 C<register_filter>
 

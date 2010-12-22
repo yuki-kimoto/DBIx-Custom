@@ -25,7 +25,8 @@ sub test {
 my $CREATE_TABLE = {
     0 => 'create table table1 (key1 char(255), key2 char(255));',
     1 => 'create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));',
-    2 => 'create table table2 (key1 char(255), key3 char(255));'
+    2 => 'create table table2 (key1 char(255), key3 char(255));',
+    3 => 'create table table1 (key1 Date, key2 datetime);'
 };
 
 my $SELECT_SOURCES = {
@@ -60,7 +61,7 @@ my $select_query;
 my $insert_query;
 my $update_query;
 my $ret_val;
-
+my $infos;
 
 # Prepare table
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -721,4 +722,28 @@ $result->filter({'key2' => 'twice'});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key2 => 4, key3 => 18}], "$test : select : join : omit");
 
+test 'auto_filter_easy_build';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{2});
+$dbi->execute($CREATE_TABLE->{3});
+
+$infos = [];
+$dbi->iterate_all_columns(sub {
+    my ($table, $column, $cinfo) = @_;
+    
+    if ($table =~ /^table/) {
+         my $info = [$table, $column, $cinfo->{COLUMN_NAME}];
+         push @$infos, $info;
+    }
+});
+$infos = [sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } @$infos];
+is_deeply($infos, 
+    [
+        ['table1', 'key1', 'key1'],
+        ['table1', 'key2', 'key2'],
+        ['table2', 'key1', 'key1'],
+        ['table2', 'key3', 'key3']
+    ]
+    , $test
+);
 
