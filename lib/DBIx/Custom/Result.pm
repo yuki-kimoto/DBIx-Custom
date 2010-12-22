@@ -11,46 +11,55 @@ __PACKAGE__->attr([qw/filter_check filters sth/]);
 
 sub default_filter {
     my $self = shift;
-    my $fname = $_[0];
     
-    if (@_ && !$fname) {
-        $self->{_default_filter} = undef;
+    if (@_) {
+        my $fname = $_[0];
+        if (@_ && !$fname) {
+            $self->{default_filter} = undef;
+        }
+        else {
+            croak qq{"$fname" is not registered}
+              unless exists $self->filters->{$fname};
+        
+            $self->{default_filter} = $self->filters->{$fname};
+        }
+        
+        return $self;
     }
-    else {
-        croak qq{"$fname" is not registered}
-          unless exists $self->filters->{$fname};
     
-        $self->{_default_filter} = $self->filters->{$fname};
-    }
-    
-    return $self;
+    return $self->{default_filter};
 }
 
 sub filter {
     my $self = shift;
-    my $filter = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     
-    foreach my $column (keys %$filter) {
-        my $fname = $filter->{$column};
-        unless (ref $fname eq 'CODE') {
-          croak qq{"$fname" is not registered"}
-            unless exists $self->filters->{$fname};
-          
-          $filter->{$column} = $self->filters->{$fname};
+    if (@_) {
+        my $filter = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+        
+        foreach my $column (keys %$filter) {
+            my $fname = $filter->{$column};
+            unless (ref $fname eq 'CODE') {
+              croak qq{"$fname" is not registered"}
+                unless exists $self->filters->{$fname};
+              
+              $filter->{$column} = $self->filters->{$fname};
+            }
         }
+        
+        $self->{filter} = $filter;
+        
+        return $self;
     }
     
-    $self->{_filter} = $filter;
-    
-    return $self;
+    return $self->{filter};
 }
 
 sub fetch {
     my $self = shift;
     
     # Filters
-    my $filters = $self->{filters} || {};
-    my $filter  = $self->{_filter}  || {};
+    my $filters = $self->filters || {};
+    my $filter  = $self->{filter}  || {};
     my $auto_filter = $self->{_auto_filter} || {};
     $filter = {%$auto_filter, %$filter};
     
@@ -68,7 +77,7 @@ sub fetch {
         my $column = $columns->[$i];
         my $f  = exists $filter->{$column}
                ? $filter->{$column}
-               : $self->{_default_filter};
+               : $self->default_filter;
         
         # Filtering
         $row[$i] = $f->($row[$i]) if $f;
@@ -107,8 +116,8 @@ sub fetch_hash {
     my $self = shift;
     
     # Filters
-    my $filters = $self->{filters} || {};
-    my $filter  = $self->{_filter}  || {};
+    my $filters = $self->filters || {};
+    my $filter  = $self->filter  || {};
     my $auto_filter = $self->{_auto_filter} || {};
     $filter = {%$auto_filter, %$filter};
     
@@ -127,7 +136,7 @@ sub fetch_hash {
         my $column = $columns->[$i];
         my $f  = exists $filter->{$column}
                ? $filter->{$column}
-               : $self->{_default_filter};
+               : $self->default_filter;
         
         # Filtering
         $row_hash->{$column} = $f ? $f->($row->[$i]) : $row->[$i];
@@ -256,7 +265,6 @@ Fetch row into hash.
         my $first_author  = $rows->[0]{author};
         my $second_title  = $rows->[1]{title};
         my $second_author = $rows->[1]{author};
-    
     }
     
     # Fetch all rows into array of hash
@@ -295,6 +303,7 @@ and implements the following new ones.
 
 =head2 C<(deprecated) default_filter>
 
+    my $default_filter = $result->default_filter;
     $result = $result->default_filter($filter);
 
 Default filter when a row is fetched.

@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1623';
+our $VERSION = '0.1624';
 
 use 5.008001;
 use strict;
@@ -393,11 +393,11 @@ sub execute{
 	    
 		# Result
 		my $result = $self->result_class->new(
-            sth             => $sth,
-            filters         => $self->filters,
-            filter_check    => $self->filter_check,
-            _auto_filter     => $auto_fetch_filter || {},
-            _default_filter => $self->default_fetch_filter
+            sth            => $sth,
+            filters        => $self->filters,
+            filter_check   => $self->filter_check,
+            default_filter => $self->default_fetch_filter,
+            _auto_filter   => $auto_fetch_filter || {}
         );
 
         return $result;
