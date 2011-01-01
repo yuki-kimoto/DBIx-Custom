@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1624';
+our $VERSION = '0.1625';
 
 use 5.008001;
 use strict;
@@ -13,6 +13,7 @@ use DBI;
 use DBIx::Custom::Result;
 use DBIx::Custom::Query;
 use DBIx::Custom::QueryBuilder;
+use DBIx::Custom::Model;
 use Encode qw/encode_utf8 decode_utf8/;
 
 __PACKAGE__->attr([qw/data_source dbh
@@ -154,13 +155,31 @@ sub helper {
 sub connect {
     my $proto = shift;
     
+    my $self;
     # Create
-    my $self = ref $proto ? $proto : $proto->new(@_);
+    if (my $class = ref $proto) {
+        my $args = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+        $self = $proto;
+        
+        foreach my $attr (keys %$args) {
+            $self->{$attr} = $args->{$attr};
+        }
+        
+        # Check attribute names
+        my @attrs = keys %$self;
+        foreach my $attr (@attrs) {
+            croak qq{"$attr" is invalid attribute name}
+              unless $self->can($attr);
+        }
+    }
+    else {
+        $self = $proto->new(@_);
+    }
     
     # Information
     my $data_source = $self->data_source;
     
-    croak qq{"data_source" must be specfied to connect method"}
+    croak qq{"data_source" must be specified to connect method"}
       unless $data_source;
     
     my $user        = $self->user;
@@ -551,7 +570,7 @@ sub select {
     
     # Where clause
     my $param;
-    if (ref $where eq 'HASH') {
+    if (ref $where eq 'HASH' && keys %$where) {
         $param = $where;
         $source .= 'where (';
         foreach my $where_key (keys %$where) {

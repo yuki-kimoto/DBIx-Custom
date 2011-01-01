@@ -62,6 +62,8 @@ my $insert_query;
 my $update_query;
 my $ret_val;
 my $infos;
+my $model;
+my $table;
 
 # Prepare table
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -746,4 +748,37 @@ is_deeply($infos,
     ]
     , $test
 );
+
+test 'model';
+{
+    package MyModel1;
+    
+    use base 'DBIx::Custom::Model';
+}
+$model = MyModel1->new;
+$model->dbi->connect($NEW_ARGS->{0});
+$model->dbi->execute($CREATE_TABLE->{0});
+$table = $model->table('table1');
+$table->insert({key1 => 1, key2 => 2});
+$table->insert_simple({key1 => 3, key2 => 4});
+$rows = $table->select->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}],
+                 "$test: select");
+$rows = $table->select({key2 => 2},
+                       'order by key1', ['key1', 'key2'])->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2}],
+                 "$test: insert insert_simple select select_simple");
+$table->update({key1 => 3}, {key2 => 2});
+$table->update_simple({key1 => 5}, {key2 => 4});
+$rows = $table->select_simple({key2 => 2})->fetch_hash_all;
+is_deeply($rows, [{key1 => 3, key2 => 2}],
+                 "$test: update");
+$table->delete({key2 => 2});
+$rows = $table->select->fetch_hash_all;
+is_deeply($rows, [{key1 => 5, key2 => 4}], "$test: delete");
+$table->delete_all;
+$rows = $table->select->fetch_hash_all;
+is_deeply($rows, [], "$test: delete_all");
+$table->helper('insert' => sub { 5 });
+is($table->insert, 5, "$test : helper");
 
