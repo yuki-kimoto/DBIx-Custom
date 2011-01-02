@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1625';
+our $VERSION = '0.1626';
 
 use 5.008001;
 use strict;
@@ -523,7 +523,7 @@ sub register_filter {
 }
 
 our %VALID_SELECT_ARGS
-  = map { $_ => 1 } qw/auto_filter_table table column where append relation filter param/;
+  = map { $_ => 1 } qw/auto_filter_table table column where append relation filter/;
 
 sub select {
     my ($self, %args) = @_;

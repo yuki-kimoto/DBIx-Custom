@@ -754,31 +754,66 @@ test 'model';
     package MyModel1;
     
     use base 'DBIx::Custom::Model';
+    
+    sub new {
+        my $self = shift->SUPER::new(@_);
+        
+        my $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+        
+        $self->dbi($dbi);
+        
+        $self->table('table1')->helper(
+            insert => sub { 
+                my $self = shift;
+                $self->dbi->insert(table => $self->name, @_);
+            },
+            update => sub {
+                my $self = shift;
+                $self->dbi->update(table => $self->name, @_);
+            },
+            update_all => sub {
+                my $self = shift;
+                $self->dbi->update_all(table => $self->name, @_);
+            },
+            delete => sub {
+                my $self = shift;
+                $self->dbi->delete(table => $self->name, @_);
+            },
+            delete_all => sub {
+                my $self = shift;
+                $self->dbi->delete_all(table => $self->name, @_);
+            },
+            select => sub {
+                my $self = shift;
+                $self->dbi->select(table => $self->name, @_);
+            },
+        );
+        return $self;
+    }
 }
 $model = MyModel1->new;
-$model->dbi->connect($NEW_ARGS->{0});
 $model->dbi->execute($CREATE_TABLE->{0});
 $table = $model->table('table1');
-$table->insert({key1 => 1, key2 => 2});
-$table->insert_simple({key1 => 3, key2 => 4});
+$table->insert(param => {key1 => 1, key2 => 2});
+$table->insert(param => {key1 => 3, key2 => 4});
 $rows = $table->select->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}],
                  "$test: select");
-$rows = $table->select({key2 => 2},
-                       'order by key1', ['key1', 'key2'])->fetch_hash_all;
+$rows = $table->select(where => {key2 => 2}, append => 'order by key1',
+                              column => ['key1', 'key2'])->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}],
-                 "$test: insert insert_simple select select_simple");
-$table->update({key1 => 3}, {key2 => 2});
-$table->update_simple({key1 => 5}, {key2 => 4});
-$rows = $table->select_simple({key2 => 2})->fetch_hash_all;
+                 "$test: insert insert select");
+$table->update(param => {key1 => 3}, where => {key2 => 2});
+$table->update(param => {key1 => 5}, where => {key2 => 4});
+$rows = $table->select(where => {key2 => 2})->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 2}],
                  "$test: update");
-$table->delete({key2 => 2});
+$table->delete(where => {key2 => 2});
 $rows = $table->select->fetch_hash_all;
 is_deeply($rows, [{key1 => 5, key2 => 4}], "$test: delete");
+$table->update_all(param => {key1 => 3});
+$rows = $table->select->fetch_hash_all;
+is_deeply($rows, [{key1 => 3, key2 => 4}], "$test: update_all");
 $table->delete_all;
 $rows = $table->select->fetch_hash_all;
 is_deeply($rows, [], "$test: delete_all");
-$table->helper('insert' => sub { 5 });
-is($table->insert, 5, "$test : helper");
-

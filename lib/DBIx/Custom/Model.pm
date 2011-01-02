@@ -6,18 +6,27 @@ use warnings;
 use base 'Object::Simple';
 
 use Carp 'croak';
-use DBIx::Custom::Table;
 
 __PACKAGE__->attr(dbi => sub { DBIx::Custom->new });
+__PACKAGE__->attr(table_class => 'DBIx::Custom::Table');
+__PACKAGE__->attr(tables => sub { {} });
 
 sub table {
-    my ($self, $table) = @_;
-      
-    $self->{tables}{$table}
-        = DBIx::Custom::Table->new(name => $table, dbi => $self->dbi)
-      unless defined $self->{tables}{$table};
+    my ($self, $name) = @_;
     
-    return $self->{tables}{$table};
+    # Table class
+    my $table_class = $self->table_class;
+    croak qq{Invalid table class name "$table_class"}
+      unless $table_class =~ /^[\w:]+$/;
+    eval "use $table_class";
+    croak $@ if $@;
+    
+    # Create table
+    $self->tables->{$name}
+        = $table_class->new(name => $name, dbi => $self->dbi)
+      unless defined $self->tables->{$name};
+    
+    return $self->{tables}{$name};
 }
 
 1;
@@ -35,14 +44,15 @@ use base 'DBIx::Custom::Model';
 sub new {
     my $self = shift->SUPER::new(@_);
     
-    $self->table('books')->helper(
-        insert_multi => sub {
+    my $dbi = DBIx::Custom->connect(...);
+    
+    $self->dbi($dbi);
+    
+    $self->table('book')->helper(
+        insert => sub {
             my $self = shift;
             
-            my $dbi = $self->dbi;
-            
-            # ...
-            
+            return $self->dbi->insert(table => $self->name, @_);
         }
     );
     
@@ -56,7 +66,7 @@ and implements the following new ones.
 
 =head2 C<table>
 
-    my $table = $model->table('books');
+    my $table = $model->table('book');
 
-Create a table object if not exists or get it.
+Get a L<DBIx::Custom::Table>, or create a L<DBIx::Custom::Table> object if not exists.
 
