@@ -762,38 +762,14 @@ test 'model';
         
         $self->dbi($dbi);
         
-        $self->table('table1')->helper(
-            insert => sub { 
-                my $self = shift;
-                $self->dbi->insert(table => $self->name, @_);
-            },
-            update => sub {
-                my $self = shift;
-                $self->dbi->update(table => $self->name, @_);
-            },
-            update_all => sub {
-                my $self = shift;
-                $self->dbi->update_all(table => $self->name, @_);
-            },
-            delete => sub {
-                my $self = shift;
-                $self->dbi->delete(table => $self->name, @_);
-            },
-            delete_all => sub {
-                my $self = shift;
-                $self->dbi->delete_all(table => $self->name, @_);
-            },
-            select => sub {
-                my $self = shift;
-                $self->dbi->select(table => $self->name, @_);
-            },
-        );
         return $self;
     }
 }
 $model = MyModel1->new;
 $model->dbi->execute($CREATE_TABLE->{0});
 $table = $model->table('table1');
+is($table, $model->table('table1'));
+is($table->model, $model);
 $table->insert(param => {key1 => 1, key2 => 2});
 $table->insert(param => {key1 => 3, key2 => 4});
 $rows = $table->select->fetch_hash_all;
@@ -817,3 +793,5 @@ is_deeply($rows, [{key1 => 3, key2 => 4}], "$test: update_all");
 $table->delete_all;
 $rows = $table->select->fetch_hash_all;
 is_deeply($rows, [], "$test: delete_all");
+
+

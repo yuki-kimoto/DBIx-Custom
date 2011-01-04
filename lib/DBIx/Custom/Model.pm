@@ -18,12 +18,13 @@ sub table {
     my $table_class = $self->table_class;
     croak qq{Invalid table class name "$table_class"}
       unless $table_class =~ /^[\w:]+$/;
-    eval "use $table_class";
-    croak $@ if $@;
-    
+    unless ($table_class->can('isa')) {
+        eval "require $table_class";
+        croak $@ if $@;
+    }
     # Create table
     $self->tables->{$name}
-        = $table_class->new(name => $name, dbi => $self->dbi)
+        = $table_class->new(name => $name, dbi => $self->dbi, model => $self)
       unless defined $self->tables->{$name};
     
     return $self->{tables}{$name};

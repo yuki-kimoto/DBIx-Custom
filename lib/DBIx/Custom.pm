@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1626';
+our $VERSION = '0.1627';
 
 use 5.008001;
 use strict;
@@ -606,6 +606,17 @@ sub select {
     return $result;
 }
 
+sub txn_scope {
+    my $self = shift;
+    
+    require DBIx::TransactionManager;
+    
+    $self->{_transaction_manager}
+      ||= DBIx::TransactionManager->new($self->dbh);
+    
+    return $self->{_transaction_manager}->txn_scope;
+}
+
 our %VALID_UPDATE_ARGS
   = map { $_ => 1 } qw/auto_filter_table table param
                        where append filter allow_update_all/;
@@ -753,37 +764,37 @@ Connect to the database.
 Insert, update, and delete
 
     # Insert 
-    $dbi->insert(table  => 'books',
+    $dbi->insert(table  => 'book',
                  param  => {title => 'Perl', author => 'Ken'},
                  filter => {title => 'encode_utf8'});
     
     # Update 
-    $dbi->update(table  => 'books', 
+    $dbi->update(table  => 'book', 
                  param  => {title => 'Perl', author => 'Ken'}, 
                  where  => {id => 5},
                  filter => {title => 'encode_utf8'});
     
     # Update all
-    $dbi->update_all(table  => 'books',
+    $dbi->update_all(table  => 'book',
                      param  => {title => 'Perl'},
                      filter => {title => 'encode_utf8'});
     
     # Delete
-    $dbi->delete(table  => 'books',
+    $dbi->delete(table  => 'book',
                  where  => {author => 'Ken'},
                  filter => {title => 'encode_utf8'});
     
     # Delete all
-    $dbi->delete_all(table => 'books');
+    $dbi->delete_all(table => 'book');
 
 Select
 
     # Select
-    my $result = $dbi->select(table => 'books');
+    my $result = $dbi->select(table => 'book');
     
     # Select, more complex
     my $result = $dbi->select(
-        table  => 'books',
+        table  => 'book',
         column => [qw/author title/],
         where  => {author => 'Ken'},
         append => 'order by id limit 5',
@@ -792,14 +803,14 @@ Select
     
     # Select, join table
     my $result = $dbi->select(
-        table    => ['books', 'rental'],
-        column   => ['books.name as book_name']
-        relation => {'books.id' => 'rental.book_id'}
+        table    => ['book', 'rental'],
+        column   => ['book.name as book_name']
+        relation => {'book.id' => 'rental.book_id'}
     );
     
     # Select, more flexible where
     my $result = $dbi->select(
-        table  => 'books',
+        table  => 'book',
         where  => ['{= author} and {like title}', 
                    {author => 'Ken', title => '%Perl%'}]
     );
@@ -807,16 +818,16 @@ Select
 Execute SQL
 
     # Execute SQL
-    $dbi->execute("select title from books");
+    $dbi->execute("select title from book");
     
     # Execute SQL with hash binding and filtering
-    $dbi->execute("select id from books where {= author} and {like title}",
+    $dbi->execute("select id from book where {= author} and {like title}",
                   param  => {author => 'ken', title => '%Perl%'},
                   filter => {title => 'encode_utf8'});
 
     # Create query and execute it
     my $query = $dbi->create_query(
-        "select id from books where {= author} and {like title}"
+        "select id from book where {= author} and {like title}"
     );
     $dbi->execute($query, param => {author => 'Ken', title => '%Perl%'})
 
@@ -998,7 +1009,7 @@ arguments.
     
 B<Example:>
 
-    $dbi->auto_filter('books', 'sale_date', 'to_date', 'date_to');
+    $dbi->auto_filter('book', 'sale_date', 'to_date', 'date_to');
 
 =head2 C<begin_work>
 
@@ -1030,7 +1041,7 @@ and C<PrintError> option is false by default.
 =head2 C<create_query>
     
     my $query = $dbi->create_query(
-        "select * from books where {= author} and {like title};"
+        "select * from book where {= author} and {like title};"
     );
 
 Create the instance of L<DBIx::Custom::Query> from the source of SQL.
@@ -1065,7 +1076,7 @@ or the count of affected rows if insert, update, delete statement is executed.
 B<Example:>
 
     my $result = $dbi->execute(
-        "select * from books where {= author} and {like title}", 
+        "select * from book where {= author} and {like title}", 
         param => {author => 'Ken', title => '%Perl%'}
     );
     
@@ -1080,11 +1091,11 @@ B<Example:>
 
 The following hash
 
-    {books => {title => 'Perl', author => 'Ken'}}
+    {book => {title => 'Perl', author => 'Ken'}}
 
 is expanded to
 
-    ('books.title' => 'Perl', 'books.author' => 'Ken')
+    ('book.title' => 'Perl', 'book.author' => 'Ken')
 
 This is used in C<select()>
 
@@ -1107,7 +1118,7 @@ Return value of C<delete()> is the count of affected rows.
 
 B<Example:>
 
-    $dbi->delete(table  => 'books',
+    $dbi->delete(table  => 'book',
                  where  => {id => 5},
                  append => 'some statement',
                  filter => {id => 'encode_utf8'});
@@ -1123,7 +1134,7 @@ Return value of C<delete_all()> is the count of affected rows.
 
 B<Example:>
     
-    $dbi->delete_all(table => 'books');
+    $dbi->delete_all(table => 'book');
 
 =head2 C<(experimental) helper>
 
@@ -1162,7 +1173,7 @@ Return value of C<insert()> is the count of affected rows.
 
 B<Example:>
 
-    $dbi->insert(table  => 'books', 
+    $dbi->insert(table  => 'book', 
                  param  => {title => 'Perl', author => 'Taro'},
                  append => "some statement",
                  filter => {title => 'encode_utf8'})
@@ -1262,33 +1273,33 @@ C<filter> is filters when parameter binding is executed.
 
 B<Example:>
 
-    # select * from books;
-    my $result = $dbi->select(table => 'books');
+    # select * from book;
+    my $result = $dbi->select(table => 'book');
     
-    # select * from books where title = ?;
-    my $result = $dbi->select(table => 'books', where => {title => 'Perl'});
+    # select * from book where title = ?;
+    my $result = $dbi->select(table => 'book', where => {title => 'Perl'});
     
-    # select title, author from books where id = ? for update;
+    # select title, author from book where id = ? for update;
     my $result = $dbi->select(
-        table  => 'books',
+        table  => 'book',
         column => ['title', 'author'],
         where  => {id => 1},
         appned => 'for update'
     );
     
-    # select books.name as book_name from books, rental
-    # where books.id = rental.book_id;
+    # select book.name as book_name from book, rental
+    # where book.id = rental.book_id;
     my $result = $dbi->select(
-        table    => ['books', 'rental'],
-        column   => ['books.name as book_name']
-        relation => {'books.id' => 'rental.book_id'}
+        table    => ['book', 'rental'],
+        column   => ['book.name as book_name']
+        relation => {'book.id' => 'rental.book_id'}
     );
 
 If you use more complex condition,
 you can specify a array reference to C<where> argument.
 
     my $result = $dbi->select(
-        table  => 'books',
+        table  => 'book',
         column => ['title', 'author'],
         where  => ['{= title} or {like author}',
                    {title => '%Perl%', author => 'Ken'}]
@@ -1319,11 +1330,26 @@ Return value of C<update()> is the count of affected rows.
 
 B<Example:>
 
-    $dbi->update(table  => 'books',
+    $dbi->update(table  => 'book',
                  param  => {title => 'Perl', author => 'Taro'},
                  where  => {id => 5},
                  append => "some statement",
                  filter => {title => 'encode_utf8'});
+
+=head2 C<(experimental) txn_scope>
+
+    {
+        my $txn = $dbi->txn_scope;
+        $dbi->insert(table => 'book', param => {title => 'Perl'});
+        $dbi->insert(table => 'book', param => {title => 'Good days'});
+        $txn->commit;
+    }
+
+Create transaction scope. If you escape scope(that is { .. }) and commited,
+Rollback is automatically done.
+
+Note that this is feature of L<DBIx::TransactionManager>
+L<DBIx::TransactionManager> is required.
 
 =head2 C<update_all>
 
@@ -1339,7 +1365,7 @@ Return value of C<update_all()> is the count of affected rows.
 
 B<Example:>
 
-    $dbi->update_all(table  => 'books', 
+    $dbi->update_all(table  => 'book', 
                      param  => {author => 'taro'},
                      filter => {author => 'encode_utf8'});
 
