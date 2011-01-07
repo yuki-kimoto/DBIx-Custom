@@ -57,7 +57,7 @@ sub DESTROY { }
 
 =head1 NAME
 
-DBIx::Custom::Model - Table base class(experimental)
+DBIx::Custom::Table - Table base class(experimental)
 
 =head1 SYNOPSIS
 

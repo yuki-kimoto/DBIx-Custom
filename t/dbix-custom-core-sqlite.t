@@ -794,4 +794,39 @@ $table->delete_all;
 $rows = $table->select->fetch_hash_all;
 is_deeply($rows, [], "$test: delete_all");
 
+test 'limit';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 6});
+$dbi->query_builder->register_tag_processor(
+    limit => sub {
+        my ($count, $offset) = @_;
+        
+        my $s = '';
+        $s .= "limit $count";
+        $s .= " offset $offset" if defined $offset;
+        
+        return [$s, []];
+    }
+);
+$rows = $dbi->select(
+  table => 'table1',
+  where => {key1 => 1},
+  append => "order by key2 {limit 1 0}"
+)->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2}], $test);
+$rows = $dbi->select(
+  table => 'table1',
+  where => {key1 => 1},
+  append => "order by key2 {limit 2 1}"
+)->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 4},{key1 => 1, key2 => 6}], $test);
+$rows = $dbi->select(
+  table => 'table1',
+  where => {key1 => 1},
+  append => "order by key2 {limit 1}"
+)->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2}], $test);
 

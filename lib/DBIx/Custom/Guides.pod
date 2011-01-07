@@ -540,9 +540,9 @@ You can change Result class if you need.
     my $dbi = DBIx::Custom->connect(...);
     $dbi->result_class('Your::Result');
 
-=head3 Custamize SQL builder object
+=head3 Custamize query builder object
 
-You can custamize SQL builder object
+You can custamize query builder object
 
     my $dbi = DBIx::Custom->connect(...);
     $dbi->query_builder->register_tag_processor(
@@ -571,5 +571,44 @@ These method can be called from L<DBIx::Custom> object directory.
 
     $dbi->update_or_insert;
     $dbi->find_or_create;
+
+=head2 EXAMPLES
+
+=head3 Limit clause
+
+    my $rows = $dbi->select(
+        table => 'table1',
+        where => {key1 => 1},
+        append => "order by key2 {limit 1 0}" # {limit COUNT OFFSET}
+    )->fetch_hash_all;
+
+SQLite
+
+    $dbi->query_builder->register_tag_processor(
+        limit => sub {
+            my ($count, $offset) = @_;
+            
+            my $s = '';
+            $s .= "limit $count";
+            $s .= " offset $offset" if defined $offset;
+            
+            return [$s, []];
+        }
+    );
+
+MySQL
+
+    $dbi->query_builder->register_tag_processor(
+        limit => sub {
+            my ($count, $offset) = @_;
+            
+            my $s = '';
+            $offset = 0 unless defined $offset;
+            $s .= "limit $offset";
+            $s .= ", $count";
+            
+            return [$s, []];
+        }
+    );
 
 =cut

@@ -1,3 +1,5 @@
+0.1628
+  added examples
 0.1627
   added insert, update, update_all, delete, delete_all, select method to DBIx::Custom::Table
   added experimental txn_scope
