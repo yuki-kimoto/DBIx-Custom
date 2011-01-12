@@ -549,23 +549,27 @@ is($dbi->twice(5), 10 , "$test : second");
 eval {$dbi->XXXXXX};
 like($@, qr/\QCan't locate object method "XXXXXX" via "DBIx::Custom"/, "$test : not exists");
 
-test 'auto bind filter';
+test 'out filter';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->register_filter(three_times => sub { $_[0] * 3});
 $dbi->apply_filter(
-    'table1', ['key1', 'twice', 'twice'], ['key2', 'three_times', 'three_times']);
+    'table1', 'key1' => {out => 'twice', in => 'three_times'}, 
+              'key2' => {out => 'three_times', in => 'twice'});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->execute($SELECT_SOURCES->{0});
 $row   = $result->fetch_hash_first;
 is_deeply($row, {key1 => 2, key2 => 6}, "$test : insert");
+$result = $dbi->select(table => 'table1');
+$row   = $result->fetch_hash_first;
+is_deeply($row, {key1 => 6, key2 => 12}, "$test : insert");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
-    'table1', ['key1', 'twice', 'twice']
+    'table1', 'key1' => {out => 'twice', in => 'twice'}
 );
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, filter => {key1 => undef});
 $dbi->update(table => 'table1', param => {key1 => 2}, where => {key2 => 2});
@@ -577,7 +581,7 @@ $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
-    'table1', ['key1', 'twice', 'twice']
+    'table1', 'key1' => {out => 'twice', in => 'twice'}
 );
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, filter => {key1=> undef});
 $dbi->delete(table => 'table1', where => {key1 => 1});
@@ -589,7 +593,7 @@ $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
-    'table1', ['key1', 'twice', 'twice']
+    'table1', 'key1' => {out => 'twice', in => 'twice'}
 );
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, filter => {key1 => undef});
 $result = $dbi->select(table => 'table1', where => {key1 => 1});
@@ -601,7 +605,7 @@ $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
-    'table1', ['key1', 'twice', 'twice']
+    'table1', 'key1' => {out => 'twice', in => 'twice'}
 );
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, filter => {key1 => undef});
 $result = $dbi->execute("select * from table1 where {= key1} and {= key2};",
@@ -616,10 +620,10 @@ $dbi->execute($CREATE_TABLE->{2});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->register_filter(three_times => sub { $_[0] * 3 });
 $dbi->apply_filter(
-    'table1', ['key2', 'twice', 'twice']
+    'table1', 'key2' => {out => 'twice', in => 'twice'}
 );
 $dbi->apply_filter(
-    'table2', ['key3', 'three_times', 'three_times']
+    'table2', 'key3' => {out => 'three_times', in => 'three_times'}
 );
 $dbi->insert(table => 'table1', param => {key1 => 5, key2 => 2}, filter => {key2 => undef});
 $dbi->insert(table => 'table2', param => {key1 => 5, key3 => 6}, filter => {key3 => undef});
@@ -641,7 +645,7 @@ $result->filter({'key2' => 'twice'});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key2 => 4, key3 => 18}], "$test : select : join : omit");
 
-test 'apply_filter_easy_build';
+test 'iterate_all_columns';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->execute($CREATE_TABLE->{3});

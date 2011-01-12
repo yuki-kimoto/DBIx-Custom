@@ -66,35 +66,37 @@ sub apply_filter {
     
     $self->{filter} ||= {};
     
-    # Table
-    my $table = shift;
+    # Table and column informations
+    my ($table, @cs) = @_;
     
-    if (@_) {
-        # Column infomations
-        my @cs = @_;
+    if (@cs) {
         
         # Initialize filters
         $self->{filter}{out} ||= {};
         $self->{filter}{in} ||= {};
         
-        # Create auto filters
-        foreach my $c (@cs) {
-            croak "Usage \$dbi->apply_filter(" .
-                  "TABLE, COLUMN, {in => INFILTER, out => OUTFILTER}, ...)"
-              unless ref $c eq 'ARRAY' && @$c == 3;
+        # Create filters
+        for (my $i = 0; $i < @cs; $i += 2) {
             
             # Column
-            my $column = $c->[0];
+            my $column = $cs[$i];
             
-            # Bind filter
-            my $out_filter  = $c->[1];
+            # Filter
+            my $filter = $cs[$i + 1] || {};
+            my $in_filter = delete $filter->{in};
+            my $out_filter = delete $filter->{out};
+            croak "Usage \$dbi->apply_filter(" .
+                  "TABLE, COLUMN, {in => INFILTER, out => OUTFILTER}, ...)"
+              if ref $filter ne 'HASH' || keys %$filter;
+            
+            # Out filter
             if (ref $out_filter eq 'CODE') {
                 $self->{filter}{out}{$table}{$column}
                   = $out_filter;
                 $self->{filter}{out}{$table}{"$table.$column"}
                   = $out_filter;
             }
-            else {
+            elsif (defined $out_filter) {
                 croak qq{"$out_filter" is not registered}
                   unless exists $self->filters->{$out_filter};
                 
@@ -102,17 +104,16 @@ sub apply_filter {
                   = $self->filters->{$out_filter};
                 $self->{filter}{out}{$table}{"$table.$column"}
                   = $self->filters->{$out_filter};
-              }
+            }
             
-            # Fetch filter
-            my $in_filter = $c->[2];
+            # In filter
             if (ref $in_filter eq 'CODE') {
                 $self->{filter}{in}{$table}{$column}
                   = $in_filter;
                 $self->{filter}{in}{$table}{"$table.$column"}
                   = $in_filter;
             }
-            else {
+            elsif (defined $in_filter) {
                 croak qq{"$in_filter" is not registered}
                   unless exists $self->filters->{$in_filter};
                 $self->{filter}{in}{$table}{$column}
