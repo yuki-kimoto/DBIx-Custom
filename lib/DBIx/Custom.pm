@@ -20,21 +20,6 @@ __PACKAGE__->attr([qw/data_source dbh
                       dbi_options password user/]);
 
 __PACKAGE__->attr(cache => 1);
-__PACKAGE__->attr(cache_method => sub {
-    sub {
-        my $self = shift;
-        
-        $self->{_cached} ||= {};
-        
-        if (@_ > 1) {
-            $self->{_cached}{$_[0]} = $_[1] 
-        }
-        else {
-            return $self->{_cached}{$_[0]}
-        }
-    }
-});
-
 __PACKAGE__->attr(filters => sub {
     {
         encode_utf8 => sub { encode_utf8($_[0]) },
@@ -89,51 +74,51 @@ sub auto_filter {
         my @cs = @_;
         
         # Initialize filters
-        $self->{auto_filter}{bind} ||= {};
-        $self->{auto_filter}{fetch} ||= {};
+        $self->{auto_filter}{out} ||= {};
+        $self->{auto_filter}{in} ||= {};
         
         # Create auto filters
         foreach my $c (@cs) {
             croak "Usage \$dbi->auto_filter(" .
-                  "TABLE, [COLUMN, BIND_FILTER, FETCH_FILTER], [...])"
+                  "TABLE, [COLUMN, OUT_FILTER, IN_FILTER], [...])"
               unless ref $c eq 'ARRAY' && @$c == 3;
             
             # Column
             my $column = $c->[0];
             
             # Bind filter
-            my $bind_filter  = $c->[1];
-            if (ref $bind_filter eq 'CODE') {
-    	        $self->{auto_filter}{bind}{$table}{$column}
-    	          = $bind_filter;
-    	        $self->{auto_filter}{bind}{$table}{"$table.$column"}
-    	          = $bind_filter;
+            my $out_filter  = $c->[1];
+            if (ref $out_filter eq 'CODE') {
+    	        $self->{auto_filter}{out}{$table}{$column}
+    	          = $out_filter;
+    	        $self->{auto_filter}{out}{$table}{"$table.$column"}
+    	          = $out_filter;
             }
             else {
-    	        croak qq{"$bind_filter" is not registered}
-    	          unless exists $self->filters->{$bind_filter};
+    	        croak qq{"$out_filter" is not registered}
+    	          unless exists $self->filters->{$out_filter};
     	        
-    	        $self->{auto_filter}{bind}{$table}{$column}
-    	          = $self->filters->{$bind_filter};
-    	        $self->{auto_filter}{bind}{$table}{"$table.$column"}
-    	          = $self->filters->{$bind_filter};
+    	        $self->{auto_filter}{out}{$table}{$column}
+    	          = $self->filters->{$out_filter};
+    	        $self->{auto_filter}{out}{$table}{"$table.$column"}
+    	          = $self->filters->{$out_filter};
     	    }
             
             # Fetch filter
-            my $fetch_filter = $c->[2];
-            if (ref $fetch_filter eq 'CODE') {
-    	        $self->{auto_filter}{fetch}{$table}{$column}
-    	          = $fetch_filter;
-    	        $self->{auto_filter}{fetch}{$table}{"$table.$column"}
-    	          = $fetch_filter;
+            my $in_filter = $c->[2];
+            if (ref $in_filter eq 'CODE') {
+    	        $self->{auto_filter}{in}{$table}{$column}
+    	          = $in_filter;
+    	        $self->{auto_filter}{in}{$table}{"$table.$column"}
+    	          = $in_filter;
             }
             else {
-                croak qq{"$fetch_filter" is not registered}
-                  unless exists $self->filters->{$fetch_filter};
-                $self->{auto_filter}{fetch}{$table}{$column}
-                  = $self->filters->{$fetch_filter};
-                $self->{auto_filter}{fetch}{$table}{"$table.$column"}
-                  = $self->filters->{$fetch_filter};
+                croak qq{"$in_filter" is not registered}
+                  unless exists $self->filters->{$in_filter};
+                $self->{auto_filter}{in}{$table}{$column}
+                  = $self->filters->{$in_filter};
+                $self->{auto_filter}{in}{$table}{"$table.$column"}
+                  = $self->filters->{$in_filter};
             }
         }
         
@@ -252,48 +237,6 @@ sub create_query {
     return $query;
 }
 
-sub default_bind_filter {
-    my $self = shift;
-    
-    if (@_) {
-        my $fname = $_[0];
-        
-        if (@_ && !$fname) {
-            $self->{default_bind_filter} = undef;
-        }
-        else {
-            croak qq{"$fname" is not registered}
-              unless exists $self->filters->{$fname};
-        
-            $self->{default_bind_filter} = $self->filters->{$fname};
-        }
-        return $self;
-    }
-    
-    return $self->{default_bind_filter};
-}
-
-sub default_fetch_filter {
-    my $self = shift;
-    my $fname = $_[0];
-    
-    if (@_) {
-        if (@_ && !$fname) {
-            $self->{default_fetch_filter} = undef;
-        }
-        else {
-            croak qq{"$fname" is not registered}
-              unless exists $self->filters->{$fname};
-        
-            $self->{default_fetch_filter} = $self->filters->{$fname};
-        }
-        
-        return $self;
-    }
-    
-    return $self->{default_fetch_filter}
-}
-
 our %VALID_DELETE_ARGS
   = map { $_ => 1 } qw/auto_filter_table table where append filter allow_delete_all/;
 
@@ -373,7 +316,7 @@ sub execute{
     foreach my $table (@$auto_filter_tables) {
         $auto_filter = {
             %$auto_filter,
-            %{$self->{auto_filter}{bind}->{$table} || {}}
+            %{$self->{auto_filter}{in}->{$table} || {}}
         }
     }
     
@@ -390,34 +333,34 @@ sub execute{
     }
     $filter = {%$auto_filter, %$filter};
     
-    # Create bind value
-    my $bind_values = $self->_build_bind_values($query, $params, $filter);
+    # Create bind values
+    my $binds = $self->_build_binds($params, $query->columns, $filter);
     
     # Execute
     my $sth      = $query->sth;
     my $affected;
-    eval {$affected = $sth->execute(@$bind_values)};
+    eval {$affected = $sth->execute(@$binds)};
     $self->_croak($@) if $@;
     
     # Return resultset if select statement is executed
     if ($sth->{NUM_OF_FIELDS}) {
         
-        # Auto fetch filter
-        my $auto_fetch_filter = {};
-	    foreach my $table (@$auto_filter_tables) {
-	        $auto_fetch_filter = {
-	            %$auto_filter,
-	            %{$self->{auto_filter}{fetch}{$table} || {}}
-	        }
-	    }
+        # Auto in filter
+        my $auto_in_filter = {};
+	      foreach my $table (@$auto_filter_tables) {
+	          $auto_in_filter = {
+	              %$auto_filter,
+	              %{$self->{auto_filter}{in}{$table} || {}}
+	          }
+	      }
 	    
 		# Result
 		my $result = $self->result_class->new(
             sth            => $sth,
             filters        => $self->filters,
             filter_check   => $self->filter_check,
-            default_filter => $self->default_fetch_filter,
-            _auto_filter   => $auto_fetch_filter || {}
+            default_filter => $self->{default_in_filter},
+            _auto_filter   => $auto_in_filter || {}
         );
 
         return $result;
@@ -720,37 +663,31 @@ sub update {
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
 
-sub _build_bind_values {
-    my ($self, $query, $params, $filter) = @_;
+sub _build_binds {
+    my ($self, $params, $columns, $filter) = @_;
     
-    # binding values
-    my @bind_values;
-
-    # Filter
-    $filter ||= {};
-    
-    # Parameter
-    $params ||= {};
+    # bind values
+    my @binds;
     
     # Build bind values
     my $count = {};
-    foreach my $column (@{$query->columns}) {
+    foreach my $column (@$columns) {
         
         # Value
         my $value = ref $params->{$column} eq 'ARRAY'
                   ? $params->{$column}->[$count->{$column} || 0]
                   : $params->{$column};
         
-        # Filtering
-        my $f = $filter->{$column} || $self->{default_bind_filter} || '';
+        # Filter
+        my $f = $filter->{$column} || $self->{default_out_filter} || '';
         
-        push @bind_values, $f ? $f->($value) : $value;
+        push @binds, $f ? $f->($value) : $value;
         
         # Count up 
         $count->{$column}++;
     }
     
-    return \@bind_values;
+    return \@binds;
 }
 
 sub _croak {
@@ -770,6 +707,64 @@ sub _croak {
         
         croak "$error$append";
     }
+}
+
+# Deprecated
+__PACKAGE__->attr(cache_method => sub {
+    sub {
+        my $self = shift;
+        
+        $self->{_cached} ||= {};
+        
+        if (@_ > 1) {
+            $self->{_cached}{$_[0]} = $_[1] 
+        }
+        else {
+            return $self->{_cached}{$_[0]}
+        }
+    }
+});
+
+sub default_bind_filter {
+    my $self = shift;
+    
+    if (@_) {
+        my $fname = $_[0];
+        
+        if (@_ && !$fname) {
+            $self->{default_out_filter} = undef;
+        }
+        else {
+            croak qq{"$fname" is not registered}
+              unless exists $self->filters->{$fname};
+        
+            $self->{default_out_filter} = $self->filters->{$fname};
+        }
+        return $self;
+    }
+    
+    return $self->{default_out_filter};
+}
+
+sub default_fetch_filter {
+    my $self = shift;
+    my $fname = $_[0];
+    
+    if (@_) {
+        if (@_ && !$fname) {
+            $self->{default_in_filter} = undef;
+        }
+        else {
+            croak qq{"$fname" is not registered}
+              unless exists $self->filters->{$fname};
+        
+            $self->{default_in_filter} = $self->filters->{$fname};
+        }
+        
+        return $self;
+    }
+    
+    return $self->{default_in_filter}
 }
 
 1;
@@ -906,30 +901,6 @@ See L<DBIx::Custom::Guides> for more details.
 
 Enable parsed L<DBIx::Custom::Query> object caching.
 Default to 1.
-
-=head2 C<cache_method>
-
-    $dbi          = $dbi->cache_method(\&cache_method);
-    $cache_method = $dbi->cache_method
-
-Method to set and get caches.
-
-B<Example:>
-
-    $dbi->cache_method(
-        sub {
-            my $self = shift;
-            
-            $self->{_cached} ||= {};
-            
-            if (@_ > 1) {
-                $self->{_cached}{$_[0]} = $_[1] 
-            }
-            else {
-                return $self->{_cached}{$_[0]}
-            }
-        }
-    );
 
 =head2 C<data_source>
 
@@ -1075,18 +1046,6 @@ use C<create_query()> method and execute it by C<execute()> method
 instead of suger methods.
 
     $dbi->execute($query, {author => 'Ken', title => '%Perl%'});
-
-=head2 C<(deprecated) default_bind_filter>
-
-    my $default_bind_filter = $dbi->default_bind_filter;
-    $dbi                    = $dbi->default_bind_filter($fname);
-
-Default filter when parameter binding is executed.
-
-=head2 C<(deprecated) default_fetch_filter>
-
-    my $default_fetch_filter = $dbi->default_fetch_filter;
-    $dbi = $dbi->default_fetch_filter($fname);
 
 =head2 C<execute>
 
@@ -1376,7 +1335,7 @@ Rollback is automatically done.
 Note that this is feature of L<DBIx::TransactionManager>
 L<DBIx::TransactionManager> is required.
 
-=head2 C<table>
+=head2 C<(experimental) table>
 
     $dbi->table('book',
         insert => sub { ... },
@@ -1405,6 +1364,42 @@ B<Example:>
     $dbi->update_all(table  => 'book', 
                      param  => {author => 'taro'},
                      filter => {author => 'encode_utf8'});
+
+=head2 C<(deprecated) default_bind_filter>
+
+    my $default_bind_filter = $dbi->default_bind_filter;
+    $dbi                    = $dbi->default_bind_filter($fname);
+
+Default filter when parameter binding is executed.
+
+=head2 C<(deprecated) default_fetch_filter>
+
+    my $default_fetch_filter = $dbi->default_fetch_filter;
+    $dbi = $dbi->default_fetch_filter($fname);
+
+=head2 C<(deprecated) cache_method>
+
+    $dbi          = $dbi->cache_method(\&cache_method);
+    $cache_method = $dbi->cache_method
+
+Method to set and get caches.
+
+B<Example:>
+
+    $dbi->cache_method(
+        sub {
+            my $self = shift;
+            
+            $self->{_cached} ||= {};
+            
+            if (@_ > 1) {
+                $self->{_cached}{$_[0]} = $_[1] 
+            }
+            else {
+                return $self->{_cached}{$_[0]}
+            }
+        }
+    );
 
 =head1 STABILITY
 

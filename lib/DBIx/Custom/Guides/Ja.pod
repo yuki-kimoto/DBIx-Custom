@@ -439,25 +439,6 @@ C<delete()>、C<select()>
         filter => {title => 'encode_utf8'}
     );
 
-C<filter>で指定されたフィルタはそれぞれのパラメータの値に働きますが、
-すべてのパラメータのためのデフォルトのフィルタを設定することもできます。
-
-    $dbi->default_bind_filter('encode_utf8');
-
-C<filter()>オプションで指定されたフィルタは、
-デフォルトのフィルタを上書きます。
-    
-    $dbi->default_bind_filter('encode_utf8');
-    $dbi->insert(
-        table  => 'book',
-        param  => {title => 'Perl', author => 'Ken', price => 1000},
-        filter => {author => 'to_upper_case', price => undef}
-    );
-
-C<title>の値にはデフォルトのフィルタであるC<encode_utf8>が適用され
-C<author>の値にはC<to_upper_case>が適用されます。
-C<price>にはundefを設定しているのでフィルタが解除されます。
-
 B<フィルタのサンプル>
 
 MySQL
@@ -513,42 +494,12 @@ SQLite
     my $result = $dbi->select(table => 'book');
     $result->filter({title => 'decode_utf8', author => 'to_upper_case'});
 
-フィルタはそれぞれの列の値に作用しますが、
-すべての列のためのデフォルのトフィルタを設定することもできます。
-
-    $dbi->default_fetch_filter('decode_utf8');
-
-C<filter>メソッドで設定されたフィルタはデフォルトのフィルタを上書きます。
-
-    $dbi->default_fetch_filter('decode_utf8');
-    my $result = $dbi->select(
-        table => 'book',
-        columns => ['title', 'author', 'price']
-    );
-    $result->filter({author => 'to_upper_case', price => undef});
-
-C<title>の値にはデフォルトのフィルタであるC<decode_utf8>が適用され
-C<author>の値にはC<to_upper_case>が適用されます。
-C<price>にはundefを設定しているのでフィルタが解除されます。
-
 フェッチのためのフィルタにおいて、
 たとえ、列名が大文字を含む場合であっても
 列名は小文字であることに注意してください。
 これはデータベースシステムに依存させないための要件です。
 
 =head2 6. パフォーマンスの改善
-
-=head3 フィルタのチェックを無効にする
-
-フィルタのチェックがデフォルトでは有効になっています。
-これは正しいフィルタ名が指定されているかどうかをチェック
-するためのものですが、ときにはパフォーマンスに影響を
-及ぼす可能性があります。
-
-フィルタのチェックを無効にするにはC<filter_check>
-に0を設定してください。
-
-    $dbi->filter_check(0);
 
 =head3 シュガーメソッドを使わない
 
@@ -587,46 +538,6 @@ C<insert()>メソッドは、SQL文とステートメントハンドルを
 
 C<execute>メソッドの第一引数にクエリオブジェトを渡すことができます。
 これはC<insert()>メソッドよりも高速です。
-
-=head3 キャッシング
-
-C<execute()>メソッドはデフォルトでSQL文への解析結果をキャッシュします。
-
-    $dbi->cache(1);
-
-キャッシングはメモリ上で行われますが、C<cache_method()>
-を使って変更することができます。これはキャッシュされるデータの保存と取得
-のためのメソッドを定義するのに利用されます。
-
-    $dbi->cache_method(sub {
-        sub {
-            my $self = shift;
-            
-            $self->{_cached} ||= {};
-            
-            # Set cache
-            if (@_ > 1) {
-                $self->{_cached}{$_[0]} = $_[1] 
-            }
-            
-            # Get cache
-            else {
-                return $self->{_cached}{$_[0]}
-            }
-        }
-    });
-
-最初の引数はL<DBIx::Custom>です。第二引数は、
-"select * from book where {= title} and {= author};";
-のようなSQL文の源です。
-第三引数は
-{sql => "select * from book where title = ? and author = ?",
- columns => ['title', 'author']}
-のような解析後のデータです。これはハッシュリファレンスである必要
-があります。
-もし引数がふたつより大きい場合は、このメソッドはキャッシュを保存
-するのに利用されます。そうでない場合はキャッシュを取得するのに
-利用されます。
 
 =head2 7. その他の機能
 
