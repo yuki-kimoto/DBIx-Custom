@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1628';
+our $VERSION = '0.1629';
 
 use 5.008001;
 use strict;
@@ -64,7 +64,7 @@ sub AUTOLOAD {
 sub apply_filter {
     my $self = shift;
     
-    $self->{auto_filter} ||= {};
+    $self->{filter} ||= {};
     
     # Table
     my $table = shift;
@@ -74,13 +74,13 @@ sub apply_filter {
         my @cs = @_;
         
         # Initialize filters
-        $self->{auto_filter}{out} ||= {};
-        $self->{auto_filter}{in} ||= {};
+        $self->{filter}{out} ||= {};
+        $self->{filter}{in} ||= {};
         
         # Create auto filters
         foreach my $c (@cs) {
-            croak "Usage \$dbi->auto_filter(" .
-                  "TABLE, [COLUMN, OUT_FILTER, IN_FILTER], [...])"
+            croak "Usage \$dbi->apply_filter(" .
+                  "TABLE, COLUMN, {in => INFILTER, out => OUTFILTER}, ...)"
               unless ref $c eq 'ARRAY' && @$c == 3;
             
             # Column
@@ -89,35 +89,35 @@ sub apply_filter {
             # Bind filter
             my $out_filter  = $c->[1];
             if (ref $out_filter eq 'CODE') {
-    	        $self->{auto_filter}{out}{$table}{$column}
-    	          = $out_filter;
-    	        $self->{auto_filter}{out}{$table}{"$table.$column"}
-    	          = $out_filter;
+                $self->{filter}{out}{$table}{$column}
+                  = $out_filter;
+                $self->{filter}{out}{$table}{"$table.$column"}
+                  = $out_filter;
             }
             else {
-    	        croak qq{"$out_filter" is not registered}
-    	          unless exists $self->filters->{$out_filter};
-    	        
-    	        $self->{auto_filter}{out}{$table}{$column}
-    	          = $self->filters->{$out_filter};
-    	        $self->{auto_filter}{out}{$table}{"$table.$column"}
-    	          = $self->filters->{$out_filter};
-    	    }
+                croak qq{"$out_filter" is not registered}
+                  unless exists $self->filters->{$out_filter};
+                
+                $self->{filter}{out}{$table}{$column}
+                  = $self->filters->{$out_filter};
+                $self->{filter}{out}{$table}{"$table.$column"}
+                  = $self->filters->{$out_filter};
+              }
             
             # Fetch filter
             my $in_filter = $c->[2];
             if (ref $in_filter eq 'CODE') {
-    	        $self->{auto_filter}{in}{$table}{$column}
-    	          = $in_filter;
-    	        $self->{auto_filter}{in}{$table}{"$table.$column"}
-    	          = $in_filter;
+                $self->{filter}{in}{$table}{$column}
+                  = $in_filter;
+                $self->{filter}{in}{$table}{"$table.$column"}
+                  = $in_filter;
             }
             else {
                 croak qq{"$in_filter" is not registered}
                   unless exists $self->filters->{$in_filter};
-                $self->{auto_filter}{in}{$table}{$column}
+                $self->{filter}{in}{$table}{$column}
                   = $self->filters->{$in_filter};
-                $self->{auto_filter}{in}{$table}{"$table.$column"}
+                $self->{filter}{in}{$table}{"$table.$column"}
                   = $self->filters->{$in_filter};
             }
         }
@@ -125,7 +125,7 @@ sub apply_filter {
         return $self;
     }
     
-    return $self->{auto_filter};
+    return $self->{filter};
 }
 
 sub helper {
@@ -306,32 +306,32 @@ sub execute{
       unless ref $query;
     
     # Auto filter
-    my $auto_filter = {};
+    my $filter = {};
     my $tables = $args{table} || [];
     $tables = [$tables]
       unless ref $tables eq 'ARRAY';
     foreach my $table (@$tables) {
-        $auto_filter = {
-            %$auto_filter,
-            %{$self->{auto_filter}{in}->{$table} || {}}
+        $filter = {
+            %$filter,
+            %{$self->{filter}{out}->{$table} || {}}
         }
     }
     
-    # Filter
-    my $filter = $args{filter} || $query->filter || {};
-    foreach my $column (keys %$filter) {
-        my $fname = $filter->{$column};
+    # Filter argument
+    my $f = $args{filter} || $query->filter || {};
+    foreach my $column (keys %$f) {
+        my $fname = $f->{$column};
         if (!defined $fname) {
-            $filter->{$column} = undef;
+            $f->{$column} = undef;
         }
         elsif (ref $fname ne 'CODE') {
           croak qq{"$fname" is not registered"}
             unless exists $self->filters->{$fname};
           
-          $filter->{$column} = $self->filters->{$fname};
+          $f->{$column} = $self->filters->{$fname};
         }
     }
-    $filter = {%$auto_filter, %$filter};
+    $filter = {%$filter, %$f};
     
     # Create bind values
     my $binds = $self->_build_binds($params, $query->columns, $filter);
@@ -346,21 +346,21 @@ sub execute{
     if ($sth->{NUM_OF_FIELDS}) {
         
         # Auto in filter
-        my $auto_in_filter = {};
-	      foreach my $table (@$tables) {
-	          $auto_in_filter = {
-	              %$auto_filter,
-	              %{$self->{auto_filter}{in}{$table} || {}}
-	          }
-	      }
-	    
-		# Result
-		my $result = $self->result_class->new(
+        my $in_filter = {};
+        foreach my $table (@$tables) {
+            $in_filter = {
+                %$in_filter,
+                %{$self->{filter}{in}{$table} || {}}
+            }
+        }
+        
+        # Result
+        my $result = $self->result_class->new(
             sth            => $sth,
             filters        => $self->filters,
             filter_check   => $self->filter_check,
             default_filter => $self->{default_in_filter},
-            _auto_filter   => $auto_in_filter || {}
+            filter         => $in_filter || {}
         );
 
         return $result;
@@ -980,7 +980,7 @@ C<apply_filter> is automatically filter for columns of table.
 This have effect C<insert>, C<update>, C<delete>. C<select>
 and L<DBIx::Custom::Result> object. but this has'nt C<execute> method.
 
-If you want to have effect <execute< method, use C<table>
+If you want to have effect C<execute()> method, use C<table>
 arguments.
 
     $result = $dbi->execute(

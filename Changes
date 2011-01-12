@@ -1,4 +1,6 @@
 0.1629
+  renamed auto_filter to filter
+  changed filter method arguments
   deprecated cache_method
 0.1628
   remove DBIx::Custom::Model

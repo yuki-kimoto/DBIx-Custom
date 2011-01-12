@@ -25,7 +25,7 @@ sub filter {
             }
         }
         
-        $self->{filter} = $filter;
+        $self->{filter} = {%{$self->filter || {}}, %$filter};
         
         return $self;
     }
@@ -36,11 +36,8 @@ sub filter {
 sub fetch {
     my $self = shift;
     
-    # Filters
-    my $filters = $self->filters || {};
+    # Filter
     my $filter  = $self->{filter}  || {};
-    my $auto_filter = $self->{_auto_filter} || {};
-    $filter = {%$auto_filter, %$filter};
     
     # Fetch
     my @row = $self->{sth}->fetchrow_array;
@@ -94,11 +91,8 @@ sub fetch_first {
 sub fetch_hash {
     my $self = shift;
     
-    # Filters
-    my $filters = $self->filters || {};
+    # Filter
     my $filter  = $self->filter  || {};
-    my $auto_filter = $self->{_auto_filter} || {};
-    $filter = {%$auto_filter, %$filter};
     
     # Fetch
     my $row = $self->{sth}->fetchrow_arrayref;
