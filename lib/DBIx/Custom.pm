@@ -61,7 +61,7 @@ sub AUTOLOAD {
     return $self->$helper(@_);
 }
 
-sub auto_filter {
+sub apply_filter {
     my $self = shift;
     
     $self->{auto_filter} ||= {};
@@ -238,7 +238,7 @@ sub create_query {
 }
 
 our %VALID_DELETE_ARGS
-  = map { $_ => 1 } qw/auto_filter_table table where append filter allow_delete_all/;
+  = map { $_ => 1 } qw/table where append filter allow_delete_all/;
 
 sub delete {
     my ($self, %args) = @_;
@@ -255,11 +255,6 @@ sub delete {
     my $append = $args{append};
     my $filter           = $args{filter};
     my $allow_delete_all = $args{allow_delete_all};
-
-    my $auto_filter_table = exists $args{auto_filter_table}
-                          ? $args{auto_filter_table}
-                          : [$table];
-    $auto_filter_table ||= [];    
 
     # Where keys
     my @where_keys = keys %$where;
@@ -284,7 +279,7 @@ sub delete {
     # Execute query
     my $ret_val = $self->execute(
         $source, param  => $where, filter => $filter,
-        auto_filter_table => $auto_filter_table);
+        table => $table);
     
     return $ret_val;
 }
@@ -293,7 +288,7 @@ sub delete_all { shift->delete(allow_delete_all => 1, @_) }
 
 sub DESTROY { }
 
-our %VALID_EXECUTE_ARGS = map { $_ => 1 } qw/param filter auto_filter_table/;
+our %VALID_EXECUTE_ARGS = map { $_ => 1 } qw/param filter table/;
 
 sub execute{
     my ($self, $query, %args)  = @_;
@@ -312,8 +307,10 @@ sub execute{
     
     # Auto filter
     my $auto_filter = {};
-    my $auto_filter_tables = $args{auto_filter_table} || [];
-    foreach my $table (@$auto_filter_tables) {
+    my $tables = $args{table} || [];
+    $tables = [$tables]
+      unless ref $tables eq 'ARRAY';
+    foreach my $table (@$tables) {
         $auto_filter = {
             %$auto_filter,
             %{$self->{auto_filter}{in}->{$table} || {}}
@@ -324,7 +321,10 @@ sub execute{
     my $filter = $args{filter} || $query->filter || {};
     foreach my $column (keys %$filter) {
         my $fname = $filter->{$column};
-        unless (ref $fname eq 'CODE') {
+        if (!defined $fname) {
+            $filter->{$column} = undef;
+        }
+        elsif (ref $fname ne 'CODE') {
           croak qq{"$fname" is not registered"}
             unless exists $self->filters->{$fname};
           
@@ -347,7 +347,7 @@ sub execute{
         
         # Auto in filter
         my $auto_in_filter = {};
-	      foreach my $table (@$auto_filter_tables) {
+	      foreach my $table (@$tables) {
 	          $auto_in_filter = {
 	              %$auto_filter,
 	              %{$self->{auto_filter}{in}{$table} || {}}
@@ -384,7 +384,7 @@ sub expand {
 }
 
 our %VALID_INSERT_ARGS = map { $_ => 1 } qw/table param append
-                                            filter auto_filter_table/;
+                                            filter/;
 sub insert {
     my ($self, %args) = @_;
 
@@ -400,11 +400,6 @@ sub insert {
     my $append = $args{append} || '';
     my $filter = $args{filter};
     
-    my $auto_filter_table = exists $args{auto_filter_table}
-                          ? $args{auto_filter_table}
-                          : [$table];
-    $auto_filter_table ||= [];
-    
     # Insert keys
     my @insert_keys = keys %$param;
     
@@ -418,7 +413,7 @@ sub insert {
         $source,
         param  => $param,
         filter => $filter,
-        auto_filter_table => $auto_filter_table
+        table => $table
     );
     
     return $ret_val;
@@ -467,7 +462,7 @@ sub register_filter {
 }
 
 our %VALID_SELECT_ARGS
-  = map { $_ => 1 } qw/auto_filter_table table column where append relation filter/;
+  = map { $_ => 1 } qw/table column where append relation filter/;
 
 sub select {
     my ($self, %args) = @_;
@@ -486,10 +481,6 @@ sub select {
     my $relation = $args{relation};
     my $append   = $args{append};
     my $filter   = $args{filter};
-
-    my $auto_filter_table = exists $args{auto_filter_table}
-                          ? $args{auto_filter_table}
-                          : $tables;
     
     # Source of SQL
     my $source = 'select ';
@@ -545,7 +536,7 @@ sub select {
     # Execute query
     my $result = $self->execute(
         $source, param  => $param, filter => $filter,
-        auto_filter_table => $auto_filter_table);    
+        table => $tables);    
     
     return $result;
 }
@@ -586,7 +577,7 @@ sub txn_scope {
 }
 
 our %VALID_UPDATE_ARGS
-  = map { $_ => 1 } qw/auto_filter_table table param
+  = map { $_ => 1 } qw/table param
                        where append filter allow_update_all/;
 
 sub update {
@@ -605,11 +596,6 @@ sub update {
     my $append = $args{append} || '';
     my $filter           = $args{filter};
     my $allow_update_all = $args{allow_update_all};
-    
-    my $auto_filter_table = exists $args{auto_filter_table}
-                          ? $args{auto_filter_table}
-                          : [$table];
-    $auto_filter_table ||= [];
     
     # Update keys
     my @update_keys = keys %$param;
@@ -656,7 +642,7 @@ sub update {
     # Execute query
     my $ret_val = $self->execute($source, param  => $param, 
                                  filter => $filter,
-                                 auto_filter_table => $auto_filter_table);
+                                 table => $table);
     
     return $ret_val;
 }
@@ -981,32 +967,28 @@ C<connect()> method use this value to connect the database.
 L<DBIx::Custom> inherits all methods from L<Object::Simple>
 and implements the following new ones.
 
-=head2 C<(experimental) auto_filter >
+=head2 C<(experimental) apply_filter >
 
-    $dbi->auto_filter(
+    $dbi->apply_filter(
         $table,
-        [$column1, $bind_filter1, $fetch_filter1],
-        [$column2, $bind_filter2, $fetch_filter2],
-        [...],
+        $column1 => {in => $infilter1, out => $outfilter1}
+        $column2 => {in => $infilter2, out => $outfilter2}
+        ...,
     );
 
-C<auto_filter> is automatically filter for columns of table.
+C<apply_filter> is automatically filter for columns of table.
 This have effect C<insert>, C<update>, C<delete>. C<select>
 and L<DBIx::Custom::Result> object. but this has'nt C<execute> method.
 
-If you want to have effect <execute< method, use C<auto_filter_table>
+If you want to have effect <execute< method, use C<table>
 arguments.
 
     $result = $dbi->execute(
         "select * from table1 where {= key1} and {= key2};",
          param => {key1 => 1, key2 => 2},
-         auto_filter_table => ['table1']
+         table => ['table1']
     );
     
-B<Example:>
-
-    $dbi->auto_filter('book', 'sale_date', 'to_date', 'date_to');
-
 =head2 C<begin_work>
 
     $dbi->begin_work;

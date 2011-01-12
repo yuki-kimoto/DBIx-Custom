@@ -554,7 +554,7 @@ $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->register_filter(three_times => sub { $_[0] * 3});
-$dbi->auto_filter(
+$dbi->apply_filter(
     'table1', ['key1', 'twice', 'twice'], ['key2', 'three_times', 'three_times']);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->execute($SELECT_SOURCES->{0});
@@ -564,32 +564,10 @@ is_deeply($row, {key1 => 2, key2 => 6}, "$test : insert");
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->register_filter(three_times => sub { $_[0] * 3});
-$dbi->auto_filter(
-    'table1', ['key1', 'twice', 'twice'], ['key2', 'three_times', 'three_times']);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, auto_filter_table => undef);
-$result = $dbi->execute($SELECT_SOURCES->{0});
-$row   = $result->fetch_hash_first;
-is_deeply($row, {key1 => 1, key2 => 2}, "$test : insert disabe auto_filter_table 1");
-
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->execute($CREATE_TABLE->{0});
-$dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->register_filter(three_times => sub { $_[0] * 3});
-$dbi->auto_filter(
-    'table1', ['key1', 'twice', 'twice'], ['key2', 'three_times', 'three_times']);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, auto_filter_table => []);
-$result = $dbi->execute($SELECT_SOURCES->{0});
-$row   = $result->fetch_hash_first;
-is_deeply($row, {key1 => 1, key2 => 2}, "$test : insert disabe auto_filter_table 2");
-
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->execute($CREATE_TABLE->{0});
-$dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->auto_filter(
+$dbi->apply_filter(
     'table1', ['key1', 'twice', 'twice']
 );
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, auto_filter_table => undef);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, filter => {key1 => undef});
 $dbi->update(table => 'table1', param => {key1 => 2}, where => {key2 => 2});
 $result = $dbi->execute($SELECT_SOURCES->{0});
 $row   = $result->fetch_hash_first;
@@ -598,34 +576,10 @@ is_deeply($row, {key1 => 4, key2 => 2}, "$test : update");
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->auto_filter(
+$dbi->apply_filter(
     'table1', ['key1', 'twice', 'twice']
 );
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, auto_filter_table => undef);
-$dbi->update(table => 'table1', param => {key1 => 2}, where => {key2 => 2}, auto_filter_table => []);
-$result = $dbi->execute($SELECT_SOURCES->{0});
-$row   = $result->fetch_hash_first;
-is_deeply($row, {key1 => 2, key2 => 2}, "$test : update : disable bind filter1");
-
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->execute($CREATE_TABLE->{0});
-$dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->auto_filter(
-    'table1', ['key1', 'twice', 'twice']
-);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, auto_filter_table => undef);
-$dbi->update(table => 'table1', param => {key1 => 2}, where => {key2 => 2}, auto_filter_table => undef);
-$result = $dbi->execute($SELECT_SOURCES->{0});
-$row   = $result->fetch_hash_first;
-is_deeply($row, {key1 => 2, key2 => 2}, "$test : update : disable bind filter2");
-
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->execute($CREATE_TABLE->{0});
-$dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->auto_filter(
-    'table1', ['key1', 'twice', 'twice']
-);
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, auto_filter_table => undef);
+$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, filter => {key1=> undef});
 $dbi->delete(table => 'table1', where => {key1 => 1});
 $result = $dbi->execute($SELECT_SOURCES->{0});
 $rows   = $result->fetch_hash_all;
@@ -634,34 +588,10 @@ is_deeply($rows, [], "$test : delete");
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->auto_filter(
+$dbi->apply_filter(
     'table1', ['key1', 'twice', 'twice']
 );
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, auto_filter_table => undef);
-$dbi->delete(table => 'table1', where => {key1 => 1}, auto_filter_table => undef);
-$result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
-is_deeply($rows, [{key1 => 2, key2 => 2}], "$test : delete : disable1");
-
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->execute($CREATE_TABLE->{0});
-$dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->auto_filter(
-    'table1', ['key1', 'twice', 'twice']
-);
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, auto_filter_table => undef);
-$dbi->delete(table => 'table1', where => {key1 => 1}, auto_filter_table => []);
-$result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
-is_deeply($rows, [{key1 => 2, key2 => 2}], "$test : delete : disable2");
-
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->execute($CREATE_TABLE->{0});
-$dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->auto_filter(
-    'table1', ['key1', 'twice', 'twice']
-);
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, auto_filter_table => undef);
+$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, filter => {key1 => undef});
 $result = $dbi->select(table => 'table1', where => {key1 => 1});
 $result->filter({'key2' => 'twice'});
 $rows   = $result->fetch_hash_all;
@@ -670,25 +600,13 @@ is_deeply($rows, [{key1 => 4, key2 => 4}], "$test : select");
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->auto_filter(
+$dbi->apply_filter(
     'table1', ['key1', 'twice', 'twice']
 );
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, auto_filter_table => undef);
-$result = $dbi->select(table => 'table1', where => {key1 => 2}, auto_filter_table => []);
-$result->filter({'key2' => 'twice'});
-$rows   = $result->fetch_hash_all;
-is_deeply($rows, [{key1 => 2, key2 => 4}], "$test : select : disable");
-
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->execute($CREATE_TABLE->{0});
-$dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->auto_filter(
-    'table1', ['key1', 'twice', 'twice']
-);
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, auto_filter_table => undef);
+$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, filter => {key1 => undef});
 $result = $dbi->execute("select * from table1 where {= key1} and {= key2};",
                         param => {key1 => 1, key2 => 2},
-                        auto_filter_table => ['table1']);
+                        table => ['table1']);
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 4, key2 => 2}], "$test : execute");
 
@@ -697,14 +615,14 @@ $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->register_filter(three_times => sub { $_[0] * 3 });
-$dbi->auto_filter(
+$dbi->apply_filter(
     'table1', ['key2', 'twice', 'twice']
 );
-$dbi->auto_filter(
+$dbi->apply_filter(
     'table2', ['key3', 'three_times', 'three_times']
 );
-$dbi->insert(table => 'table1', param => {key1 => 5, key2 => 2}, auto_filter_table => undef);
-$dbi->insert(table => 'table2', param => {key1 => 5, key3 => 6}, auto_filter_table => undef);
+$dbi->insert(table => 'table1', param => {key1 => 5, key2 => 2}, filter => {key2 => undef});
+$dbi->insert(table => 'table2', param => {key1 => 5, key3 => 6}, filter => {key3 => undef});
 $result = $dbi->select(
      table => ['table1', 'table2'],
      column => ['key2', 'key3'],
@@ -723,7 +641,7 @@ $result->filter({'key2' => 'twice'});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key2 => 4, key3 => 18}], "$test : select : join : omit");
 
-test 'auto_filter_easy_build';
+test 'apply_filter_easy_build';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->execute($CREATE_TABLE->{3});
