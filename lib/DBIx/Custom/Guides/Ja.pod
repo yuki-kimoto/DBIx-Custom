@@ -94,7 +94,7 @@ C<insert()>、C<update()>、C<delete()>、C<select()>
 
 C<insert>メソッドです。データベースにデータを挿入します。
 
-    $dbi->insert(table  => 'books',
+    $dbi->insert(table  => 'book',
                  param  => {title => 'Perl', author => 'Ken'});
 
 これは次のL<DBI>の操作と同じです。
@@ -106,14 +106,14 @@ C<insert>メソッドです。データベースにデータを挿入します�
 
 C<update>メソッドです。データベースのデータを更新します。
 
-    $dbi->update(table  => 'books', 
+    $dbi->update(table  => 'book', 
                  param  => {title => 'Perl', author => 'Ken'}, 
                  where  => {id => 5});
 
 これは次のL<DBI>の操作と同じです。
 
     my $sth = $dbh->prepare(
-        'update books set title = ?, author = ? where id = ?;');
+        'update book set title = ?, author = ? where id = ?;');
     $sth->execute('Perl', 'Ken', 5);
 
 C<update>メソッドは安全のため
@@ -121,19 +121,19 @@ where句のないSQLを発行することを許可していません。
 もしすべての行を更新したい場合は
 C<update_all()>メソッドを使用してください。
 
-    $dbi->update_all(table  => 'books', 
+    $dbi->update_all(table  => 'book', 
                      param  => {title => 'Perl', author => 'Ken'});
 
 =head3 C<delete()>
 
 C<delete>メソッドです。データベースのデータを削除します。
 
-    $dbi->delete(table  => 'books',
+    $dbi->delete(table  => 'book',
                  where  => {author => 'Ken'});
 
 これは次のL<DBI>の操作と同じです。
 
-    my $sth = $dbh->prepare('delete from books where id = ?;');
+    my $sth = $dbh->prepare('delete from book where id = ?;');
     $sth->execute('Ken');
 
 C<delete>メソッドは安全のため
@@ -141,17 +141,17 @@ where句のないSQLを発行することを許可していません。
 もしすべての行を削除したい場合は
 C<delete_all()>メソッドを使用してください。
 
-    $dbi->delete_all(table  => 'books');
+    $dbi->delete_all(table  => 'book');
 
 =head3 C<select()>
 
 C<select>メソッドです。テーブル名だけを指定しています。
 
-    my $result = $dbi->select(table => 'books');
+    my $result = $dbi->select(table => 'book');
 
 これは次のL<DBI>の操作と同じです。
 
-    my $sth = $dbh->prepare('select * from books;);
+    my $sth = $dbh->prepare('select * from book;);
     $sth->execute;
 
 C<select()>メソッドの戻り値はL<DBIx::Custom::Result>
@@ -166,7 +166,7 @@ C<select()>メソッドの戻り値はL<DBIx::Custom::Result>
 次のC<select>は行の名前とwhere句を指定したものです。
 
     my $result = $dbi->select(
-        table  => 'books',
+        table  => 'book',
         column => [qw/author title/],
         where  => {author => 'Ken'}
     );
@@ -174,28 +174,28 @@ C<select()>メソッドの戻り値はL<DBIx::Custom::Result>
 次のL<DBI>の操作と同じです。
     
     my $sth = $dbh->prepare(
-        'select author, title from books where author = ?;');
+        'select author, title from book where author = ?;');
     $sht->execute('Ken');
 
 テーブルをjoinしたい場合はC<relation>を使用します。
 
     my $result = $dbi->select(
-        table    => ['books', 'rental'],
-        column   => ['books.name as book_name']
-        relation => {'books.id' => 'rental.book_id'}
+        table    => ['book', 'rental'],
+        column   => ['book.name as book_name']
+        relation => {'book.id' => 'rental.book_id'}
     );
 
 次のL<DBI>の操作と同じです。
 
     my $sth = $dbh->prepare(
-        'select books.name as book_name from books, rental' .
-        'where books.id = rental.book_id;');
+        'select book.name as book_name from book, rental' .
+        'where book.id = rental.book_id;');
     $sth->execute;
 
 SQL文の末尾に文字列を追加したい場合は<append>オプションを使用します。
 
     my $result = $dbi->select(
-        table  => 'books',
+        table  => 'book',
         where  => {author => 'Ken'},
         append => 'order by price limit 5',
     );
@@ -203,7 +203,7 @@ SQL文の末尾に文字列を追加したい場合は<append>オプションを
 次のL<DBI>の操作と同じです。
 
     my $sth = $dbh->prepare(
-        'select * books where author = ? order by price limit 5;');
+        'select * book where author = ? order by price limit 5;');
     $sth->execute;
 
 C<append>オプションは、C<insert()>、C<update()>、C<update_all()>
@@ -213,7 +213,7 @@ C<delete()>、C<select>メソッドで使用することが
 この後のフィルタリングの解説で詳しく扱いますが、値をフィルタリングしたい
 場合はC<filter>オプションを使用することができます。
 
-    $dbi->insert(table  => 'books',
+    $dbi->insert(table  => 'book',
                  param  => {title => 'Perl', author => 'Ken'});
                  filter => {title  => 'encode_utf8',
                             author => 'encode_utf8'});
@@ -228,7 +228,7 @@ C<select()>メソッドのC<where>オプションではハッシュの代わり�
 
     # Select, more flexible where
     my $result = $dbi->select(
-        table  => 'books',
+        table  => 'book',
         where  => ['{= author} and {like title}', 
                    {author => 'Ken', title => '%Perl%'}]
     );
@@ -328,7 +328,7 @@ L<DBIx::Custom>はハッシュパラメタバインドを提供します。
     use DBI;
     my $dbh = DBI->connect(...);
     my $sth = $dbh->prepare(
-        "select * from books where author = ? and title like ?;"
+        "select * from book where author = ? and title like ?;"
     );
     $sth->execute('Ken', '%Perl%');
 
@@ -342,18 +342,18 @@ L<DBIx::Custom>はこれを改善して、ハッシュで
 パラメタを指定できるようにしました。
 
     my $result = $dbi->execute(
-        "select * from books where {= author} and {like title};"
+        "select * from book where {= author} and {like title};"
         param => {author => 'Ken', title => '%Perl%'}
     );
 
 C<{= author}>とC<{like title}>はタグと呼ばれます。
 タグは内部ではプレースホルダを含む文字列に置き換えられます。
 
-    select * from books where {= author} and {like title}
+    select * from book where {= author} and {like title}
 
 という文は以下のSQLに置き換えられます。
 
-    select * from books where author = ? and title like ?;
+    select * from book where author = ? and title like ?;
 
 このようにタグを使ってSQL文を表現するのがL<DBIx::Custom>の
 特徴です。以下のタグが利用可能です。
@@ -382,7 +382,7 @@ C<{>とC<}>は予約語です。これらの文字を使いたい場合は
 エスケープするためには'\\'と書く必要があることに注意
 してください。
 
-    'select * from books \\{ something statement \\}'
+    'select * from book \\{ something statement \\}'
 
 =head2 5. フィルタリング
 
@@ -412,7 +412,7 @@ C<register_filter()>メソッドを使用して
 で指定することができます。
 
     my $result = $dbi->execute(
-        "select * from books where {= author} and {like title};"
+        "select * from book where {= author} and {like title};"
         param  => {author => 'Ken', title => '%Perl%'},
         filter => {author => 'to_upper_case, title => 'encode_utf8'}
     );
@@ -426,13 +426,13 @@ C<delete()>、C<select()>
 メソッドにおいても使用することができます。
 
     # insert() with filter option
-    $dbi->insert(table  => 'books',
+    $dbi->insert(table  => 'book',
                  param  => {title => 'Perl', author => 'Ken'},
                  filter => {title => 'encode_utf8'});
     
     # select() with filter option
     my $result = $dbi->select(
-        table  => 'books',
+        table  => 'book',
         column => [qw/author title/],
         where  => {author => 'Ken'},
         append => 'order by id limit 1',
@@ -449,7 +449,7 @@ C<filter()>オプションで指定されたフィルタは、
     
     $dbi->default_bind_filter('encode_utf8');
     $dbi->insert(
-        table  => 'books',
+        table  => 'book',
         param  => {title => 'Perl', author => 'Ken', price => 1000},
         filter => {author => 'to_upper_case', price => undef}
     );
@@ -510,7 +510,7 @@ SQLite
 これはL<DBIx::Custom::Result>クラスのC<filter>メソッドを使って
 行います。
 
-    my $result = $dbi->select(table => 'books');
+    my $result = $dbi->select(table => 'book');
     $result->filter({title => 'decode_utf8', author => 'to_upper_case'});
 
 フィルタはそれぞれの列の値に作用しますが、
@@ -522,7 +522,7 @@ C<filter>メソッドで設定されたフィルタはデフォルトのフィ�
 
     $dbi->default_fetch_filter('decode_utf8');
     my $result = $dbi->select(
-        table => 'books',
+        table => 'book',
         columns => ['title', 'author', 'price']
     );
     $result->filter({author => 'to_upper_case', price => undef});
@@ -561,7 +561,7 @@ C<insert()>メソッドは、SQL文とステートメントハンドルを
 クエリを用意しておくことができます。
     
     my $query = $dbi->create_query(
-        "insert into books {insert_param title author};"
+        "insert into book {insert_param title author};"
     );
 
 戻り値はL<DBIx::Custom::Query>オブジェクトです。
@@ -569,7 +569,7 @@ C<insert()>メソッドは、SQL文とステートメントハンドルを
 保持しています。またステートメントハンドルも保持しています。
 
     {
-        sql     => 'insert into books (title, author) values (?, ?);',
+        sql     => 'insert into book (title, author) values (?, ?);',
         columns => ['title', 'author'],
         sth     => $sth
     }
@@ -617,10 +617,10 @@ C<execute()>メソッドはデフォルトでSQL文への解析結果をキャ�
     });
 
 最初の引数はL<DBIx::Custom>です。第二引数は、
-"select * from books where {= title} and {= author};";
+"select * from book where {= title} and {= author};";
 のようなSQL文の源です。
 第三引数は
-{sql => "select * from books where title = ? and author = ?",
+{sql => "select * from book where title = ? and author = ?",
  columns => ['title', 'author']}
 のような解析後のデータです。これはハッシュリファレンスである必要
 があります。
@@ -711,18 +711,18 @@ C<expand>メソッドを使用すると次のようなハッシュに含まれ�
 
 以下のハッシュ
 
-    {books => {title => 'Perl', author => 'Ken'}}
+    {book => {title => 'Perl', author => 'Ken'}}
 
 は次のように展開されます。
 
-    ('books.title' => 'Perl', 'books.author' => 'Ken')
+    ('book.title' => 'Perl', 'book.author' => 'Ken')
 
 これはテーブル名を含むselect文で利用すると便利です。
 
     my $param = {title => 'Perl', author => '%Ken%'};
     $dbi->execute(
-        'select * from books where {= books.title} && {like books.author};',
-        param => {$dbi->expand({books => $param})}
+        'select * from book where {= book.title} && {like book.author};',
+        param => {$dbi->expand({book => $param})}
     );
 
 =cut

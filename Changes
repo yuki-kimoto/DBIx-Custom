@@ -1,5 +1,8 @@
 0.1628
+  remove DBIx::Custom::Model
+  move table method and table_class attribute to DBIx::Custom
   added examples
+  fixed connect method bug
 0.1627
   added insert, update, update_all, delete, delete_all, select method to DBIx::Custom::Table
   added experimental txn_scope

@@ -44,6 +44,7 @@ __PACKAGE__->attr(filters => sub {
 __PACKAGE__->attr(filter_check => 1);
 __PACKAGE__->attr(query_builder  => sub {DBIx::Custom::QueryBuilder->new});
 __PACKAGE__->attr(result_class => 'DBIx::Custom::Result');
+__PACKAGE__->attr(table_class => 'DBIx::Custom::Table');
 
 # DBI methods
 foreach my $method (qw/begin_work commit rollback/) {
@@ -173,7 +174,7 @@ sub connect {
         }
     }
     else {
-        $self = $proto->new(@_);
+        $self = $proto->SUPER::new(@_);
     }
     
     # Information
@@ -604,6 +605,30 @@ sub select {
         auto_filter_table => $auto_filter_table);    
     
     return $result;
+}
+
+sub table {
+    my $self = shift;
+    my $name = shift;
+    
+    # Table class
+    my $table_class = $self->table_class;
+    croak qq{Invalid table class name "$table_class"}
+      unless $table_class =~ /^[\w:]+$/;
+    unless ($table_class->can('isa')) {
+        eval "require $table_class";
+        croak $@ if $@;
+    }
+    # Create table
+    $self->{_tables} ||= {};
+    $self->{_tables}->{$name}
+        = $table_class->new(name => $name, dbi => $self)
+      unless defined $self->{_tables}->{$name};
+    
+    # Helper
+    $self->{_tables}->{$name}->helper(@_) if @_;
+    
+    return $self->{_tables}{$name};
 }
 
 sub txn_scope {
@@ -1350,6 +1375,18 @@ Rollback is automatically done.
 
 Note that this is feature of L<DBIx::TransactionManager>
 L<DBIx::TransactionManager> is required.
+
+=head2 C<table>
+
+    $dbi->table('book',
+        insert => sub { ... },
+        update => sub { ... }
+    );
+    
+    my $table = $dbi->table('book');
+
+Create a L<DBIx::Custom::Table> object,
+or get a L<DBIx::Custom::Table> object.
 
 =head2 C<update_all>
 
