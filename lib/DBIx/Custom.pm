@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1629';
+our $VERSION = '0.1630';
 
 use 5.008001;
 use strict;
@@ -13,23 +13,24 @@ use DBI;
 use DBIx::Custom::Result;
 use DBIx::Custom::Query;
 use DBIx::Custom::QueryBuilder;
-use DBIx::Custom::Model;
 use Encode qw/encode_utf8 decode_utf8/;
 
-__PACKAGE__->attr([qw/data_source dbh
-                      dbi_options password user/]);
+__PACKAGE__->attr(
+    [qw/data_source dbh dbi_options password user/],
 
-__PACKAGE__->attr(cache => 1);
-__PACKAGE__->attr(filters => sub {
-    {
-        encode_utf8 => sub { encode_utf8($_[0]) },
-        decode_utf8 => sub { decode_utf8($_[0]) }
-    }
-});
-__PACKAGE__->attr(filter_check => 1);
-__PACKAGE__->attr(query_builder  => sub {DBIx::Custom::QueryBuilder->new});
-__PACKAGE__->attr(result_class => 'DBIx::Custom::Result');
-__PACKAGE__->attr(table_class => 'DBIx::Custom::Table');
+    cache => 1,
+    filters => sub {
+        {
+            encode_utf8 => sub { encode_utf8($_[0]) },
+            decode_utf8 => sub { decode_utf8($_[0]) }
+        }
+    },
+    
+    filter_check  => 1,
+    query_builder => sub {DBIx::Custom::QueryBuilder->new},
+    result_class  => 'DBIx::Custom::Result',
+    table_class   => 'DBIx::Custom::Table'
+);
 
 # DBI methods
 foreach my $method (qw/begin_work commit rollback/) {

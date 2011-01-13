@@ -1,3 +1,5 @@
+0.1630
+  fix test bug
 0.1629
   renamed auto_filter to apply_filter
   changed apply_filter method arguments
