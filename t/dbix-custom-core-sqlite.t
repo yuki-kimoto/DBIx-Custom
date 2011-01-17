@@ -814,3 +814,71 @@ $query = $dbi->select(table => 'table1', where => {key1 => 1, key2 => 2}, query 
 is(ref $query, 'DBIx::Custom::Query');
 
 1;
+
+test 'select where option';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+$result = $dbi->select(
+    table => 'table1',
+    where => [
+        { key1 => '{= key1}', key2 => '{= key2}' },
+        {key1 => 1}
+    ]
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$result = $dbi->select(
+    table => 'table1',
+    where => [
+        { key1 => '{= key1}', key2 => '{= key2}' },
+        {key1 => 1, key2 => 2}
+    ]
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$result = $dbi->select(
+    table => 'table1',
+    where => [
+        { key1 => '{= key1}', key2 => '{= key2}' },
+        {}
+    ]
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$result = $dbi->select(
+    table => 'table1',
+    where => [
+        { key1 => '{= key1}', key2 => '{= key2}' },
+        { key1 => 1, key2 => $dbi->or(1, 2)}
+    ]
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$result = $dbi->select(
+    table => 'table1',
+    where => [
+        { key1 => '{= key1}', key2 => '{= key2}' },
+        { key1 => 1, key2 => $dbi->or(2)}
+    ]
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+eval {
+$result = $dbi->select(
+    table => 'table1',
+    where => [
+        { key2 => '{= key2}' },
+        { key1 => 1}
+    ]
+);
+};
+ok($@);
+
+

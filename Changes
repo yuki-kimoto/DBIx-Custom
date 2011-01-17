@@ -2,6 +2,8 @@
   added experimental DBIx::Custom::Result end_filter method
   experimental extended select method's where option
   fix select method empty where failed bug
+  added experimental suger method query option
+  added experimental or method
 0.1630
   fix test bug
 0.1629

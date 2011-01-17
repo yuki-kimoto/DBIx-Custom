@@ -13,6 +13,7 @@ use DBI;
 use DBIx::Custom::Result;
 use DBIx::Custom::Query;
 use DBIx::Custom::QueryBuilder;
+use DBIx::Custom::Or;
 use Encode qw/encode_utf8 decode_utf8/;
 
 __PACKAGE__->attr(
@@ -461,6 +462,12 @@ sub new {
     return $self;
 }
 
+sub or {
+    my $self = shift;
+    my $values = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
+    return DBIx::Custom::Or->new(values => $values);
+}
+
 sub register_filter {
     my $invocant = shift;
     
@@ -534,7 +541,35 @@ sub select {
         $param = $where->[1];
         
         if (ref $w eq 'HASH') {
+            $wexists = keys %$param;
+            if ($wexists) {
+                $source .= 'where (';
             
+                foreach my $column (keys %$param) {
+                    croak qq{"$column" don't correspond to where clause}
+                      unless exists $w->{$column};
+                    
+                    my $value = $param->{$column};
+                    if (ref $value eq 'DBIx::Custom::Or') {
+                        my $values = $value->values;
+                        
+                        $source .= '( ';
+                        foreach my $value (@$values) {
+                            $source .= $w->{$column};
+                            $source .= ' or ';
+                        }
+                        $source =~ s/ or $//;
+                        $source .= ' )';
+                        $source .= ' and ';
+                        $param->{$column} = $values;
+                    }
+                    elsif ($w->{$column}) {
+                        $source .= $w->{$column} . ' and ';
+                    }
+                }
+                $source =~ s/ and $//;
+                $source .= ') ';
+            }
         }
         else {
             $wexists = $w =~ /\S/;
@@ -1198,6 +1233,13 @@ Create a new L<DBIx::Custom> object.
 
 Iterate all columns of all tables. Argument is callback.
 You can do anything by callback.
+
+=head2 C<(experimental) or>
+
+    $or = $dbi->or(1, 5);
+
+Create L<DBIx::Custom::Or> object. This is used with select method's
+where option.
 
 =head2 C<register_filter>
 
