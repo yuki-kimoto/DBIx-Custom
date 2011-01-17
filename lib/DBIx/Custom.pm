@@ -507,25 +507,36 @@ sub select {
     
     # Where clause
     my $param;
+    my $wexists;
     if (ref $where eq 'HASH' && keys %$where) {
         $param = $where;
-        $source .= 'where (';
-        foreach my $where_key (keys %$where) {
-            $source .= "{= $where_key} and ";
+        $wexists = keys %$where;
+        
+        if ($wexists) {
+            $source .= 'where (';
+            foreach my $where_key (keys %$where) {
+                $source .= "{= $where_key} and ";
+            }
+            $source =~ s/ and $//;
+            $source .= ') ';
         }
-        $source =~ s/ and $//;
-        $source .= ') ';
     }
     elsif (ref $where eq 'ARRAY') {
-        my$where_str = $where->[0] || '';
+        my $w = $where->[0] || '';
         $param = $where->[1];
         
-        $source .= "where ($where_str) ";
+        if (ref $w eq 'HASH') {
+            
+        }
+        else {
+            $wexists = $w =~ /\S/;
+            $source .= "where ($w) " if $wexists;
+        }
     }
     
     # Relation
     if ($relation) {
-        $source .= $where ? "and " : "where ";
+        $source .= $wexists ? "and " : "where ";
         foreach my $rkey (keys %$relation) {
             $source .= "$rkey = " . $relation->{$rkey} . " and ";
         }

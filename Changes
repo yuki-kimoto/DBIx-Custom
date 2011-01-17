@@ -1,6 +1,7 @@
 0.1631
   added experimental DBIx::Custom::Result end_filter method
   experimental extended select method's where option
+  fix select method empty where failed bug
 0.1630
   fix test bug
 0.1629
