@@ -799,3 +799,18 @@ is_deeply($row, {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1', where => [' ', {}]);
 $row = $result->fetch_hash_first;
 is_deeply($row, {key1 => 1, key2 => 2});
+
+
+test 'select query option';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$query = $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, query => 1);
+is(ref $query, 'DBIx::Custom::Query');
+$query = $dbi->update(table => 'table1', where => {key1 => 1}, param => {key2 => 2}, query => 1);
+is(ref $query, 'DBIx::Custom::Query');
+$query = $dbi->delete(table => 'table1', where => {key1 => 1}, query => 1);
+is(ref $query, 'DBIx::Custom::Query');
+$query = $dbi->select(table => 'table1', where => {key1 => 1, key2 => 2}, query => 1);
+is(ref $query, 'DBIx::Custom::Query');
+
+1;

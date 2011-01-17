@@ -240,7 +240,7 @@ sub create_query {
 }
 
 our %VALID_DELETE_ARGS
-  = map { $_ => 1 } qw/table where append filter allow_delete_all/;
+  = map { $_ => 1 } qw/table where append filter allow_delete_all query/;
 
 sub delete {
     my ($self, %args) = @_;
@@ -278,9 +278,13 @@ sub delete {
     my $source = "delete from $table $where_clause";
     $source .= " $append" if $append;
     
+    # Create query
+    my $query = $self->create_query($source);
+    return $query if $args{query};
+    
     # Execute query
     my $ret_val = $self->execute(
-        $source, param  => $where, filter => $filter,
+        $query, param  => $where, filter => $filter,
         table => $table);
     
     return $ret_val;
@@ -386,7 +390,7 @@ sub expand {
 }
 
 our %VALID_INSERT_ARGS = map { $_ => 1 } qw/table param append
-                                            filter/;
+                                            filter query/;
 sub insert {
     my ($self, %args) = @_;
 
@@ -410,9 +414,13 @@ sub insert {
                . join(' ', @insert_keys) . '}';
     $source .= " $append" if $append;
     
+    # Create query
+    my $query = $self->create_query($source);
+    return $query if $args{query};
+    
     # Execute query
     my $ret_val = $self->execute(
-        $source,
+        $query,
         param  => $param,
         filter => $filter,
         table => $table
@@ -464,7 +472,7 @@ sub register_filter {
 }
 
 our %VALID_SELECT_ARGS
-  = map { $_ => 1 } qw/table column where append relation filter/;
+  = map { $_ => 1 } qw/table column where append relation filter query/;
 
 sub select {
     my ($self, %args) = @_;
@@ -546,9 +554,13 @@ sub select {
     # Append some statement
     $source .= " $append" if $append;
     
+    # Create query
+    my $query = $self->create_query($source);
+    return $query if $args{query};
+    
     # Execute query
     my $result = $self->execute(
-        $source, param  => $param, filter => $filter,
+        $query, param  => $param, filter => $filter,
         table => $tables);    
     
     return $result;
@@ -591,7 +603,7 @@ sub txn_scope {
 
 our %VALID_UPDATE_ARGS
   = map { $_ => 1 } qw/table param
-                       where append filter allow_update_all/;
+                       where append filter allow_update_all query/;
 
 sub update {
     my ($self, %args) = @_;
@@ -652,8 +664,12 @@ sub update {
         }
     }
     
+    # Create query
+    my $query = $self->create_query($source);
+    return $query if $args{query};
+    
     # Execute query
-    my $ret_val = $self->execute($source, param  => $param, 
+    my $ret_val = $self->execute($query, param  => $param, 
                                  filter => $filter,
                                  table => $table);
     
@@ -1085,7 +1101,8 @@ This is used in C<select()>
     $dbi->delete(table  => $table,
                  where  => \%where,
                  append => $append,
-                 filter => \%filter);
+                 filter => \%filter,
+                 query  => 1);
 
 Execute delete statement.
 C<delete> method have C<table>, C<where>, C<append>, and C<filter> arguments.
@@ -1093,6 +1110,8 @@ C<table> is a table name.
 C<where> is where clause. this must be hash reference.
 C<append> is a string added at the end of the SQL statement.
 C<filter> is filters when parameter binding is executed.
+C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
+default to 0. This is experimental.
 Return value of C<delete()> is the count of affected rows.
 
 B<Example:>
@@ -1138,7 +1157,8 @@ Register helper methods. These method is called from L<DBIx::Custom> object dire
     $dbi->insert(table  => $table, 
                  param  => \%param,
                  append => $append,
-                 filter => \%filter);
+                 filter => \%filter,
+                 query  => 1);
 
 Execute insert statement.
 C<insert> method have C<table>, C<param>, C<append>
@@ -1147,6 +1167,8 @@ C<table> is a table name.
 C<param> is the pairs of column name value. this must be hash reference.
 C<append> is a string added at the end of the SQL statement.
 C<filter> is filters when parameter binding is executed.
+C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
+default to 0. This is experimental.
 This is overwrites C<default_bind_filter>.
 Return value of C<insert()> is the count of affected rows.
 
@@ -1240,7 +1262,8 @@ This is same as L<DBI>'s C<rollback>.
                               where    => \%where,
                               append   => $append,
                               relation => \%relation,
-                              filter   => \%filter);
+                              filter   => \%filter,
+                              query    => 1);
 
 Execute select statement.
 C<select> method have C<table>, C<column>, C<where>, C<append>,
@@ -1249,6 +1272,8 @@ C<table> is a table name.
 C<where> is where clause. this is normally hash reference.
 C<append> is a string added at the end of the SQL statement.
 C<filter> is filters when parameter binding is executed.
+C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
+default to 0. This is experimental.
 
 B<Example:>
 
@@ -1294,7 +1319,8 @@ Second element is paramters.
                  param  => \%params,
                  where  => \%where,
                  append => $append,
-                 filter => \%filter)
+                 filter => \%filter,
+                 query  => 1)
 
 Execute update statement.
 C<update> method have C<table>, C<param>, C<where>, C<append>
@@ -1304,6 +1330,8 @@ C<param> is column-value pairs. this must be hash reference.
 C<where> is where clause. this must be hash reference.
 C<append> is a string added at the end of the SQL statement.
 C<filter> is filters when parameter binding is executed.
+C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
+default to 0. This is experimental.
 This is overwrites C<default_bind_filter>.
 Return value of C<update()> is the count of affected rows.
 
