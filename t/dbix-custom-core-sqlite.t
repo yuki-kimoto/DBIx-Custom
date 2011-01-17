@@ -769,3 +769,20 @@ $dbi = MyDBI->new($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1, $test);
+
+
+test 'end_filter';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$result = $dbi->select(table => 'table1');
+$result->filter(key1 => sub { $_[0] * 2 }, key2 => sub { $_[0] * 4 });
+$result->end_filter(key1 => sub { $_[0] * 3 }, key2 => sub { $_[0] * 5 });
+$row = $result->fetch_first;
+is_deeply($row, [6, 40]);
+
+$result = $dbi->select(table => 'table1');
+$result->filter(key1 => sub { $_[0] * 2 }, key2 => sub { $_[0] * 4 });
+$result->end_filter(key1 => sub { $_[0] * 3 }, key2 => sub { $_[0] * 5 });
+$row = $result->fetch_hash_first;
+is_deeply($row, {key1 => 6, key2 => 40});

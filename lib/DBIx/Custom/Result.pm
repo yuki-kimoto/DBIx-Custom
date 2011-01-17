@@ -25,19 +25,46 @@ sub filter {
             }
         }
         
-        $self->{filter} = {%{$self->filter || {}}, %$filter};
+        $self->{filter} = {%{$self->filter}, %$filter};
         
         return $self;
     }
     
-    return $self->{filter};
+    return $self->{filter} ||= {};
+}
+
+sub end_filter {
+    my $self = shift;
+    
+    if (@_) {
+        my $end_filter = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+        
+        foreach my $column (keys %$end_filter) {
+            my $fname = $end_filter->{$column};
+            unless (ref $fname eq 'CODE') {
+              croak qq{"$fname" is not registered"}
+                unless exists $self->filters->{$fname};
+              
+              $end_filter->{$column} = $self->filters->{$fname};
+            }
+        }
+        
+        $self->{end_filter} = {%{$self->end_filter}, %$end_filter};
+        
+        return $self;
+    }
+    
+    return $self->{end_filter} ||= {};
 }
 
 sub fetch {
     my $self = shift;
     
     # Filter
-    my $filter  = $self->{filter}  || {};
+    my $filter = $self->filter;
+    
+    # End filter
+    my $end_filter = $self->end_filter;
     
     # Fetch
     my @row = $self->{sth}->fetchrow_array;
@@ -54,9 +81,11 @@ sub fetch {
         my $f  = exists $filter->{$column}
                ? $filter->{$column}
                : $self->default_filter;
+        my $ef = $end_filter->{$column};
         
         # Filtering
         $row[$i] = $f->($row[$i]) if $f;
+        $row[$i] = $ef->($row[$i]) if $ef;
     }
 
     return \@row;
@@ -92,7 +121,10 @@ sub fetch_hash {
     my $self = shift;
     
     # Filter
-    my $filter  = $self->filter  || {};
+    my $filter  = $self->filter;
+    
+    # End filter
+    my $end_filter = $self->end_filter;
     
     # Fetch
     my $row = $self->{sth}->fetchrow_arrayref;
@@ -110,9 +142,11 @@ sub fetch_hash {
         my $f  = exists $filter->{$column}
                ? $filter->{$column}
                : $self->default_filter;
+        my $ef = $end_filter->{$column};
         
         # Filtering
         $row_hash->{$column} = $f ? $f->($row->[$i]) : $row->[$i];
+        $row_hash->{$column} = $ef->($row_hash->{$column}) if $ef;
     }
     
     return $row_hash;
@@ -296,6 +330,15 @@ Statement handle of L<DBI>.
 L<DBIx::Custom::Result> inherits all methods from L<Object::Simple>
 and implements the following new ones.
 
+=head2 C<(experimental) end_filter>
+
+    $result    = $result->end_filter(title  => 'to_upper_case',
+                                     author => 'to_upper_case');
+
+End filters.
+These each filters is executed after the filters applied by C<apply_filter> of
+L<DBIx::Custom> or C<filter> method.
+
 =head2 C<fetch>
 
     my $row = $result->fetch;
@@ -348,8 +391,12 @@ Row count must be specified.
 
 =head2 C<filter>
 
-    $result    = $result->filter(title  => 'decode_utf8',
-                                 author => 'decode_utf8');
+    $result    = $result->filter(title  => 'to_upper_case',
+                                 author => 'to_upper_case');
+
+Filters.
+These each filters override the filters applied by C<apply_filter> of
+L<DBIx::Custom>.
 
 =head2 C<(deprecated) default_filter>
 

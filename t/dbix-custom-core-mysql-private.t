@@ -34,7 +34,7 @@ use Scalar::Util 'blessed';
     );
     $dbi->connect;
     ok(!$dbi->dbh->{AutoCommit});
-    ok($dbi->dbh->{mysql_enable_utf8});
+    #ok($dbi->dbh->{mysql_enable_utf8});
 }
 
 sub connect_info {
