@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1631';
+our $VERSION = '0.1632';
 
 use 5.008001;
 use strict;
@@ -13,12 +13,12 @@ use DBI;
 use DBIx::Custom::Result;
 use DBIx::Custom::Query;
 use DBIx::Custom::QueryBuilder;
-use DBIx::Custom::Or;
+use DBIx::Custom::Where;
 use Encode qw/encode_utf8 decode_utf8/;
 
 __PACKAGE__->attr(
-    [qw/data_source dbh dbi_options password user/],
-
+    [qw/data_source dbh password user/],
+    dbi_options => sub { {} },
     cache => 1,
     filters => sub {
         {
@@ -523,7 +523,7 @@ sub select {
     # Where clause
     my $param;
     my $wexists;
-    if (ref $where eq 'HASH' && keys %$where) {
+    if (ref $where eq 'HASH') {
         $param = $where;
         $wexists = keys %$where;
         
@@ -540,41 +540,14 @@ sub select {
         my $w = $where->[0] || '';
         $param = $where->[1];
         
-        if (ref $w eq 'HASH') {
-            $wexists = keys %$param;
-            if ($wexists) {
-                $source .= 'where (';
-            
-                foreach my $column (keys %$param) {
-                    croak qq{"$column" don't correspond to where clause}
-                      unless exists $w->{$column};
-                    
-                    my $value = $param->{$column};
-                    if (ref $value eq 'DBIx::Custom::Or') {
-                        my $values = $value->values;
-                        
-                        $source .= '( ';
-                        foreach my $value (@$values) {
-                            $source .= $w->{$column};
-                            $source .= ' or ';
-                        }
-                        $source =~ s/ or $//;
-                        $source .= ' )';
-                        $source .= ' and ';
-                        $param->{$column} = $values;
-                    }
-                    elsif ($w->{$column}) {
-                        $source .= $w->{$column} . ' and ';
-                    }
-                }
-                $source =~ s/ and $//;
-                $source .= ') ';
-            }
-        }
-        else {
-            $wexists = $w =~ /\S/;
-            $source .= "where ($w) " if $wexists;
-        }
+        $wexists = $w =~ /\S/;
+        $source .= "where ($w) " if $wexists;
+    }
+    elsif (ref $where eq 'DBIx::Custom::Where') {
+        $param = $where->param;
+        my $w = $where->to_string;
+        $wexists = $w =~ /\S/;
+        $source .= $w;
     }
     
     # Relation
@@ -712,6 +685,8 @@ sub update {
 }
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
+
+sub where { DBIx::Custom::Where->new }
 
 sub _build_binds {
     my ($self, $params, $columns, $filter) = @_;
