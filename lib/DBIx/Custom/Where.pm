@@ -115,17 +115,16 @@ DBIx::Custom::Where - Where clause
 
 =head2 C<clause>
 
-    $where->clause(title => '{= title}', date => '{< date}',
-                   date => '{> date}');
+    $where->clause(title => '{= title}', date => ['{< date}', '{> date}']);
 
-Where clause. These clauses is joined by ' and ' in C<to_string()>
+Where clause. These clauses is joined by ' and ' at C<to_string()>
 if corresponding parameter name is exists in C<param>.
 
-=head2 C<or_join>
+=head2 C<or_clause>
 
-    $where->or_join('name', ...);
+    $where->or_clause(name => '{= name}');
 
-The clause which has these paramter name is joined by ' or '.
+clause which has these parameter name is joined by ' or '.
 
 =head2 C<to_string>
 

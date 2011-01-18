@@ -406,8 +406,8 @@ You can create table object which have methods.
     $dbi->table('book');
 
 This class have C<insert()>, C<update()>, C<update_all()>,
-C<delete>, C<delete_all>, C<select().
-These is same as C<DBIx::Custom>'s methods except that 
+C<delete()>, C<delete_all()>, C<select()>.
+These is same as L<DBIx::Custom>'s methods except that 
 you don't have to specify table.
 
     $dbi->table('book')->insert(

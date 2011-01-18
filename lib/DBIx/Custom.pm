@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1632';
+our $VERSION = '0.1633';
 
 use 5.008001;
 use strict;
@@ -1404,6 +1404,12 @@ B<Example:>
     $dbi->update_all(table  => 'book', 
                      param  => {author => 'taro'},
                      filter => {author => 'encode_utf8'});
+
+=head2 C<(experimental) where>
+
+    my $where = $dbi->where;
+
+Create a new L<DBIx::Custom::Where> object.
 
 =head2 C<(deprecated) default_bind_filter>
 
