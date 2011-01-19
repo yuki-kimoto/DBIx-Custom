@@ -686,7 +686,8 @@ sub update {
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
 
-sub where { DBIx::Custom::Where->new(sql_builder => shift->sql_builder) }
+sub where { DBIx::Custom::Where->new(
+              query_builder => shift->query_builder) }
 
 sub _build_binds {
     my ($self, $params, $columns, $filter) = @_;

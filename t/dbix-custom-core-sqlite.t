@@ -814,16 +814,15 @@ is(ref $query, 'DBIx::Custom::Query');
 $query = $dbi->select(table => 'table1', where => {key1 => 1, key2 => 2}, query => 1);
 is(ref $query, 'DBIx::Custom::Query');
 
-__END__
-
 test 'DBIx::Custom::Where';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
 $where = $dbi->where
-             ->clause(key1 => '{= key1}', key2 => '{= key2}')
+             ->clause(['and', '{= key1}', '{= key2}'])
              ->param({key1 => 1});
+
 $result = $dbi->select(
     table => 'table1',
     where => $where
@@ -832,7 +831,7 @@ $row = $result->fetch_hash_all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
 
 $where = $dbi->where
-             ->clause(key1 => '{= key1}', key2 => '{= key2}')
+             ->clause(['and', '{= key1}', '{= key2}'])
              ->param({key1 => 1, key2 => 2});
 $result = $dbi->select(
     table => 'table1',
@@ -842,7 +841,7 @@ $row = $result->fetch_hash_all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
 
 $where = $dbi->where
-             ->clause(key1 => '{= key1}', key2 => '{= key2}')
+             ->clause(['and', '{= key1}', '{= key2}'])
              ->param({});
 $result = $dbi->select(
     table => 'table1',
@@ -852,33 +851,11 @@ $row = $result->fetch_hash_all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
 
 $where = $dbi->where
-             ->clause(key1 => ['{> key1}', '{< key1}'], key2 => '{= key2}')
+             ->clause(['and', ['or', '{> key1}', '{< key1}'], '{= key2}'])
              ->param({key1 => [0, 3], key2 => 2});
 $result = $dbi->select(
     table => 'table1',
     where => $where,
-);
-$row = $result->fetch_hash_all;
-is_deeply($row, [{key1 => 1, key2 => 2}]);
-
-$where = $dbi->where
-             ->clause(key1 => "{= key1}" )
-             ->or_clause(key2 => "{= key2}" )
-             ->param({ key1 => 1, key2 => [1, 2]});
-$result = $dbi->select(
-    table => 'table1',
-    where => $where,
-);
-$row = $result->fetch_hash_all;
-is_deeply($row, [{key1 => 1, key2 => 2}]);
-
-$where = $dbi->where
-             ->clause(key1 => "{= key1}" )
-             ->or_clause(key2 => "{= key2}" )
-             ->param({ key1 => 1, key2 => [2]});
-$result = $dbi->select(
-    table => 'table1',
-    where => $where
 );
 $row = $result->fetch_hash_all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
@@ -890,6 +867,8 @@ $result = $dbi->select(
 );
 $row = $result->fetch_hash_all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+__END__
 
 eval {
 $where = $dbi->where

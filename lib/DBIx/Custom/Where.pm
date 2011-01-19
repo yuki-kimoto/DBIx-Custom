@@ -10,88 +10,82 @@ use overload '""' => sub { shift->to_string }, fallback => 1;
 
 use Carp 'croak';
 
-__PACKAGE__->attr(clause => sub { [] });
-__PACKAGE__->attr(param => sub { {} });
-__PACKAGE__->attr(sql_builder => sub { {} });
+__PACKAGE__->attr(
+  'query_builder',
+  clause => sub { [] },
+  param => sub { {} }
+);
 
 sub to_string {
-    my ($self, $param, $clause) = @_;
+    my $self = shift;
     
-    local $self->{_where}    = '';
-    local $self->{_count}    = {};
-    local $self->{_op_stack} = [];
-    local $self->{_param}    = $param;
-    
+    my $clause = $self->clause;
     $clause = ['and', $clause] unless ref $clause eq 'ARRAY';
+    $clause->[0] = 'and' unless @$clause;
+
+    my $where = [];
+    my $count = {};
+    $self->_forward($clause, $where, $count, 'and');
+
+    unshift @$where, 'where' if @$where;
     
-    $self->_forward($clause);
-    
-    return $self->{_where};
+    return join(' ', @$where);
 }
 
-our %VALID_OPERATIONS = map { $_ => 1 } qw/and or or_repeat/;
+our %VALID_OPERATIONS = map { $_ => 1 } qw/and or/;
 
 sub _forward {
-    my ($self, $clause) = @_;
+    my ($self, $clause, $where, $count, $op) = @_;
     
     if (ref $clause eq 'ARRAY') {
-        $self->{_where} .= '( ';
+        push @$where, '(';
         
         my $op = $clause->[0] || '';
         
         croak qq{"$op" is invalid operation}
           unless $VALID_OPERATIONS{$op};
           
-        push @{$self->{_op_stack}}, $op;
-        
         for (my $i = 1; $i < @$clause; $i++) {
-            $self->_forword($clause->[$i]);
+            my $pushed = $self->_forward($clause->[$i], $where, $count, $op);
+            push @$where, $op if $pushed;
         }
         
-        pop @{$self->{_op_stack}};
-
-        if ($self->{_where} =~ /\( $/) {
-            $self->{_where} =~ s/\( $//;
-            $self->{_where} .= ' ';
+        pop @$where if $where->[-1] eq $op;
+        
+        if ($where->[-1] eq '(') {
+            pop @$where;
+            pop @$where;
         }
-        $self->{_where} =~ s/ $op $//;
-        $self->{_where} .= ' ) ';
+        else {
+            push @$where, ')';
+        }
     }
     else {
-        my $op = $self->{_op_stack}->[-1];
         
-        my $columns = $self->sql_builder->build_query($clause)->columns;
-        
+        # Column
+        my $columns = $self->query_builder->build_query($clause)->columns;
         croak qq{each tag contains one column name: tag "$clause"}
           unless @$columns == 1;
-        
         my $column = $columns->[0];
         
-        my $ccount = ++$self->{_count}->{$column};
+        # Count up
+        my $count = ++$count->{$column};
         
-        my $param = $self->{_param};
-        
+        # Push element
+        my $param    = $self->param;
+        my $pushed;
         if (exists $param->{$column}) {
-            if ($op eq 'and' || $op eq 'or') {
-                if (ref $param->{$column} eq 'ARRAY') {
-                    $self->{_where} .= $clause . " $op "
-                      if exists $param->{$column}->[$ccount];
-                }
-                else {
-                    $self->{_where} .= $clause . " $op "
-                      if $ccount == 1;
-                }
+            if (ref $param->{$column} eq 'ARRAY') {
+                $pushed = 1 if exists $param->{$column}->[$count - 1];
             }
-            elsif ($op eq 'or_repeat') {
-                if (ref $param->{$column} eq 'ARRAY') {
-                    $self->{_where} .= $clause . " or "
-                      for (1 .. @{$param->{$column}});
-                }
-                else {
-                    $self->{_where} .= $clause;
-                }
+            elsif ($count == 1) {
+                $pushed = 1;
             }
         }
+        
+        push @$where, $clause if $pushed;
+        
+        return $pushed;
     }
 }
 

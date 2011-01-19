@@ -1,5 +1,5 @@
 0.1644
-  added experimental build_where method
+  changed DBIx::Custom::Where greatly
 0.1633
   fixed test
 0.1632
