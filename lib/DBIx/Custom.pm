@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1633';
+our $VERSION = '0.1634';
 
 use 5.008001;
 use strict;
@@ -686,7 +686,7 @@ sub update {
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
 
-sub where { DBIx::Custom::Where->new }
+sub where { DBIx::Custom::Where->new(sql_builder => shift->sql_builder) }
 
 sub _build_binds {
     my ($self, $params, $columns, $filter) = @_;
@@ -1410,6 +1410,10 @@ B<Example:>
     my $where = $dbi->where;
 
 Create a new L<DBIx::Custom::Where> object.
+
+=head2 C<experimental) build_where>
+
+
 
 =head2 C<(deprecated) default_bind_filter>
 

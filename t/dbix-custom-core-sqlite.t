@@ -814,7 +814,7 @@ is(ref $query, 'DBIx::Custom::Query');
 $query = $dbi->select(table => 'table1', where => {key1 => 1, key2 => 2}, query => 1);
 is(ref $query, 'DBIx::Custom::Query');
 
-1;
+__END__
 
 test 'DBIx::Custom::Where';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
