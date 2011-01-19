@@ -868,13 +868,9 @@ $result = $dbi->select(
 $row = $result->fetch_hash_all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
 
-__END__
-
 eval {
 $where = $dbi->where
-             ->clause(key1 => "{= key1}" )
-             ->or_clause(key2 => "{= key2}" )
-             ->param({key3 => 5});
+             ->clause(['uuu']);
 $result = $dbi->select(
     table => 'table1',
     where => $where
@@ -885,8 +881,35 @@ ok($@);
 $where = $dbi->where;
 is("$where", '');
 
-$where = $dbi->where->clause(key1 => 'pppp')->param({key1 => 1});
-like("$where", qr/pppp/);
+$where = $dbi->where
+             ->clause(['or', ('{= key1}') x 2])
+             ->param({key1 => [1, 3]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$where = $dbi->where
+             ->clause(['or', ('{= key1}') x 2])
+             ->param({key1 => [1]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where
+             ->clause(['or', ('{= key1}') x 2])
+             ->param({key1 => 1});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
 
 test 'dbi_options default';
 $dbi = DBIx::Custom->new;

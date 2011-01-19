@@ -113,11 +113,15 @@ DBIx::Custom::Where - Where clause
 
 =head2 C<clause>
 
-    $where->clause(title => '{= title}', date => ['{< date}', '{> date}']);
+    $where->clause(
+        ['and', '{= title}', ['or', '{< date}', '{> date}']]
+    );
 
-Where clause. These clauses is joined by ' and ' at C<to_string()>
-if corresponding parameter name is exists in C<param>.
+Where clause.
 
 =head2 C<to_string>
 
     $where->to_string;
+
+Convert where clause to string correspoinding to param name.
+

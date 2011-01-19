@@ -1412,10 +1412,6 @@ B<Example:>
 
 Create a new L<DBIx::Custom::Where> object.
 
-=head2 C<experimental) build_where>
-
-
-
 =head2 C<(deprecated) default_bind_filter>
 
     my $default_bind_filter = $dbi->default_bind_filter;
