@@ -478,6 +478,10 @@ sub register_filter {
     return $invocant;
 }
 
+sub register_tag_processor {
+    return shift->query_builder->register_tag_processor(@_);
+}
+
 our %VALID_SELECT_ARGS
   = map { $_ => 1 } qw/table column where append relation filter query/;
 
@@ -1265,6 +1269,16 @@ B<Example:>
             return Encode::decode('UTF-8', $value)
         }
     );
+
+=head2 C<register_tag_processor>
+
+    $dbi->register_tag_processor(
+        limit => sub {
+            ...;
+        }
+    );
+
+Register tag processor.
 
 =head2 C<rollback>
 

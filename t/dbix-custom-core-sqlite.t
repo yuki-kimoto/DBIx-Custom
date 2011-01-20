@@ -915,5 +915,11 @@ test 'dbi_options default';
 $dbi = DBIx::Custom->new;
 is_deeply($dbi->dbi_options, {});
 
+test 'register_tag_processor';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->register_tag_processor(
+    a => sub { 1 }
+);
+is($dbi->query_builder->tag_processors->{a}->(), 1);
 
 

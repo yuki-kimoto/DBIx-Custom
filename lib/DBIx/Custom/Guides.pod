@@ -506,12 +506,12 @@ You can change Result class if you need.
     my $dbi = DBIx::Custom->connect(...);
     $dbi->result_class('Your::Result');
 
-=head3 Custamize query builder object
+=head3 Register tag processor
 
 You can custamize query builder object
 
     my $dbi = DBIx::Custom->connect(...);
-    $dbi->query_builder->register_tag_processor(
+    $dbi->register_tag_processor(
         name => sub {
            ...
         }
@@ -541,16 +541,13 @@ These method can be called from L<DBIx::Custom> object directory.
 =head2 EXAMPLES
 
 =head3 Limit clause
-
-    my $rows = $dbi->select(
-        table => 'table1',
-        where => {key1 => 1},
-        append => "order by key2 {limit 1 0}" # {limit COUNT OFFSET}
-    )->fetch_hash_all;
+    
+    # {limit COUNT OFFSET}
+    select * from book {limit 1 0};
 
 SQLite
 
-    $dbi->query_builder->register_tag_processor(
+    $dbi->register_tag_processor(
         limit => sub {
             my ($count, $offset) = @_;
             
@@ -564,7 +561,7 @@ SQLite
 
 MySQL
 
-    $dbi->query_builder->register_tag_processor(
+    $dbi->register_tag_processor(
         limit => sub {
             my ($count, $offset) = @_;
             
