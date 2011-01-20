@@ -11,6 +11,8 @@ use DBIx::Custom::QueryBuilder::TagProcessors;
 
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
+push @DBIx::Custom::Where::CARP_NOT, __PACKAGE__;
+
 
 # Attributes
 __PACKAGE__->attr('tag_processors' => sub {

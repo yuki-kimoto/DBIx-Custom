@@ -10,6 +10,9 @@ use overload '""' => sub { shift->to_string }, fallback => 1;
 
 use Carp 'croak';
 
+# Carp trust relationship
+push @DBIx::Custom::CARP_NOT, __PACKAGE__;
+
 __PACKAGE__->attr(
   'query_builder',
   clause => sub { [] },

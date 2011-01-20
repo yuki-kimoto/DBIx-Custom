@@ -391,12 +391,12 @@ SQLite
     
     # DATETIME to Time::Piece object
     datetime_to_tp => sub {
-        return Time::Piece->strptime(shift, $FORMATS->{db_datetime});
+        return Time::Piece->strptime(shift, '%Y-%m-%d %H:%M:%S');
     }
     
     # DATE to Time::Piece object
     date_to_tp => sub {
-        return Time::Piece->strptime(shift, $FORMATS->{db_date});
+        return Time::Piece->strptime(shift, '%Y-%m-%d');
     }
 
 =head2 6.Create table object

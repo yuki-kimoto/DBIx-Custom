@@ -8,7 +8,8 @@ DBIx::Custom::Guides::Ja - DBIx::Customの日本語ガイド
 
 L<DBIx::Custom>はデータベースへのクエリの発行を簡単に行うための
 クラスです。L<DBIx::Class>やL<DBIx::Simple>と同じように
-L<DBI>のラッパクラスになっています。
+L<DBI>のラッパクラスになっています。L<DBIx::Class>よりも簡単に、
+L<DBIx::Simple>よりもはるかに柔軟なことを行うことができます。
 
 L<DBIx::Custom>はO/Rマッパーではありません。O/Rマッパーは
 便利ですが、O/Rマッパのたくさんの文法を覚える必要があります。
@@ -17,10 +18,10 @@ L<DBIx::Custom>はO/Rマッパーではありません。O/Rマッパーは
 生のSQLを発行しなければならない場合がたくさんあります。
 
 L<DBIx::Custom>はO/Rマッパとは対照的な設計が行われています。
-L<DBIx::Custom>の主な目的は、SQLを尊重しつつ、DBIだけでは
+L<DBIx::Custom>の主な目的は、SQLを尊重しつつ、L<DBI>だけでは
 とてもめんどうな作業を簡単にすることです。もしSQLについて
 多くの知識を持っているならば、L<DBIx::Custom>でそのまま
-生かすことができます。
+活用することができます。
 
 L<DBIx::Custom>の仕組みを簡単に説明しておきましょう。
 L<DBIx::Custom>では、タグと呼ばれるものを
@@ -31,25 +32,132 @@ SQLの中に埋め込むことができます。
 {}で囲まれた部分がタグです。このSQLは実際に実行されるときには
 次のようにプレースホルダに展開されます。
 
-    select * from book where title = ? and title = ?;
+    select * from book where title = ? and author = ?;
 
 これらの展開にはどのような意味があるのでしょうかと質問
-されることかと思います。
+されることかと思います。この簡単な仕組みの上に非常にたくさんの
+有用で便利で使いやすい機能が構築されます。それは以下のようなものです。
 
+=over 4
 
+=item 1. プレースホルダのパラメータをハッシュリファレンスで指定
 
+L<DBI>をそのまま使うのであればプレースホルダのパラメータは配列
+で指定する必要があります。
 
-またSQLを簡単に実行するための、
+    $sth->execute(@bind);
+
+L<DBIx::Custom>を利用するのであればハッシュリファレンスで指定すること
+できます。
+    
+    my $param = {title => 'Perl', author => 'Ken'};
+    $dbi->execute($sql, $param);
+
+=item 2. パラメータのフィルタリング
+
+たとえば、日付の列は、Perlで扱うときにはC<Time::Piece>などの日付オブジェクト
+で扱い、データベースに格納するときはデータベースの日付型に変換したい
+と思うのではないでしょうか。またデータベースから取り出すときは
+データベースの日付型から日付オブジェクトに変換したと思うのでは
+ないでしょうか。
+
+このようなときはフィルタ機能を使うことができます。
+
+まずフィルタを登録します。
+
+    $dbi->register_filter(
+        tp_to_date => sub {
+            ...
+        },
+        date_to_tp => sub {
+            ...
+        }
+    );
+
+次にテーブルの各列にこのフィルタを適用します。
+
+    $dbi->apply_filter('book',
+        'publish_date' => {out => 'tp_to_date', in => 'date_to_tp'}
+    );
+
+outはPerlからデータベースに保存する方向、inはデータベースからPerlに取得する方向です。
+
+SQLを発行するときにテーブルの指定を行えば、自動的にこのフィルタが適用されます。
+
+    $dbi->execute($sql, $param, table => 'book');
+
+=item 3. 選択的な検索条件
+
+生のDBIを利用しているとき一番たいへんなのは選択的な検索条件を作成したいときです。
+
+たとえば、検索条件にtitleとauthorが指定された場合は次のSQLを
+
+    select * from book where title = ? and author = ?;
+
+titleだけの場合は次のSQLを
+
+    select * from book where title = ?;
+    
+authorだけの場合は次のSQLを発行した場合を考えましょう。
+
+    select * from book where author = ?;
+
+これはとても大変な作業なので、通常はL<SQL::Abstract>を動的に生成してくれる
+モジュールを利用することになります。
+
+L<DBIx::Custom>はさらに簡単で便利な方法を用意しています。
+
+    my $where = $dbi->where;
+    $where->param({title => 'Perl'});
+    $where->clause(
+        ['and', '{= title}', {'= author'}]
+    );
+
+    my $sql = "select * from book $where";
+
+詳しい説明は後ほど行いますが、上記のように記述すれば、
+L<DBIx::Custom>では選択的な検索条件を持つWhere句を生成することができます。
+検索条件が入れ子になった構造やorについても対応しています。
+
+=item 4. 挿入、更新、削除、選択を行うためのメソッド
+
+L<DBIx::Custom>ではSQLをさらに簡単に実行するための
+メソッドも提供しています。
 C<insert()>, C<update()>, C<delete()>,C<select()>などの
-シュガーメソッドも提供します。
+シュガーメソッドを使って、挿入、更新、削除、選択という操作を行うことが
+できます。
 
-L<DBIx::Custom>はSQLを尊重します。SQLはとても複雑で、美しくはありません。
-けれども、SQLはデファクトスタンダードな技術です。
-ですので、データベースを学ぶすべての人はSQLを知っています。
-あなたがすでにSQLを知っているなら、L<DBIx::Custom>を使って
-何かを行うために覚えることはとても少ないです。
+    my $param = {title => 'Perl', author => 'Ken'};
+    $dbi->insert(table => 'book', param => $param);
 
-では使い方を解説します。
+=item 5. テーブル単位の操作の登録
+
+テーブルに対して操作を登録することができます。これによって
+テーブル名を繰り返し指定する必要がなくなり、ソースコードの
+見通しが良くなります。
+
+    $dbi->talbe('book',
+        list => sub {
+            ...
+        },
+        list_somethin => sub {
+            
+        }
+    );
+
+登録したメソッドはそのまま利用することができます。
+
+    $dbi->table('book')->list;
+
+通常O/Rマッパはテーブルに対応するクラスを作成しなければ
+ならないことが多いですが、L<DBIx::Custom>ではこの作業を簡便に
+しており、上記のように登録することができます。
+
+=back
+
+L<DBIx::Custom>はL<DBI>を補うとても便利なモジュールです。
+興味をもたれた方は、この後で詳しい解説を行いますので、
+ご覧になってみてください。
 
 =head2 1. データベースへの接続
 
@@ -238,4 +346,424 @@ C<delete()>、C<select>メソッドで使用することが
     $dbi->insert(table  => 'book',
                  param  => {title => 'Perl', author => 'Ken'});
                  filter => {title  => 'encode_utf8',
-                            a
+                            author => 'encode_utf8'});
+
+C<filter>オプションは、C<insert()>、C<update()>、C<update_all()>
+C<delete()>、C<select>メソッドで使用することが
+できます。
+
+C<select()>メソッドのC<where>オプションではハッシュの代わりに
+タグを利用することもできます。これによって柔軟な
+条件を指定することができます。
+
+    # Select, more flexible where
+    my $result = $dbi->select(
+        table  => 'book',
+        where  => ['{= author} and {like title}', 
+                   {author => 'Ken', title => '%Perl%'}]
+    );
+
+タグについては以降で解説します。
+
+=head2 3. 行のフェッチ
+
+C<select()>メソッドの戻り値であるL<DBIx::Custom::Result>
+には行をフェッチするためのさまざまなメソッドが
+用意されています。
+(このセクションの解説では「配列」は「配列のリファレンス」を
+「ハッシュ」は「ハッシュのリファレンス」を意味しますので
+注意してください。)
+
+=head3 C<fetch>
+
+一行フェッチして配列に格納します。
+
+    while (my $row = $result->fetch) {
+        my $author = $row->[0];
+        my $title  = $row->[1];
+    }
+
+=head3 C<fetch_first>
+
+一行だけフェッチして配列に格納します。
+
+    my $row = $result->fetch_first;
+
+フェッチが終わった後は、ステートメントハンドルからC<finish()>
+メソッドが呼び出されてそれ以上フェッチできなくなります。
+
+=head3 C<fetch_multi>
+
+複数行をフェッチして配列の配列に格納します。
+
+    while (my $rows = $result->fetch_multi(5)) {
+        my $first_author  = $rows->[0][0];
+        my $first_title   = $rows->[0][1];
+        my $second_author = $rows->[1][0];
+        my $second_value  = $rows->[1][1];
+    }
+
+=head3 C<fetch_all>
+
+すべての行をフェッチして配列の配列に格納します。
+
+    my $rows = $result->fetch_all;
+
+=head3 C<fetch_hash>
+
+一行フェッチしてハッシュに格納します。
+
+    while (my $row = $result->fetch_hash) {
+        my $title  = $row->{title};
+        my $author = $row->{author};
+    }
+
+=head3 C<fetch_hash_first>
+
+一行だけフェッチしてハッシュに格納します。
+
+    my $row = $result->fetch_hash_first;
+
+フェッチが終わった後は、ステートメントハンドルからC<finish()>
+メソッドが呼び出されてそれ以上フェッチできなくなります。
+
+=head3 C<fetch_hash_multi>
+
+複数行をフェッチしてハッシュの配列に格納します。
+
+    while (my $rows = $result->fetch_hash_multi(5)) {
+        my $first_title   = $rows->[0]{title};
+        my $first_author  = $rows->[0]{author};
+        my $second_title  = $rows->[1]{title};
+        my $second_author = $rows->[1]{author};
+    }
+
+=head3 C<fetch_all>
+
+すべての行をフェッチしてハッシュの配列に格納します。
+
+    my $rows = $result->fetch_hash_all;
+
+L<DBI>のステートメントハンドルに直接アクセスしたい場合は
+<sth>を使用します。
+
+    my $sth = $result->sth;
+
+=head2 4. ハッシュパラメタバインド
+
+L<DBIx::Custom>はハッシュパラメタバインドを提供します。
+
+まず最初にL<DBI>による通常のパラメタバインドをご覧ください。
+
+    use DBI;
+    my $dbh = DBI->connect(...);
+    my $sth = $dbh->prepare(
+        "select * from book where author = ? and title like ?;"
+    );
+    $sth->execute('Ken', '%Perl%');
+
+これはデータベースシステムがSQLをキャッシュすることができ、
+パラメータは自動的にクォートされるので、
+パフォーマンス面でも、セキュリティ面でも
+とても良い方法です。
+
+
+L<DBIx::Custom>はこれを改善して、ハッシュで
+パラメタを指定できるようにしました。
+
+    my $result = $dbi->execute(
+        "select * from book where {= author} and {like title};"
+        param => {author => 'Ken', title => '%Perl%'}
+    );
+
+C<{= author}>とC<{like title}>はタグと呼ばれます。
+タグは内部ではプレースホルダを含む文字列に置き換えられます。
+
+    select * from book where {= author} and {like title}
+
+という文は以下のSQLに置き換えられます。
+
+    select * from book where author = ? and title like ?;
+
+このようにタグを使ってSQL文を表現するのがL<DBIx::Custom>の
+特徴です。以下のタグが利用可能です。
+
+    [TAG]                       [REPLACED]
+    {? NAME}               ->   ?
+    {= NAME}               ->   NAME = ?
+    {<> NAME}              ->   NAME <> ?
+    
+    {< NAME}               ->   NAME < ?
+    {> NAME}               ->   NAME > ?
+    {>= NAME}              ->   NAME >= ?
+    {<= NAME}              ->   NAME <= ?
+    
+    {like NAME}            ->   NAME like ?
+    {in NAME COUNT}        ->   NAME in [?, ?, ..]
+    
+    {insert_param NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
+    {update_param NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?
+
+これらの変換はL<DBIx::Custom::QueryBuilder>によって行われます。
+
+C<{>とC<}>は予約語です。これらの文字を使いたい場合は
+「\」を使ってエスケープする必要があります。
+'\'はPerlのエスケープ文字なので、
+エスケープするためには'\\'と書く必要があることに注意
+してください。
+
+    'select * from book \\{ something statement \\}'
+
+=head2 5. フィルタリング
+
+=head3 パラメタバインド時のフィルタリング
+
+データベースに登録するデータをフィルタリングしたい場合
+があります。たとえば、内部文字列で文字列を保持している場合は
+データベースにデータを登録する前に、バイト文字列に変換する
+必要があります。L<DBIx::Custom>のフィルタリングシステムは
+あるデータを他のデータに変換するのを手助けしてくれます。
+
+フィルタリングを利用するにはまず、
+C<register_filter()>メソッドを使用して
+フィルタを登録しておく必要があります。
+
+    $dbi->register_filter(
+        to_upper_case => sub {
+            my $value = shift;
+            return uc $value;
+        }
+    );
+
+デフォルトのフィルタとしてC<encode_utf8>とC<decode_utf8>
+が登録されています。
+
+登録されているフィルタはC<execute()>メソッドのC<filter>オプション
+で指定することができます。
+
+    my $result = $dbi->execute(
+        "select * from book where {= author} and {like title};"
+        param  => {author => 'Ken', title => '%Perl%'},
+        filter => {author => 'to_upper_case, title => 'encode_utf8'}
+    );
+
+この例ではC<author>の値はバインドされるときに大文字に変換され、
+C<title>の値はバイト文字列に変換されます。
+
+C<filter>オプションは
+C<insert()>、C<update()>、 C<update_all()>,
+C<delete()>、C<select()>
+メソッドにおいても使用することができます。
+
+    # insert() with filter option
+    $dbi->insert(table  => 'book',
+                 param  => {title => 'Perl', author => 'Ken'},
+                 filter => {title => 'encode_utf8'});
+    
+    # select() with filter option
+    my $result = $dbi->select(
+        table  => 'book',
+        column => [qw/author title/],
+        where  => {author => 'Ken'},
+        append => 'order by id limit 1',
+        filter => {title => 'encode_utf8'}
+    );
+
+B<フィルタのサンプル>
+
+MySQL
+
+    # Time::Piece object to DATETIME format
+    tp_to_datetime => sub {
+        return shift->strftime('%Y-%m-%d %H:%M:%S');
+    }
+    
+    # Time::Piece object to DATE format
+    tp_to_date => sub {
+        return shift->strftime('%Y-%m-%d');
+    }
+    
+    # DATETIME to Time::Piece object
+    datetime_to_tp => sub {
+        return Time::Piece->strptime(shift, '%Y-%m-%d %H:%M:%S');
+    }
+    
+    # DATE to Time::Piece object
+    date_to_tp => sub {
+        return Time::Piece->strptime(shift, '%Y-%m-%d');
+    }
+
+SQLite
+    
+    # Time::Piece object to DATETIME format
+    tp_to_datetime => sub {
+        return shift->strftime('%Y-%m-%d %H:%M:%S');
+    }
+    
+    # Time::Piece object to DATE format
+    tp_to_date => sub {
+        return shift->strftime('%Y-%m-%d');
+    }
+    
+    # DATETIME to Time::Piece object
+    datetime_to_tp => sub {
+        return Time::Piece->strptime(shift, '%Y-%m-%d %H:%M:%S');
+    }
+    
+    # DATE to Time::Piece object
+    date_to_tp => sub {
+        return Time::Piece->strptime(shift, '%Y-%m-%d');
+    }
+
+=head3 行のフェッチ時のフィルタリング
+
+行をフェッチするときのフィルタも設定することができます。
+これはL<DBIx::Custom::Result>クラスのC<filter>メソッドを使って
+行います。
+
+    my $result = $dbi->select(table => 'book');
+    $result->filter({title => 'decode_utf8', author => 'to_upper_case'});
+
+フェッチのためのフィルタにおいて、
+たとえ、列名が大文字を含む場合であっても
+列名は小文字であることに注意してください。
+これはデータベースシステムに依存させないための要件です。
+
+=head2 6. パフォーマンスの改善
+
+=head3 シュガーメソッドを使わない
+
+もしC<insert()>メソッドを使用してインサートを実行した場合、
+必要なパフォーマンスを得られない場合があるかもしれません。
+C<insert()>メソッドは、SQL文とステートメントハンドルを
+毎回作成するためすこし遅いです。
+
+そのような場合は、C<create_query()>メソッドによって
+クエリを用意しておくことができます。
+    
+    my $query = $dbi->create_query(
+        "insert into book {insert_param title author};"
+    );
+
+戻り値はL<DBIx::Custom::Query>オブジェクトです。
+このオブジェクトはSQL文とパラメータバインド時の列名を
+保持しています。またステートメントハンドルも保持しています。
+
+    {
+        sql     => 'insert into book (title, author) values (?, ?);',
+        columns => ['title', 'author'],
+        sth     => $sth
+    }
+
+クエリオブジェクトを使って繰り返し実行するには次のようにします。
+    
+    my $inputs = [
+        {title => 'Perl',      author => 'Ken'},
+        {title => 'Good days', author => 'Mike'}
+    ];
+    
+    foreach my $input (@$inputs) {
+        $dbi->execute($query, $input);
+    }
+
+C<execute>メソッドの第一引数にクエリオブジェトを渡すことができます。
+これはC<insert()>メソッドよりも高速です。
+
+=head2 7. その他の機能
+
+=head3 トランザクション
+
+トランザクションを便利に利用するために、
+C<begin_work()>、C<commit()>、C<rollback()>
+という三つのメソッドが容易されています。
+これはL<DBI>の同名のメソッドと同じ機能を持ちます。
+
+    $dbi->begin_work;
+    
+    eval {
+        $dbi->update(...);
+        $dbi->update(...);
+    };
+    
+    if ($@) {
+        $dbi->rollback;
+    }
+    else {
+        $dbi->commit;
+    }
+
+=head3 selectメソッドの結果クラスの変更
+
+必要ならばC<select()>メソッドの結果クラスを変更することができます。
+
+    package Your::Result;
+    use base 'DBIx::Custom::Result';
+    
+    sub some_method { ... }
+
+    1;
+    
+    package main;
+    
+    use Your::Result;
+    
+    my $dbi = DBIx::Custom->connect(...);
+    $dbi->result_class('Your::Result');
+
+=head3 L<DBIx::Custom::QueryBuilder>の機能の拡張
+
+新しいタグが欲しい場合はL<DBIx::Custom::QueryBuilder>の機能を拡張
+することができます。
+
+    my $dbi = DBIx::Custom->connect(...);
+    $dbi->query_builder->register_tag_processor(
+        name => sub {
+           ...
+        }
+    );
+
+=head3 ヘルパーメソッドの登録
+
+ヘルパーメソッドを登録することができます。
+
+    $dbi->helper(
+        update_or_insert => sub {
+            my $self = shift;
+            # do something
+        },
+        find_or_create   => sub {
+            my $self = shift;
+            # do something
+        }
+    );
+
+<helper()>メソッドで登録したメソッドは
+L<DBIx::Custom>オブジェクトから直接呼び出すことができます。
+
+    $dbi->update_or_insert;
+    $dbi->find_or_create;
+
+=head3 ユーティリティメソッド(実験的)
+
+C<expand>メソッドを使用すると次のようなハッシュに含まれる
+テーブル名と列名を結合することができます。
+
+    my %expanded = $dbi->expand(\%source);
+
+以下のハッシュ
+
+    {book => {title => 'Perl', author => 'Ken'}}
+
+は次のように展開されます。
+
+    ('book.title' => 'Perl', 'book.author' => 'Ken')
+
+これはテーブル名を含むselect文で利用すると便利です。
+
+    my $param = {title => 'Perl', author => '%Ken%'};
+    $dbi->execute(
+        'select * from book where {= book.title} && {like book.author};',
+        param => {$dbi->expand({book => $param})}
+    );
+
+=cut
