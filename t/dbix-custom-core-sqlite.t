@@ -922,4 +922,13 @@ $dbi->register_tag_processor(
 );
 is($dbi->query_builder->tag_processors->{a}->(), 1);
 
-
+test 'table not specify exception';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+eval {$dbi->insert};
+like($@, qr/table/);
+eval {$dbi->update};
+like($@, qr/table/);
+eval {$dbi->delete};
+like($@, qr/table/);
+eval {$dbi->select};
+like($@, qr/table/);

@@ -254,6 +254,7 @@ sub delete {
     
     # Arguments
     my $table            = $args{table} || '';
+    croak qq{"table" option must be specified} unless $table;
     my $where            = $args{where} || {};
     my $append = $args{append};
     my $filter           = $args{filter};
@@ -402,7 +403,8 @@ sub insert {
     }
     
     # Arguments
-    my $table  = $args{table} || '';
+    my $table  = $args{table};
+    croak qq{"table" option must be specified} unless $table;
     my $param  = $args{param} || {};
     my $append = $args{append} || '';
     my $filter = $args{filter};
@@ -489,8 +491,11 @@ sub select {
     }
     
     # Arguments
-    my $tables = $args{table} || [];
-    $tables = [$tables] unless ref $tables eq 'ARRAY';
+    my $table = $args{table};
+    my $tables = ref $table eq 'ARRAY' ? $table
+               : defined $table ? [$table]
+               : [];
+    croak qq{"table" option must be specified} unless @$tables;
     my $columns  = $args{column} || [];
     my $where    = $args{where};
     my $relation = $args{relation};
@@ -622,6 +627,7 @@ sub update {
     
     # Arguments
     my $table            = $args{table} || '';
+    croak qq{"table" option must be specified} unless $table;
     my $param            = $args{param} || {};
     my $where            = $args{where} || {};
     my $append = $args{append} || '';

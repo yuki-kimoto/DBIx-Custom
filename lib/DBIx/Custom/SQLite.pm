@@ -38,7 +38,7 @@ sub connect_memory {
 
 =head1 NAME
 
-DBIx::Custom::SQLite - SQLite implementation
+DBIx::Custom::SQLite - DEPRECATED!
 
 =head1 CAUTION
 

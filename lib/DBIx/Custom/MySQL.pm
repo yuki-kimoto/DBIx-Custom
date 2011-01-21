@@ -32,7 +32,7 @@ sub connect {
 
 =head1 NAME
 
-DBIx::Custom::MySQL - MySQL implementation
+DBIx::Custom::MySQL - DEPRECATED!
 
 =head1 CAUTION
 
