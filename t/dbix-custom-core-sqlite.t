@@ -646,13 +646,13 @@ $result->filter({'key2' => 'twice'});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key2 => 4, key3 => 18}], "$test : select : join : omit");
 
-test 'iterate_all_columns';
+test 'each_column';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->execute($CREATE_TABLE->{3});
 
 $infos = [];
-$dbi->iterate_all_columns(sub {
+$dbi->each_column(sub {
     my ($table, $column, $cinfo) = @_;
     
     if ($table =~ /^table/) {

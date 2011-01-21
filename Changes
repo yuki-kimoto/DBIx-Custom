@@ -1,4 +1,6 @@
-0.1644
+0.1635
+  renamed iterate_all_columns to each_column
+0.1634
   became more useful where method
   changed DBIx::Custom::Where greatly
 0.1633

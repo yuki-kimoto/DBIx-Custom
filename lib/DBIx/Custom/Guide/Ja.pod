@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-DBIx::Custom::Guides::Ja - DBIx::Customの日本語ガイド
+DBIx::Custom::Guide::Ja - DBIx::Customの日本語ガイド
 
 =head1 ガイド
 

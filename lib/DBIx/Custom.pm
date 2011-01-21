@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1634';
+our $VERSION = '0.1635';
 
 use 5.008001;
 use strict;
@@ -430,7 +430,7 @@ sub insert {
     return $ret_val;
 }
 
-sub iterate_all_columns {
+sub each_column {
     my ($self, $cb) = @_;
     
     # Iterate all tables
@@ -460,12 +460,6 @@ sub new {
     }
     
     return $self;
-}
-
-sub or {
-    my $self = shift;
-    my $values = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
-    return DBIx::Custom::Or->new(values => $values);
 }
 
 sub register_filter {
@@ -920,7 +914,15 @@ so all people learing database know it.
 If you already know SQL,
 you learn a little thing to use L<DBIx::Custom>.
 
-See L<DBIx::Custom::Guides> for more details.
+See L<DBIx::Custom::Guide> for more details.
+
+=head1 GUIDE
+
+L<DBIx::Custom::Guide> - L<DBIx::Custom> complete guide
+
+=head1 EXAMPLES
+
+L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki> - Many useful examples
 
 =head1 ATTRIBUTES
 
@@ -1201,25 +1203,24 @@ B<Example:>
 
 Create a new L<DBIx::Custom> object.
 
-=head2 C<(experimental) iterate_all_columns>
+=head2 C<(experimental) each_column>
 
-    $dbi->iterate_all_columns(
+    $dbi->each_column(
         sub {
-            my ($table, $column, $column_info) = @_;
+            my ($table, $column, $info) = @_;
             
-            # do something;
+            my $type = $info->{TYPE_NAME};
+            
+            if ($type eq 'DATE') {
+                # ...
+            }
         }
     );
-
-Iterate all columns of all tables. Argument is callback.
-You can do anything by callback.
-
-=head2 C<(experimental) or>
-
-    $or = $dbi->or(1, 5);
-
-Create L<DBIx::Custom::Or> object. This is used with select method's
-where option.
+Get column informations from database.
+Argument is callback.
+You can do anything in callback.
+Callback receive three arguments, table name, column name and column
+information.
 
 =head2 C<register_filter>
 

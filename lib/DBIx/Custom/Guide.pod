@@ -1,8 +1,8 @@
 =head1 NAME
 
-DBIx::Custom::Guides - DBIx::Custom Guides
+DBIx::Custom::Guide - DBIx::Custom Guides
 
-=head1 GUIDES
+=head1 GUIDE
 
 =head2 1. Connect to the database
 
@@ -538,7 +538,9 @@ These method can be called from L<DBIx::Custom> object directory.
     $dbi->update_or_insert;
     $dbi->find_or_create;
 
-=head2 EXAMPLES
+=head1 EXAMPLES
+
+L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki> - Many useful examples
 
 =head3 Limit clause
     
