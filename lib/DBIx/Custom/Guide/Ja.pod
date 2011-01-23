@@ -77,7 +77,7 @@ L<DBIx::Custom>を利用するのであればハッシュリファレンスで�
 次にテーブルの各列にこのフィルタを適用します。
 
     $dbi->apply_filter('book',
-        'publish_date' => {out => 'tp_to_date', in => 'date_to_tp'}
+        'issue_date' => {out => 'tp_to_date', in => 'date_to_tp'}
     );
 
 outはPerlからデータベースに保存する方向、inはデータベースからPerlに取得する方向です。
@@ -482,7 +482,90 @@ C<fetch_hash_first()>を使用します。
 ステートメントハンドルから
 利用できる速度の速いメソッドを利用することができます。
 
-=head2 4. タグ
+=head2 4. フィルタリング
+
+データベースにデータを登録するときやデータベースからデータを取得する
+ときに自動的に値の変換を行いたい場合が多いと思います。
+たとえば、日付を表現する列の場合は、
+データベースに登録する場合はL<Time::Piece>オブジェクトから
+データベースの日付のフォーマットに、
+データベースからデータを取得するときは、その逆を行えると便利です。
+
+=head3 フィルタの登録
+
+フィルタを登録するにはC<register_filter()>を使用します。
+
+    $dbi->register_filter(
+        # Time::Piece object to DATE format
+        tp_to_date => sub {
+            my $date = shift;
+
+            return '0000-00-00' unless $tp;
+            return $tp->strftime('%Y-%m-%d');
+        },
+        
+        # DATE to Time::Piece object
+        date_to_tp => sub {
+            my $date = shift;
+
+            return if $date eq '0000-00-00';
+            return Time::Piece->strptime($date, '%Y-%m-%d');
+        },
+    );
+
+登録したフィルタはC<apply_filter()>などで利用することができます。
+
+=head3 フィルタの適用
+
+作成したフィルタを適用するには、C<apply_filter()>を使用します。
+
+    $dbi->apply_filter('book',
+        issue_date => {out => 'tp_to_date', in => 'date_to_tp'},
+        first_issue_date => {out => 'tp_to_date', in => 'date_to_tp'}
+    );
+
+第一引数はテーブル名です。第二引数以降は、列名とフィルタルールのペアを記述します。
+フィルタルールのoutには、データベースにデータを送信するときに適用するフィルタを、
+フィルタルールのinには、データベースからデータを取得するときに適用するフィルタを
+記述します。outがデータベースに送信する方向、inがデータベースから取り出す方向です。
+フィルタには、C<register_filter>で登録したフィルタ名の他に、コードリファレンスを
+指定することもできます。
+
+    issue_date => {out => sub { ... }, in => sub { ... }}
+
+適用されたフィルタはC<insert()>、C<update()>、C<update_all()>、C<delete()>、
+C<delete_all()>、C<select()>で有効になります。
+
+    my $tp = Time::Piece->strptime('2010/10/14', '%Y/%m/%d');
+    my $result = $dbi->select(table => 'book', where => {issu_date => $tp});
+
+データベースにデータが送信されるときに、L<Time::Piece>オブジェクトは
+データベースの日付のフォーマット「2010-10-14」に変換されます。
+
+また逆にデータをフェッチするときには、データベースの日付のフォーマットは
+タイムピースオブジェクトに変換されます。
+
+    my $row = $resutl->fetch_hash_first;
+    my $tp = $row->{issue_date};
+
+このような自動的に実行されるフィルタを登録できることがL<DBIx::Custom>の
+特徴のひとつです。
+
+=head3 個別にフィルタを適用する
+
+C<apply_filter()>を使って最初にすべてのテーブルの列について
+フィルタを定義しておくこともできますが、
+さらに個別にフィルタを適用することもできます。
+個別のフィルタはC<apply_filter()>で適用したフィルタを上書きます。
+
+行をフェッチするときに個別にフィルタを適用するには、
+C<DBIx::Custom::Result>クラスのC<filter>メソッドを使用します。
+
+    $result->filter(issue_date => 'date_to_tp', first_issue_date => 'date_to_tp');
+
+これは、C<apply_filter()>のフィルタルールのinで定義されたフィルタを上書きます。
+
+=head2 5. タグ
 
 L<DBIx::Custom>はハッシュパラメタバインドを提供します。
 
@@ -547,75 +630,6 @@ C<{>とC<}>は予約語です。これらの文字を使いたい場合は
 
     'select * from book \\{ something statement \\}'
 
-=head2 5. フィルタリング
-
-=head3 パラメタバインド時のフィルタリング
-
-データベースに登録するデータをフィルタリングしたい場合
-があります。たとえば、内部文字列で文字列を保持している場合は
-データベースにデータを登録する前に、バイト文字列に変換する
-必要があります。L<DBIx::Custom>のフィルタリングシステムは
-あるデータを他のデータに変換するのを手助けしてくれます。
-
-フィルタリングを利用するにはまず、
-C<register_filter()>メソッドを使用して
-フィルタを登録しておく必要があります。
-
-    $dbi->register_filter(
-        to_upper_case => sub {
-            my $value = shift;
-            return uc $value;
-        }
-    );
-
-デフォルトのフィルタとしてC<encode_utf8>とC<decode_utf8>
-が登録されています。
-
-登録されているフィルタはC<execute()>メソッドのC<filter>オプション
-で指定することができます。
-
-    my $result = $dbi->execute(
-        "select * from book where {= author} and {like title};"
-        param  => {author => 'Ken', title => '%Perl%'},
-        filter => {author => 'to_upper_case, title => 'encode_utf8'}
-    );
-
-この例ではC<author>の値はバインドされるときに大文字に変換され、
-C<title>の値はバイト文字列に変換されます。
-
-C<filter>オプションは
-C<insert()>、C<update()>、 C<update_all()>,
-C<delete()>、C<select()>
-メソッドにおいても使用することができます。
-
-    # insert() with filter option
-    $dbi->insert(table  => 'book',
-                 param  => {title => 'Perl', author => 'Ken'},
-                 filter => {title => 'encode_utf8'});
-    
-    # select() with filter option
-    my $result = $dbi->select(
-        table  => 'book',
-        column => [qw/author title/],
-        where  => {author => 'Ken'},
-        append => 'order by id limit 1',
-        filter => {title => 'encode_utf8'}
-    );
-
-=head3 行のフェッチ時のフィルタリング
-
-行をフェッチするときのフィルタも設定することができます。
-これはL<DBIx::Custom::Result>クラスのC<filter>メソッドを使って
-行います。
-
-    my $result = $dbi->select(table => 'book');
-    $result->filter({title => 'decode_utf8', author => 'to_upper_case'});
-
-フェッチのためのフィルタにおいて、
-たとえ、列名が大文字を含む場合であっても
-列名は小文字であることに注意してください。
-これはデータベースシステムに依存させないための要件です。
-
 =head2 6. パフォーマンスの改善
 
 =head3 シュガーメソッドを使わない
@@ -664,7 +678,7 @@ C<execute>メソッドの第一引数にクエリオブジェトを渡すこと�
 C<begin_work()>、C<commit()>、C<rollback()>
 という三つのメソッドが容易されています。
 これはL<DBI>の同名のメソッドと同じ機能を持ちます。
-
+fc
     $dbi->begin_work;
     
     eval {
@@ -730,7 +744,7 @@ L<DBIx::Custom>オブジェクトから直接呼び出すことができます�
     $dbi->update_or_insert;
     $dbi->find_or_create;
 
-=head3 ユーティリティメソッド(実験的)
+=head3 ユーティリティメソッド
 
 C<expand>メソッドを使用すると次のようなハッシュに含まれる
 テーブル名と列名を結合することができます。

@@ -936,9 +936,9 @@ $where = $dbi->where
 eval{$where->to_string};
 like($@, qr/one column/);
 
-test 'dbi_options default';
+test 'dbi_option default';
 $dbi = DBIx::Custom->new;
-is_deeply($dbi->dbi_options, {});
+is_deeply($dbi->dbi_option, {});
 
 test 'register_tag_processor';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -1047,3 +1047,12 @@ is($result->default_filter->(), 1);
 $dbi->table('book');
 eval{$dbi->table('book')->no_exists};
 like($@, qr/locate/);
+
+test 'dbi_option';
+$dbi = DBIx::Custom->connect(data_source => 'dbi:SQLite:dbname=:memory:',
+                             dbi_option => {PrintError => 1});
+ok($dbi->dbh->{PrintError});
+$dbi = DBIx::Custom->connect(data_source => 'dbi:SQLite:dbname=:memory:',
+                             dbi_options => {PrintError => 1});
+ok($dbi->dbh->{PrintError});
+

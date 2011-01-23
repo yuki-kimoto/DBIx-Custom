@@ -18,8 +18,8 @@ use Encode qw/encode_utf8 decode_utf8/;
 
 __PACKAGE__->attr(
     [qw/data_source dbh password user/],
-    dbi_options => sub { {} },
     cache => 1,
+    dbi_option => sub { {} },
     filter_check  => 1,
     query_builder => sub {DBIx::Custom::QueryBuilder->new},
     result_class  => 'DBIx::Custom::Result',
@@ -165,7 +165,7 @@ sub connect {
       unless $data_source;
     my $user        = $self->user;
     my $password    = $self->password;
-    my $dbi_options = $self->dbi_options || {};
+    my $dbi_option = {%{$self->dbi_options}, %{$self->dbi_option}};
     
     # Connect
     my $dbh = eval {DBI->connect(
@@ -176,7 +176,7 @@ sub connect {
             RaiseError => 1,
             PrintError => 0,
             AutoCommit => 1,
-            %$dbi_options
+            %$dbi_option
         }
     )};
     
@@ -731,6 +731,10 @@ sub _croak {
     }
 }
 
+# DEPRECATED!
+
+__PACKAGE__->attr(dbi_options => sub { {} });
+
 sub default_bind_filter {
     my $self = shift;
     
@@ -782,67 +786,44 @@ DBIx::Custom - DBI interface, having hash parameter binding and filtering system
 
 =head1 SYNOPSYS
 
-Connect to the database.
-    
     use DBIx::Custom;
     my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=dbname",
-                                    user => 'ken', password => '!LFKD%$&');
-
-Insert, update, and delete
+                                    user => 'ken', password => '!LFKD%$&',
+                                    dbi_option => {mysql_enable_utf8 => 1});
 
     # Insert 
     $dbi->insert(table  => 'book',
                  param  => {title => 'Perl', author => 'Ken'},
-                 filter => {title => 'encode_utf8'});
+                 filter => {title => 'to_something'});
     
     # Update 
     $dbi->update(table  => 'book', 
                  param  => {title => 'Perl', author => 'Ken'}, 
                  where  => {id => 5},
-                 filter => {title => 'encode_utf8'});
+                 filter => {title => 'to_something'});
     
     # Update all
     $dbi->update_all(table  => 'book',
                      param  => {title => 'Perl'},
-                     filter => {title => 'encode_utf8'});
+                     filter => {title => 'to_something'});
     
     # Delete
     $dbi->delete(table  => 'book',
                  where  => {author => 'Ken'},
-                 filter => {title => 'encode_utf8'});
+                 filter => {title => 'to_something'});
     
     # Delete all
     $dbi->delete_all(table => 'book');
 
-Select
-
     # Select
-    my $result = $dbi->select(table => 'book');
-    
-    # Select, more complex
     my $result = $dbi->select(
         table  => 'book',
         column => [qw/author title/],
         where  => {author => 'Ken'},
+        relation => {'book.id' => 'rental.book_id'},
         append => 'order by id limit 5',
-        filter => {title => 'encode_utf8'}
+        filter => {title => 'to_something'}
     );
-    
-    # Select, join table
-    my $result = $dbi->select(
-        table    => ['book', 'rental'],
-        column   => ['book.name as book_name']
-        relation => {'book.id' => 'rental.book_id'}
-    );
-    
-    # Select, more flexible where
-    my $result = $dbi->select(
-        table  => 'book',
-        where  => ['{= author} and {like title}', 
-                   {author => 'Ken', title => '%Perl%'}]
-    );
-
-Execute SQL
 
     # Execute SQL
     $dbi->execute("select title from book");
@@ -850,7 +831,7 @@ Execute SQL
     # Execute SQL with hash binding and filtering
     $dbi->execute("select id from book where {= author} and {like title}",
                   param  => {author => 'ken', title => '%Perl%'},
-                  filter => {title => 'encode_utf8'});
+                  filter => {title => 'to_something'});
 
     # Create query and execute it
     my $query = $dbi->create_query(
@@ -858,12 +839,8 @@ Execute SQL
     );
     $dbi->execute($query, param => {author => 'Ken', title => '%Perl%'})
 
-Other features.
-
     # Get DBI object
     my $dbh = $dbi->dbh;
-
-Fetch row.
 
     # Fetch
     while (my $row = $result->fetch) {
@@ -932,10 +909,10 @@ C<connect()> method use this value to connect the database.
 
 L<DBI> object. You can call all methods of L<DBI>.
 
-=head2 C<dbi_options>
+=head2 C<dbi_option>
 
-    my $dbi_options = $dbi->dbi_options;
-    $dbi            = $dbi->dbi_options($dbi_options);
+    my $dbi_option = $dbi->dbi_option;
+    $dbi            = $dbi->dbi_option($dbi_option);
 
 DBI options.
 C<connect()> method use this value to connect the database.
@@ -946,9 +923,6 @@ Default filter when row is fetched.
 
     my $filters = $dbi->filters;
     $dbi        = $dbi->filters(\%filters);
-
-Filter functions.
-"encode_utf8" and "decode_utf8" is registered by default.
 
 =head2 C<filter_check>
 
@@ -1068,18 +1042,6 @@ Query is L<DBIx::Custom::Query> object.
 Return value is L<DBIx::Custom::Result> if select statement is executed,
 or the count of affected rows if insert, update, delete statement is executed.
 
-B<Example:>
-
-    my $result = $dbi->execute(
-        "select * from book where {= author} and {like title}", 
-        param => {author => 'Ken', title => '%Perl%'}
-    );
-    
-    while (my $row = $result->fetch) {
-        my $author = $row->[0];
-        my $title  = $row->[1];
-    }
-
 =head2 C<(experimental) expand>
 
     my %expand = $dbi->expand($source);
@@ -1114,13 +1076,6 @@ C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as re
 default to 0. This is experimental.
 Return value of C<delete()> is the count of affected rows.
 
-B<Example:>
-
-    $dbi->delete(table  => 'book',
-                 where  => {id => 5},
-                 append => 'some statement',
-                 filter => {id => 'encode_utf8'});
-
 =head2 C<delete_all>
 
     $dbi->delete_all(table => $table);
@@ -1129,10 +1084,6 @@ Execute delete statement to delete all rows.
 Arguments is same as C<delete> method,
 except that C<delete_all> don't have C<where> argument.
 Return value of C<delete_all()> is the count of affected rows.
-
-B<Example:>
-    
-    $dbi->delete_all(table => 'book');
 
 =head2 C<(experimental) helper>
 
@@ -1171,13 +1122,6 @@ C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as re
 default to 0. This is experimental.
 This is overwrites C<default_bind_filter>.
 Return value of C<insert()> is the count of affected rows.
-
-B<Example:>
-
-    $dbi->insert(table  => 'book', 
-                 param  => {title => 'Perl', author => 'Taro'},
-                 append => "some statement",
-                 filter => {title => 'encode_utf8'})
 
 =head2 C<new>
 
@@ -1235,25 +1179,6 @@ C<default_filter> and C<filter> of C<DBIx::Custom::Result>
 
 =back
 
-B<Example:>
-
-    $dbi->register_filter(
-        encode_utf8 => sub {
-            my $value = shift;
-            
-            require Encode;
-            
-            return Encode::encode('UTF-8', $value);
-        },
-        decode_utf8 => sub {
-            my $value = shift;
-            
-            require Encode;
-            
-            return Encode::decode('UTF-8', $value)
-        }
-    );
-
 =head2 C<register_tag_processor>
 
     $dbi->register_tag_processor(
@@ -1291,30 +1216,6 @@ C<filter> is filters when parameter binding is executed.
 C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
 default to 0. This is experimental.
 
-B<Example:>
-
-    # select * from book;
-    my $result = $dbi->select(table => 'book');
-    
-    # select * from book where title = ?;
-    my $result = $dbi->select(table => 'book', where => {title => 'Perl'});
-    
-    # select title, author from book where id = ? for update;
-    my $result = $dbi->select(
-        table  => 'book',
-        column => ['title', 'author'],
-        where  => {id => 1},
-        appned => 'for update'
-    );
-    
-    # select book.name as book_name from book, rental
-    # where book.id = rental.book_id;
-    my $result = $dbi->select(
-        table    => ['book', 'rental'],
-        column   => ['book.name as book_name']
-        relation => {'book.id' => 'rental.book_id'}
-    );
-
 If you use more complex condition,
 you can specify a array reference to C<where> argument.
 
@@ -1350,14 +1251,6 @@ C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as re
 default to 0. This is experimental.
 This is overwrites C<default_bind_filter>.
 Return value of C<update()> is the count of affected rows.
-
-B<Example:>
-
-    $dbi->update(table  => 'book',
-                 param  => {title => 'Perl', author => 'Taro'},
-                 where  => {id => 5},
-                 append => "some statement",
-                 filter => {title => 'encode_utf8'});
 
 =head2 C<(experimental) txn_scope>
 
@@ -1398,12 +1291,6 @@ Arguments is same as C<update> method,
 except that C<update_all> don't have C<where> argument.
 Return value of C<update_all()> is the count of affected rows.
 
-B<Example:>
-
-    $dbi->update_all(table  => 'book', 
-                     param  => {author => 'taro'},
-                     filter => {author => 'encode_utf8'});
-
 =head2 C<(experimental) where>
 
     my $where = $dbi->where;
@@ -1416,23 +1303,6 @@ Create a new L<DBIx::Custom::Where> object.
     $cache_method = $dbi->cache_method
 
 Method to set and get caches.
-
-B<Example:>
-
-    $dbi->cache_method(
-        sub {
-            my $self = shift;
-            
-            $self->{_cached} ||= {};
-            
-            if (@_ > 1) {
-                $self->{_cached}{$_[0]} = $_[1] 
-            }
-            else {
-                return $self->{_cached}{$_[0]}
-            }
-        }
-    );
 
 =head1 STABILITY
 
