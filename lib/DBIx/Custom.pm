@@ -20,8 +20,7 @@ __PACKAGE__->attr(
     [qw/data_source dbh password user/],
     cache => 1,
     dbi_option => sub { {} },
-    filter_check  => 1,
-    query_builder => sub {DBIx::Custom::QueryBuilder->new},
+    query_builder => sub { DBIx::Custom::QueryBuilder->new },
     result_class  => 'DBIx::Custom::Result',
     table_class   => 'DBIx::Custom::Table'
 );
@@ -732,8 +731,10 @@ sub _croak {
 }
 
 # DEPRECATED!
-
-__PACKAGE__->attr(dbi_options => sub { {} });
+__PACKAGE__->attr(
+    dbi_options => sub { {} },
+    filter_check  => 1
+);
 
 sub default_bind_filter {
     my $self = shift;

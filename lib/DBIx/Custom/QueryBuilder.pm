@@ -7,7 +7,7 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 use DBIx::Custom::Query;
-use DBIx::Custom::QueryBuilder::TagProcessors;
+use DBIx::Custom::TagProcessor;
 
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
@@ -17,17 +17,17 @@ push @DBIx::Custom::Where::CARP_NOT, __PACKAGE__;
 # Attributes
 __PACKAGE__->attr('tag_processors' => sub {
     {
-        '?'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_placeholder_tag,
-        '='     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_equal_tag,
-        '<>'    => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_not_equal_tag,
-        '>'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_greater_than_tag,
-        '<'     => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_lower_than_tag,
-        '>='    => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_greater_than_equal_tag,
-        '<='    => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_lower_than_equal_tag,
-        'like'  => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_like_tag,
-        'in'    => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_in_tag,
-        'insert_param' => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_insert_param_tag,
-        'update_param' => \&DBIx::Custom::QueryBuilder::TagProcessors::expand_update_param_tag
+        '?'     => \&DBIx::Custom::TagProcessor::expand_placeholder_tag,
+        '='     => \&DBIx::Custom::TagProcessor::expand_equal_tag,
+        '<>'    => \&DBIx::Custom::TagProcessor::expand_not_equal_tag,
+        '>'     => \&DBIx::Custom::TagProcessor::expand_greater_than_tag,
+        '<'     => \&DBIx::Custom::TagProcessor::expand_lower_than_tag,
+        '>='    => \&DBIx::Custom::TagProcessor::expand_greater_than_equal_tag,
+        '<='    => \&DBIx::Custom::TagProcessor::expand_lower_than_equal_tag,
+        'like'  => \&DBIx::Custom::TagProcessor::expand_like_tag,
+        'in'    => \&DBIx::Custom::TagProcessor::expand_in_tag,
+        'insert_param' => \&DBIx::Custom::TagProcessor::expand_insert_param_tag,
+        'update_param' => \&DBIx::Custom::TagProcessor::expand_update_param_tag
     }
 });
 

@@ -8,8 +8,7 @@ plan 'no_plan';
 use DBIx::Custom;
 
 # Function for test name
-my $test;
-sub test {$test = shift }
+sub test { "# $_[0]\n" }
 
 # Constant varialbes for test
 my $CREATE_TABLE = {
@@ -36,7 +35,7 @@ $dbi->execute($CREATE_TABLE->{0});
 }
 $result = $dbi->select(table => 'table1');
 is_deeply(scalar $result->fetch_hash_all, [{key1 => 1, key2 => 2}, {key1 => 2, key2 => 3}],
-          "$test : commit");
+          "commit");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -49,5 +48,5 @@ $dbi->execute($CREATE_TABLE->{0});
     }
 }
 $result = $dbi->select(table => 'table1');
-ok(! $result->fetch_first, "$test: rollback");
+ok(! $result->fetch_first, "rollback");
 

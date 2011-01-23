@@ -10,7 +10,7 @@ use Carp 'croak';
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-__PACKAGE__->attr(['dbi', 'name', 'model']);
+__PACKAGE__->attr(['dbi', 'name']);
 
 our $AUTOLOAD;
 

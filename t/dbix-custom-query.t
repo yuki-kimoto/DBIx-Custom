@@ -5,10 +5,7 @@ use warnings;
 use DBIx::Custom::Query;
 
 # Function for test name
-my $test;
-sub test{
-    $test = shift;
-}
+sub test{ "# $_[0]\n" }
 
 # Variables for test
 my $query;
@@ -22,8 +19,8 @@ $query = DBIx::Custom::Query->new(
     fetch_filter     => 'f',
 );
 
-is($query->sql, 'a', "$test : sql");
-is($query->columns, 'b', "$test : columns ");
-is($query->filter, 'c', "$test : filter");
-is($query->sth, 'e', "$test : sth");
+is($query->sql, 'a', "sql");
+is($query->columns, 'b', "columns ");
+is($query->filter, 'c', "filter");
+is($query->sth, 'e', "sth");
 

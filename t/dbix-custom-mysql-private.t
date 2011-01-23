@@ -10,11 +10,7 @@ plan skip_all => 'private MySQL test' unless $USER;
 plan 'no_plan';
 
 # Function for test name
-my $test;
-sub test {
-    $test = shift;
-}
-
+sub test { print "# $_[0]\n" }
 
 # Functions for tests
 sub connect_info {
@@ -47,15 +43,15 @@ test 'connect';
 $dbi = DBIx::Custom::MySQL->new(user => $USER, password => $PASSWORD,
                     database => $DATABASE, host => 'localhost', port => '10000');
 $dbi->connect;
-like($dbi->data_source, qr/dbi:mysql:database=.*;host=localhost;port=10000;/, "$test : created data source");
-is(ref $dbi->dbh, 'DBI::db', $test);
+like($dbi->data_source, qr/dbi:mysql:database=.*;host=localhost;port=10000;/, "created data source");
+is(ref $dbi->dbh, 'DBI::db');
 
 test 'attributes';
 $dbi = DBIx::Custom::MySQL->new;
 $dbi->host('a');
-is($dbi->host, 'a', "$test: host");
+is($dbi->host, 'a', "host");
 $dbi->port('b');
-is($dbi->port, 'b', "$test: port");
+is($dbi->port, 'b', "port");
 
 test 'limit';
 $dbi = DBIx::Custom->connect(
@@ -83,17 +79,17 @@ $rows = $dbi->select(
   where => {key1 => 1},
   append => "order by key2 {limit 1 0}"
 )->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 2}], $test);
+is_deeply($rows, [{key1 => 1, key2 => 2}]);
 $rows = $dbi->select(
   table => 'table1',
   where => {key1 => 1},
   append => "order by key2 {limit 2 1}"
 )->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 4},{key1 => 1, key2 => 6}], $test);
+is_deeply($rows, [{key1 => 1, key2 => 4},{key1 => 1, key2 => 6}]);
 $rows = $dbi->select(
   table => 'table1',
   where => {key1 => 1},
   append => "order by key2 {limit 1}"
 )->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 2}], $test);
+is_deeply($rows, [{key1 => 1, key2 => 2}]);
 $dbi->delete_all(table => 'table1');

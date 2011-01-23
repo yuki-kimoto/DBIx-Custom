@@ -7,7 +7,7 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 
-__PACKAGE__->attr([qw/filter_check filters sth/]);
+__PACKAGE__->attr([qw/filters sth/]);
 
 sub filter {
     my $self = shift;
@@ -239,6 +239,9 @@ sub default_filter {
     return $self->{default_filter};
 }
 
+# DEPRECATED!
+__PACKAGE__->attr('filter_check'); 
+
 1;
 
 =head1 NAME
@@ -310,13 +313,6 @@ This overwrites C<default_filter>.
     $result     = $result->filters(\%filters);
 
 Resistered filters.
-
-=head2 C<filter_check>
-
-    my $filter_check = $result->filter_check;
-    $result          = $result->filter_check;
-
-Enable filter validation.
 
 =head2 C<sth>
 

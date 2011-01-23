@@ -6,10 +6,7 @@ use Test::More 'no_plan';
 use DBIx::Custom::QueryBuilder;
 
 # Function for test name
-my $test;
-sub test{
-    $test = shift;
-}
+sub test{ "# $_[0]\n" }
 
 # Variable for test
 my $datas;
@@ -59,8 +56,8 @@ for (my $i = 0; $i < @$datas; $i++) {
     my $data = $datas->[$i];
     my $builder = DBIx::Custom::QueryBuilder->new;
     my $query = $builder->build_query($data->{source});
-    is($query->{sql}, $data->{sql_expected}, "$test : $data->{name} : sql");
-    is_deeply($query->{columns}, $data->{columns_expected}, "$test : $data->{name} : columns");
+    is($query->{sql}, $data->{sql_expected}, "$data->{name} : sql");
+    is_deeply($query->{columns}, $data->{columns_expected}, "$data->{name} : columns");
 }
 
 
@@ -78,8 +75,8 @@ $ret_val = $builder->register_tag_processor(
 );
 
 $query = $builder->build_query("{p a b}");
-is($query->{sql}, "? a b;", "$test : register_tag_processor sql");
-is_deeply($query->{columns}, [2], "$test : register_tag_processor columns");
+is($query->{sql}, "? a b;", "register_tag_processor sql");
+is_deeply($query->{columns}, [2], "register_tag_processor columns");
 isa_ok($ret_val, 'DBIx::Custom::QueryBuilder');
 
 
@@ -87,31 +84,31 @@ test "Tag processor error case";
 $builder = DBIx::Custom::QueryBuilder->new;
 
 eval{$builder->build_query('{? }')};
-like($@, qr/\QColumn name must be specified in tag "{? }"/, "$test : ? not arguments");
+like($@, qr/\QColumn name must be specified in tag "{? }"/, "? not arguments");
 
 eval{$builder->build_query("{a }")};
-like($@, qr/\QTag "a" in "{a }" is not registered/, "$test : tag_processor not exist");
+like($@, qr/\QTag "a" in "{a }" is not registered/, "tag_processor not exist");
 
 $builder->register_tag_processor({
     q => 'string'
 });
 
 eval{$builder->build_query("{q}", {})};
-like($@, qr/Tag processor "q" must be sub reference/, "$test : tag_processor not code ref");
+like($@, qr/Tag processor "q" must be sub reference/, "tag_processor not code ref");
 
 $builder->register_tag_processor({
    r => sub {} 
 });
 
 eval{$builder->build_query("{r}")};
-like($@, qr/\QTag processor "r" must return [STRING, ARRAY_REFERENCE]/, "$test : tag processor return noting");
+like($@, qr/\QTag processor "r" must return [STRING, ARRAY_REFERENCE]/, "tag processor return noting");
 
 $builder->register_tag_processor({
    s => sub { return ["a", ""]} 
 });
 
 eval{$builder->build_query("{s}")};
-like($@, qr/\QTag processor "s" must return [STRING, ARRAY_REFERENCE]/, "$test : tag processor return not array columns");
+like($@, qr/\QTag processor "s" must return [STRING, ARRAY_REFERENCE]/, "tag processor return not array columns");
 
 $builder->register_tag_processor(
     t => sub {return ["a", []]}
@@ -126,47 +123,47 @@ $builder->register_tag_processor(
     }
 );
 eval{$builder->build_query("{a}")};
-like($@, qr/\QPlaceholder count in "? ? ?" must be same as column count 1/, "$test : placeholder count is invalid");
+like($@, qr/\QPlaceholder count in "? ? ?" must be same as column count 1/, "placeholder count is invalid");
 
 
 test 'Default tag processor Error case';
 eval{$builder->build_query("{= }")};
-like($@, qr/Column name must be specified in tag "{= }"/, "$test : basic '=' : key not exist");
+like($@, qr/Column name must be specified in tag "{= }"/, "basic '=' : key not exist");
 
 eval{$builder->build_query("{in }")};
-like($@, qr/Column name and count of values must be specified in tag "{in }"/, "$test : in : key not exist");
+like($@, qr/Column name and count of values must be specified in tag "{in }"/, "in : key not exist");
 
 eval{$builder->build_query("{in a}")};
 like($@, qr/\QColumn name and count of values must be specified in tag "{in }"/,
-     "$test : in : key not exist");
+     "in : key not exist");
 
 eval{$builder->build_query("{in a r}")};
 like($@, qr/\QColumn name and count of values must be specified in tag "{in }"/,
-     "$test : in : key not exist");
+     "in : key not exist");
 
 test 'variouse source';
 $source = "a {= b} c \\{ \\} {= \\{} {= \\}} d;";
 $query = $builder->build_query($source);
-is($query->sql, 'a b = ? c { } { = ? } = ? d;', "$test : basic : 1");
+is($query->sql, 'a b = ? c { } { = ? } = ? d;', "basic : 1");
 
 $source = "abc;";
 $query = $builder->build_query($source);
-is($query->sql, 'abc;', "$test : basic : 2");
+is($query->sql, 'abc;', "basic : 2");
 
 $source = "{= a}";
 $query = $builder->build_query($source);
-is($query->sql, 'a = ?;', "$test : only tag");
+is($query->sql, 'a = ?;', "only tag");
 
 $source = "000;";
 $query = $builder->build_query($source);
-is($query->sql, '000;', "$test : contain 0 value");
+is($query->sql, '000;', "contain 0 value");
 
 $source = "a {= b} }";
 eval{$builder->build_query($source)};
-like($@, qr/unexpected "}"/, "$test : error : 1");
+like($@, qr/unexpected "}"/, "error : 1");
 
 $source = "a {= {}";
 eval{$builder->build_query($source)};
-like($@, qr/unexpected "{"/, "$test : error : 2");
+like($@, qr/unexpected "{"/, "error : 2");
 
 

@@ -5,7 +5,10 @@ use warnings;
 
 use base 'Object::Simple';
 
-__PACKAGE__->attr([qw/columns default_filter filter sql sth/]);
+__PACKAGE__->attr([qw/columns filter sql sth/]);
+
+# DEPRECATED!
+__PACKAGE__->attr('default_filter');
 
 1;
 
@@ -26,18 +29,11 @@ DBIx::Custom::Query - Query
 
 Column names.
 
-=head2 C<default_filter>
-
-    my $default_filter = $query->default_filter;
-    $query             = $query->default_filter('encode_utf8');
-
-Default filter when parameter binding is executed.
-
 =head2 C<filter>
 
     my $filter = $query->filter;
-    $query     = $query->filter({author => 'encode_utf8',
-                                 title  => 'encode_utf8'});
+    $query     = $query->filter({author => 'to_something',
+                                 title  => 'to_something'});
 
 Filters when parameter binding is executed.
 This overwrites C<default_filter>.

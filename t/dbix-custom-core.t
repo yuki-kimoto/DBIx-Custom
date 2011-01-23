@@ -7,9 +7,7 @@ use DBIx::Custom::QueryBuilder;
 
 # Function for test name
 my $test;
-sub test {
-    $test = shift;
-}
+sub test { "# $_[0]\n" }
 
 # Variables for test
 my $dbi;
@@ -32,7 +30,7 @@ $dbi = DBIx::Custom->new(
 is_deeply($dbi,{user => 'a', password => 'b', data_source => 'c', 
                 filters => {f => 3}, default_bind_filter => 'f',
                 default_fetch_filter => 'g', result_class => 'g',
-                query_builder => $query_builder}, $test);
+                query_builder => $query_builder});
 isa_ok($dbi, 'DBIx::Custom');
 
 
@@ -47,7 +45,7 @@ $dbi = DBIx::Custom::T1->new(
         fo => 30,
     },
 );
-is_deeply(scalar $dbi->filters, {fo => 30}, "$test : filters");
+is_deeply(scalar $dbi->filters, {fo => 30}, "filters");
 
 test 'Sub sub class constructor default';
 {
@@ -74,16 +72,16 @@ $dbi = DBIx::Custom::T1_3->new(
         f => 3,
     },
 );
-is_deeply($dbi->filters, {f => 3}, "$test : filters");
+is_deeply($dbi->filters, {f => 3}, "filters");
 isa_ok($dbi, 'DBIx::Custom');
 
 
 test 'register_filters';
 $dbi = DBIx::Custom->new;
 $dbi->register_filter(a => sub {1});
-is($dbi->filters->{a}->(), 1, $test);
+is($dbi->filters->{a}->(), 1);
 $dbi->register_filter({b => sub {2}});
-is($dbi->filters->{b}->(), 2, $test);
+is($dbi->filters->{b}->(), 2);
 
 
 test 'expand';
@@ -102,4 +100,4 @@ test 'expand';
 
 test 'invalid attribute name';
 eval {$dbi = DBIx::Custom->new(a => 1) };
-like ($@, qr/"a" is invalid attribute name/, $test);
+like ($@, qr/"a" is invalid attribute name/);

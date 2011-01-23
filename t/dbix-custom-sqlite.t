@@ -14,10 +14,7 @@ BEGIN {
 }
 
 # Function for test name
-my $test;
-sub test {
-    $test = shift;
-}
+sub test { "# $_[0]\n" }
 
 # Constant varialbes for test
 my $CREATE_TABLE = {
@@ -37,25 +34,25 @@ my $id;
 test 'connect_memory';
 $dbi = DBIx::Custom::SQLite->connect_memory;
 $ret_val = $dbi->execute($CREATE_TABLE->{0});
-ok(defined $ret_val, $test);
+ok(defined $ret_val);
 $dbi->insert(table => 'table1', param => {key1 => 'a', key2 => 2});
 $rows = $dbi->select(table => 'table1', where => {key1 => 'a'})->fetch_hash_all;
-is_deeply($rows, [{key1 => 'a', key2 => 2}], "$test : select rows");
+is_deeply($rows, [{key1 => 'a', key2 => 2}], "select rows");
 
 test 'connect';
 $db_file  = 't/test.db';
 unlink $db_file if -f $db_file;
 $dbi = DBIx::Custom::SQLite->new(database => $db_file);
 $dbi->connect;
-ok(-f $db_file, "$test : database file");
+ok(-f $db_file, "database file");
 $ret_val = $dbi->execute($CREATE_TABLE->{0});
-ok(defined $ret_val, "$test : database");
+ok(defined $ret_val, "database");
 $dbi->dbh->disconnect;
 
 unlink $db_file if -f $db_file;
 $dbi = DBIx::Custom::SQLite->connect(database => $db_file);
-ok($dbi, "$test : called from class name");
+ok($dbi, "called from class name");
 
 unlink $db_file if -f $db_file;
 $dbi = DBIx::Custom::SQLite->connect(data_source => "dbi:SQLite:dbname=$db_file");
-ok($dbi, "$test : specified data source");
+ok($dbi, "specified data source");
