@@ -42,6 +42,7 @@ sub helper {
 sub new {
     my $self = shift->SUPER::new(@_);
     
+    # Methods
     my @methods = qw/insert update update_all delete delete_all select/;
     foreach my $method (@methods) {
         $self->helper(
@@ -51,6 +52,7 @@ sub new {
             }
         );
     }
+    
     return $self;
 }
 

@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1635';
+our $VERSION = '0.1636';
 
 use 5.008001;
 use strict;
@@ -20,17 +20,36 @@ __PACKAGE__->attr(
     [qw/data_source dbh password user/],
     dbi_options => sub { {} },
     cache => 1,
+    filter_check  => 1,
+    query_builder => sub {DBIx::Custom::QueryBuilder->new},
+    result_class  => 'DBIx::Custom::Result',
+    table_class   => 'DBIx::Custom::Table'
+);
+
+__PACKAGE__->attr(
+    cache_method => sub {
+        sub {
+            my $self = shift;
+            
+            $self->{_cached} ||= {};
+            
+            if (@_ > 1) {
+                $self->{_cached}{$_[0]} = $_[1] 
+            }
+            else {
+                return $self->{_cached}{$_[0]}
+            }
+        }
+    }
+);
+
+__PACKAGE__->attr(
     filters => sub {
         {
             encode_utf8 => sub { encode_utf8($_[0]) },
             decode_utf8 => sub { decode_utf8($_[0]) }
         }
-    },
-    
-    filter_check  => 1,
-    query_builder => sub {DBIx::Custom::QueryBuilder->new},
-    result_class  => 'DBIx::Custom::Result',
-    table_class   => 'DBIx::Custom::Table'
+    }
 );
 
 # DBI methods
@@ -64,71 +83,67 @@ sub AUTOLOAD {
 }
 
 sub apply_filter {
-    my $self = shift;
-    
+    my ($self, $table, @cinfos) = @_;
+
+    # Initialize filters
     $self->{filter} ||= {};
+    $self->{filter}{out} ||= {};
+    $self->{filter}{in} ||= {};
     
-    # Table and column informations
-    my ($table, @cs) = @_;
-    
-    if (@cs) {
+    # Create filters
+    my $usage = "Usage: \$dbi->apply_filter(" .
+                "TABLE, COLUMN1, {in => INFILTER1, out => OUTFILTER1}, " .
+                "COLUMN2, {in => INFILTER2, out => OUTFILTER2}, ...)";
+
+    for (my $i = 0; $i < @cinfos; $i += 2) {
         
-        # Initialize filters
-        $self->{filter}{out} ||= {};
-        $self->{filter}{in} ||= {};
+        # Column
+        my $column = $cinfos[$i];
         
-        # Create filters
-        for (my $i = 0; $i < @cs; $i += 2) {
+        # Filter
+        my $filter = $cinfos[$i + 1] || {};
+        croak $usage unless  ref $filter eq 'HASH';
+        foreach my $ftype (keys %$filter) {
+            croak $usage unless $ftype eq 'in' || $ftype eq 'out'; 
+        }
+        my $in_filter = $filter->{in};
+        my $out_filter = $filter->{out};
+        
+        # Out filter
+        if (ref $out_filter eq 'CODE') {
+            $self->{filter}{out}{$table}{$column}
+              = $out_filter;
+            $self->{filter}{out}{$table}{"$table.$column"}
+              = $out_filter;
+        }
+        elsif (defined $out_filter) {
+            croak qq{Filter "$out_filter" is not registered}
+              unless exists $self->filters->{$out_filter};
             
-            # Column
-            my $column = $cs[$i];
-            
-            # Filter
-            my $filter = $cs[$i + 1] || {};
-            my $in_filter = delete $filter->{in};
-            my $out_filter = delete $filter->{out};
-            croak "Usage \$dbi->apply_filter(" .
-                  "TABLE, COLUMN, {in => INFILTER, out => OUTFILTER}, ...)"
-              if ref $filter ne 'HASH' || keys %$filter;
-            
-            # Out filter
-            if (ref $out_filter eq 'CODE') {
-                $self->{filter}{out}{$table}{$column}
-                  = $out_filter;
-                $self->{filter}{out}{$table}{"$table.$column"}
-                  = $out_filter;
-            }
-            elsif (defined $out_filter) {
-                croak qq{"$out_filter" is not registered}
-                  unless exists $self->filters->{$out_filter};
-                
-                $self->{filter}{out}{$table}{$column}
-                  = $self->filters->{$out_filter};
-                $self->{filter}{out}{$table}{"$table.$column"}
-                  = $self->filters->{$out_filter};
-            }
-            
-            # In filter
-            if (ref $in_filter eq 'CODE') {
-                $self->{filter}{in}{$table}{$column}
-                  = $in_filter;
-                $self->{filter}{in}{$table}{"$table.$column"}
-                  = $in_filter;
-            }
-            elsif (defined $in_filter) {
-                croak qq{"$in_filter" is not registered}
-                  unless exists $self->filters->{$in_filter};
-                $self->{filter}{in}{$table}{$column}
-                  = $self->filters->{$in_filter};
-                $self->{filter}{in}{$table}{"$table.$column"}
-                  = $self->filters->{$in_filter};
-            }
+            $self->{filter}{out}{$table}{$column}
+              = $self->filters->{$out_filter};
+            $self->{filter}{out}{$table}{"$table.$column"}
+              = $self->filters->{$out_filter};
         }
         
-        return $self;
+        # In filter
+        if (ref $in_filter eq 'CODE') {
+            $self->{filter}{in}{$table}{$column}
+              = $in_filter;
+            $self->{filter}{in}{$table}{"$table.$column"}
+              = $in_filter;
+        }
+        elsif (defined $in_filter) {
+            croak qq{Filter "$in_filter" is not registered}
+              unless exists $self->filters->{$in_filter};
+            $self->{filter}{in}{$table}{$column}
+              = $self->filters->{$in_filter};
+            $self->{filter}{in}{$table}{"$table.$column"}
+              = $self->filters->{$in_filter};
+        }
     }
     
-    return $self->{filter};
+    return $self;
 }
 
 sub helper {
@@ -142,35 +157,12 @@ sub helper {
 }
 
 sub connect {
-    my $proto = shift;
+    my $self = ref $_[0] ? shift : shift->SUPER::new(@_);;
     
-    my $self;
-    # Create
-    if (my $class = ref $proto) {
-        my $args = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-        $self = $proto;
-        
-        foreach my $attr (keys %$args) {
-            $self->{$attr} = $args->{$attr};
-        }
-        
-        # Check attribute names
-        my @attrs = keys %$self;
-        foreach my $attr (@attrs) {
-            croak qq{"$attr" is invalid attribute name}
-              unless $self->can($attr);
-        }
-    }
-    else {
-        $self = $proto->SUPER::new(@_);
-    }
-    
-    # Information
+    # Attributes
     my $data_source = $self->data_source;
-    
-    croak qq{"data_source" must be specified to connect method"}
+    croak qq{"data_source" must be specified to connect()"}
       unless $data_source;
-    
     my $user        = $self->user;
     my $password    = $self->password;
     my $dbi_options = $self->dbi_options || {};
@@ -333,7 +325,7 @@ sub execute{
             $f->{$column} = undef;
         }
         elsif (ref $fname ne 'CODE') {
-          croak qq{"$fname" is not registered"}
+          croak qq{Filter "$fname" is not registered"}
             unless exists $self->filters->{$fname};
           
           $f->{$column} = $self->filters->{$fname};
@@ -739,22 +731,6 @@ sub _croak {
     }
 }
 
-# Deprecated
-__PACKAGE__->attr(cache_method => sub {
-    sub {
-        my $self = shift;
-        
-        $self->{_cached} ||= {};
-        
-        if (@_ > 1) {
-            $self->{_cached}{$_[0]} = $_[1] 
-        }
-        else {
-            return $self->{_cached}{$_[0]}
-        }
-    }
-});
-
 sub default_bind_filter {
     my $self = shift;
     
@@ -765,7 +741,7 @@ sub default_bind_filter {
             $self->{default_out_filter} = undef;
         }
         else {
-            croak qq{"$fname" is not registered}
+            croak qq{Filter "$fname" is not registered}
               unless exists $self->filters->{$fname};
         
             $self->{default_out_filter} = $self->filters->{$fname};
@@ -778,14 +754,15 @@ sub default_bind_filter {
 
 sub default_fetch_filter {
     my $self = shift;
-    my $fname = $_[0];
     
     if (@_) {
+        my $fname = $_[0];
+
         if (@_ && !$fname) {
             $self->{default_in_filter} = undef;
         }
         else {
-            croak qq{"$fname" is not registered}
+            croak qq{Filter "$fname" is not registered}
               unless exists $self->filters->{$fname};
         
             $self->{default_in_filter} = $self->filters->{$fname};
@@ -794,7 +771,7 @@ sub default_fetch_filter {
         return $self;
     }
     
-    return $self->{default_in_filter}
+    return $self->{default_in_filter};
 }
 
 1;
@@ -1432,18 +1409,6 @@ B<Example:>
     my $where = $dbi->where;
 
 Create a new L<DBIx::Custom::Where> object.
-
-=head2 C<(deprecated) default_bind_filter>
-
-    my $default_bind_filter = $dbi->default_bind_filter;
-    $dbi                    = $dbi->default_bind_filter($fname);
-
-Default filter when parameter binding is executed.
-
-=head2 C<(deprecated) default_fetch_filter>
-
-    my $default_fetch_filter = $dbi->default_fetch_filter;
-    $dbi = $dbi->default_fetch_filter($fname);
 
 =head2 C<(deprecated) cache_method>
 

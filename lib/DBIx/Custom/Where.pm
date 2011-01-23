@@ -22,47 +22,57 @@ __PACKAGE__->attr(
 sub to_string {
     my $self = shift;
     
+    # Clause
     my $clause = $self->clause;
     $clause = ['and', $clause] unless ref $clause eq 'ARRAY';
     $clause->[0] = 'and' unless @$clause;
 
+    # Parse
     my $where = [];
     my $count = {};
-    $self->_forward($clause, $where, $count, 'and');
-
-    unshift @$where, 'where' if @$where;
+    $self->_parse($clause, $where, $count, 'and');
     
+    # Stringify
+    unshift @$where, 'where' if @$where;
     return join(' ', @$where);
 }
 
 our %VALID_OPERATIONS = map { $_ => 1 } qw/and or/;
 
-sub _forward {
+sub _parse {
     my ($self, $clause, $where, $count, $op) = @_;
     
+    # Array
     if (ref $clause eq 'ARRAY') {
+        
+        # Start
         push @$where, '(';
         
+        # Operation
         my $op = $clause->[0] || '';
-        
         croak qq{"$op" is invalid operation}
           unless $VALID_OPERATIONS{$op};
-          
+        
+        # Parse internal clause
         for (my $i = 1; $i < @$clause; $i++) {
-            my $pushed = $self->_forward($clause->[$i], $where, $count, $op);
+            my $pushed = $self->_parse($clause->[$i], $where, $count, $op);
             push @$where, $op if $pushed;
         }
-        
         pop @$where if $where->[-1] eq $op;
         
+        # Undo
         if ($where->[-1] eq '(') {
             pop @$where;
             pop @$where;
         }
+        
+        # End
         else {
             push @$where, ')';
         }
     }
+    
+    # String
     else {
         
         # Column
@@ -71,11 +81,11 @@ sub _forward {
           unless @$columns == 1;
         my $column = $columns->[0];
         
-        # Count up
+        # Column count up
         my $count = ++$count->{$column};
         
-        # Push element
-        my $param    = $self->param;
+        # Push
+        my $param = $self->param;
         my $pushed;
         if (exists $param->{$column}) {
             if (ref $param->{$column} eq 'ARRAY') {
@@ -85,7 +95,6 @@ sub _forward {
                 $pushed = 1;
             }
         }
-        
         push @$where, $clause if $pushed;
         
         return $pushed;
@@ -100,9 +109,7 @@ DBIx::Custom::Where - Where clause
 
 =head1 SYNOPSYS
 
-    $where = DBIx::Custom::Where->new;
-    
-    my $sql = "select * from book $where";
+    my $where = DBIx::Custom::Where->new;
 
 =head1 ATTRIBUTES
 
@@ -120,7 +127,10 @@ DBIx::Custom::Where - Where clause
         ['and', '{= title}', ['or', '{< date}', '{> date}']]
     );
 
-Where clause.
+Where clause. Above one is expanded to the following SQL by to_string
+If all parameter names is exists.
+
+    "where ( {= title} and ( {< date} or {> date} ) )"
 
 =head2 C<to_string>
 

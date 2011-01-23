@@ -18,7 +18,7 @@ sub filter {
         foreach my $column (keys %$filter) {
             my $fname = $filter->{$column};
             unless (ref $fname eq 'CODE') {
-              croak qq{"$fname" is not registered"}
+              croak qq{Filter "$fname" is not registered"}
                 unless exists $self->filters->{$fname};
               
               $filter->{$column} = $self->filters->{$fname};
@@ -42,7 +42,7 @@ sub end_filter {
         foreach my $column (keys %$end_filter) {
             my $fname = $end_filter->{$column};
             unless (ref $fname eq 'CODE') {
-              croak qq{"$fname" is not registered"}
+              croak qq{Filter "$fname" is not registered"}
                 unless exists $self->filters->{$fname};
               
               $end_filter->{$column} = $self->filters->{$fname};
@@ -227,7 +227,7 @@ sub default_filter {
             $self->{default_filter} = undef;
         }
         else {
-            croak qq{"$fname" is not registered}
+            croak qq{Filter "$fname" is not registered}
               unless exists $self->filters->{$fname};
         
             $self->{default_filter} = $self->filters->{$fname};
@@ -397,12 +397,5 @@ Row count must be specified.
 Filters.
 These each filters override the filters applied by C<apply_filter> of
 L<DBIx::Custom>.
-
-=head2 C<(deprecated) default_filter>
-
-    my $default_filter = $result->default_filter;
-    $result = $result->default_filter($filter);
-
-Default filter when a row is fetched.
 
 =cut

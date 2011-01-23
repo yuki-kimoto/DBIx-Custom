@@ -569,52 +569,6 @@ C<delete()>、C<select()>
         filter => {title => 'encode_utf8'}
     );
 
-B<フィルタのサンプル>
-
-MySQL
-
-    # Time::Piece object to DATETIME format
-    tp_to_datetime => sub {
-        return shift->strftime('%Y-%m-%d %H:%M:%S');
-    }
-    
-    # Time::Piece object to DATE format
-    tp_to_date => sub {
-        return shift->strftime('%Y-%m-%d');
-    }
-    
-    # DATETIME to Time::Piece object
-    datetime_to_tp => sub {
-        return Time::Piece->strptime(shift, '%Y-%m-%d %H:%M:%S');
-    }
-    
-    # DATE to Time::Piece object
-    date_to_tp => sub {
-        return Time::Piece->strptime(shift, '%Y-%m-%d');
-    }
-
-SQLite
-    
-    # Time::Piece object to DATETIME format
-    tp_to_datetime => sub {
-        return shift->strftime('%Y-%m-%d %H:%M:%S');
-    }
-    
-    # Time::Piece object to DATE format
-    tp_to_date => sub {
-        return shift->strftime('%Y-%m-%d');
-    }
-    
-    # DATETIME to Time::Piece object
-    datetime_to_tp => sub {
-        return Time::Piece->strptime(shift, '%Y-%m-%d %H:%M:%S');
-    }
-    
-    # DATE to Time::Piece object
-    date_to_tp => sub {
-        return Time::Piece->strptime(shift, '%Y-%m-%d');
-    }
-
 =head3 行のフェッチ時のフィルタリング
 
 行をフェッチするときのフィルタも設定することができます。

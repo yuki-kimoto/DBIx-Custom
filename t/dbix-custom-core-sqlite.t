@@ -268,7 +268,7 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->update(table => 'table1', param => {key2 => 11}, where => {key1 => 1},
-              filter => {key2 => 'twice'});
+              filter => {key2 => sub { $_[0] * 2 }});
 $result = $dbi->execute($SELECT_SOURCES->{0});
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 22, key3 => 3, key4 => 4, key5 => 5},
@@ -707,6 +707,14 @@ $dbi->table('table2', ppp => sub {
 });
 is($dbi->table('table2')->ppp, 'table2', "$test : helper");
 
+$dbi->table('table2', {qqq => sub {
+    my $self = shift;
+    
+    return $self->name;
+}});
+is($dbi->table('table2')->qqq, 'table2', "$test : helper");
+
+
 test 'limit';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -782,9 +790,10 @@ $result->end_filter(key1 => sub { $_[0] * 3 }, key2 => sub { $_[0] * 5 });
 $row = $result->fetch_first;
 is_deeply($row, [6, 40]);
 
+$dbi->register_filter(five_times => sub { $_[0] * 5 });
 $result = $dbi->select(table => 'table1');
 $result->filter(key1 => sub { $_[0] * 2 }, key2 => sub { $_[0] * 4 });
-$result->end_filter(key1 => sub { $_[0] * 3 }, key2 => sub { $_[0] * 5 });
+$result->end_filter({key1 => sub { $_[0] * 3 }, key2 => 'five_times' });
 $row = $result->fetch_hash_first;
 is_deeply($row, {key1 => 6, key2 => 40});
 
@@ -911,6 +920,22 @@ $result = $dbi->select(
 $row = $result->fetch_hash_all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
 
+$where = $dbi->where
+             ->clause('{= key1}')
+             ->param({key1 => 1});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where
+             ->clause('{= key1} {= key2}')
+             ->param({key1 => 1});
+eval{$where->to_string};
+like($@, qr/one column/);
+
 test 'dbi_options default';
 $dbi = DBIx::Custom->new;
 is_deeply($dbi->dbi_options, {});
@@ -932,3 +957,93 @@ eval {$dbi->delete};
 like($@, qr/table/);
 eval {$dbi->select};
 like($@, qr/table/);
+
+
+test 'more tests';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+eval{$dbi->apply_filter('table', 'column', [])};
+like($@, qr/apply_filter/);
+
+eval{$dbi->apply_filter('table', 'column', {outer => 2})};
+like($@, qr/apply_filter/);
+
+$dbi->apply_filter(
+
+);
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+$dbi->apply_filter('table1', 'key2', 
+                   {in => sub { $_[0] * 3 }, out => sub { $_[0] * 2 }});
+$rows = $dbi->select(table => 'table1', where => {key2 => 1})->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 6}]);
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+$dbi->apply_filter('table1', 'key2', {});
+$rows = $dbi->select(table => 'table1', where => {key2 => 2})->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2}]);
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+eval {$dbi->apply_filter('table1', 'key2', {out => 'no'})};
+like($@, qr/not registered/);
+eval {$dbi->apply_filter('table1', 'key2', {in => 'no'})};
+like($@, qr/not registered/);
+$dbi->helper({one => sub { 1 }});
+is($dbi->one, 1);
+
+eval{DBIx::Custom->connect()};
+like($@, qr/connect/);
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->register_filter(twice => sub { $_[0] * 2 });
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2},
+             filter => {key1 => 'twice'});
+$row = $dbi->select(table => 'table1')->fetch_hash_first;
+is_deeply($row, {key1 => 2, key2 => 2});
+eval {$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2},
+             filter => {key1 => 'no'}) };
+like($@, qr//);
+$dbi->table_class('!!!!');
+eval {$dbi->table};
+like($@, qr/Invalid table/);
+
+$dbi->table_class('NOTEXIST');
+eval {$dbi->table};
+ok($@);
+$dbi->register_filter(one => sub { });
+$dbi->default_fetch_filter('one');
+ok($dbi->default_fetch_filter);
+$dbi->default_bind_filter('one');
+ok($dbi->default_bind_filter);
+eval{$dbi->default_fetch_filter('no')};
+like($@, qr/not registered/);
+eval{$dbi->default_bind_filter('no')};
+like($@, qr/not registered/);
+$dbi->default_bind_filter(undef);
+ok(!defined $dbi->default_bind_filter);
+$dbi->default_fetch_filter(undef);
+ok(!defined $dbi->default_fetch_filter);
+eval {$dbi->execute('select * from table1 {= author') };
+like($@, qr/Tag not finished/);
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->register_filter(one => sub { 1 });
+$result = $dbi->select(table => 'table1');
+eval {$result->filter(key1 => 'no')};
+like($@, qr/not registered/);
+eval {$result->end_filter(key1 => 'no')};
+like($@, qr/not registered/);
+$result->default_filter(undef);
+ok(!defined $result->default_filter);
+$result->default_filter('one');
+is($result->default_filter->(), 1);
+
+$dbi->table('book');
+eval{$dbi->table('book')->no_exists};
+like($@, qr/locate/);

@@ -36,8 +36,8 @@ DBIx::Custom::MySQL - DEPRECATED!
 
 =head1 CAUTION
 
-B<This module is deprecated now> because This module is not very useful
-I expected. Please use DBIx::Custom instead.>
+B<This module is deprecated now> because This module is less useful
+than I expected. Please use DBIx::Custom instead.>
 
 =head1 SYNOPSYS
 

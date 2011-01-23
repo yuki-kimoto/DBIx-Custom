@@ -355,50 +355,6 @@ This is overwrite applied filter.
 
 B<Filter examples>
 
-MySQL
-
-    # Time::Piece object to DATETIME format
-    tp_to_datetime => sub {
-        return shift->strftime('%Y-%m-%d %H:%M:%S');
-    }
-    
-    # Time::Piece object to DATE format
-    tp_to_date => sub {
-        return shift->strftime('%Y-%m-%d');
-    },
-    
-    # DATETIME to Time::Piece object
-    datetime_to_tp => sub {
-        return Time::Piece->strptime(shift, '%Y-%m-%d %H:%M:%S');
-    }
-    
-    # DATE to Time::Piece object
-    date_to_tp => sub {
-        return Time::Piece->strptime(shift, '%Y-%m-%d');
-    }
-
-SQLite
-    
-    # Time::Piece object to DATETIME format
-    tp_to_datetime => sub {
-        return shift->strftime('%Y-%m-%d %H:%M:%S');
-    }
-    
-    # Time::Piece object to DATE format
-    tp_to_date => sub {
-        return shift->strftime('%Y-%m-%d');
-    },
-    
-    # DATETIME to Time::Piece object
-    datetime_to_tp => sub {
-        return Time::Piece->strptime(shift, '%Y-%m-%d %H:%M:%S');
-    }
-    
-    # DATE to Time::Piece object
-    date_to_tp => sub {
-        return Time::Piece->strptime(shift, '%Y-%m-%d');
-    }
-
 =head2 6.Create table object
 
 You can create table object which have methods.
@@ -541,39 +497,5 @@ These method can be called from L<DBIx::Custom> object directory.
 =head1 EXAMPLES
 
 L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki> - Many useful examples
-
-=head3 Limit clause
-    
-    # {limit COUNT OFFSET}
-    select * from book {limit 1 0};
-
-SQLite
-
-    $dbi->register_tag_processor(
-        limit => sub {
-            my ($count, $offset) = @_;
-            
-            my $s = '';
-            $s .= "limit $count";
-            $s .= " offset $offset" if defined $offset;
-            
-            return [$s, []];
-        }
-    );
-
-MySQL
-
-    $dbi->register_tag_processor(
-        limit => sub {
-            my ($count, $offset) = @_;
-            
-            my $s = '';
-            $offset = 0 unless defined $offset;
-            $s .= "limit $offset";
-            $s .= ", $count";
-            
-            return [$s, []];
-        }
-    );
 
 =cut
