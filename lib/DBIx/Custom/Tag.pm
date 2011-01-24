@@ -1,4 +1,4 @@
-package DBIx::Custom::TagProcessor;
+package DBIx::Custom::Tag;
 
 use strict;
 use warnings;
@@ -8,11 +8,11 @@ use Carp 'croak';
 # Carp trust relationship
 push @DBIx::Custom::QueryBuilder::CARP_NOT, __PACKAGE__;
 
-sub expand_equal_tag              { _expand_basic_tag('=',    @_) }
-sub expand_greater_than_equal_tag { _expand_basic_tag('>=',   @_) }
-sub expand_greater_than_tag       { _expand_basic_tag('>',    @_) }
+sub equal              { _basic('=',  @_) }
+sub greater_than_equal { _basic('>=', @_) }
+sub greater_than       { _basic('>',  @_) }
 
-sub expand_in_tag {
+sub in {
     my ($column, $count) = @_;
     
     # Check arguments
@@ -34,7 +34,7 @@ sub expand_in_tag {
     return [$s, $columns];
 }
 
-sub expand_insert_param_tag {
+sub insert_param {
     my @columns = @_;
     
     # Insert parameters
@@ -50,12 +50,12 @@ sub expand_insert_param_tag {
     return [$s, \@columns];
 }
 
-sub expand_like_tag               { _expand_basic_tag('like', @_) }
-sub expand_lower_than_equal_tag   { _expand_basic_tag('<=',   @_) }
-sub expand_lower_than_tag         { _expand_basic_tag('<',    @_) }
-sub expand_not_equal_tag          { _expand_basic_tag('<>',   @_) }
+sub like               { _basic('like', @_) }
+sub lower_than_equal   { _basic('<=',   @_) }
+sub lower_than         { _basic('<',    @_) }
+sub not_equal          { _basic('<>',   @_) }
 
-sub expand_placeholder_tag {
+sub placeholder {
     my $column = shift;
     
     # Check arguments
@@ -65,7 +65,7 @@ sub expand_placeholder_tag {
     return ['?', [$column]];
 }
 
-sub expand_update_param_tag {
+sub update_param {
     my @columns = @_;
     
     # Update paramters
@@ -76,7 +76,7 @@ sub expand_update_param_tag {
     return [$s, \@columns];
 }
 
-sub _expand_basic_tag {
+sub _basic {
     my ($name, $column) = @_;
     
     # Check arguments
@@ -90,5 +90,4 @@ sub _expand_basic_tag {
 
 =head1 NAME
 
-DBIx::Custom::TagProcessor - Tag processor
-
+DBIx::Custom::Tag - Tag processor

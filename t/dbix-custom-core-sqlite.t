@@ -718,7 +718,7 @@ $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 6});
-$dbi->query_builder->register_tag_processor(
+$dbi->register_tag(
     limit => sub {
         my ($count, $offset) = @_;
         
@@ -825,6 +825,9 @@ $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+$where = $dbi->where->clause(['and', '{= key1}', '{= key2}']);
+is("$where", "where ( {= key1} and {= key2} )", 'no param');
+
 $where = $dbi->where
              ->clause(['and', '{= key1}', '{= key2}'])
              ->param({key1 => 1});
@@ -943,6 +946,13 @@ $dbi->register_tag_processor(
     a => sub { 1 }
 );
 is($dbi->query_builder->tag_processors->{a}->(), 1);
+
+test 'register_tag';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->register_tag(
+    b => sub { 2 }
+);
+is($dbi->query_builder->tags->{b}->(), 2);
 
 test 'table not specify exception';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});

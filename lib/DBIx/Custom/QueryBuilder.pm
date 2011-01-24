@@ -7,27 +7,26 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 use DBIx::Custom::Query;
-use DBIx::Custom::TagProcessor;
+use DBIx::Custom::Tag;
 
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 push @DBIx::Custom::Where::CARP_NOT, __PACKAGE__;
 
-
 # Attributes
-__PACKAGE__->attr('tag_processors' => sub {
+__PACKAGE__->attr('tags' => sub {
     {
-        '?'     => \&DBIx::Custom::TagProcessor::expand_placeholder_tag,
-        '='     => \&DBIx::Custom::TagProcessor::expand_equal_tag,
-        '<>'    => \&DBIx::Custom::TagProcessor::expand_not_equal_tag,
-        '>'     => \&DBIx::Custom::TagProcessor::expand_greater_than_tag,
-        '<'     => \&DBIx::Custom::TagProcessor::expand_lower_than_tag,
-        '>='    => \&DBIx::Custom::TagProcessor::expand_greater_than_equal_tag,
-        '<='    => \&DBIx::Custom::TagProcessor::expand_lower_than_equal_tag,
-        'like'  => \&DBIx::Custom::TagProcessor::expand_like_tag,
-        'in'    => \&DBIx::Custom::TagProcessor::expand_in_tag,
-        'insert_param' => \&DBIx::Custom::TagProcessor::expand_insert_param_tag,
-        'update_param' => \&DBIx::Custom::TagProcessor::expand_update_param_tag
+        '?'     => \&DBIx::Custom::Tag::placeholder,
+        '='     => \&DBIx::Custom::Tag::equal,
+        '<>'    => \&DBIx::Custom::Tag::not_equal,
+        '>'     => \&DBIx::Custom::Tag::greater_than,
+        '<'     => \&DBIx::Custom::Tag::lower_than,
+        '>='    => \&DBIx::Custom::Tag::greater_than_equal,
+        '<='    => \&DBIx::Custom::Tag::lower_than_equal,
+        'like'  => \&DBIx::Custom::Tag::like,
+        'in'    => \&DBIx::Custom::Tag::in,
+        'insert_param' => \&DBIx::Custom::Tag::insert_param,
+        'update_param' => \&DBIx::Custom::Tag::update_param
     }
 });
 
@@ -43,12 +42,12 @@ sub build_query {
     return $query;
 }
 
-sub register_tag_processor {
+sub register_tag {
     my $self = shift;
     
     # Merge tag processor
-    my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $self->tag_processors({%{$self->tag_processors}, %{$tag_processors}});
+    my $tags = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $self->tags({%{$self->tags}, %$tags});
     
     return $self;
 }
@@ -78,7 +77,8 @@ sub _build_query {
             my $tag_args = $node->{tag_args};
             
             # Get tag processor
-            my $tag_processor = $self->tag_processors->{$tag_name};
+            my $tag_processor = $self->tag_processors->{$tag_name}
+                             || $self->tags->{$tag_name};
             
             # Tag processor is not registered
             croak qq{Tag "$tag_name" in "{a }" is not registered}
@@ -275,6 +275,19 @@ sub _placeholder_count {
     return $count;
 }
 
+# Follwoing methods are DEPRECATED!
+__PACKAGE__->attr('tag_processors' => sub { {} });
+
+sub register_tag_processor {
+    my $self = shift;
+    
+    # Merge tag processor
+    my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $self->tag_processors({%{$self->tag_processors}, %{$tag_processors}});
+    
+    return $self;
+}
+
 1;
 
 =head1 NAME
@@ -290,10 +303,10 @@ DBIx::Custom::QueryBuilder - Query builder
 
 =head1 ATTRIBUTES
 
-=head2 C<tag_processors>
+=head2 C<tags>
 
-    my $tag_processors = $builder->tag_processors;
-    $builder           = $builder->tag_processors(\%tag_processors);
+    my $tags = $builder->tags;
+    $builder           = $builder->tags(\%tags);
 
 Tag processors.
 
@@ -328,10 +341,10 @@ Query
         columns => ['title', 'author', 'price']
     }
 
-=head2 C<register_tag_processor>
+=head2 C<register_tag>
 
-    $builder->register_tag_processor(\%tag_processors);
-    $builder->register_tag_processor(%tag_processors);
+    $builder->register_tag(\%tags);
+    $builder->register_tag(%tags);
 
 Register tag processor.
 

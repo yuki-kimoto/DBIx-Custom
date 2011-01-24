@@ -14,9 +14,8 @@ use Carp 'croak';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
 __PACKAGE__->attr(
-  'query_builder',
+  [qw/param query_builder/],
   clause => sub { [] },
-  param => sub { {} }
 );
 
 sub to_string {
@@ -65,11 +64,8 @@ sub _parse {
             pop @$where;
             pop @$where;
         }
-        
         # End
-        else {
-            push @$where, ')';
-        }
+        else { push @$where, ')' }
     }
     
     # String
@@ -87,15 +83,21 @@ sub _parse {
         # Push
         my $param = $self->param;
         my $pushed;
-        if (exists $param->{$column}) {
-            if (ref $param->{$column} eq 'ARRAY') {
-                $pushed = 1 if exists $param->{$column}->[$count - 1];
+        if (defined $param) {
+            if (exists $param->{$column}) {
+                if (ref $param->{$column} eq 'ARRAY') {
+                    $pushed = 1 if exists $param->{$column}->[$count - 1];
+                }
+                elsif ($count == 1) {
+                    $pushed = 1;
+                }
             }
-            elsif ($count == 1) {
-                $pushed = 1;
-            }
+            push @$where, $clause if $pushed;
         }
-        push @$where, $clause if $pushed;
+        else {
+            push @$where, $clause;
+            $pushed = 1;
+        }
         
         return $pushed;
     }

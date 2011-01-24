@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1636';
+our $VERSION = '0.1637';
 
 use 5.008001;
 use strict;
@@ -223,7 +223,7 @@ sub create_query {
     # Prepare statement handle
     my $sth;
     eval { $sth = $self->dbh->prepare($query->{sql})};
-    $self->_croak($@, qq{. SQL: "$query->{sql}"}) if $@;
+    $self->_croak($@, qq{. Following SQL is executed. "$query->{sql}"}) if $@;
     
     # Set statement handle
     $query->sth($sth);
@@ -339,7 +339,7 @@ sub execute{
     my $sth      = $query->sth;
     my $affected;
     eval {$affected = $sth->execute(@$binds)};
-    $self->_croak($@) if $@;
+    $self->_croak($@, qq{. Following SQL is executed. "$query->{sql}"}) if $@;
     
     # Return resultset if select statement is executed
     if ($sth->{NUM_OF_FIELDS}) {
@@ -465,9 +465,7 @@ sub register_filter {
     return $invocant;
 }
 
-sub register_tag_processor {
-    return shift->query_builder->register_tag_processor(@_);
-}
+sub register_tag { shift->query_builder->register_tag(@_) }
 
 our %VALID_SELECT_ARGS
   = map { $_ => 1 } qw/table column where append relation filter query/;
@@ -730,7 +728,7 @@ sub _croak {
     }
 }
 
-# DEPRECATED!
+# Following methos are DEPRECATED!
 __PACKAGE__->attr(
     dbi_options => sub { {} },
     filter_check  => 1
@@ -777,6 +775,10 @@ sub default_fetch_filter {
     }
     
     return $self->{default_in_filter};
+}
+
+sub register_tag_processor {
+    return shift->query_builder->register_tag_processor(@_);
 }
 
 1;
@@ -1180,9 +1182,9 @@ C<default_filter> and C<filter> of C<DBIx::Custom::Result>
 
 =back
 
-=head2 C<register_tag_processor>
+=head2 C<register_tag>
 
-    $dbi->register_tag_processor(
+    $dbi->register_tag(
         limit => sub {
             ...;
         }
