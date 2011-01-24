@@ -831,7 +831,7 @@ fc
         $dbi->commit;
     }
 
-=head3 selectメソッドの結果クラスの変更
+=head3 結果クラスの変更
 
 必要ならばC<select()>メソッドの結果クラスを変更することができます。
 
@@ -870,7 +870,7 @@ L<DBIx::Custom>オブジェクトから直接呼び出すことができます�
     $dbi->update_or_insert;
     $dbi->find_or_create;
 
-=head3 ユーティリティメソッド
+=head3 その他便利なメソッド
 
 C<expand>メソッドを使用すると次のようなハッシュに含まれる
 テーブル名と列名を結合することができます。
