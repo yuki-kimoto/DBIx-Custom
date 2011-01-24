@@ -437,7 +437,7 @@ sub each_column {
         my $sth_columns = $self->dbh->column_info(undef, undef, $table, '%');
         while (my $column_info = $sth_columns->fetchrow_hashref) {
             my $column = $column_info->{COLUMN_NAME};
-            $cb->($table, $column, $column_info);
+            $self->$cb($table, $column, $column_info);
         }
     }
 }
@@ -588,17 +588,6 @@ sub table {
     $self->{_tables}->{$name}->helper(@_) if @_;
     
     return $self->{_tables}{$name};
-}
-
-sub txn_scope {
-    my $self = shift;
-    
-    require DBIx::TransactionManager;
-    
-    $self->{_transaction_manager}
-      ||= DBIx::TransactionManager->new($self->dbh);
-    
-    return $self->{_transaction_manager}->txn_scope;
 }
 
 our %VALID_UPDATE_ARGS
@@ -1254,21 +1243,6 @@ C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as re
 default to 0. This is experimental.
 This is overwrites C<default_bind_filter>.
 Return value of C<update()> is the count of affected rows.
-
-=head2 C<(experimental) txn_scope>
-
-    {
-        my $txn = $dbi->txn_scope;
-        $dbi->insert(table => 'book', param => {title => 'Perl'});
-        $dbi->insert(table => 'book', param => {title => 'Good days'});
-        $txn->commit;
-    }
-
-Create transaction scope. If you escape scope(that is { .. }) and commited,
-Rollback is automatically done.
-
-Note that this is feature of L<DBIx::TransactionManager>
-L<DBIx::TransactionManager> is required.
 
 =head2 C<(experimental) table>
 

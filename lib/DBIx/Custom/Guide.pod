@@ -462,12 +462,9 @@ You can change Result class if you need.
     my $dbi = DBIx::Custom->connect(...);
     $dbi->result_class('Your::Result');
 
-=head3 Register tag processor
+=head3 Register tag
 
-You can custamize query builder object
-
-    my $dbi = DBIx::Custom->connect(...);
-    $dbi->register_tag_processor(
+    $dbi->register_tag(
         name => sub {
            ...
         }

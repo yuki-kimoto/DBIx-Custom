@@ -350,6 +350,40 @@ SQL文の末尾に文字列を追加したい場合は<append>を使用します
 またC<append>は、C<select>だけでなくC<insert()>、C<update()>、C<update_all()>
 C<delete()>、C<delete_all()>、C<select()>で使用することもできます。
 
+=head4 execute
+
+任意のSQLを実行するにはexecuteメソッドを使用します。
+
+    $dbi->execute("select * from book;");
+
+C<execute()>はL<DBIx::Custom>の根幹のメソッドでありタグを展開します。
+
+    $dbi->execute(
+        "select * from book {= title} and {= author};"
+        param => {title => 'Perl', author => 'Ken'}
+    );
+
+上記のタグを含んだSQLは次のように展開されます。
+
+    select * from book title = ? and author = ?;
+
+SQLが実行されるときにプレースホルダ(?)に対応する位置にtitleとauthor
+の値がが自動的に埋め込まれます。
+
+タグについてはL<5. タグ/"5. タグ">で詳しく解説しますが、
+ひとつの注意点があります。
+タグを展開するためにC<{>とC<}>は予約語になっています。
+もし利用したい場合は直前に\をおいてエスケープを行う必要があります。
+
+    $dbi->execute("... \\{ ... \\} ...");
+
+\自体がPerlのエスケープ文字ですので、二つ必要になるという点に注意してください。
+
+またexecuteのキュートな機能として、SQLの最後にセミコロンをおかなくても
+かまいません。
+
+    $dbi->execute('select * from book');
+
 =head2 3. 行のフェッチ
 
 C<select()>メソッドの戻り値はL<DBIx::Custom::Result>オブジェクトです。
@@ -551,19 +585,109 @@ C<delete_all()>、C<select()>で有効になります。
 このような自動的に実行されるフィルタを登録できることがL<DBIx::Custom>の
 特徴のひとつです。
 
-=head3 個別にフィルタを適用する
+=head3 個別のフィルタの適用
 
 C<apply_filter()>を使って最初にすべてのテーブルの列について
-フィルタを定義しておくこともできますが、
-さらに個別にフィルタを適用することもできます。
+フィルタを定義することもできますが、
+個別にフィルタを適用することもできます。
 個別のフィルタはC<apply_filter()>で適用したフィルタを上書きます。
+個別のフィルタはSQLのasを使って、列の別名を作成する必要がある場合に活躍します。
 
-行をフェッチするときに個別にフィルタを適用するには、
+データベースに送信する場合に、個別のフィルタを適用するには、各メソッドの
+C<filter>オプションを使用します。個別のフィルタは、C<insert()>、C<update()>、
+C<update_all()>、C<delete()>、C<delete_all()>、C<select()>、C<execute()>
+で使用することができます。
+
+C<insert()>の例を示します。
+
+    $dbi->insert(
+        table => 'book',
+        param => {issue_date => $tp, first_issue_date => $tp},
+        filter => {issue_date => 'tp_to_date', first_issue_date => 'tp_to_date'}
+    );
+
+C<execute()>の例を示します。
+
+my $sql = <<"EOS";
+select YEAR(issue_date) as issue_year
+from book
+where YEAR(issue_date) = {? issue_year}
+EOS
+   
+    my $result = $dbi->execute(
+        $sql,
+        param => {issue_year => '2010'},
+        filter => {issue_year => 'tp_to_year'}
+    );
+
+これはC<filter>を使う良くある例です。issue_dateの変換についてはC<apply_filter()>
+で登録してあるのですが、新しく作成した列であるissue_yearについては、
+何の変換も登録されていません。ですので、個別にフィルタを設定しています。
+
+また反対に行をフェッチするときにも個別のフィルタを適用することができます。
+フィルタを適用するには、
 C<DBIx::Custom::Result>クラスのC<filter>メソッドを使用します。
 
-    $result->filter(issue_date => 'date_to_tp', first_issue_date => 'date_to_tp');
+    $result->filter(issue_year => 'year_to_tp');
 
-これは、C<apply_filter()>のフィルタルールのinで定義されたフィルタを上書きます。
+頻繁に利用するのであれば、個別に登録するよりもC<apply_filter()>で登録
+しておいたほうが便利でしょう。C<apply_filter()>は存在しない列に対しても
+フィルタを適用できるからです。
+
+    $dbi->apply_filter('book',
+        'issue_year' => {out => 'tp_to_year', in => 'year_to_tp'}
+    );
+
+C<DBIx::Custom::Result>ではさらに最後にもう一度、フィルタを追加で
+登録することができます。たとえばHTMLに出力したい場合に、Time::Piece
+オブジェクトから読みやすい記述に変換することができます。
+最後のフィルタを登録するには、C<end_filter()>を使用します。
+
+    $result->end_filter(issue_date => sub {
+        my $tp = shift;
+        
+        return '' unless $tp;
+        return $tp->strftime('%Y/%m/%d %h:%m:%s (%a)');
+    });
+
+日付を見やすい形にフォーマットすることができます。
+
+フィルタはフェッチを行う前に登録しておく必要があることに
+注意してください。
+
+    $result->filter(...);
+    $result->end_filter(...);
+    my $row = $result->fetch_hash_first;
+
+=head3 列の情報を元にフィルタを適用する
+
+日付型の列は手動で設定しなくても、自動的に設定できると便利です。
+このためにデータベースのテーブルの列のすべての情報を
+順番に処理するためのC<each_column()>があります。
+
+    $dbi->each_column(
+        sub {
+            my ($self, $table, $column, $info) = @_;
+            
+            my $type = $info->{TYPE_NAME};
+            
+            my $filter = $type eq 'DATE'     ? {out => 'tp_to_date', in => 'date_to_tp'}
+                       : $type eq 'DATETIME' ? {out => 'tp_to_datetime', in => 'datetime_to_tp'}
+                                             : undef;
+            
+            $self->apply_filter($table, $column, $filter)
+              if $filter;
+        }
+    );
+
+each_columnはコールバックを受け取ります。コールバックの引数は
+順番にL<DBIx::Custom>オブジェクト、テーブル名、列名、列の情報です。
+列の型名の情報をもとに自動的に、フィルタを適用しています。
+
+ひとつの注意点としてコールバックの中から、コールバックの外側
+の変数を参照しないように注意してください。each_columnは
+高々1回だけ実行されるだけなので、ほとんどの場合問題ありませんが、
+循環参照によるメモリリークが発生してしまう可能性を持っているからです。
 
 =head2 5. タグ
 
@@ -630,7 +754,21 @@ C<{>とC<}>は予約語です。これらの文字を使いたい場合は
 
     'select * from book \\{ something statement \\}'
 
-=head2 6. パフォーマンスの改善
+=head3 L<DBIx::Custom::QueryBuilder>の機能の拡張
+
+新しいタグが欲しい場合はL<DBIx::Custom::QueryBuilder>の機能を拡張
+することができます。
+
+    my $dbi = DBIx::Custom->connect(...);
+    $dbi->register_tag(
+        name => sub {
+           ...
+        }
+    );
+
+=head2 6. Where句の動的な生成
+
+=head2 7. パフォーマンスの改善
 
 =head3 シュガーメソッドを使わない
 
@@ -670,7 +808,7 @@ C<insert()>メソッドは、SQL文とステートメントハンドルを
 C<execute>メソッドの第一引数にクエリオブジェトを渡すことができます。
 これはC<insert()>メソッドよりも高速です。
 
-=head2 7. その他の機能
+=head2 8. その他の機能
 
 =head3 トランザクション
 
@@ -710,18 +848,6 @@ fc
     
     my $dbi = DBIx::Custom->connect(...);
     $dbi->result_class('Your::Result');
-
-=head3 L<DBIx::Custom::QueryBuilder>の機能の拡張
-
-新しいタグが欲しい場合はL<DBIx::Custom::QueryBuilder>の機能を拡張
-することができます。
-
-    my $dbi = DBIx::Custom->connect(...);
-    $dbi->query_builder->register_tag_processor(
-        name => sub {
-           ...
-        }
-    );
 
 =head3 ヘルパーメソッドの登録
 

@@ -650,7 +650,7 @@ $dbi->execute($CREATE_TABLE->{3});
 
 $infos = [];
 $dbi->each_column(sub {
-    my ($table, $column, $cinfo) = @_;
+    my ($self, $table, $column, $cinfo) = @_;
     
     if ($table =~ /^table/) {
          my $info = [$table, $column, $cinfo->{COLUMN_NAME}];

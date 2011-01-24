@@ -5,6 +5,8 @@
   renamed tag_processors to tags. tag_prosessors is available, but deprecated.
   improved error message
   build all clause if param is undefined.
+  each_column callback receive self as first argument.
+  removed experimental txn_scope
 0.1636
   added tests and cleanup
 0.1635
