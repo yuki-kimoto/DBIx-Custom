@@ -7,28 +7,13 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 use DBIx::Custom::Query;
-use DBIx::Custom::Tag;
 
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 push @DBIx::Custom::Where::CARP_NOT, __PACKAGE__;
 
 # Attributes
-__PACKAGE__->attr('tags' => sub {
-    {
-        '?'     => \&DBIx::Custom::Tag::placeholder,
-        '='     => \&DBIx::Custom::Tag::equal,
-        '<>'    => \&DBIx::Custom::Tag::not_equal,
-        '>'     => \&DBIx::Custom::Tag::greater_than,
-        '<'     => \&DBIx::Custom::Tag::lower_than,
-        '>='    => \&DBIx::Custom::Tag::greater_than_equal,
-        '<='    => \&DBIx::Custom::Tag::lower_than_equal,
-        'like'  => \&DBIx::Custom::Tag::like,
-        'in'    => \&DBIx::Custom::Tag::in,
-        'insert_param' => \&DBIx::Custom::Tag::insert_param,
-        'update_param' => \&DBIx::Custom::Tag::update_param
-    }
-});
+__PACKAGE__->attr('tags' => sub { {} });
 
 sub build_query {
     my ($self, $source)  = @_;
@@ -45,7 +30,7 @@ sub build_query {
 sub register_tag {
     my $self = shift;
     
-    # Merge tag processor
+    # Merge tag
     my $tags = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $self->tags({%{$self->tags}, %$tags});
     
@@ -76,23 +61,23 @@ sub _build_query {
             # Tag arguments
             my $tag_args = $node->{tag_args};
             
-            # Get tag processor
-            my $tag_processor = $self->tag_processors->{$tag_name}
+            # Get tag
+            my $tag = $self->tag_processors->{$tag_name}
                              || $self->tags->{$tag_name};
             
-            # Tag processor is not registered
+            # Tag is not registered
             croak qq{Tag "$tag_name" in "{a }" is not registered}
-              unless $tag_processor;
+              unless $tag;
             
-            # Tag processor not sub reference
-            croak qq{Tag processor "$tag_name" must be sub reference}
-              unless ref $tag_processor eq 'CODE';
+            # Tag not sub reference
+            croak qq{Tag "$tag_name" must be sub reference}
+              unless ref $tag eq 'CODE';
             
-            # Execute tag processor
-            my $r = $tag_processor->(@$tag_args);
+            # Execute tag
+            my $r = $tag->(@$tag_args);
             
-            # Check tag processor return value
-            croak qq{Tag processor "$tag_name" must return [STRING, ARRAY_REFERENCE]}
+            # Check tag return value
+            croak qq{Tag "$tag_name" must return [STRING, ARRAY_REFERENCE]}
               unless ref $r eq 'ARRAY' && defined $r->[0] && ref $r->[1] eq 'ARRAY';
             
             # Part of SQL statement and colum names
@@ -275,13 +260,14 @@ sub _placeholder_count {
     return $count;
 }
 
-# Follwoing methods are DEPRECATED!
+# DEPRECATED!
 __PACKAGE__->attr('tag_processors' => sub { {} });
 
+# DEPRECATED!
 sub register_tag_processor {
     my $self = shift;
     
-    # Merge tag processor
+    # Merge tag
     my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $self->tag_processors({%{$self->tag_processors}, %{$tag_processors}});
     
@@ -306,9 +292,9 @@ DBIx::Custom::QueryBuilder - Query builder
 =head2 C<tags>
 
     my $tags = $builder->tags;
-    $builder           = $builder->tags(\%tags);
+    $builder = $builder->tags(\%tags);
 
-Tag processors.
+Tags.
 
 =head1 METHODS
 
@@ -346,11 +332,11 @@ Query
     $builder->register_tag(\%tags);
     $builder->register_tag(%tags);
 
-Register tag processor.
+Register tag.
 
 B<Example:>
 
-    $builder->register_tag_processor(
+    $builder->register_tag(
         '?' => sub {
             my $column = shift;
             
@@ -358,74 +344,5 @@ B<Example:>
         }
     );
 
-See also L<DBIx::Custom::QueryBuilder::TagProcessors> to know tag processor.
+See also L<DBIx::Custom::Tag> to know tag.
 
-=head1 Tags
-
-The following tags is available.
-
-=head2 C<?>
-
-Placeholder tag.
-
-    {? NAME}    ->   ?
-
-=head2 C<=>
-
-Equal tag.
-
-    {= NAME}    ->   NAME = ?
-
-=head2 C<E<lt>E<gt>>
-
-Not equal tag.
-
-    {<> NAME}   ->   NAME <> ?
-
-=head2 C<E<lt>>
-
-Lower than tag
-
-    {< NAME}    ->   NAME < ?
-
-=head2 C<E<gt>>
-
-Greater than tag
-
-    {> NAME}    ->   NAME > ?
-
-=head2 C<E<gt>=>
-
-Greater than or equal tag
-
-    {>= NAME}   ->   NAME >= ?
-
-=head2 C<E<lt>=>
-
-Lower than or equal tag
-
-    {<= NAME}   ->   NAME <= ?
-
-=head2 C<like>
-
-Like tag
-
-    {like NAME}   ->   NAME like ?
-
-=head2 C<in>
-
-In tag.
-
-    {in NAME COUNT}   ->   NAME in [?, ?, ..]
-
-=head2 C<insert_param>
-
-Insert parameter tag.
-
-    {insert_param NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
-
-=head2 C<update_param>
-
-Updata parameter tag.
-
-    {update_param NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?

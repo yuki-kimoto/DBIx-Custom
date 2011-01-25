@@ -3,7 +3,7 @@ use warnings;
 
 use Test::More 'no_plan';
 
-use DBIx::Custom::QueryBuilder;
+use DBIx::Custom;
 
 # Function for test name
 sub test{ print "# $_[0]\n" }
@@ -54,17 +54,17 @@ $datas = [
 
 for (my $i = 0; $i < @$datas; $i++) {
     my $data = $datas->[$i];
-    my $builder = DBIx::Custom::QueryBuilder->new;
+    my $builder = DBIx::Custom->new->query_builder;
     my $query = $builder->build_query($data->{source});
     is($query->{sql}, $data->{sql_expected}, "$data->{name} : sql");
     is_deeply($query->{columns}, $data->{columns_expected}, "$data->{name} : columns");
 }
 
 
-test 'Original tag processor';
-$builder = DBIx::Custom::QueryBuilder->new;
+test 'Original tag';
+$builder = DBIx::Custom->new->query_builder;
 
-$ret_val = $builder->register_tag_processor(
+$ret_val = $builder->register_tag(
     p => sub {
         my @args = @_;
         
@@ -75,49 +75,49 @@ $ret_val = $builder->register_tag_processor(
 );
 
 $query = $builder->build_query("{p a b}");
-is($query->{sql}, "? a b;", "register_tag_processor sql");
-is_deeply($query->{columns}, [2], "register_tag_processor columns");
+is($query->{sql}, "? a b;", "register_tag sql");
+is_deeply($query->{columns}, [2], "register_tag columns");
 isa_ok($ret_val, 'DBIx::Custom::QueryBuilder');
 
 
-test "Tag processor error case";
-$builder = DBIx::Custom::QueryBuilder->new;
+test "Tag error case";
+$builder = DBIx::Custom->new->query_builder;
 
 eval{$builder->build_query('{? }')};
 like($@, qr/\QColumn name must be specified in tag "{? }"/, "? not arguments");
 
 eval{$builder->build_query("{a }")};
-like($@, qr/\QTag "a" in "{a }" is not registered/, "tag_processor not exist");
+like($@, qr/\QTag "a" in "{a }" is not registered/, "tag not exist");
 
-$builder->register_tag_processor({
+$builder->register_tag({
     q => 'string'
 });
 
 eval{$builder->build_query("{q}", {})};
-like($@, qr/Tag processor "q" must be sub reference/, "tag_processor not code ref");
+like($@, qr/Tag "q" must be sub reference/, "tag not code ref");
 
-$builder->register_tag_processor({
+$builder->register_tag({
    r => sub {} 
 });
 
 eval{$builder->build_query("{r}")};
-like($@, qr/\QTag processor "r" must return [STRING, ARRAY_REFERENCE]/, "tag processor return noting");
+like($@, qr/\QTag "r" must return [STRING, ARRAY_REFERENCE]/, "tag return noting");
 
-$builder->register_tag_processor({
+$builder->register_tag({
    s => sub { return ["a", ""]} 
 });
 
 eval{$builder->build_query("{s}")};
-like($@, qr/\QTag processor "s" must return [STRING, ARRAY_REFERENCE]/, "tag processor return not array columns");
+like($@, qr/\QTag "s" must return [STRING, ARRAY_REFERENCE]/, "tag return not array columns");
 
-$builder->register_tag_processor(
+$builder->register_tag(
     t => sub {return ["a", []]}
 );
 
 
 test 'General error case';
-$builder = DBIx::Custom::QueryBuilder->new;
-$builder->register_tag_processor(
+$builder = DBIx::Custom->new->query_builder;
+$builder->register_tag(
     a => sub {
         return ["? ? ?", ['']];
     }
@@ -126,7 +126,7 @@ eval{$builder->build_query("{a}")};
 like($@, qr/\QPlaceholder count in "? ? ?" must be same as column count 1/, "placeholder count is invalid");
 
 
-test 'Default tag processor Error case';
+test 'Default tag Error case';
 eval{$builder->build_query("{= }")};
 like($@, qr/Column name must be specified in tag "{= }"/, "basic '=' : key not exist");
 

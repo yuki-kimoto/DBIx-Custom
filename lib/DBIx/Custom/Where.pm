@@ -14,8 +14,8 @@ use Carp 'croak';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
 __PACKAGE__->attr(
-  [qw/param query_builder/],
-  clause => sub { [] },
+    [qw/param query_builder/],
+    clause => sub { [] },
 );
 
 sub to_string {
@@ -37,7 +37,6 @@ sub to_string {
 }
 
 our %VALID_OPERATIONS = map { $_ => 1 } qw/and or/;
-
 sub _parse {
     my ($self, $clause, $where, $count, $op) = @_;
     

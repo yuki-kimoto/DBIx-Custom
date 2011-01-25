@@ -764,7 +764,7 @@ test 'connect super';
     }
     
     sub new {
-        my $self = shift->SUPER::connect(@_);
+        my $self = shift->SUPER::new(@_);
         
         return $self;
     }
@@ -776,10 +776,27 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
 
 $dbi = MyDBI->new($NEW_ARGS->{0});
+$dbi->connect;
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
 
+{
+    package MyDBI2;
+    
+    use base 'DBIx::Custom';
+    sub connect {
+        my $self = shift->SUPER::new(@_);
+        $self->connect;
+        
+        return $self;
+    }
+}
+
+$dbi = MyDBI->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
 
 test 'end_filter';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});

@@ -15,6 +15,7 @@ use DBIx::Custom::Query;
 use DBIx::Custom::QueryBuilder;
 use DBIx::Custom::Where;
 use DBIx::Custom::Table;
+use DBIx::Custom::Tag;
 use Encode qw/encode_utf8 decode_utf8/;
 
 __PACKAGE__->attr(
@@ -156,7 +157,7 @@ sub method {
 }
 
 sub connect {
-    my $self = ref $_[0] ? shift : shift->SUPER::new(@_);;
+    my $self = ref $_[0] ? shift : shift->new(@_);;
     
     # Attributes
     my $data_source = $self->data_source;
@@ -451,6 +452,20 @@ sub new {
         croak qq{"$attr" is invalid attribute name}
           unless $self->can($attr);
     }
+
+    $self->register_tag(
+        '?'     => \&DBIx::Custom::Tag::placeholder,
+        '='     => \&DBIx::Custom::Tag::equal,
+        '<>'    => \&DBIx::Custom::Tag::not_equal,
+        '>'     => \&DBIx::Custom::Tag::greater_than,
+        '<'     => \&DBIx::Custom::Tag::lower_than,
+        '>='    => \&DBIx::Custom::Tag::greater_than_equal,
+        '<='    => \&DBIx::Custom::Tag::lower_than_equal,
+        'like'  => \&DBIx::Custom::Tag::like,
+        'in'    => \&DBIx::Custom::Tag::in,
+        'insert_param' => \&DBIx::Custom::Tag::insert_param,
+        'update_param' => \&DBIx::Custom::Tag::update_param
+    );
     
     return $self;
 }
@@ -676,8 +691,9 @@ sub update {
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
 
-sub where { DBIx::Custom::Where->new(
-              query_builder => shift->query_builder) }
+sub where {
+    return DBIx::Custom::Where->new(query_builder => shift->query_builder)
+}
 
 sub _build_binds {
     my ($self, $params, $columns, $filter) = @_;
@@ -725,12 +741,13 @@ sub _croak {
     }
 }
 
-# Following methos are DEPRECATED!
+# DEPRECATED!
 __PACKAGE__->attr(
     dbi_options => sub { {} },
     filter_check  => 1
 );
 
+# DEPRECATED!
 sub default_bind_filter {
     my $self = shift;
     
@@ -752,6 +769,7 @@ sub default_bind_filter {
     return $self->{default_out_filter};
 }
 
+# DEPRECATED!
 sub default_fetch_filter {
     my $self = shift;
     
@@ -774,6 +792,7 @@ sub default_fetch_filter {
     return $self->{default_in_filter};
 }
 
+# DEPRECATED!
 sub register_tag_processor {
     return shift->query_builder->register_tag_processor(@_);
 }
@@ -924,14 +943,6 @@ Default filter when row is fetched.
     my $filters = $dbi->filters;
     $dbi        = $dbi->filters(\%filters);
 
-=head2 C<filter_check>
-
-    my $filter_check = $dbi->filter_check;
-    $dbi             = $dbi->filter_check(0);
-
-B<this attribute is now deprecated and has no mean
-because check is always done>. 
-
 =head2 C<password>
 
     my $password = $dbi->password;
@@ -970,7 +981,7 @@ C<connect()> method use this value to connect the database.
 L<DBIx::Custom> inherits all methods from L<Object::Simple>
 and implements the following new ones.
 
-=head2 C<(experimental) apply_filter >
+=head2 C<(experimental) apply_filter>
 
     $dbi->apply_filter(
         $table,
@@ -1056,8 +1067,6 @@ is expanded to
 
 This is used in C<select()>
 
-
-    
 =head2 C<delete>
 
     $dbi->delete(table  => $table,
@@ -1187,7 +1196,7 @@ C<default_filter> and C<filter> of C<DBIx::Custom::Result>
         }
     );
 
-Register tag processor.
+Register tag.
 
 =head2 C<rollback>
 
@@ -1282,16 +1291,87 @@ Return value of C<update_all()> is the count of affected rows.
 
 Create a new L<DBIx::Custom::Where> object.
 
-=head2 C<(deprecated) cache_method>
+=head2 C<cache_method>
 
     $dbi          = $dbi->cache_method(\&cache_method);
     $cache_method = $dbi->cache_method
 
 Method to set and get caches.
 
+=head1 Tags
+
+The following tags is available.
+
+=head2 C<?>
+
+Placeholder tag.
+
+    {? NAME}    ->   ?
+
+=head2 C<=>
+
+Equal tag.
+
+    {= NAME}    ->   NAME = ?
+
+=head2 C<E<lt>E<gt>>
+
+Not equal tag.
+
+    {<> NAME}   ->   NAME <> ?
+
+=head2 C<E<lt>>
+
+Lower than tag
+
+    {< NAME}    ->   NAME < ?
+
+=head2 C<E<gt>>
+
+Greater than tag
+
+    {> NAME}    ->   NAME > ?
+
+=head2 C<E<gt>=>
+
+Greater than or equal tag
+
+    {>= NAME}   ->   NAME >= ?
+
+=head2 C<E<lt>=>
+
+Lower than or equal tag
+
+    {<= NAME}   ->   NAME <= ?
+
+=head2 C<like>
+
+Like tag
+
+    {like NAME}   ->   NAME like ?
+
+=head2 C<in>
+
+In tag.
+
+    {in NAME COUNT}   ->   NAME in [?, ?, ..]
+
+=head2 C<insert_param>
+
+Insert parameter tag.
+
+    {insert_param NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
+
+=head2 C<update_param>
+
+Updata parameter tag.
+
+    {update_param NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?
+
 =head1 STABILITY
 
-L<DBIx::Custom> is now stable. APIs keep backword compatible in the feature.
+L<DBIx::Custom> is stable. APIs keep backword compatible
+except experimental one in the feature.
 
 =head1 BUGS
 
@@ -1307,7 +1387,7 @@ Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 Yuki Kimoto, all rights reserved.
+Copyright 2009-2011 Yuki Kimoto, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
