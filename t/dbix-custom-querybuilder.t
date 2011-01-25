@@ -6,7 +6,7 @@ use Test::More 'no_plan';
 use DBIx::Custom::QueryBuilder;
 
 # Function for test name
-sub test{ "# $_[0]\n" }
+sub test{ print "# $_[0]\n" }
 
 # Variable for test
 my $datas;

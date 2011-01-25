@@ -7,7 +7,7 @@ use DBIx::Custom::QueryBuilder;
 
 # Function for test name
 my $test;
-sub test { "# $_[0]\n" }
+sub test { print "# $_[0]\n" }
 
 # Variables for test
 my $dbi;

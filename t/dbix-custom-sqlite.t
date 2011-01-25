@@ -14,7 +14,7 @@ BEGIN {
 }
 
 # Function for test name
-sub test { "# $_[0]\n" }
+sub test { print "# $_[0]\n" }
 
 # Constant varialbes for test
 my $CREATE_TABLE = {

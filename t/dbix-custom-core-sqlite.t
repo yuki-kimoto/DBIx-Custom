@@ -16,7 +16,7 @@ BEGIN {
 }
 
 # Function for test name
-sub test { "# $_[0]\n" }
+sub test { print "# $_[0]\n" }
 
 # Constant varialbes for test
 my $CREATE_TABLE = {
@@ -1019,13 +1019,7 @@ is_deeply($row, {key1 => 2, key2 => 2});
 eval {$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2},
              filter => {key1 => 'no'}) };
 like($@, qr//);
-$dbi->table_class('!!!!');
-eval {$dbi->table};
-like($@, qr/Invalid table/);
 
-$dbi->table_class('NOTEXIST');
-eval {$dbi->table};
-ok($@);
 $dbi->register_filter(one => sub { });
 $dbi->default_fetch_filter('one');
 ok($dbi->default_fetch_filter);
@@ -1072,3 +1066,26 @@ $result = DBIx::Custom::Result->new;
 is_deeply($result->stash, {}, 'default');
 $result->stash->{foo} = 1;
 is($result->stash->{foo}, 1, 'get and set');
+
+test 'base_table';
+$dbi = DBIx::Custom->new;
+$dbi->base_table->method(
+    one => sub { 1 }
+);
+$table = $dbi->table('book');
+$table->method(
+    two => sub { 2 }
+);
+is($dbi->base_table->one, 1, 'method');
+is($table->one, 1, 'inherit method');
+is($table->two, 2, 'child table method');
+eval {$dbi->base_table->two};
+ok($@);
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$result = $dbi->base_table->execute("select * from table1");
+is_deeply($result->fetch_hash_all, [{key1 => 1, key2 => 2}], 'dbi method from base_table');
+$result = $dbi->table('table1')->execute("select * from table1");
+is_deeply($result->fetch_hash_all, [{key1 => 1, key2 => 2}], 'dbi method from table');

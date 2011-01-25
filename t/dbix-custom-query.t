@@ -5,7 +5,7 @@ use warnings;
 use DBIx::Custom::Query;
 
 # Function for test name
-sub test{ "# $_[0]\n" }
+sub test{ print "# $_[0]\n" }
 
 # Variables for test
 my $query;

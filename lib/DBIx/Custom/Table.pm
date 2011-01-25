@@ -10,7 +10,7 @@ use Carp 'croak';
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-__PACKAGE__->attr(['dbi', 'name']);
+__PACKAGE__->attr(['dbi', 'name', 'base']);
 
 our $AUTOLOAD;
 
@@ -22,11 +22,14 @@ sub AUTOLOAD {
 
     # Method
     $self->{_methods} ||= {};
-    croak qq/Can't locate object method "$mname" via "$package"/
-      unless my $method = $self->{_methods}->{$mname};
-
-    # Execute
-    return $self->$method(@_);
+    
+    # Method
+    if (my $method = $self->{_methods}->{$mname}) {
+        return $self->$method(@_)
+    }
+    
+    # DBI method
+    return $self->dbi->$mname(@_);
 }
 
 sub method {
