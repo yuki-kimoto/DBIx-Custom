@@ -75,52 +75,43 @@ my $table = DBIx::Custom::Table->new(name => 'books');
 
 =head1 METHODS
 
-L<DBIx::Custom> inherits all methods from L<Object::Simple>
+L<DBIx::Custom> inherits all methods from L<Object::Simple>,
+and you can use all methods of the object set to C<dbi>.
 and implements the following new ones.
 
 =head2 C<delete>
 
-    $table->delete(where => \%where);
+    $table->delete(...);
     
 Same as C<delete()> of L<DBIx::Custom> except that
-you don't have to specify table name.
+you don't have to specify C<table> option.
 
 =head2 C<delete_all>
 
-    $table->delete_all(param => $param);
+    $table->delete_all(...);
     
 Same as C<delete_all()> of L<DBIx::Custom> except that
-you don't have to specify table name.
+you don't have to specify C<table> option.
 
 =head2 C<method>
 
-    $table->method(insert => sub {
-        my $self = shift;
+    $table->method(
+        count => sub {
+            my $self = shift;
         
-        return $self->dbi->insert(table => $self->name, @_);
-    });
+            return $self->select(column => 'count(*)', @_)
+                        ->fetch_first->[0];
+        }
+    );
     
 Add method to a L<DBIx::Custom::Table> object.
 
 =head2 C<insert>
 
-    $table->insert(param => \%param);
+    $table->insert(...);
     
 Same as C<insert()> of L<DBIx::Custom> except that
-you don't have to specify table name.
-
-=head2 C<method>
-
-    $table->method(
-        select_complex => sub {
-            my $self = shift;
-            
-            return $self->dbi->select($self->name, ...);
-        },
-        some_method => sub { ... }
-    );
-
-Define method.
+you don't have to specify C<table> option.
 
 =head2 C<new>
 
@@ -130,17 +121,17 @@ Create a L<DBIx::Custom::Table> object.
 
 =head2 C<select>
 
-    $table->select(param => $param);
+    $table->select(...);
     
 Same as C<select()> of L<DBIx::Custom> except that
-you don't have to specify table name.
+you don't have to specify C<table> option.
 
 =head2 C<update>
 
-    $table->update(param => \%param, where => \%where);
+    $table->update(...);
     
 Same as C<update()> of L<DBIx::Custom> except that
-you don't have to specify table name.
+you don't have to specify C<table> option.
 
 =head2 C<update_all>
 

@@ -1089,3 +1089,10 @@ $result = $dbi->base_table->execute("select * from table1");
 is_deeply($result->fetch_hash_all, [{key1 => 1, key2 => 2}], 'dbi method from base_table');
 $result = $dbi->table('table1')->execute("select * from table1");
 is_deeply($result->fetch_hash_all, [{key1 => 1, key2 => 2}], 'dbi method from table');
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->method(
+    one => sub { 1 }
+);
+is($dbi->base_table->one, 1, 'use dbi method');
+is($dbi->table('table1')->one, 1, 'use dbi method');
