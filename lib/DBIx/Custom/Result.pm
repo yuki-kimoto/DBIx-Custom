@@ -7,7 +7,10 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 
-__PACKAGE__->attr([qw/filters sth/]);
+__PACKAGE__->attr(
+    [qw/filters sth/],
+    stash => sub { {} }
+);
 
 sub filter {
     my $self = shift;
@@ -328,8 +331,8 @@ and implements the following new ones.
 
 =head2 C<(experimental) end_filter>
 
-    $result    = $result->end_filter(title  => 'to_upper_case',
-                                     author => 'to_upper_case');
+    $result    = $result->end_filter(title  => 'to_something',
+                                     author => 'to_something');
 
 End filters.
 These each filters is executed after the filters applied by C<apply_filter> of
@@ -387,11 +390,19 @@ Row count must be specified.
 
 =head2 C<filter>
 
-    $result    = $result->filter(title  => 'to_upper_case',
-                                 author => 'to_upper_case');
+    $result = $result->filter(title  => 'to_something',
+                              author => 'to_something');
 
 Filters.
 These each filters override the filters applied by C<apply_filter> of
 L<DBIx::Custom>.
+
+=head2 C<(experimental) stash>
+
+    my $stash = $result->stash;
+    my $foo = $result->stash->{foo};
+    $result->stash->{foo} = $foo;
+
+Stash is hash reference to save your data.
 
 =cut

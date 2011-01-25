@@ -1067,3 +1067,8 @@ $dbi = DBIx::Custom->connect(data_source => 'dbi:SQLite:dbname=:memory:',
                              dbi_options => {PrintError => 1});
 ok($dbi->dbh->{PrintError});
 
+test 'DBIx::Custom::Result stash()';
+$result = DBIx::Custom::Result->new;
+is_deeply($result->stash, {}, 'default');
+$result->stash->{foo} = 1;
+is($result->stash->{foo}, 1, 'get and set');
