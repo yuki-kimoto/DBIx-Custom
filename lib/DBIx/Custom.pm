@@ -69,16 +69,15 @@ our $AUTOLOAD;
 sub AUTOLOAD {
     my $self = shift;
 
+    # Method name
+    my ($package, $mname) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
+
     # Method
-    my ($package, $method) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
-
-    # Helper
-    $self->{_helpers} ||= {};
-    croak qq/Can't locate object method "$method" via "$package"/
-      unless my $helper = $self->{_helpers}->{$method};
-
-    # Run
-    return $self->$helper(@_);
+    $self->{_methods} ||= {};
+    croak qq/Can't locate object method "$mname" via "$package"/
+      unless my $method = $self->{_methods}->{$mname};
+    
+    return $self->$method(@_);
 }
 
 sub apply_filter {
@@ -145,12 +144,12 @@ sub apply_filter {
     return $self;
 }
 
-sub helper {
+sub method {
     my $self = shift;
     
     # Merge
-    my $helpers = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $self->{_helpers} = {%{$self->{_helpers} || {}}, %$helpers};
+    my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $self->{_methods} = {%{$self->{_methods} || {}}, %$methods};
     
     return $self;
 }
@@ -1074,9 +1073,9 @@ Arguments is same as C<delete> method,
 except that C<delete_all> don't have C<where> argument.
 Return value of C<delete_all()> is the count of affected rows.
 
-=head2 C<(experimental) helper>
+=head2 C<(experimental) method>
 
-    $dbi->helper(
+    $dbi->method(
         update_or_insert => sub {
             my $self = shift;
             # do something
@@ -1087,7 +1086,7 @@ Return value of C<delete_all()> is the count of affected rows.
         }
     );
 
-Register helper methods. These method is called from L<DBIx::Custom> object directory.
+Register method. These method is called from L<DBIx::Custom> object directory.
 
     $dbi->update_or_insert;
     $dbi->find_or_create;

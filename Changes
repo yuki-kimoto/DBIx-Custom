@@ -1,6 +1,6 @@
 0.1638
   added experimental base_table attribute and  removed experimental table_class attribute
-  renamed helper to method. helper is available, but deprecated.
+  renamed helper to method.
   added experimental DBIx::Custom::Result::stash()
   renamed experimental DBIx::Custom::Table helper to method
 0.1637

@@ -525,15 +525,15 @@ ok($@, "exception");
 $dbi->dbh->{AutoCommit} = 1;
 
 
-test 'helper';
+test 'method';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->helper(
+$dbi->method(
     one => sub { 1 }
 );
-$dbi->helper(
+$dbi->method(
     two => sub { 2 }
 );
-$dbi->helper({
+$dbi->method({
     twice => sub {
         my $self = shift;
         return $_[0] * 2;
@@ -1003,7 +1003,7 @@ eval {$dbi->apply_filter('table1', 'key2', {out => 'no'})};
 like($@, qr/not registered/);
 eval {$dbi->apply_filter('table1', 'key2', {in => 'no'})};
 like($@, qr/not registered/);
-$dbi->helper({one => sub { 1 }});
+$dbi->method({one => sub { 1 }});
 is($dbi->one, 1);
 
 eval{DBIx::Custom->connect()};
