@@ -697,19 +697,23 @@ $rows = $table->select->fetch_hash_all;
 is_deeply($rows, [], "delete_all");
 
 $dbi->dbh->do($CREATE_TABLE->{2});
-$dbi->table('table2', ppp => sub {
-    my $self = shift;
+$dbi->table('table2')->method(
+    ppp => sub {
+        my $self = shift;
     
-    return $self->name;
-});
-is($dbi->table('table2')->ppp, 'table2', "helper");
+        return $self->name;
+    }
+);
+is($dbi->table('table2')->ppp, 'table2', "method");
 
-$dbi->table('table2', {qqq => sub {
-    my $self = shift;
+$dbi->table('table2')->method({
+    qqq => sub {
+        my $self = shift;
     
-    return $self->name;
-}});
-is($dbi->table('table2')->qqq, 'table2', "helper");
+        return $self->name;
+    }
+});
+is($dbi->table('table2')->qqq, 'table2', "method");
 
 
 test 'limit';

@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1637';
+our $VERSION = '0.1638';
 
 use 5.008001;
 use strict;
@@ -583,9 +583,6 @@ sub table {
     $self->{_tables}->{$name}
         = $table_class->new(name => $name, dbi => $self)
       unless defined $self->{_tables}->{$name};
-    
-    # Helper
-    $self->{_tables}->{$name}->helper(@_) if @_;
     
     return $self->{_tables}{$name};
 }
@@ -1246,7 +1243,7 @@ Return value of C<update()> is the count of affected rows.
 
 =head2 C<(experimental) table>
 
-    $dbi->table('book',
+    $dbi->table('book')->method(
         insert => sub { ... },
         update => sub { ... }
     );

@@ -17,24 +17,24 @@ our $AUTOLOAD;
 sub AUTOLOAD {
     my $self = shift;
 
+    # Method name
+    my ($package, $mname) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
+
     # Method
-    my ($package, $method) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
+    $self->{_methods} ||= {};
+    croak qq/Can't locate object method "$mname" via "$package"/
+      unless my $method = $self->{_methods}->{$mname};
 
-    # Helper
-    $self->{_helpers} ||= {};
-    croak qq/Can't locate object method "$method" via "$package"/
-      unless my $helper = $self->{_helpers}->{$method};
-
-    # Run
-    return $self->$helper(@_);
+    # Execute
+    return $self->$method(@_);
 }
 
-sub helper {
+sub method {
     my $self = shift;
     
     # Merge
-    my $helpers = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $self->{_helpers} = {%{$self->{_helpers} || {}}, %$helpers};
+    my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $self->{_methods} = {%{$self->{_methods} || {}}, %$methods};
     
     return $self;
 }
@@ -45,7 +45,7 @@ sub new {
     # Methods
     my @methods = qw/insert update update_all delete delete_all select/;
     foreach my $method (@methods) {
-        $self->helper(
+        $self->method(
             $method => sub {
                 my $self = shift;
                 return $self->dbi->$method(table => $self->name, @_);
@@ -89,15 +89,15 @@ you don't have to specify table name.
 Same as C<delete_all()> of L<DBIx::Custom> except that
 you don't have to specify table name.
 
-=head2 C<helper>
+=head2 C<method>
 
-    $table->helper(insert => sub {
+    $table->method(insert => sub {
         my $self = shift;
         
         return $self->dbi->insert(table => $self->name, @_);
     });
     
-Add helper method to a L<DBIx::Custom::Table> object.
+Add method to a L<DBIx::Custom::Table> object.
 
 =head2 C<insert>
 
