@@ -574,7 +574,7 @@ is($dbi->two, 2, "second");
 is($dbi->twice(5), 10 , "second");
 
 eval {$dbi->XXXXXX};
-like($@, qr/\QCan't locate object method "XXXXXX" via "DBIx::Custom"/, "not exists");
+ok($@, "not exists");
 
 test 'out filter';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});

@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1639';
+our $VERSION = '0.1640';
 
 use 5.008001;
 use strict;
@@ -53,21 +53,7 @@ __PACKAGE__->attr(
     }
 );
 
-# DBI methods
-foreach my $method (qw/begin_work commit rollback/) {
-    my $code = sub {
-        my $self = shift;
-        my $ret = eval {$self->dbh->$method};
-        croak $@ if $@;
-        return $ret;
-    };
-    no strict 'refs';
-    my $pkg = __PACKAGE__;
-    *{"${pkg}::$method"} = $code;
-};
-
 our $AUTOLOAD;
-
 sub AUTOLOAD {
     my $self = shift;
 
@@ -76,10 +62,11 @@ sub AUTOLOAD {
 
     # Method
     $self->{_methods} ||= {};
-    croak qq/Can't locate object method "$mname" via "$package"/
-      unless my $method = $self->{_methods}->{$mname};
+    my $method = $self->{_methods}->{$mname};
+    return $self->$method(@_) if $method;
     
-    return $self->$method(@_);
+    # DBI method
+    return $self->dbh->$mname(@_);
 }
 
 sub apply_filter {
@@ -369,21 +356,6 @@ sub execute{
         return $result;
     }
     return $affected;
-}
-
-sub expand {
-    my $self = shift;
-    my $source = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    my $table = (keys %$source)[0];
-    my $param = $source->{$table};
-    
-    # Expand table name
-    my $expand = {};
-    foreach my $column (keys %$param) {
-        $expand->{"$table.$column"} = $param->{$column};
-    }
-    
-    return %$expand;
 }
 
 our %VALID_INSERT_ARGS = map { $_ => 1 } qw/table param append
@@ -1001,6 +973,7 @@ C<connect()> method use this value to connect the database.
 =head1 METHODS
 
 L<DBIx::Custom> inherits all methods from L<Object::Simple>
+and use all method of L<DBI>
 and implements the following new ones.
 
 =head2 C<(experimental) apply_filter>
@@ -1025,23 +998,6 @@ arguments.
          table => ['table1']
     );
     
-=head2 C<begin_work>
-
-    $dbi->begin_work;
-
-Start transaction.
-This is same as L<DBI>'s C<begin_work>.
-
-L<DBIx::Custom> inherits all methods from L<Object::Simple>
-and implements the following new ones.
-
-=head2 C<commit>
-
-    $dbi->commit;
-
-Commit transaction.
-This is same as L<DBI>'s C<commit>.
-
 =head2 C<connect>
 
     my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=dbname",

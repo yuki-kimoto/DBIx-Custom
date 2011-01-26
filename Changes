@@ -1,3 +1,6 @@
+0.1640
+  autoload DBI method
+  removed experimental expand
 0.1639
   improved delete() and update() where option. you can use DBIx::Custom::Where object
   added experimental not_exists()

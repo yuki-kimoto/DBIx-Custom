@@ -1,4 +1,4 @@
-use Test::More tests => 12;
+use Test::More 'no_plan';
 use strict;
 use warnings;
 
@@ -82,21 +82,6 @@ $dbi->register_filter(a => sub {1});
 is($dbi->filters->{a}->(), 1);
 $dbi->register_filter({b => sub {2}});
 is($dbi->filters->{b}->(), 2);
-
-
-test 'expand';
-{
-    $dbi = DBIx::Custom->new;
-    my $source = {books => {title => 'Perl', author => 'Ken'}};
-    is_deeply({$dbi->expand($source)}, 
-              {'books.title' => 'Perl', 'books.author' => 'Ken'});
-}
-{
-    $dbi = DBIx::Custom->new;
-    my %source = (books => {title => 'Perl', author => 'Ken'});
-    is_deeply({$dbi->expand(%source)}, 
-              {'books.title' => 'Perl', 'books.author' => 'Ken'});
-}
 
 test 'invalid attribute name';
 eval {$dbi = DBIx::Custom->new(a => 1) };
