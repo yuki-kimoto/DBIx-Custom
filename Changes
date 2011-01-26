@@ -1,4 +1,5 @@
 0.1639
+  improved delete() and update() where option. you can use DBIx::Custom::Where object
   added experimental not_exists()
 0.1638
   table object call dbi object method if not found method.

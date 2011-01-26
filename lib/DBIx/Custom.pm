@@ -259,11 +259,14 @@ sub delete {
         push @$clause, "{= $_}" for keys %$where;
         $w = $self->where;
         $w->clause($clause);
+        $w->param($where);
     }
     else { $w = $where }
     
     croak qq{"where" must be hash refernce or DBIx::Custom::Where object}
       unless ref $w eq 'DBIx::Custom::Where';
+    
+    $where = $w->param;
     
     croak qq{"where" must be specified}
       if "$w" eq '' && !$allow_delete_all;
@@ -640,33 +643,34 @@ sub update {
     # Update keys
     my @update_keys = keys %$param;
     
-    # Where keys
-    my @where_keys = keys %$where;
-    
-    # Not exists where keys
-    croak qq{"where" argument must be specified and } .
-          qq{contains the pairs of column name and value}
-      if !@where_keys && !$allow_update_all;
-    
     # Update clause
     my $update_clause = '{update_param ' . join(' ', @update_keys) . '}';
-    
-    # Where clause
-    my $where_clause = '';
-    my $new_where = {};
-    
-    if (@where_keys) {
-        $where_clause = 'where ';
-        $where_clause .= "{= $_} and " for @where_keys;
-        $where_clause =~ s/ and $//;
+
+    # Where
+    my $w;
+    if (ref $where eq 'HASH') {
+        my $clause = ['and'];
+        push @$clause, "{= $_}" for keys %$where;
+        $w = $self->where;
+        $w->clause($clause);
+        $w->param($where);
     }
+    else { $w = $where }
+    
+    croak qq{"where" must be hash refernce or DBIx::Custom::Where object}
+      unless ref $w eq 'DBIx::Custom::Where';
+    
+    $where = $w->param;
+    
+    croak qq{"where" must be specified}
+      if "$w" eq '' && !$allow_update_all;
     
     # Source of SQL
-    my $source = "update $table $update_clause $where_clause";
+    my $source = "update $table $update_clause $w";
     $source .= " $append" if $append;
     
     # Rearrange parameters
-    foreach my $wkey (@where_keys) {
+    foreach my $wkey (keys %$where) {
         
         if (exists $param->{$wkey}) {
             $param->{$wkey} = [$param->{$wkey}]

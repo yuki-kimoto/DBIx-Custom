@@ -280,6 +280,25 @@ like($@, qr/noexist/, "invalid argument");
 eval{$dbi->update(table => 'table1')};
 like($@, qr/where/, "not contain where");
 
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$where = $dbi->where;
+$where->clause(['and', '{= key1}', '{= key2}']);
+$where->param({key1 => 1, key2 => 2});
+$dbi->update(table => 'table1', param => {key1 => 3}, where => $where);
+$result = $dbi->select(table => 'table1');
+is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 2}], 'delete() where');
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$where = $dbi->where;
+$where->clause(['and', '{= key2}']);
+$where->param({key2 => 2});
+$dbi->update(table => 'table1', param => {key1 => 3}, where => $where);
+$result = $dbi->select(table => 'table1');
+is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 2}], 'delete() where');
 
 test 'update_all';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -326,6 +345,16 @@ is_deeply($rows, [{key1 => 3, key2 => 4}], "delete multi key");
 eval{$dbi->delete(table => 'table1', noexist => 1)};
 like($@, qr/noexist/, "invalid argument");
 
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+$where = $dbi->where;
+$where->clause(['and', '{= key1}', '{= key2}']);
+$where->param({ke1 => 1, key2 => 2});
+$dbi->delete(table => 'table1', where => $where);
+$result = $dbi->select(table => 'table1');
+is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 4}], 'delete() where');
 
 test 'delete error';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
