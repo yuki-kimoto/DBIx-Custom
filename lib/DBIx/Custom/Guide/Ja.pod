@@ -1000,7 +1000,8 @@ L<DBIx::Custom>のC<not_exists>でDBIx::Custom::NotExistsオブジェクトを
 
 =head3 C<select()>との連携
 
-C<select()>との連携です。C<select()>のC<where>に直接渡すことが
+L<DBIx::Custom::Where>オブジェクトは
+C<select()>のC<where>に直接渡すことが
 できます。
     
     my $where = $dbi->where;
@@ -1008,7 +1009,7 @@ C<select()>との連携です。C<select()>のC<where>に直接渡すことが
     $where->param($param);
     my $result = $dbi->select(table => 'book', where => $where);
 
-あるいはC<update>、C<delete>と連携することが可能です。
+あるいはC<update()>、C<delete()>のwhereに指定することも可能です。
 
 =head3 C<execute()>との連携
 
@@ -1028,18 +1029,23 @@ C<execute()>との連携です。SQLを作成するときに埋め込むこと�
 
 =head2 7. パフォーマンスの改善
 
-=head3 シュガーメソッドを使わない
+=head3 クエリの作成
 
 もしC<insert()>メソッドを使用してインサートを実行した場合、
 必要なパフォーマンスを得られない場合があるかもしれません。
 C<insert()>メソッドは、SQL文とステートメントハンドルを
-毎回作成するためすこし遅いです。
+毎回作成するためです。
 
-そのような場合は、C<create_query()>メソッドによって
-クエリを用意しておくことができます。
-    
+そのような場合は、C<query>オプションを指定することで、
+クエリを取得することができます。
+
+    my $query = $dbi->insert(table => 'book', param => $param, query => 1);
+
+またC<create_query()>メソッドを使って任意のSQLのクエリを作成
+することもできます。
+
     my $query = $dbi->create_query(
-        "insert into book {insert_param title author};"
+        "insert into book {insert_param title author};";
     );
 
 戻り値はL<DBIx::Custom::Query>オブジェクトです。
@@ -1052,48 +1058,35 @@ C<insert()>メソッドは、SQL文とステートメントハンドルを
         sth     => $sth
     }
 
-クエリオブジェクトを使って繰り返し実行するには次のようにします。
+クエリオブジェクトを使って繰り返し実行するにはC<execute()>を使用します。
     
-    my $inputs = [
+    my $params = [
         {title => 'Perl',      author => 'Ken'},
         {title => 'Good days', author => 'Mike'}
     ];
     
-    foreach my $input (@$inputs) {
-        $dbi->execute($query, $input);
+    foreach my $param (@$paramss) {
+        $dbi->execute($query, table => 'book', param => $input);
     }
 
 C<execute>メソッドの第一引数にクエリオブジェトを渡すことができます。
-これはC<insert()>メソッドよりも高速です。
+C<insert()>メソッドよりも高速です。
+
+注意点がいくつかあります。それはパラメータの数は必ず同じでなくてはならない
+ということです。最初に3つのパラメータだけを渡したのに、次の実行では
+二つのパラメータを渡すと予期しない結果になります。それは
+動的に生成されたSQLに含まれるプレースホルダの数が異なるからです。
+またC<execute()>によっては自動的にはフィルタが有効にならないので、
+C<table>を指定する必要のあることに注意してください。
+本当に必要な場合だけ利用してください。
 
 =head2 8. その他の機能
 
-=head3 トランザクション
-
-トランザクションを便利に利用するために、
-C<begin_work()>、C<commit()>、C<rollback()>
-という三つのメソッドが容易されています。
-これはL<DBI>の同名のメソッドと同じ機能を持ちます。
-fc
-    $dbi->begin_work;
-    
-    eval {
-        $dbi->update(...);
-        $dbi->update(...);
-    };
-    
-    if ($@) {
-        $dbi->rollback;
-    }
-    else {
-        $dbi->commit;
-    }
-
 =head3 結果クラスの変更
 
-必要ならばC<select()>メソッドの結果クラスを変更することができます。
+必要ならば結果クラスを変更することができます。
 
-    package Your::Result;
+    package MyResult;
     use base 'DBIx::Custom::Result';
     
     sub some_method { ... }
@@ -1102,27 +1095,27 @@ fc
     
     package main;
     
-    use Your::Result;
+    use MyResult;
     
     my $dbi = DBIx::Custom->connect(...);
-    $dbi->result_class('Your::Result');
+    $dbi->result_class('MyResult');
 
-=head3 ヘルパーメソッドの登録
+=head3 メソッドの登録
 
-ヘルパーメソッドを登録することができます。
+メソッドを登録するにはC<method()>を使用します。
 
-    $dbi->helper(
+    $dbi->method(
         update_or_insert => sub {
             my $self = shift;
-            # do something
+            # something
         },
         find_or_create   => sub {
             my $self = shift;
-            # do something
+            # something
         }
     );
 
-<helper()>メソッドで登録したメソッドは
+<method()>で登録したメソッドは
 L<DBIx::Custom>オブジェクトから直接呼び出すことができます。
 
     $dbi->update_or_insert;
