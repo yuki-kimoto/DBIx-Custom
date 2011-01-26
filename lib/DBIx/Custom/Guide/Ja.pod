@@ -231,7 +231,7 @@ C<insert()>、C<update()>、C<delete()>、C<select()>
 のような挿入、更新、削除、選択を行うためのメソッドを持っています。
 簡単なことをを行うのであれば、SQLを自分で記述する必要がありません。
 
-=head3 C<insert()>
+=head3 データの挿入 C<insert()>
 
 データベースにデータを挿入するにはC<insert()>を使用します。
 
@@ -244,7 +244,7 @@ C<table>にはテーブル名、C<param>には挿入したいデータを指定�
 
     insert into (title, author) values (?, ?);
 
-=head3 C<update()>
+=head3 データの更新 C<update()>
 
 データベースのデータを更新するには、C<update()>を使用します。
 
@@ -267,7 +267,7 @@ C<update_all()>を使用してください。
     $dbi->update_all(table  => 'book', 
                      param  => {title => 'Perl', author => 'Ken'});
 
-=head3 C<delete()>
+=head3 データの削除 C<delete()>
 
 データベースのデータを1件削除するには、C<delete()>を使用します。
 
@@ -287,7 +287,7 @@ C<delete_all()>を使用してください。
 
     $dbi->delete_all(table  => 'book');
 
-=head3 C<select()>
+=head3 データの選択 C<select()>
 
 行を選択するにはC<select()>を使用します。
 
@@ -350,7 +350,7 @@ SQL文の末尾に文字列を追加したい場合は<append>を使用します
 またC<append>は、C<select>だけでなくC<insert()>、C<update()>、C<update_all()>
 C<delete()>、C<delete_all()>、C<select()>で使用することもできます。
 
-=head4 execute
+=head3 SQLの実行 C<execute()>
 
 任意のSQLを実行するにはexecuteメソッドを使用します。
 
@@ -390,7 +390,7 @@ C<select()>メソッドの戻り値はL<DBIx::Custom::Result>オブジェクト�
 L<DBIx::Custom::Result>には行をフェッチするためのさまざまなメソッドが
 用意されています。
 
-=head3 C<fetch>
+=head3 1行づつフェッチ(配列) C<fetch()>
 
 一行フェッチして配列のリファレンスに格納するにはC<fetch()>を使用します。
 
@@ -401,7 +401,7 @@ L<DBIx::Custom::Result>には行をフェッチするためのさまざまなメ
 
 whileループを使って、すべての行を取得することができます。
 
-=head3 C<fetch_first>
+=head3 最初の行だけフェッチ(配列) C<fetch_first()>
 
 一行だけフェッチして配列のリファレンスに格納するにはC<fetch_first()>
 を使用します。
@@ -412,7 +412,7 @@ whileループを使って、すべての行を取得することができます
 内部的には1行のフェッチが終わった後に
 ステートメントハンドルのC<finish()>が実行されます。
 
-=head3 C<fetch_multi>
+=head3 複数行を順にフェッチ(配列) C<fetch_multi()>
 
 複数行をフェッチして配列のリファレンスを要素に持つ
 配列のリファレンスに格納するにはC<fetch_multi()>を使用します。
@@ -434,7 +434,7 @@ whileループを使って、すべての行を取得することができます
         ['Ruby', 'Mark']
     ]
 
-=head3 C<fetch_all>
+=head3 すべての行をフェッチ(配列) C<fetch_all>
 
 すべての行をフェッチして配列のリファレンスを要素に持つ
 配列のリファレンスに格納するにはC<fetch_all()>を使用します。
@@ -448,7 +448,7 @@ whileループを使って、すべての行を取得することができます
         ['Ruby', 'Mark']
     ]
 
-=head3 C<fetch_hash>
+=head3 1行づつフェッチ(ハッシュ) C<fetch_hash()>
 
 一行フェッチしてハッシュのリファレンスに格納するにはC<fetch_hash()>を使用します。
 
@@ -457,7 +457,7 @@ whileループを使って、すべての行を取得することができます
         my $author = $row->{author};
     }
 
-=head3 C<fetch_hash_first>
+=head3 最初の行だけフェッチ(ハッシュ) C<fetch_hash_first()>
 
 一行だけフェッチしてハッシュのリファレンスに格納するには
 C<fetch_hash_first()>を使用します。
@@ -468,7 +468,7 @@ C<fetch_hash_first()>を使用します。
 内部的には1行のフェッチが終わった後に
 ステートメントハンドルのC<finish()>が実行されます。
 
-=head3 C<fetch_hash_multi>
+=head3 複数行を順にフェッチ(ハッシュ) C<fetch_hash_multi()>
 
 複数行をフェッチしてハッシュのリファレンスを要素に持つ
 配列のリファレンスに格納するにはC<fetch_hash_multi()>
@@ -490,7 +490,7 @@ C<fetch_hash_first()>を使用します。
         {title => 'Ruby', author => 'Mark'}
     ]
 
-=head3 C<fetch_all>
+=head3 すべての行をフェッチ(ハッシュ) C<fetch_hash_all()>
 
 すべての行をフェッチしてハッシュのリファレンスを要素に持つ
 配列のリファレンスに格納するにはC<fetch_hash_all()>
@@ -505,7 +505,7 @@ C<fetch_hash_first()>を使用します。
         {title => 'Ruby', author => 'Mark'}
     ]
 
-=head3 sth
+=head3 ステートメントハンドル C<sth()>
 
 ステートメントハンドルに直接アクセスしたい場合は
 <sth>で取得することができます。
@@ -525,7 +525,7 @@ C<fetch_hash_first()>を使用します。
 データベースの日付のフォーマットに、
 データベースからデータを取得するときは、その逆を行えると便利です。
 
-=head3 フィルタの登録
+=head3 フィルタの登録 C<register_filter()>
 
 フィルタを登録するにはC<register_filter()>を使用します。
 
@@ -549,7 +549,7 @@ C<fetch_hash_first()>を使用します。
 
 登録したフィルタはC<apply_filter()>などで利用することができます。
 
-=head3 フィルタの適用
+=head3 フィルタの適用 C<apply_filter()>
 
 作成したフィルタを適用するには、C<apply_filter()>を使用します。
 
@@ -585,7 +585,7 @@ C<delete_all()>、C<select()>で有効になります。
 このような自動的に実行されるフィルタを登録できることがL<DBIx::Custom>の
 特徴のひとつです。
 
-=head3 個別のフィルタの適用
+=head3 個別のフィルタの適用 C<filter>
 
 C<apply_filter()>を使って最初にすべてのテーブルの列について
 フィルタを定義することもできますが、
@@ -638,6 +638,8 @@ C<DBIx::Custom::Result>クラスのC<filter>メソッドを使用します。
         'issue_year' => {out => 'tp_to_year', in => 'year_to_tp'}
     );
 
+=head3 最終出力のためのフィルタリング C<end_filter()>
+
 C<DBIx::Custom::Result>ではさらに最後にもう一度、フィルタを追加で
 登録することができます。たとえばHTMLに出力したい場合に、Time::Piece
 オブジェクトから読みやすい記述に変換することができます。
@@ -659,7 +661,7 @@ C<DBIx::Custom::Result>ではさらに最後にもう一度、フィルタを追
     $result->end_filter(...);
     my $row = $result->fetch_hash_first;
 
-=head3 列の情報を元にフィルタを適用する
+=head3 列の情報を元にフィルタを適用する C<each_column()>
 
 日付型の列は手動で設定しなくても、自動的に設定できると便利です。
 このためにデータベースのテーブルの列のすべての情報を
@@ -691,80 +693,190 @@ each_columnはコールバックを受け取ります。コールバックの引
 
 =head2 5. タグ
 
-L<DBIx::Custom>はハッシュパラメタバインドを提供します。
+=head3 タグの機能
 
-まず最初にL<DBI>による通常のパラメタバインドをご覧ください。
+L<DBIx::Custom>はSQLの中にタグを埋め込む機能を持っています。
 
-    use DBI;
-    my $dbh = DBI->connect(...);
-    my $sth = $dbh->prepare(
-        "select * from book where author = ? and title like ?;"
-    );
-    $sth->execute('Ken', '%Perl%');
+    select * from book where {= title} and {like author};
 
-これはデータベースシステムがSQLをキャッシュすることができ、
-パラメータは自動的にクォートされるので、
-パフォーマンス面でも、セキュリティ面でも
-とても良い方法です。
+{= title}と{like author}の部分がタグです。タグは次のような形式
+を持ちます。
 
+    {タグ名 引数1 引数2 ...}
+    
+タグはC<{>で始まり、C<}>で終わります。最初のC<{>とタグ名の間
+には空白を挿入しないよう注意してください。
 
-L<DBIx::Custom>はこれを改善して、ハッシュで
-パラメタを指定できるようにしました。
+タグの機能のためにC<{>とC<}>は予約語になっています。
+もし利用したい場合は直前に\をおいてエスケープを行う必要があります。
 
-    my $result = $dbi->execute(
-        "select * from book where {= author} and {like title};"
-        param => {author => 'Ken', title => '%Perl%'}
-    );
+    select from book \\{ ... \\}
 
-C<{= author}>とC<{like title}>はタグと呼ばれます。
-タグは内部ではプレースホルダを含む文字列に置き換えられます。
+C<\>自体がPerlのエスケープ文字ですので、
+エスケープする場合はC<\>が二つ必要になるという点に注意してください。
 
-    select * from book where {= author} and {like title}
+上記のタグはSQLが実行される前に次のSQLに展開されます。
 
-という文は以下のSQLに置き換えられます。
+    select * from book where title = ? and author like ?;
 
-    select * from book where author = ? and title like ?;
+タグを含むSQLを実行するにはC<execute()>を使用します。
+
+    my $sql = "select * from book where {= author} and {like title};"
+    $dbi->execute($sql, param => {title => 'Perl', author => '%Ken%'});
+
+C<param>オプションを使って、プレースホルダに埋め込みたい値を
+ハッシュリファレンスで指定することができます。
+
+他のメソッドと同様にC<execute()>においてもC<filter>を指定することができます。
+
+    $dbi->execute($sql, param => {title => 'Perl', author => '%Ken%'}
+                  filter => {title => 'to_something');
+
+C<execute>のひとつの注意点としてはC<apply_filter()>で適用されたフィルタ
+はデフォルトでは有効ではないということに注意してください。
+C<apply_filter()>で適用されたフィルタを有効にするには、
+C<table>を指定する必要があります。
+
+    $dbi->execute($sql, param => {title => 'Perl', author => '%Ken%'}
+                  table => ['book']);
+
+=head2 タグ一覧
+
+L<DBIx::Custom>では次のタグが使用可能です。
 
 このようにタグを使ってSQL文を表現するのがL<DBIx::Custom>の
 特徴です。以下のタグが利用可能です。
 
-    [TAG]                       [REPLACED]
-    {? NAME}               ->   ?
-    {= NAME}               ->   NAME = ?
-    {<> NAME}              ->   NAME <> ?
-    
-    {< NAME}               ->   NAME < ?
-    {> NAME}               ->   NAME > ?
-    {>= NAME}              ->   NAME >= ?
-    {<= NAME}              ->   NAME <= ?
-    
-    {like NAME}            ->   NAME like ?
-    {in NAME COUNT}        ->   NAME in [?, ?, ..]
-    
+=head3 C<?>
+
+C<?>タグは以下のように展開されます。
+
+    {? NAME}    ->   ?
+
+=head3 C<=>
+
+C<=>タグは以下のように展開されます。
+
+    {= NAME}    ->   NAME = ?
+
+=head3 C<E<lt>E<gt>>
+
+C<E<lt>E<gt>>タグは以下のように展開されます。
+
+    {<> NAME}   ->   NAME <> ?
+
+=head3 C<E<lt>>
+
+C<E<lt>>タグは以下のように展開されます。
+
+    {< NAME}    ->   NAME < ?
+
+=head3 C<E<gt>>
+
+C<E<gt>>タグは以下のように展開されます。
+
+    {> NAME}    ->   NAME > ?
+
+=head3 C<E<gt>=>
+
+C<E<gt>=>タグは以下のように展開されます。
+
+    {>= NAME}   ->   NAME >= ?
+
+=head3 C<E<lt>=>
+
+C<E<lt>=>タグは以下のように展開されます。
+
+    {<= NAME}   ->   NAME <= ?
+
+=head3 C<like>
+
+C<like>タグは以下のように展開されます。
+
+    {like NAME}   ->   NAME like ?
+
+=head3 C<in>
+
+C<in>タグは以下のように展開されます。プレースホルダの
+数を引数で指定する必要があることに注意してください。
+
+    {in NAME COUNT}   ->   NAME in [?, ?, ..]
+
+=head3 C<insert_param>
+
+C<insert_param>タグは以下のように展開されます。
+
     {insert_param NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
+
+=head3 C<update_param>
+
+C<update_param>タグは以下のように展開されます。
+
     {update_param NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?
 
-これらの変換はL<DBIx::Custom::QueryBuilder>によって行われます。
+=head2 同名の列の扱い
 
-C<{>とC<}>は予約語です。これらの文字を使いたい場合は
-「\」を使ってエスケープする必要があります。
-'\'はPerlのエスケープ文字なので、
-エスケープするためには'\\'と書く必要があることに注意
-してください。
+同名の列を含むタグがある場合にも、SQLを実行することができます。
+たとえば、二つの日付で比較しなければならない場合を
+考えて見ましょう。
 
-    'select * from book \\{ something statement \\}'
+    my $sql = "select * from table where {> date} and {< date};";
 
-=head3 L<DBIx::Custom::QueryBuilder>の機能の拡張
+このような場合は対応するパラメータの値を配列のリファレンスにします。
 
-新しいタグが欲しい場合はL<DBIx::Custom::QueryBuilder>の機能を拡張
-することができます。
+    my $dbi->execute($sql, param => {date => ['2010-10-01', '2012-02-10']});
 
-    my $dbi = DBIx::Custom->connect(...);
+=head2 タグの追加 C<register_tag()>
+
+D<DBIx::Custom>ではタグを独自に追加することができます。
+タグを追加するにはC<register_tag()>を使用します。
+
     $dbi->register_tag(
-        name => sub {
-           ...
+        '=' => sub {
+            my $column = shift;
+            
+            return ["$column = ?", [$column]];
         }
     );
+
+ここではデフォルトのC<=>タグがどのように実装されているかを示しています。
+タグを登録する関数の引数はタグの中に書かれた引数になります。
+
+    {タグ名 引数1 引数2}
+
+C<=>タグの場合は
+
+    {= title}
+
+という形式ですから、サブルーチンにはtitleというひとつの列名がわたってきます。
+
+サブルーチンの戻り値には次の形式の配列のリファレンスを返す必要があります。
+
+    [
+        展開後の文字列,
+        [プレースホルダに埋め込みに利用する列名1, 列名2, ...]
+    ]
+
+一つ目の要素は展開後の文字列です。この例では
+
+    'title = ?'
+
+を返す必要があります。
+
+二つ目の要素はプレースホルダに埋め込みに利用する列名を含む配列の
+リファレンスです。今回の例では
+
+    ['title']
+
+を返す必要があります。複数のプレースホルダを含む場合は、この部分が
+複数になります。C<insert_param>タグやC<update_param>タグは
+この部分が実際複数になっています。
+
+上記を合わせると
+
+    ['title = ?', ['title']]
+    
+を返す必要があるということです。
 
 =head2 6. Where句の動的な生成
 

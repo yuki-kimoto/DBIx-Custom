@@ -4,6 +4,8 @@ DBIx::Custom::Guide - DBIx::Custom Guides
 
 =head1 GUIDE
 
+B<This guide is a little old and not complete. Please wait for a while.>
+
 =head2 1. Connect to the database
 
     use DBIx::Custom;
