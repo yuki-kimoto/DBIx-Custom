@@ -886,7 +886,7 @@ $where = $dbi->where
 $result = $dbi->select(
     table => 'table1',
     where => $where,
-);
+); 
 $row = $result->fetch_hash_all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
 
@@ -956,6 +956,82 @@ $where = $dbi->where
              ->param({key1 => 1});
 eval{$where->to_string};
 like($@, qr/one column/);
+
+$where = $dbi->where
+             ->clause('{= key1}')
+             ->param([]);
+eval{$where->to_string};
+like($@, qr/Parameter/);
+
+$where = $dbi->where
+             ->clause(['or', ('{= key1}') x 3])
+             ->param({key1 => [$dbi->not_exists, 1, 3]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('{= key1}') x 3])
+             ->param({key1 => [1, $dbi->not_exists, 3]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('{= key1}') x 3])
+             ->param({key1 => [1, 3, $dbi->not_exists]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('{= key1}') x 3])
+             ->param({key1 => [1, $dbi->not_exists, $dbi->not_exists]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('{= key1}') x 3])
+             ->param({key1 => [$dbi->not_exists, 1, $dbi->not_exists]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('{= key1}') x 3])
+             ->param({key1 => [$dbi->not_exists, $dbi->not_exists, 1]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('{= key1}') x 3])
+             ->param({key1 => [$dbi->not_exists, $dbi->not_exists, $dbi->not_exists]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
 
 test 'dbi_option default';
 $dbi = DBIx::Custom->new;
@@ -1113,3 +1189,4 @@ $dbi->method(
 );
 is($dbi->base_table->one, 1, 'use dbi method');
 is($dbi->table('table1')->one, 1, 'use dbi method');
+

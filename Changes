@@ -1,3 +1,5 @@
+0.1639
+  added experimental not_exists()
 0.1638
   table object call dbi object method if not found method.
   added experimental base_table attribute and removed experimental table_class attribute

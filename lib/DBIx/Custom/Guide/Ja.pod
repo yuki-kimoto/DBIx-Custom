@@ -878,7 +878,95 @@ C<=>タグの場合は
     
 を返す必要があるということです。
 
+タグの実装の他のサンプルはL<DBIx::Custom::Tag>のソースコード
+をご覧になってみてください。
+
 =head2 6. Where句の動的な生成
+
+=head3 Where句の動的な生成 where()
+
+複数の検索条件を指定して、検索を行いたい場合があります。
+次の3つのケースのwhere句を考えてみましょう。
+下記のようなwhere句が必要になります。
+
+titleの値だけで検索したい場合
+
+    where {= title}
+
+authorの値だけで検索したい場合
+
+    where {= author}
+
+titleとauthorの両方の値で検索したい場合
+
+    where {= title} and {=author}
+
+L<DBIx::Custom>では動的なWhere句の生成をサポートしています。
+まずC<where()>でL<DBIx::Custom::Where>オブジェクトを生成します。
+
+    my $where = $dbi->where;
+
+次にC<clause()>を使用してwhere句を記述します。
+
+    $where->clause(
+        ['and', '{= title'}, '{= author}']
+    );
+
+clauseの指定方法は次のようになります。
+
+    ['or' あるいは 'and', タグ1, タグ2, タグ3]
+
+第一引数にはorあるいはandを指定します。第二引数以降には
+検索条件をタグを使って記述します。
+
+C<clause>の指定は入れ子にすることもでき、さらに複雑な条件
+を記述することもできます。
+
+    ['and', 
+      '{= title}', 
+      ['or', '{= author}', '{like date}']
+    ]
+
+このようにC<clause>を設定した後にC<param>にパラメータを指定します。
+    
+    my $param => {title => 'Perl'};
+    $where->param($param);
+
+この例ではtitleだけがパラメータに含まれています。
+
+この後C<to_string()>を実行すると$paramに含まれるパラメータを満たす
+where句を生成することができます。
+
+    my $where_clause = $where->to_string;
+
+パラメータはtitleだけですので、次のようなwhere句が生成されます。
+
+    where {= title}
+
+またD<DBIx::Custom>は文字列の評価をオーバーロードして、C<to_string()>
+を呼び出すようにしていますので、次のようにしてwhere句を生成することも
+できます。
+
+    my $where_clause = "$where";
+
+これはSQLの中にwhere句を埋め込むときにとても役立つ機能です。
+
+また同一の列名を持つ場合はパラメータを配列のリファレンスにしてください。
+
+[undef, undef]
+
+[sub {'not exists'}, 1]
+ 
+
+
+
+
+=head3 select()との連携
+
+
+
+=head3 execute()との連携
+
 
 =head2 7. パフォーマンスの改善
 

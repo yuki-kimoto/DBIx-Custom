@@ -333,13 +333,13 @@ sub execute{
     }
     $filter = {%$filter, %$f};
     
-    # Create bind values
-    my $binds = $self->_build_binds($params, $query->columns, $filter);
+    # Bind
+    my $bind = $self->_bind($params, $query->columns, $filter);
     
     # Execute
-    my $sth      = $query->sth;
+    my $sth = $query->sth;
     my $affected;
-    eval {$affected = $sth->execute(@$binds)};
+    eval {$affected = $sth->execute(@$bind)};
     $self->_croak($@, qq{. Following SQL is executed. "$query->{sql}"}) if $@;
     
     # Return resultset if select statement is executed
@@ -469,6 +469,8 @@ sub new {
     
     return $self;
 }
+
+sub not_exists { bless {}, 'DBIx::Custom::NotExists' }
 
 sub register_filter {
     my $invocant = shift;
@@ -695,31 +697,47 @@ sub where {
     return DBIx::Custom::Where->new(query_builder => shift->query_builder)
 }
 
-sub _build_binds {
+sub _bind {
     my ($self, $params, $columns, $filter) = @_;
     
     # bind values
-    my @binds;
+    my @bind;
     
     # Build bind values
     my $count = {};
+    my $not_exists = {};
     foreach my $column (@$columns) {
         
         # Value
-        my $value = ref $params->{$column} eq 'ARRAY'
-                  ? $params->{$column}->[$count->{$column} || 0]
-                  : $params->{$column};
+        my $value;
+        if(ref $params->{$column} eq 'ARRAY') {
+            my $i = $count->{$column} || 0;
+            $i += $not_exists->{$column} || 0;
+            my $found;
+            for (my $k = $i; $i < @{$params->{$column}}; $k++) {
+                if (ref $params->{$column}->[$k] eq 'DBIx::Custom::NotExists') {
+                    $not_exists->{$column}++;
+                }
+                else  {
+                    $value = $params->{$column}->[$k];
+                    $found = 1;
+                    last
+                }
+            }
+            next unless $found;
+        }
+        else { $value = $params->{$column} }
         
         # Filter
         my $f = $filter->{$column} || $self->{default_out_filter} || '';
         
-        push @binds, $f ? $f->($value) : $value;
+        push @bind, $f ? $f->($value) : $value;
         
         # Count up 
         $count->{$column}++;
     }
     
-    return \@binds;
+    return \@bind;
 }
 
 sub _croak {
@@ -1094,24 +1112,6 @@ Arguments is same as C<delete> method,
 except that C<delete_all> don't have C<where> argument.
 Return value of C<delete_all()> is the count of affected rows.
 
-=head2 C<(experimental) method>
-
-    $dbi->method(
-        update_or_insert => sub {
-            my $self = shift;
-            # do something
-        },
-        find_or_create   => sub {
-            my $self = shift;
-            # do something
-        }
-    );
-
-Register method. These method is called from L<DBIx::Custom> object directory.
-
-    $dbi->update_or_insert;
-    $dbi->find_or_create;
-
 =head2 C<insert>
 
     $dbi->insert(table  => $table, 
@@ -1132,18 +1132,11 @@ default to 0. This is experimental.
 This is overwrites C<default_bind_filter>.
 Return value of C<insert()> is the count of affected rows.
 
-=head2 C<new>
-
-    my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=dbname",
-                                    user => 'ken', password => '!LFKD%$&');
-
-Create a new L<DBIx::Custom> object.
-
 =head2 C<(experimental) each_column>
 
     $dbi->each_column(
         sub {
-            my ($table, $column, $info) = @_;
+            my ($self, $table, $column, $info) = @_;
             
             my $type = $info->{TYPE_NAME};
             
@@ -1155,8 +1148,39 @@ Create a new L<DBIx::Custom> object.
 Get column informations from database.
 Argument is callback.
 You can do anything in callback.
-Callback receive three arguments, table name, column name and column
-information.
+Callback receive four arguments, dbi object, table name,
+column name and columninformation.
+
+=head2 C<(experimental) method>
+
+    $dbi->method(
+        update_or_insert => sub {
+            my $self = shift;
+            # do something
+        },
+        find_or_create   => sub {
+            my $self = shift;
+            # do something
+        }
+    );
+
+Register method. These method is called from L<DBIx::Custom> object directory.
+
+    $dbi->update_or_insert;
+    $dbi->find_or_create;
+
+=head2 C<new>
+
+    my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=dbname",
+                                    user => 'ken', password => '!LFKD%$&');
+
+Create a new L<DBIx::Custom> object.
+
+=head2 C<(experimental) not_exists>
+
+    my $not_exists = $dbi->not_exists;
+
+Get DBIx::Custom::NotExists object.
 
 =head2 C<register_filter>
 
