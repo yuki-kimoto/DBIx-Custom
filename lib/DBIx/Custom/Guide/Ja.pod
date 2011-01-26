@@ -585,6 +585,15 @@ C<delete_all()>、C<select()>で有効になります。
 このような自動的に実行されるフィルタを登録できることがL<DBIx::Custom>の
 特徴のひとつです。
 
+C<apply_filter()>で適用されたフィルタはテーブル名をを含む列名に対しても有効です。
+
+    $dbi->select(
+        table => 'book',
+        where => {'book.title' => 'Perl', 'book.author' => 'Ken'}
+    );
+
+テーブルを区別する必要があるときに便利な機能です。
+
 =head3 個別のフィルタの適用 C<filter>
 
 C<apply_filter()>を使って最初にすべてのテーブルの列について
@@ -1082,24 +1091,6 @@ C<table>を指定する必要のあることに注意してください。
 
 =head2 8. その他の機能
 
-=head3 結果クラスの変更
-
-必要ならば結果クラスを変更することができます。
-
-    package MyResult;
-    use base 'DBIx::Custom::Result';
-    
-    sub some_method { ... }
-
-    1;
-    
-    package main;
-    
-    use MyResult;
-    
-    my $dbi = DBIx::Custom->connect(...);
-    $dbi->result_class('MyResult');
-
 =head3 メソッドの登録
 
 メソッドを登録するにはC<method()>を使用します。
@@ -1121,27 +1112,60 @@ L<DBIx::Custom>オブジェクトから直接呼び出すことができます�
     $dbi->update_or_insert;
     $dbi->find_or_create;
 
-=head3 その他便利なメソッド
+=head3 結果クラスの変更
 
-C<expand>メソッドを使用すると次のようなハッシュに含まれる
-テーブル名と列名を結合することができます。
+必要ならば結果クラスを変更することができます。
 
-    my %expanded = $dbi->expand(\%source);
+    package MyResult;
+    use base 'DBIx::Custom::Result';
+    
+    sub some_method { ... }
 
-以下のハッシュ
+    1;
+    
+    package main;
+    
+    use MyResult;
+    
+    my $dbi = DBIx::Custom->connect(...);
+    $dbi->result_class('MyResult');
 
-    {book => {title => 'Perl', author => 'Ken'}}
+=head3 キャッシング
 
-は次のように展開されます。
+タグの展開後のSQLはパフォーマンスの理由のためにキャッシュされます。
+これはC<chace>で設定でき、デフォルトではキャッシュを行う設定です。
 
-    ('book.title' => 'Perl', 'book.author' => 'Ken')
+    $dbi->cache(1);
 
-これはテーブル名を含むselect文で利用すると便利です。
+キャッシュ方法はC<cache_method>にメソッドを指定することで
+変更することができます。
+データの保存と取得のためのメソッドを定義します。
 
-    my $param = {title => 'Perl', author => '%Ken%'};
-    $dbi->execute(
-        'select * from book where {= book.title} && {like book.author};',
-        param => {$dbi->expand({book => $param})}
-    );
+デフォルトでは次のようにメモリ上にキャッシュを行うものになっています。
+
+    $dbi->cache_method(sub {
+        sub {
+            my $self = shift;
+            
+            $self->{_cached} ||= {};
+            
+            if (@_ > 1) {
+                # Set
+                $self->{_cached}{$_[0]} = $_[1] 
+            }
+            else {
+                # Get
+                return $self->{_cached}{$_[0]}
+            }
+        }
+    });
+    
+第一はL<DBIx::Custom>オブジェクトです。
+第二引数はタグの展開される前のSQLです。
+第三引数はタグの展開後のSQLです。
+
+自分で作成する場合は第三引数が存在した場合はキャッシュを設定し、
+存在しなかった場合はキャッシュを取得する実装に
+してください。
 
 =cut

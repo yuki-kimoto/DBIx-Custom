@@ -472,11 +472,11 @@ You can change Result class if you need.
         }
     );
 
-=head3 Resister helper method
+=head3 Resister method method
 
-You can resiter helper method.
+You can resiter method method.
 
-    $dbi->helper(
+    $dbi->method(
         update_or_insert => sub {
             my $self = shift;
             # do something
@@ -487,7 +487,7 @@ You can resiter helper method.
         }
     );
 
-Register helper methods.
+Register method methods.
 These method can be called from L<DBIx::Custom> object directory.
 
     $dbi->update_or_insert;

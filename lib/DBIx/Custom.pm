@@ -1075,20 +1075,6 @@ Query is L<DBIx::Custom::Query> object.
 Return value is L<DBIx::Custom::Result> if select statement is executed,
 or the count of affected rows if insert, update, delete statement is executed.
 
-=head2 C<(experimental) expand>
-
-    my %expand = $dbi->expand($source);
-
-The following hash
-
-    {book => {title => 'Perl', author => 'Ken'}}
-
-is expanded to
-
-    ('book.title' => 'Perl', 'book.author' => 'Ken')
-
-This is used in C<select()>
-
 =head2 C<delete>
 
     $dbi->delete(table  => $table,
