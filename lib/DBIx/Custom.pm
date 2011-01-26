@@ -252,24 +252,24 @@ sub delete {
     my $filter           = $args{filter};
     my $allow_delete_all = $args{allow_delete_all};
 
-    # Where keys
-    my @where_keys = keys %$where;
-    
-    # Not exists where keys
-    croak qq{"where" argument must be specified and } .
-          qq{contains the pairs of column name and value}
-      if !@where_keys && !$allow_delete_all;
-    
-    # Where clause
-    my $where_clause = '';
-    if (@where_keys) {
-        $where_clause = 'where ';
-        $where_clause .= "{= $_} and " for @where_keys;
-        $where_clause =~ s/ and $//;
+    # Where
+    my $w;
+    if (ref $where eq 'HASH') {
+        my $clause = ['and'];
+        push @$clause, "{= $_}" for keys %$where;
+        $w = $self->where;
+        $w->clause($clause);
     }
+    else { $w = $where }
     
+    croak qq{"where" must be hash refernce or DBIx::Custom::Where object}
+      unless ref $w eq 'DBIx::Custom::Where';
+    
+    croak qq{"where" must be specified}
+      if "$w" eq '' && !$allow_delete_all;
+
     # Source of SQL
-    my $source = "delete from $table $where_clause";
+    my $source = "delete from $table $w";
     $source .= " $append" if $append;
     
     # Create query

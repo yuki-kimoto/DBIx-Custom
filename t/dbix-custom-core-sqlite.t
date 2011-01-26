@@ -331,7 +331,7 @@ test 'delete error';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 eval{$dbi->delete(table => 'table1')};
-like($@, qr/"where" argument must be specified and contains the pairs of column name and value/,
+like($@, qr/"where" must be specified/,
          "where key-value pairs not specified");
 
 test 'delete_all';
@@ -1032,6 +1032,56 @@ $result = $dbi->select(
 );
 $row = $result->fetch_hash_all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('{= key1}') x 3])
+             ->param({key1 => []});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['and', '{> key1}', '{< key1}' ])
+             ->param({key1 => [2, $dbi->not_exists]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['and', '{> key1}', '{< key1}' ])
+             ->param({key1 => [$dbi->not_exists, 2]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['and', '{> key1}', '{< key1}' ])
+             ->param({key1 => [$dbi->not_exists, $dbi->not_exists]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2},{key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['and', '{> key1}', '{< key1}' ])
+             ->param({key1 => [0, 2]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
 
 test 'dbi_option default';
 $dbi = DBIx::Custom->new;

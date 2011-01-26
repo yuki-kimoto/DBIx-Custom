@@ -951,22 +951,80 @@ where句を生成することができます。
 
 これはSQLの中にwhere句を埋め込むときにとても役立つ機能です。
 
-また同一の列名を持つ場合はパラメータを配列のリファレンスにしてください。
+=head3 同一の列名を含む場合
 
-[undef, undef]
+タグの中に同一の名前を持つものが存在した場合でも動的に
+where句を作成することができます。
 
-[sub {'not exists'}, 1]
- 
+たとえば、パラメータとして開始日付と終了日付を受け取ったことを
+考えてみてください。
+
+    my $param = {start_date => '2010-11-15', end_date => '2011-11-21'};
+
+また開始日付と終了日付の片方だけや、どちらも受け取らない場合もあるかもしれません。
+
+この場合は次のようなパラメータに変換することで対応することができます。
+
+    my $p = {date => ['2010-11-15', '2011-11-21']};
+
+値が配列のリファレンスになっていることに注目してください。このようにすれば
+同名の列を含むタグに順番に埋め込むことができます。
+
+    $where->clause(
+        ['and', '{> date}', '{< date}']
+    );
+    $where->param($p);
+
+また開始日付が存在しない場合は次のようなデータを作成します。
+
+    my $p = {date => [$dbi->not_exists, '2011-11-21']};
+
+L<DBIx::Custom>のC<not_exists>でDBIx::Custom::NotExistsオブジェクトを
+取得できます。これは対応する値が存在しないことを示すためのものです。
+
+また終了日付が存在しない場合は次のようなデータを作成します。
+
+    my $p = {date => ['2010-11-15']};
+
+どちらも存在しない場合は次のようなデータを作成します。
+
+    my $p = {date => []};
+
+少し難しいので一番簡単に作成できるロジックを示しておきます。
+
+    my @date;
+    push @date, exists $param->{start_date} ? $param->{start_date}
+                                            : $dbi->not_exists;
+    push @date, $param->{end_date} if exists $param->{end_date};
+    my $p = {date => \@date};
+
+=head3 C<select()>との連携
+
+C<select()>との連携です。C<select()>のC<where>に直接渡すことが
+できます。
+    
+    my $where = $dbi->where;
+    $where->clause(...);
+    $where->param($param);
+    my $result = $dbi->select(table => 'book', where => $where);
+
+あるいはC<update>、C<delete>と連携することが可能です。
+
+=head3 C<execute()>との連携
+
+C<execute()>との連携です。SQLを作成するときに埋め込むことができます。
 
 
+    my $where = $dbi->where;
+    $where->clause(...);
+    $where->param($param);
 
+    my $sql = <<"EOS"
+    select * from book;
+    $where
+    EOS
 
-=head3 select()との連携
-
-
-
-=head3 execute()との連携
-
+    $dbi->execute($sql, param => $param);
 
 =head2 7. パフォーマンスの改善
 
