@@ -230,6 +230,8 @@ is_deeply($rows, [{key1 => 1, key2 => 2}], 'insert append');
 eval{$dbi->insert(table => 'table1', noexist => 1)};
 like($@, qr/noexist/, "invalid argument");
 
+eval{$dbi->insert(table => 'table', param => {';' => 1})};
+like($@, qr/safety/);
 
 test 'update';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -300,6 +302,12 @@ $dbi->update(table => 'table1', param => {key1 => 3}, where => $where);
 $result = $dbi->select(table => 'table1');
 is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 2}], 'delete() where');
 
+eval{$dbi->update(table => 'table1', param => {';' => 1})};
+like($@, qr/safety/);
+
+eval{$dbi->update(table => 'table1', param => {'key1' => 1}, where => {';' => 1})};
+like($@, qr/safety/);
+
 test 'update_all';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});
@@ -363,6 +371,9 @@ eval{$dbi->delete(table => 'table1')};
 like($@, qr/"where" must be specified/,
          "where key-value pairs not specified");
 
+eval{$dbi->delete(table => 'table1', where => {';' => 1})};
+like($@, qr/safety/);
+
 test 'delete_all';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -388,9 +399,6 @@ is_deeply($rows, [{key1 => 1}, {key1 => 3}], "table and columns and where key");
 
 $rows = $dbi->select(table => 'table1', where => {key1 => 1})->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "table and columns and where key");
-
-$rows = $dbi->select(table => 'table1', where => ['{= key1} and {= key2}', {key1 => 1, key2 => 2}])->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 2}], "table and columns and where string");
 
 $rows = $dbi->select(table => 'table1', column => ['key1'], where => {key1 => 3})->fetch_hash_all;
 is_deeply($rows, [{key1 => 3}], "table and columns and where key");
@@ -852,11 +860,6 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1', where => {});
 $row = $result->fetch_hash_first;
 is_deeply($row, {key1 => 1, key2 => 2});
-
-$result = $dbi->select(table => 'table1', where => [' ', {}]);
-$row = $result->fetch_hash_first;
-is_deeply($row, {key1 => 1, key2 => 2});
-
 
 test 'select query option';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});

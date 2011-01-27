@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1640';
+our $VERSION = '0.1641';
 
 use 5.008001;
 use strict;
@@ -24,7 +24,8 @@ __PACKAGE__->attr(
     dbi_option    => sub { {} },
     query_builder => sub { DBIx::Custom::QueryBuilder->new },
     result_class  => 'DBIx::Custom::Result',
-    base_table    => sub { DBIx::Custom::Table->new(dbi => shift) }
+    base_table    => sub { DBIx::Custom::Table->new(dbi => shift) },
+    safety_column_name => sub { qr/^[\w\.]*$/ }
 );
 
 __PACKAGE__->attr(
@@ -235,7 +236,7 @@ sub delete {
     my $table            = $args{table} || '';
     croak qq{"table" option must be specified} unless $table;
     my $where            = $args{where} || {};
-    my $append = $args{append};
+    my $append           = $args{append};
     my $filter           = $args{filter};
     my $allow_delete_all = $args{allow_delete_all};
 
@@ -248,18 +249,21 @@ sub delete {
         $w->clause($clause);
         $w->param($where);
     }
-    else { $w = $where }
-    
+    elsif (ref $where eq 'DBIx::Custom::Where') {
+        $w = $where;
+        $where = $w->param;
+    }    
     croak qq{"where" must be hash refernce or DBIx::Custom::Where object}
       unless ref $w eq 'DBIx::Custom::Where';
     
-    $where = $w->param;
+    # String where
+    my $swhere = "$w";
     
     croak qq{"where" must be specified}
-      if "$w" eq '' && !$allow_delete_all;
+      if $swhere eq '' && !$allow_delete_all;
 
     # Source of SQL
-    my $source = "delete from $table $w";
+    my $source = "delete from $table $swhere";
     $source .= " $append" if $append;
     
     # Create query
@@ -376,12 +380,18 @@ sub insert {
     my $append = $args{append} || '';
     my $filter = $args{filter};
     
-    # Insert keys
-    my @insert_keys = keys %$param;
+    # Columns
+    my @columns;
+    my $safety = $self->safety_column_name;
+    foreach my $column (keys %$param) {
+        croak qq{"$column" is not safety column name}
+          unless $column =~ /$safety/;
+        push @columns, $column;
+    }
     
-    # Templte for insert
+    # SQL
     my $source = "insert into $table {insert_param "
-               . join(' ', @insert_keys) . '}';
+               . join(' ', @columns) . '}';
     $source .= " $append" if $append;
     
     # Create query
@@ -478,7 +488,7 @@ sub select {
                : [];
     croak qq{"table" option must be specified} unless @$tables;
     my $columns  = $args{column} || [];
-    my $where    = $args{where};
+    my $where    = $args{where} || {};
     my $relation = $args{relation};
     my $append   = $args{append};
     my $filter   = $args{filter};
@@ -504,39 +514,30 @@ sub select {
     }
     $source =~ s/, $/ /;
     
-    # Where clause
-    my $param;
-    my $wexists;
+    # Where
+    my $w;
     if (ref $where eq 'HASH') {
-        $param = $where;
-        $wexists = keys %$where;
-        
-        if ($wexists) {
-            $source .= 'where (';
-            foreach my $where_key (keys %$where) {
-                $source .= "{= $where_key} and ";
-            }
-            $source =~ s/ and $//;
-            $source .= ') ';
-        }
-    }
-    elsif (ref $where eq 'ARRAY') {
-        my $w = $where->[0] || '';
-        $param = $where->[1];
-        
-        $wexists = $w =~ /\S/;
-        $source .= "where ($w) " if $wexists;
+        my $clause = ['and'];
+        push @$clause, "{= $_}" for keys %$where;
+        $w = $self->where;
+        $w->clause($clause);
+        $w->param($where);
     }
     elsif (ref $where eq 'DBIx::Custom::Where') {
-        $param = $where->param;
-        my $w = $where->to_string;
-        $wexists = $w =~ /\S/;
-        $source .= $w;
+        $w = $where;
+        $where = $w->param;
     }
+    
+    croak qq{"where" must be hash reference or DBIx::Custom::Where object}
+      unless ref $w eq 'DBIx::Custom::Where';
+    
+    # String where
+    my $swhere = "$w";
+    $source .= "$swhere ";
     
     # Relation
     if ($relation) {
-        $source .= $wexists ? "and " : "where ";
+        $source .= $swhere eq '' ? "where " : "and ";
         foreach my $rkey (keys %$relation) {
             $source .= "$rkey = " . $relation->{$rkey} . " and ";
         }
@@ -552,8 +553,8 @@ sub select {
     
     # Execute query
     my $result = $self->execute(
-        $query, param  => $param, filter => $filter,
-        table => $tables);    
+        $query, param  => $where, filter => $filter,
+        table => $tables);
     
     return $result;
 }
@@ -608,15 +609,24 @@ sub update {
     croak qq{"table" option must be specified} unless $table;
     my $param            = $args{param} || {};
     my $where            = $args{where} || {};
-    my $append = $args{append} || '';
+    my $append           = $args{append} || '';
     my $filter           = $args{filter};
     my $allow_update_all = $args{allow_update_all};
     
     # Update keys
-    my @update_keys = keys %$param;
-    
+    my @clumns = keys %$param;
+
+    # Columns
+    my @columns;
+    my $safety = $self->safety_column_name;
+    foreach my $column (keys %$param) {
+        croak qq{"$column" is not safety column name}
+          unless $column =~ /$safety/;
+        push @columns, $column;
+    }
+        
     # Update clause
-    my $update_clause = '{update_param ' . join(' ', @update_keys) . '}';
+    my $update_clause = '{update_param ' . join(' ', @clumns) . '}';
 
     # Where
     my $w;
@@ -627,18 +637,22 @@ sub update {
         $w->clause($clause);
         $w->param($where);
     }
-    else { $w = $where }
+    elsif (ref $where eq 'DBIx::Custom::Where') {
+        $w = $where;
+        $where = $w->param;
+    }  
     
     croak qq{"where" must be hash refernce or DBIx::Custom::Where object}
       unless ref $w eq 'DBIx::Custom::Where';
     
-    $where = $w->param;
+    # String where
+    my $swhere = "$w";
     
     croak qq{"where" must be specified}
-      if "$w" eq '' && !$allow_update_all;
+      if "$swhere" eq '' && !$allow_update_all;
     
     # Source of SQL
-    my $source = "update $table $update_clause $w";
+    my $source = "update $table $update_clause $swhere";
     $source .= " $append" if $append;
     
     # Rearrange parameters
@@ -670,7 +684,12 @@ sub update {
 sub update_all { shift->update(allow_update_all => 1, @_) };
 
 sub where {
-    return DBIx::Custom::Where->new(query_builder => shift->query_builder)
+    my $self = shift;
+
+    return DBIx::Custom::Where->new(
+        query_builder => $self->query_builder,
+        safety_column_name => $self->safety_column_name
+    );
 }
 
 sub _bind {
@@ -1194,16 +1213,6 @@ C<append> is a string added at the end of the SQL statement.
 C<filter> is filters when parameter binding is executed.
 C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
 default to 0. This is experimental.
-
-If you use more complex condition,
-you can specify a array reference to C<where> argument.
-
-    my $result = $dbi->select(
-        table  => 'book',
-        column => ['title', 'author'],
-        where  => ['{= title} or {like author}',
-                   {title => '%Perl%', author => 'Ken'}]
-    );
 
 First element is a string. it contains tags,
 such as "{= title} or {like author}".

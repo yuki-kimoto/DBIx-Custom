@@ -1,3 +1,7 @@
+0.1641
+  select() where can't receive array reference to prevend SQL injection easily(not backward compatible. sorry. use where() instead)
+  added experimental safety_column_name attribute
+  fix SQL injection security hole about column name
 0.1640
   autoload DBI method
   removed experimental expand
