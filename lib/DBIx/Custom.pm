@@ -1000,6 +1000,14 @@ Default to L<DBIx::Custom::QueryBuilder> object.
 Result class for select statement.
 Default to L<DBIx::Custom::Result>.
 
+=head2 C<(experimental) safety_column_name>
+
+    my $safety_column_name = $self->safety_column_name;
+    $dbi                   = $self->safety_column_name($name);
+
+Safety column name regex.
+Default is qr/^[\w\.]*$/
+
 =head2 C<user>
 
     my $user = $dbi->user;
@@ -1007,7 +1015,7 @@ Default to L<DBIx::Custom::Result>.
 
 User name.
 C<connect()> method use this value to connect the database.
-    
+
 =head1 METHODS
 
 L<DBIx::Custom> inherits all methods from L<Object::Simple>

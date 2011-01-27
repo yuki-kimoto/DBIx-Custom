@@ -120,14 +120,6 @@ DBIx::Custom::Where - Where clause
 
 =head1 ATTRIBUTES
 
-=head2 C<param>
-
-    my $param = $where->param;
-    $where    = $where->param({title => 'Perl',
-                               date => ['2010-11-11', '2011-03-05']},
-                               name => ['Ken', 'Taro']);
-=head1 METHODS
-
 =head2 C<clause>
 
     $where->clause(
@@ -138,6 +130,20 @@ Where clause. Above one is expanded to the following SQL by to_string
 If all parameter names is exists.
 
     "where ( {= title} and ( {< date} or {> date} ) )"
+
+=head2 C<param>
+
+    my $param = $where->param;
+    $where    = $where->param({title => 'Perl',
+                               date => ['2010-11-11', '2011-03-05']},
+                               name => ['Ken', 'Taro']);
+
+=head2 C<safety_column_name>
+
+    my $safety_column_name = $self->safety_column_name;
+    $dbi                   = $self->safety_column_name($name);
+
+=head1 METHODS
 
 =head2 C<to_string>
 
