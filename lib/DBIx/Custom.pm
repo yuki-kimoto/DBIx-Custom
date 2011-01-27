@@ -262,12 +262,17 @@ sub delete {
     croak qq{"where" must be specified}
       if $swhere eq '' && !$allow_delete_all;
 
-    # Source of SQL
-    my $source = "delete from $table $swhere";
-    $source .= " $append" if $append;
+    # SQL stack
+    my @sql;
+
+    # Delete
+    push @sql, "delete from $table $swhere";
+    push @sql, $append if $append;
+    
+    my $sql = join(' ', @sql);
     
     # Create query
-    my $query = $self->create_query($source);
+    my $query = $self->create_query($sql);
     return $query if $args{query};
     
     # Execute query
@@ -389,13 +394,18 @@ sub insert {
         push @columns, $column;
     }
     
+    # SQL stack
+    my @sql;
+    
+    # Insert
+    push @sql, "insert into $table {insert_param ". join(' ', @columns) . '}';
+    push @sql, $append if $append;
+    
     # SQL
-    my $source = "insert into $table {insert_param "
-               . join(' ', @columns) . '}';
-    $source .= " $append" if $append;
+    my $sql = join (' ', @sql);
     
     # Create query
-    my $query = $self->create_query($source);
+    my $query = $self->create_query($sql);
     return $query if $args{query};
     
     # Execute query
@@ -493,26 +503,26 @@ sub select {
     my $append   = $args{append};
     my $filter   = $args{filter};
     
-    # Source of SQL
-    my $source = 'select ';
+    # SQL stack
+    my @sql;
+    
+    push @sql, 'select';
     
     # Column clause
     if (@$columns) {
         foreach my $column (@$columns) {
-            $source .= "$column, ";
+            push @sql, ($column, ',');
         }
-        $source =~ s/, $/ /;
+        pop @sql if $sql[-1] eq ',';
     }
-    else {
-        $source .= '* ';
-    }
+    else { push @sql, '*' }
     
     # Table
-    $source .= 'from ';
+    push @sql, 'from';
     foreach my $table (@$tables) {
-        $source .= "$table, ";
+        push @sql, ($table, ',');
     }
-    $source =~ s/, $/ /;
+    pop @sql if $sql[-1] eq ',';
     
     # Where
     my $w;
@@ -533,22 +543,25 @@ sub select {
     
     # String where
     my $swhere = "$w";
-    $source .= "$swhere ";
+    push @sql, $swhere;
     
     # Relation
     if ($relation) {
-        $source .= $swhere eq '' ? "where " : "and ";
-        foreach my $rkey (keys %$relation) {
-            $source .= "$rkey = " . $relation->{$rkey} . " and ";
+        push @sql, $swhere eq '' ? 'where' : 'and';
+        foreach my $rcolumn (keys %$relation) {
+            push @sql, ("$rcolumn = " . $relation->{$rcolumn},  'and');
         }
     }
-    $source =~ s/ and $//;
+    pop @sql if $sql[-1] eq 'and';
     
-    # Append some statement
-    $source .= " $append" if $append;
+    # Append statement
+    push @sql, $append if $append;
+    
+    # SQL
+    my $sql = join (' ', @sql);
     
     # Create query
-    my $query = $self->create_query($source);
+    my $query = $self->create_query($sql);
     return $query if $args{query};
     
     # Execute query
@@ -651,9 +664,12 @@ sub update {
     croak qq{"where" must be specified}
       if "$swhere" eq '' && !$allow_update_all;
     
-    # Source of SQL
-    my $source = "update $table $update_clause $swhere";
-    $source .= " $append" if $append;
+    # SQL stack
+    my @sql;
+    
+    # Update
+    push @sql, "update $table $update_clause $swhere";
+    push @sql, $append if $append;
     
     # Rearrange parameters
     foreach my $wkey (keys %$where) {
@@ -669,8 +685,11 @@ sub update {
         }
     }
     
+    # SQL
+    my $sql = join(' ', @sql);
+    
     # Create query
-    my $query = $self->create_query($source);
+    my $query = $self->create_query($sql);
     return $query if $args{query};
     
     # Execute query
