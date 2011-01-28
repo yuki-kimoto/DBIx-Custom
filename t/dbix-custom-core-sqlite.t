@@ -1245,30 +1245,22 @@ is($result->stash->{foo}, 1, 'get and set');
 test 'base_table';
 $dbi = DBIx::Custom->new;
 $dbi->base_table->method(
-    one => sub { 1 }
+    twice => sub {
+        my $self = shift;
+        
+        return $_[0] * 2;
+    }
 );
 $table = $dbi->table('book');
 $table->method(
-    two => sub { 2 }
+    three_times => sub {
+        my $self = shift;
+        return  $_[0] * 3;
+    }
 );
-is($dbi->base_table->one, 1, 'method');
-is($table->one, 1, 'inherit method');
-is($table->two, 2, 'child table method');
-eval {$dbi->base_table->two};
+is($table->base_twice(1), 2, 'method');
+is($table->twice(1), 2, 'inherit method');
+is($table->three_times(1), 3, 'child table method');
+eval {$dbi->base_two};
 ok($@);
-
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->execute($CREATE_TABLE->{0});
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$result = $dbi->base_table->execute("select * from table1");
-is_deeply($result->fetch_hash_all, [{key1 => 1, key2 => 2}], 'dbi method from base_table');
-$result = $dbi->table('table1')->execute("select * from table1");
-is_deeply($result->fetch_hash_all, [{key1 => 1, key2 => 2}], 'dbi method from table');
-
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->method(
-    one => sub { 1 }
-);
-is($dbi->base_table->one, 1, 'use dbi method');
-is($dbi->table('table1')->one, 1, 'use dbi method');
 

@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1641';
+our $VERSION = '0.1642';
 
 use 5.008001;
 use strict;
@@ -590,14 +590,15 @@ sub table {
         # Copy Methods
         my $methods = {};
         $methods->{$_} = $bmethods->{$_} for keys %$bmethods;
+        $methods->{"base_$_"} = $bmethods->{$_} for keys %$bmethods;
         
         # Create table
         my $table = $base_table->new(
             dbi      => $self,
             name     => $name,
-            base     => $base_table,
-            _methods => $methods
         );
+        $table->method($methods);
+        
         $self->{_tables}->{$name} = $table;
     }
     
