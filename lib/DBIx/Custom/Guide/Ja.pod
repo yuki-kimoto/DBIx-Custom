@@ -2,12 +2,12 @@
 
 =head1 NAME
 
-DBIx::Custom::Guide::Ja - DBIx::Customの日本語ガイド
+DBIx::Custom::Guide::Ja - DBIx::Customのガイドブック
 
 =head1 ガイド
 
-L<DBIx::Custom>はデータベースへのクエリの発行を簡単に行うための
-クラスです。L<DBIx::Class>やL<DBIx::Simple>と同じように
+L<DBIx::Custom>はSQLの実行を簡単に行うためのクラスです。
+L<DBIx::Class>やL<DBIx::Simple>と同じように
 L<DBI>のラッパクラスになっています。L<DBIx::Class>よりも簡単に、
 L<DBIx::Simple>よりもはるかに柔軟なことを行うことができます。
 
@@ -23,7 +23,7 @@ L<DBIx::Custom>の主な目的は、SQLを尊重しつつ、L<DBI>だけでは
 多くの知識を持っているならば、L<DBIx::Custom>でそのまま
 活用することができます。
 
-L<DBIx::Custom>の仕組みを簡単に説明しておきましょう。
+L<DBIx::Custom>の仕組みを少しだけ説明しておきます。
 L<DBIx::Custom>では、タグと呼ばれるものを
 SQLの中に埋め込むことができます。
 
@@ -35,14 +35,14 @@ SQLの中に埋め込むことができます。
     select * from book where title = ? and author = ?;
 
 これらの展開にはどのような意味があるのでしょうかと質問
-されることかと思います。この簡単な仕組みの上に非常にたくさんの
-有用で便利で使いやすい機能が構築されます。それは以下のようなものです。
+されるかもしれません。この簡単な仕組みの上に
+便利な機能が実装されます。それは以下のようなものです。
 
 =over 4
 
-=item 1. プレースホルダのパラメータをハッシュリファレンスで指定
+=item 1. プレースホルダにバインドする値をハッシュリファレンスで指定
 
-L<DBI>をそのまま使うのであればプレースホルダのパラメータは配列
+L<DBI>を使うのであればプレースホルダにバインドする値は配列
 で指定する必要があります。
 
     $sth->execute(@bind);
@@ -53,8 +53,9 @@ L<DBIx::Custom>を利用するのであればハッシュリファレンスで�
     my $param = {title => 'Perl', author => 'Ken'};
     $dbi->execute($sql, $param);
 
-=item 2. パラメータのフィルタリング
+=item 2. 値のフィルタリング
 
+L<DBIx::Custom>はフィルタリングの機能を提供します。
 たとえば、日付の列は、Perlで扱うときにはC<Time::Piece>などの日付オブジェクト
 で扱い、データベースに格納するときはデータベースの日付型に変換したい
 と思うのではないでしょうか。またデータベースから取り出すときは
@@ -82,13 +83,13 @@ L<DBIx::Custom>を利用するのであればハッシュリファレンスで�
 
 outはPerlからデータベースに保存する方向、inはデータベースからPerlに取得する方向です。
 
-SQLを発行するときにテーブルの指定を行えば、自動的にこのフィルタが適用されます。
+多くのメソッドで自動的にこのフィルタが有効になります。
 
-    $dbi->execute($sql, $param, table => 'book');
+    $dbi->insert(table => 'book', param => {issue_date => $tp});
 
 =item 3. 選択的な検索条件
 
-生のDBIを利用しているとき一番たいへんなのは選択的な検索条件を作成したいときです。
+L<DBI>では選択的に検索条件を作成することは難しいです。
 
 たとえば、検索条件にtitleとauthorが指定された場合は次のSQLを
 
@@ -107,12 +108,18 @@ authorだけの場合は次のSQLを発行した場合を考えましょう。
 
 L<DBIx::Custom>はさらに簡単で便利な方法を用意しています。
 
+    # Whereオブジェクト
     my $where = $dbi->where;
-    $where->param({title => 'Perl'});
+    
+    # 検索条件
     $where->clause(
         ['and', '{= title}', {'= author'}]
     );
+    
+    # 必要な列を自動的に選択するための設定
+    $where->param({title => 'Perl'});
 
+    # SQLへのWhere句の埋め込み
     my $sql = "select * from book $where";
 
 詳しい説明は後ほど行いますが、上記のように記述すれば、
@@ -1036,7 +1043,126 @@ C<execute()>との連携です。SQLを作成するときに埋め込むこと�
 
     $dbi->execute($sql, param => $param);
 
-=head2 7. パフォーマンスの改善
+=head2 7. テーブルモデル
+
+=head3 テーブルオブジェクトの作成 C<table()>
+
+L<DBIx::Custom>はロジックとしてテーブルを中心にすえた
+モデルの作成を支援します。
+
+アプリケーションのロジックを記述するときに、そのロジックを
+データベースのテーブルにすえることは、RDBMSを利用する
+モデルであれば、コードの重複も少なく
+わかりやすいものになります。
+
+テーブルオブジェクトを生成するにはC<table()>を使用します。
+
+    my $table = $dbi->table('book');
+
+実際にデータベースにテーブルは存在している必要はありません。
+これは仮想的なテーブルオブジェクトです。これは
+L<DBIx::Customm::Table>オブジェクトになります。
+
+テーブルオブジェクトからはC<insert()>、C<update()>、C<update_all()>、
+C<delete()>、C<delete_all()>、C<select()>などのメソッド呼び出すことができます。
+L<DBIx::Custom>と異なるところは、C<table>を必ずしも指定する必要が
+ないということです。
+
+    $table->insert(param => $param);
+
+C<table＞の値は自動的にbookに設定されます。
+
+またテーブルオブジェクトには独自のメソッドを追加することができます。
+
+    $table->method(
+        register => sub {
+            my $self = shift;
+            my $table_name = $self->name;
+            # something
+        },
+        list => sub {
+            my $self = shift;
+            my $table_name = $self->name;
+            # something
+        }
+    );
+
+メソッドに渡される第一引数はL<DBIx::Custom::Table>オブジェクトです。
+C<name()>を使用して、テーブル名を取得することができます。
+
+このようにして登録したメソッドは直接呼び出すことができます。
+
+    $table->register(...);
+    $table->list(...);
+
+またテーブル専用のメソッドをオーバーライドして作成することもできます。
+
+    $table->method(
+        insert => sub {
+            my $self = shift;
+            
+            $self->base_insert(...);
+            
+            # something
+        }
+    );
+
+もともと存在していたC<insert()>を呼ぶにはC<base_$method>とします。L<DBIx::Custom::Table>
+のオーバーライドの機能は簡易的なものですが、とても便利です。
+
+=head2 テーブルで共有のメソッドの登録
+
+すべてのテーブルでメソッドを共有するにはC<table>メソッドでテーブルを作成する前に、
+C<base_table>にメソッドを登録しておきます。
+
+    $dbi->base_table->method(
+        count => sub {
+            my $self = shift;
+            return $self->select(column => ['count(*)']);
+        }
+    );
+
+またテーブルからはL<DBIx::Custom>とL<DBI>のすべてのメソッドを呼び出すことができます。
+
+    # DBIx::Custom method
+    $table->execute($sql);
+    
+    # DBI method
+    $table->begin_work;
+    $table->commit;
+
+=head2 一般的なモデルの構成
+
+一般的には、L<DBIx::Custom>を継承してコンストラクタの中に、モデルを作成
+するのがよいでしょう。
+
+    package MyDBI;
+    
+    use base 'DBIx::Custom';
+    
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->base_table->method(
+            ... => sub { ... }
+        );
+        
+        $self->table('book')->method(
+            insert_multi => sub { ... },
+            ... => sub { ... }
+        );
+        
+        $self->table('company')->method(
+            ... => sub { ... },
+        );
+    }
+
+このようにして定義しておけば、次のように利用することができます。
+
+    my $dbi = MyDBI->connect(...);
+    $dbi->table('book')->insert_multi(...);
+
+=head2 8. パフォーマンスの改善
 
 =head3 クエリの作成
 
@@ -1089,7 +1215,7 @@ C<insert()>メソッドよりも高速です。
 C<table>を指定する必要のあることに注意してください。
 本当に必要な場合だけ利用してください。
 
-=head2 8. その他の機能
+=head2 9. その他の機能
 
 =head3 メソッドの登録
 
