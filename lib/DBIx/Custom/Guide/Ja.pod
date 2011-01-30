@@ -128,63 +128,56 @@ L<DBIx::Custom>では選択的な検索条件を持つWhere句を生成するこ
 
 =item 4. 挿入、更新、削除、選択を行うためのメソッド
 
-L<DBIx::Custom>ではSQLをさらに簡単に実行するための
-メソッドも提供しています。
-C<insert()>, C<update()>, C<delete()>,C<select()>などの
-シュガーメソッドを使って、挿入、更新、削除、選択という操作を行うことが
-できます。
+L<DBIx::Custom>では挿入、更新、削除、選択を行うための
+メソッドを提供しています。
+C<insert()>, C<update()>, C<delete()>,C<select()>などがあります。
 
     my $param = {title => 'Perl', author => 'Ken'};
     $dbi->insert(table => 'book', param => $param);
 
-=item 5. テーブル単位の操作の登録
+=item 5. テーブルのためのメソッドの登録
 
-テーブルに対して操作を登録することができます。これによって
-テーブル名を繰り返し指定する必要がなくなり、ソースコードの
-見通しが良くなります。
+テーブルのためにメソッドを登録することができます。
 
-    $dbi->talbe('book',
+    $dbi->table('book')->method(
         list => sub {
             ...
         },
-        list_somethin => sub {
-            
+        something => sub {
+            ...
         }
     );
 
-登録したメソッドはそのまま利用することができます。
+メソッドの利用です。
 
     $dbi->table('book')->list;
 
-通常O/Rマッパはテーブルに対応するクラスを作成しなければ
-ならないことが多いですが、L<DBIx::Custom>ではこの作業を簡便に
-しており、上記のように登録することができます。
+多くのO/Rマッパではテーブルのためのクラスを作成する必要がありますが、
+L<DBIx::Custom>では簡単です。
 
 =back
 
-L<DBIx::Custom>はL<DBI>を補うとても便利なモジュールです。
-興味をもたれた方は、この後で詳しい解説を行いますので、
-ご覧になってみてください。
+L<DBIx::Custom>はとても便利です。
+興味をもたれた方は、続きをご覧になってみてください。
 
 =head2 1. データベースへの接続
 
-まずL<DBIx::Custom>を読み込みます。
+L<DBIx::Custom>を読み込みます。
 
     use DBIx::Custom;
 
-L<DBIx::Custom>オブジェクトを生成し、データベースに接続するには
-C<connect()>メソッドを使用します。
+データベースに接続するにはC<connect()>メソッドを使用します。
+戻り値はL<DBIx::Custom>オブジェクトです。
 
     my $dbi = DBIx::Custom->connect(
-        data_source => "dbi:mysql:database=dbname",
+        data_source => "dbi:mysql:database=bookstore",
         user => 'ken',
         password => '!LFKD%$&',
         dbi_options => {mysql_enable_utf8 => 1}
     );
 
-C<data_source>はデータベースシステムに応じたフォーマットで
-指定する必要があります。以下にデータベースごとのフォーマット
-方法のサンプルを掲載しておきます。
+C<data_source>はデータベースシステムに応じたものである必要があります。
+以下はデータソースのサンプルです。
 
 B<MySQL>
 
@@ -213,11 +206,10 @@ B<ODBC(SQL Server)>
 
    "dbi:ODBC:driver={SQL Server};Server=(local);database=test;Trusted_Connection=yes;AutoTranslate=No;"
 
-また認証が求められる場合は、C<user>とC<password>ユーザ名と
-パスワードを指定する必要があります。
+認証が必要な場合は、C<user>とC<password>を指定できます。
 
-L<DBIx::Custom>はL<DBI>のラッパです。
-L<DBI>のデータベースハンドルはC<dbh>で取得することができます。
+L<DBIx::Custom>はL<DBI>のラッパークラスです。
+L<DBI>のデータベースハンドルは取得するにあｈC<dbh()>を使用します。
 
     my $dbh = $dbi->dbh;
 
@@ -227,9 +219,8 @@ L<DBIx::Custom>ではデータベースハンドル属性にはデフォルト�
     $dbi->dbh->{PrintError} = 0;
     $dbi->dbh->{AutoCommit} = 1;
 
-この設定を行っているので、致命的なエラーが起こると、
-例外が発生しプログラムは終了します。
-またクエリが発行されると自動的にコミットされます。
+致命的なエラーが起こるとプログラムは終了します。
+SQLが実行されると自動的にコミットされます。
 
 =head2 2. 挿入、更新、削除、選択のためのメソッド
 

@@ -121,65 +121,57 @@ L<DBIx::Custom> prepare the way to make it easy.
 You can create where clause which has selected search condition.
 You can write nesting of where clause and C<or> condition
 
-=item 4. Method of insert, update, delete, select
+=item 4. Methods for insert, update, delete, select
 
-L<DBIx::Custom>ではSQLをさらに簡単に実行するための
-メソッドも提供しています。
-C<insert()>, C<update()>, C<delete()>,C<select()>などの
-シュガーメソッドを使って、挿入、更新、削除、選択という操作を行うことが
-できます。
+L<DBIx::Custom> provides methods for insert, update, delete, select
+There are C<insert()>, C<update()>, C<delete()>,C<select()>.
 
     my $param = {title => 'Perl', author => 'Ken'};
     $dbi->insert(table => 'book', param => $param);
 
-=item 5. テーブル単位の操作の登録
+=item 5. Register method for table.
 
-テーブルに対して操作を登録することができます。これによって
-テーブル名を繰り返し指定する必要がなくなり、ソースコードの
-見通しが良くなります。
+You can register method for table.
 
-    $dbi->talbe('book',
+    $dbi->table('book')->method(
         list => sub {
             ...
         },
-        list_somethin => sub {
-            
+        something => sub {
+            ...
         }
     );
 
-登録したメソッドはそのまま利用することができます。
+use the mehtod.
 
     $dbi->table('book')->list;
 
-通常O/Rマッパはテーブルに対応するクラスを作成しなければ
-ならないことが多いですが、L<DBIx::Custom>ではこの作業を簡便に
-しており、上記のように登録することができます。
+Many O/R mapper must create class for table,
+but L<DBIx::Custom> make it easy.
 
 =back
 
-L<DBIx::Custom>はL<DBI>を補うとても便利なモジュールです。
-興味をもたれた方は、この後で詳しい解説を行いますので、
-ご覧になってみてください。
+L<DBIx::Custom> is very useful.
+See the following if you are interested in it.
 
-=head2 1. データベースへの接続
+=head2 1. Connect to database
 
-まずL<DBIx::Custom>を読み込みます。
+Load L<DBIx::Custom>.
 
     use DBIx::Custom;
 
-L<DBIx::Custom>オブジェクトを生成し、データベースに接続するには
-C<connect()>メソッドを使用します。
+use C<connect()> to connect to database.
+Return value is L<DBIx::Custom> object.
 
     my $dbi = DBIx::Custom->connect(
-        data_source => "dbi:mysql:database=dbname",
+        data_source => "dbi:mysql:database=bookstore",
         user => 'ken',
         password => '!LFKD%$&',
         dbi_options => {mysql_enable_utf8 => 1}
     );
 
-C<data_source>はデータベースシステムに応じたフォーマットで
-指定する必要があります。以下にデータベースごとのフォーマット
-方法のサンプルを掲載しておきます。
+C<data_source> must be one corresponding to the database system.
+The following ones are data source example.
 
 B<MySQL>
 
@@ -208,23 +200,26 @@ B<ODBC(SQL Server)>
 
    "dbi:ODBC:driver={SQL Server};Server=(local);database=test;Trusted_Connection=yes;AutoTranslate=No;"
 
-また認証が求められる場合は、C<user>とC<password>ユーザ名と
-パスワードを指定する必要があります。
+If authentication is needed, you can specify C<user> and C<password>
 
-L<DBIx::Custom>はL<DBI>のラッパです。
-L<DBI>のデータベースハンドルはC<dbh>で取得することができます。
+L<DBIx::Custom> is wrapper class of L<DBI>.
+You can use all methods of L<DBI> from L<DBIx::Custom> object.
+
+    $dbi->do(...);
+    $dbi->begin_work;
+
+use C<dhb()> to get database handle of L<DBI>
 
     my $dbh = $dbi->dbh;
 
-L<DBIx::Custom>ではデータベースハンドル属性にはデフォルトで次のものが設定されます。
-    
-    $dbi->dbh->{RaiseError} = 1;
-    $dbi->dbh->{PrintError} = 0;
-    $dbi->dbh->{AutoCommit} = 1;
+By default, the following ones is set to database handle attributes.
 
-この設定を行っているので、致命的なエラーが起こると、
-例外が発生しプログラムは終了します。
-またクエリが発行されると自動的にコミットされます。
+    RaiseError  ->  1
+    PrintError  ->  0
+    AutoCommit  ->  1
+
+If fatal error occuer, program terminate.
+If SQL is executed, commit is executed automatically.
 
 =head2 2. 挿入、更新、削除、選択のためのメソッド
 
