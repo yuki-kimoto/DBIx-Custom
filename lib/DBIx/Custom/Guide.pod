@@ -221,91 +221,82 @@ By default, the following ones is set to database handle attributes.
 If fatal error occuer, program terminate.
 If SQL is executed, commit is executed automatically.
 
-=head2 2. ‘}“üAXVAíœA‘I‘ğ‚Ì‚½‚ß‚Ìƒƒ\ƒbƒh
+=head2 2. Methods for insert, update, delete, or insert
 
-L<DBIx::Custom>‚ÍA
-C<insert()>AC<update()>AC<delete()>AC<select()>
-‚Ì‚æ‚¤‚È‘}“üAXVAíœA‘I‘ğ‚ğs‚¤‚½‚ß‚Ìƒƒ\ƒbƒh‚ğ‚Á‚Ä‚¢‚Ü‚·B
-ŠÈ’P‚È‚±‚Æ‚ğ‚ğs‚¤‚Ì‚Å‚ ‚ê‚ÎASQL‚ğ©•ª‚Å‹Lq‚·‚é•K—v‚ª‚ ‚è‚Ü‚¹‚ñB
+There are following methods.
 
-=head3 ƒf[ƒ^‚Ì‘}“ü C<insert()>
+=head3 C<insert()>
 
-ƒf[ƒ^ƒx[ƒX‚Éƒf[ƒ^‚ğ‘}“ü‚·‚é‚É‚ÍC<insert()>‚ğg—p‚µ‚Ü‚·B
+use C<insert()> to insert row into database
 
     $dbi->insert(table  => 'book',
                  param  => {title => 'Perl', author => 'Ken'});
 
-C<table>‚É‚Íƒe[ƒuƒ‹–¼AC<param>‚É‚Í‘}“ü‚µ‚½‚¢ƒf[ƒ^‚ğw’è‚µ‚Ü‚·B
+C<table> is table name, C<param> is insert data.
 
-Ÿ‚ÌSQL‚ª”­s‚³‚ê‚Ü‚·B
+Following SQL is executed.
 
     insert into (title, author) values (?, ?);
 
-=head3 ƒf[ƒ^‚ÌXV C<update()>
+=head3 C<update()>
 
-ƒf[ƒ^ƒx[ƒX‚Ìƒf[ƒ^‚ğXV‚·‚é‚É‚ÍAC<update()>‚ğg—p‚µ‚Ü‚·B
+use C<update()> to update row in database.
 
     $dbi->update(table  => 'book', 
                  param  => {title => 'Perl', author => 'Ken'}, 
                  where  => {id => 5});
 
-C<table>‚É‚Íƒe[ƒuƒ‹–¼AC<param>‚É‚Í‘}“ü‚µ‚½‚¢ƒf[ƒ^AC<where>‚É‚Í
-ğŒ‚ğw’è‚µ‚Ü‚·B
+C<table> is table name, C<param> is update data, C<where> is condition.
 
-Ÿ‚ÌSQL‚ª”­s‚³‚ê‚Ü‚·B
+Following SQL is executed.
 
     update book set title = ?, author = ?;
 
-C<update>ƒƒ\ƒbƒh‚ÍˆÀ‘S‚Ì‚½‚ß
-where‹å‚Ì‚È‚¢SQL‚ğ”­s‚·‚é‚±‚Æ‚ğ‹–‰Â‚µ‚Ä‚¢‚Ü‚¹‚ñB
-‚à‚µ‚·‚×‚Ä‚Ìs‚ğXV‚µ‚½‚¢ê‡‚Í
-C<update_all()>‚ğg—p‚µ‚Ä‚­‚¾‚³‚¢B
+You can't execute C<update()> without C<where> for safety.
+use C<update_all()> if you want to update all rows.
 
     $dbi->update_all(table  => 'book', 
                      param  => {title => 'Perl', author => 'Ken'});
 
-=head3 ƒf[ƒ^‚Ìíœ C<delete()>
+=head3 C<delete()>
 
-ƒf[ƒ^ƒx[ƒX‚Ìƒf[ƒ^‚ğ1Œíœ‚·‚é‚É‚ÍAC<delete()>‚ğg—p‚µ‚Ü‚·B
+use C<delete()> to delete rows from database.
 
     $dbi->delete(table  => 'book',
                  where  => {author => 'Ken'});
 
-C<table>‚É‚Íƒe[ƒuƒ‹–¼AC<where>‚É‚ÍğŒ‚ğw’è‚µ‚Ü‚·B
+C<table> is table name, C<where> is condition.
 
-Ÿ‚ÌSQL‚ª”­s‚³‚ê‚Ü‚·B
+Following SQL is executed.
 
     delete from book where id = ?;
 
-C<delete>ƒƒ\ƒbƒh‚ÍˆÀ‘S‚Ì‚½‚ß
-where‹å‚Ì‚È‚¢SQL‚ğ”­s‚·‚é‚±‚Æ‚ğ‹–‰Â‚µ‚Ä‚¢‚Ü‚¹‚ñB
-‚à‚µ‚·‚×‚Ä‚Ìs‚ğíœ‚µ‚½‚¢ê‡‚Í
-C<delete_all()>‚ğg—p‚µ‚Ä‚­‚¾‚³‚¢B
+You can't execute C<delete()> without C<where> for safety.
+use C<delete_all()> if you want to delete all rows.
 
     $dbi->delete_all(table  => 'book');
 
-=head3 ƒf[ƒ^‚Ì‘I‘ğ C<select()>
+=head3 C<select()>
 
-s‚ğ‘I‘ğ‚·‚é‚É‚ÍC<select()>‚ğg—p‚µ‚Ü‚·B
+use C<select()> to select rows from database
 
     my $result = $dbi->select(table => 'book');
 
-C<table>‚¾‚¯‚ğw’è‚µ‚ÄA‘¼‚ÌğŒ‚ğw’è‚µ‚È‚¢ê‡‚ÍŸ‚ÌSQL‚ª”­s‚³‚ê‚Ü‚·B
+Following SQL is executed.
 
     select * from book;
 
-C<select()>ƒƒ\ƒbƒh‚Ì–ß‚è’l‚ÍL<DBIx::Custom::Result>
-ƒIƒuƒWƒFƒNƒg‚Å‚·Bs‚ğƒtƒFƒbƒ`‚·‚é‚É‚ÍC<fetch()>‚ğg—p‚µ‚Ü‚·B
+Return value is L<DBIx::Custom::Result> object.
+use C<fetch()> to fetch row.
 
     while (my $row = $result->fetch) {
         my $title  = $row->[0];
         my $author = $row->[1];
     }
 
-L<DBIx::Custom::Result>‚É‚Â‚¢‚Ä‚Í‚±‚ÌŒãL<3. s‚ÌƒtƒFƒbƒ`/"3. s‚ÌƒtƒFƒbƒ`">‚ÅÚ‚µ‚­ˆµ‚¢‚Ü‚·B
+See L<3. Fetch row/"3. Fetch row"> about L<DBIx::Custom::Result>.
 
-‚³‚Ü‚´‚Ü‚ÈC<select()>‚Ìg‚¢•û‚ğŒ©‚Ä‚¢‚«‚Ü‚µ‚å‚¤B
-Ÿ‚ÌC<select>‚Ís‚Ì–¼‘O‚Æwhere‹å‚ğw’è‚µ‚½‚à‚Ì‚Å‚·B
+Continue more examples.
 
     my $result = $dbi->select(
         table  => 'book',
@@ -313,26 +304,27 @@ L<DBIx::Custom::Result>‚É‚Â‚¢‚Ä‚Í‚±‚ÌŒãL<3. s‚ÌƒtƒFƒbƒ`/"3. s‚ÌƒtƒFƒbƒ`">‚ÅÚ‚
         where  => {author => 'Ken'}
     );
 
-C<column>‚É‚Í—ñ–¼‚ğAC<where>‚É‚ÍğŒ‚ğw’è‚·‚é‚±‚Æ‚ª‚Å‚«‚Ü‚·B
-Ÿ‚ÌSQL‚ª”­s‚³‚ê‚Ü‚·B
+C<column> is column names, C<where> is condition.
+
+Following SQL is executed.
 
     select author, title from book where author = ?;
 
-ƒe[ƒuƒ‹‚ğŒ‹‡‚µ‚½‚¢ê‡‚Í‚ÍC<relation>‚Éƒe[ƒuƒ‹‚Ì
-ŠÖŒW‚ğ‹Lq‚µ‚Ü‚·B
+Next example.
 
     my $result = $dbi->select(
         table    => ['book', 'rental'],
-        where    => {book.name => 'Perl'},
+        where    => {'book.name' => 'Perl'},
         relation => {'book.id' => 'rental.book_id'}
     );
 
-bookƒe[ƒuƒ‹‚Ìid—ñ‚Ærentalƒe[ƒuƒ‹‚Ìbook_id‚ªŠÖ˜A•t‚¯‚ç‚ê‚Ü‚·B
-Ÿ‚ÌSQL‚ª”­s‚³‚ê‚Ü‚·B
+C<relation> is relation of tables. This is inner join.
+
+Following SQL is executed.
 
     select * from book, rental where book.name = ? and book.id = rental.book_id;
 
-SQL•¶‚Ì––”ö‚É•¶š—ñ‚ğ’Ç‰Á‚µ‚½‚¢ê‡‚Í<append>‚ğg—p‚µ‚Ü‚·B
+Next example.
 
     my $result = $dbi->select(
         table  => 'book',
@@ -340,44 +332,37 @@ SQL•¶‚Ì––”ö‚É•¶š—ñ‚ğ’Ç‰Á‚µ‚½‚¢ê‡‚Í<append>‚ğg—p‚µ‚Ü‚·B
         append => 'for update',
     );
 
-Ÿ‚ÌSQL‚ª”­s‚³‚ê‚Ü‚·B
+C<append> is string appending to end of SQL.
+
+Following SQL is executed.
 
     select * book where author = ? for update;
 
-‚Ü‚½C<append>‚ÍAC<select>‚¾‚¯‚Å‚È‚­C<insert()>AC<update()>AC<update_all()>
-C<delete()>AC<delete_all()>AC<select()>‚Åg—p‚·‚é‚±‚Æ‚à‚Å‚«‚Ü‚·B
+C<appned> is also used at C<insert()>, C<update()>, C<update_all()>
+C<delete()>, C<delete_all()>, and C<select()>.
 
-=head3 SQL‚ÌÀs C<execute()>
+=head3 C<execute()> SQL
 
-”CˆÓ‚ÌSQL‚ğÀs‚·‚é‚É‚Íexecuteƒƒ\ƒbƒh‚ğg—p‚µ‚Ü‚·B
+use C<execute()> to execute SQL
 
     $dbi->execute("select * from book;");
 
-C<execute()>‚ÍL<DBIx::Custom>‚ÌªŠ²‚Ìƒƒ\ƒbƒh‚Å‚ ‚èƒ^ƒO‚ğ“WŠJ‚µ‚Ü‚·B
+Process tag and execute SQL.
 
     $dbi->execute(
         "select * from book {= title} and {= author};"
         param => {title => 'Perl', author => 'Ken'}
     );
 
-ã‹L‚Ìƒ^ƒO‚ğŠÜ‚ñ‚¾SQL‚ÍŸ‚Ì‚æ‚¤‚É“WŠJ‚³‚ê‚Ü‚·B
+Following SQL is executed.
 
     select * from book title = ? and author = ?;
 
-SQL‚ªÀs‚³‚ê‚é‚Æ‚«‚ÉƒvƒŒ[ƒXƒzƒ‹ƒ_(?)‚É‘Î‰‚·‚éˆÊ’u‚Étitle‚Æauthor
-‚Ì’l‚ª‚ª©“®“I‚É–„‚ß‚Ü‚ê‚Ü‚·B
+Values of title and author is embbdeded into placeholder.
 
-ƒ^ƒO‚É‚Â‚¢‚Ä‚ÍL<5. ƒ^ƒO/"5. ƒ^ƒO">‚ÅÚ‚µ‚­‰ğà‚µ‚Ü‚·‚ªA
-‚Ğ‚Æ‚Â‚Ì’ˆÓ“_‚ª‚ ‚è‚Ü‚·B
-ƒ^ƒO‚ğ“WŠJ‚·‚é‚½‚ß‚ÉC<{>‚ÆC<}>‚Í—\–ñŒê‚É‚È‚Á‚Ä‚¢‚Ü‚·B
-‚à‚µ—˜—p‚µ‚½‚¢ê‡‚Í’¼‘O‚É\‚ğ‚¨‚¢‚ÄƒGƒXƒP[ƒv‚ğs‚¤•K—v‚ª‚ ‚è‚Ü‚·B
+See L<5. Tag/"5. Tag"> about tag.
 
-    $dbi->execute("... \\{ ... \\} ...");
-
-\©‘Ì‚ªPerl‚ÌƒGƒXƒP[ƒv•¶š‚Å‚·‚Ì‚ÅA“ñ‚Â•K—v‚É‚È‚é‚Æ‚¢‚¤“_‚É’ˆÓ‚µ‚Ä‚­‚¾‚³‚¢B
-
-‚Ü‚½execute‚ÌƒLƒ…[ƒg‚È‹@”\‚Æ‚µ‚ÄASQL‚ÌÅŒã‚ÉƒZƒ~ƒRƒƒ“‚ğ‚¨‚©‚È‚­‚Ä‚à
-‚©‚Ü‚¢‚Ü‚¹‚ñB
+You don't have to wirte last semicolon in C<execute()>. 
 
     $dbi->execute('select * from book');
 
@@ -746,81 +731,81 @@ C<table>‚ğw’è‚·‚é•K—v‚ª‚ ‚è‚Ü‚·B
     $dbi->execute($sql, param => {title => 'Perl', author => '%Ken%'}
                   table => ['book']);
 
-=head2 ƒ^ƒOˆê——
+=head3 ƒ^ƒOˆê——
 
 L<DBIx::Custom>‚Å‚ÍŸ‚Ìƒ^ƒO‚ªg—p‰Â”\‚Å‚·B
 
 ‚±‚Ì‚æ‚¤‚Éƒ^ƒO‚ğg‚Á‚ÄSQL•¶‚ğ•\Œ»‚·‚é‚Ì‚ªL<DBIx::Custom>‚Ì
 “Á’¥‚Å‚·BˆÈ‰º‚Ìƒ^ƒO‚ª—˜—p‰Â”\‚Å‚·B
 
-=head3 C<?>
+=head4 C<?>
 
 C<?>ƒ^ƒO‚ÍˆÈ‰º‚Ì‚æ‚¤‚É“WŠJ‚³‚ê‚Ü‚·B
 
     {? NAME}    ->   ?
 
-=head3 C<=>
+=head4 C<=>
 
 C<=>ƒ^ƒO‚ÍˆÈ‰º‚Ì‚æ‚¤‚É“WŠJ‚³‚ê‚Ü‚·B
 
     {= NAME}    ->   NAME = ?
 
-=head3 C<E<lt>E<gt>>
+=head4 C<E<lt>E<gt>>
 
 C<E<lt>E<gt>>ƒ^ƒO‚ÍˆÈ‰º‚Ì‚æ‚¤‚É“WŠJ‚³‚ê‚Ü‚·B
 
     {<> NAME}   ->   NAME <> ?
 
-=head3 C<E<lt>>
+=head4 C<E<lt>>
 
 C<E<lt>>ƒ^ƒO‚ÍˆÈ‰º‚Ì‚æ‚¤‚É“WŠJ‚³‚ê‚Ü‚·B
 
     {< NAME}    ->   NAME < ?
 
-=head3 C<E<gt>>
+=head4 C<E<gt>>
 
 C<E<gt>>ƒ^ƒO‚ÍˆÈ‰º‚Ì‚æ‚¤‚É“WŠJ‚³‚ê‚Ü‚·B
 
     {> NAME}    ->   NAME > ?
 
-=head3 C<E<gt>=>
+=head4 C<E<gt>=>
 
 C<E<gt>=>ƒ^ƒO‚ÍˆÈ‰º‚Ì‚æ‚¤‚É“WŠJ‚³‚ê‚Ü‚·B
 
     {>= NAME}   ->   NAME >= ?
 
-=head3 C<E<lt>=>
+=head4 C<E<lt>=>
 
 C<E<lt>=>ƒ^ƒO‚ÍˆÈ‰º‚Ì‚æ‚¤‚É“WŠJ‚³‚ê‚Ü‚·B
 
     {<= NAME}   ->   NAME <= ?
 
-=head3 C<like>
+=head4 C<like>
 
 C<like>ƒ^ƒO‚ÍˆÈ‰º‚Ì‚æ‚¤‚É“WŠJ‚³‚ê‚Ü‚·B
 
     {like NAME}   ->   NAME like ?
 
-=head3 C<in>
+=head4 C<in>
 
 C<in>ƒ^ƒO‚ÍˆÈ‰º‚Ì‚æ‚¤‚É“WŠJ‚³‚ê‚Ü‚·BƒvƒŒ[ƒXƒzƒ‹ƒ_‚Ì
 ”‚ğˆø”‚Åw’è‚·‚é•K—v‚ª‚ ‚é‚±‚Æ‚É’ˆÓ‚µ‚Ä‚­‚¾‚³‚¢B
 
     {in NAME COUNT}   ->   NAME in [?, ?, ..]
 
-=head3 C<insert_param>
+=head4 C<insert_param>
 
 C<insert_param>ƒ^ƒO‚ÍˆÈ‰º‚Ì‚æ‚¤‚É“WŠJ‚³‚ê‚Ü‚·B
 
     {insert_param NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
 
-=head3 C<update_param>
+=head4 C<update_param>
 
 C<update_param>ƒ^ƒO‚ÍˆÈ‰º‚Ì‚æ‚¤‚É“WŠJ‚³‚ê‚Ü‚·B
 
     {update_param NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?
 
-=head2 “¯–¼‚Ì—ñ‚Ìˆµ‚¢
+=head3 “¯–¼‚Ì—ñ‚Ìˆµ‚¢
 
 “¯–¼‚Ì—ñ‚ğŠÜ‚Şƒ^ƒO‚ª‚ ‚éê‡‚É‚àASQL‚ğÀs‚·‚é‚±‚Æ‚ª‚Å‚«‚Ü‚·B
 ‚½‚Æ‚¦‚ÎA“ñ‚Â‚Ì“ú•t‚Å”äŠr‚µ‚È‚¯‚ê‚Î‚È‚ç‚È‚¢ê‡‚ğ
@@ -832,7 +817,7 @@ C<update_param>ƒ^ƒO‚ÍˆÈ‰º‚Ì‚æ‚¤‚É“WŠJ‚³‚ê‚Ü‚·B
 
     my $dbi->execute($sql, param => {date => ['2010-10-01', '2012-02-10']});
 
-=head2 ƒ^ƒO‚Ì’Ç‰Á C<register_tag()>
+=head3 ƒ^ƒO‚Ì’Ç‰Á C<register_tag()>
 
 L<DBIx::Custom>‚Å‚Íƒ^ƒO‚ğ“Æ©‚É’Ç‰Á‚·‚é‚±‚Æ‚ª‚Å‚«‚Ü‚·B
 ƒ^ƒO‚ğ’Ç‰Á‚·‚é‚É‚ÍC<register_tag()>‚ğg—p‚µ‚Ü‚·B

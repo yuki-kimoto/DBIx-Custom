@@ -15,7 +15,7 @@ L<DBIx::Custom>はO/Rマッパーではありません。O/Rマッパーは
 便利ですが、O/Rマッパのたくさんの文法を覚える必要があります。
 また、O/Rマッパによって生成されたSQLは非効率なことがありますし、
 複雑なSQLを生成することができないので、
-生のSQLを発行しなければならない場合がたくさんあります。
+生のSQLを実行しなければならない場合がたくさんあります。
 
 L<DBIx::Custom>はO/Rマッパとは対照的な設計が行われています。
 L<DBIx::Custom>の主な目的は、SQLを尊重しつつ、L<DBI>だけでは
@@ -99,7 +99,7 @@ titleだけの場合は次のSQLを
 
     select * from book where title = ?;
     
-authorだけの場合は次のSQLを発行した場合を考えましょう。
+authorだけの場合は次のSQLを実行した場合を考えましょう。
 
     select * from book where author = ?;
 
@@ -224,41 +224,37 @@ SQLが実行されると自動的にコミットされます。
 
 =head2 2. 挿入、更新、削除、選択のためのメソッド
 
-L<DBIx::Custom>は、
-C<insert()>、C<update()>、C<delete()>、C<select()>
-のような挿入、更新、削除、選択を行うためのメソッドを持っています。
-簡単なことをを行うのであれば、SQLを自分で記述する必要がありません。
+下記のメソッドがあります。
 
-=head3 データの挿入 C<insert()>
+=head3 行の挿入 C<insert()>
 
-データベースにデータを挿入するにはC<insert()>を使用します。
+データベースに行を挿入するにはC<insert()>を使用します。
 
     $dbi->insert(table  => 'book',
                  param  => {title => 'Perl', author => 'Ken'});
 
-C<table>にはテーブル名、C<param>には挿入したいデータを指定します。
+C<table>はテーブル名、C<param>は挿入する行のデータです。
 
-次のSQLが発行されます。
+次のSQLが実行されます。
 
     insert into (title, author) values (?, ?);
 
 =head3 データの更新 C<update()>
 
-データベースのデータを更新するには、C<update()>を使用します。
+データベースの行を更新するには、C<update()>を使用します。
 
     $dbi->update(table  => 'book', 
                  param  => {title => 'Perl', author => 'Ken'}, 
                  where  => {id => 5});
 
-C<table>にはテーブル名、C<param>には挿入したいデータ、C<where>には
-条件を指定します。
+C<table>はテーブル名、C<param>は更新データ、C<where>は
+条件です。
 
-次のSQLが発行されます。
+次のSQLが実行されます。
 
     update book set title = ?, author = ?;
 
-C<update>メソッドは安全のため
-where句のないSQLを発行することを許可していません。
+安全のためC<where>のないupdate()を実効することはできません。
 もしすべての行を更新したい場合は
 C<update_all()>を使用してください。
 
@@ -267,19 +263,18 @@ C<update_all()>を使用してください。
 
 =head3 データの削除 C<delete()>
 
-データベースのデータを1件削除するには、C<delete()>を使用します。
+データベースの行を1件削除するには、C<delete()>を使用します。
 
     $dbi->delete(table  => 'book',
                  where  => {author => 'Ken'});
 
-C<table>にはテーブル名、C<where>には条件を指定します。
+C<table>はテーブル名、C<where>は条件です。
 
-次のSQLが発行されます。
+次のSQLが実行されます。
 
     delete from book where id = ?;
 
-C<delete>メソッドは安全のため
-where句のないSQLを発行することを許可していません。
+安全のためC<where>のないC<delete()>を実効することはできません。
 もしすべての行を削除したい場合は
 C<delete_all()>を使用してください。
 
@@ -291,11 +286,11 @@ C<delete_all()>を使用してください。
 
     my $result = $dbi->select(table => 'book');
 
-C<table>だけを指定して、他の条件を指定しない場合は次のSQLが発行されます。
+次のSQLが実行されます。
 
     select * from book;
 
-C<select()>メソッドの戻り値はL<DBIx::Custom::Result>
+戻り値はL<DBIx::Custom::Result>
 オブジェクトです。行をフェッチするにはC<fetch()>を使用します。
 
     while (my $row = $result->fetch) {
@@ -303,10 +298,9 @@ C<select()>メソッドの戻り値はL<DBIx::Custom::Result>
         my $author = $row->[1];
     }
 
-L<DBIx::Custom::Result>についてはこの後L<3. 行のフェッチ/"3. 行のフェッチ">で詳しく扱います。
+L<DBIx::Custom::Result>についてはL<3. 行のフェッチ/"3. 行のフェッチ">を見てください。
 
-さまざまなC<select()>の使い方を見ていきましょう。
-次のC<select>は行の名前とwhere句を指定したものです。
+サンプルを続けます。
 
     my $result = $dbi->select(
         table  => 'book',
@@ -314,13 +308,13 @@ L<DBIx::Custom::Result>についてはこの後L<3. 行のフェッチ/"3. 行�
         where  => {author => 'Ken'}
     );
 
-C<column>には列名を、C<where>には条件を指定することができます。
-次のSQLが発行されます。
+C<column>は列名、C<where>は条件です。
+
+次のSQLが実行されます。
 
     select author, title from book where author = ?;
 
-テーブルを結合したい場合ははC<relation>にテーブルの
-関係を記述します。
+次のサンプルです。
 
     my $result = $dbi->select(
         table    => ['book', 'rental'],
@@ -328,12 +322,16 @@ C<column>には列名を、C<where>には条件を指定することができま
         relation => {'book.id' => 'rental.book_id'}
     );
 
+C<relation>テーブル間の関係です。これは内部結合です。
+
+次のSQLが実行されます。
+
 bookテーブルのid列とrentalテーブルのbook_idが関連付けられます。
-次のSQLが発行されます。
+次のSQLが実行されます。
 
     select * from book, rental where book.name = ? and book.id = rental.book_id;
 
-SQL文の末尾に文字列を追加したい場合は<append>を使用します。
+次のサンプルです。
 
     my $result = $dbi->select(
         table  => 'book',
@@ -341,7 +339,9 @@ SQL文の末尾に文字列を追加したい場合は<append>を使用します
         append => 'for update',
     );
 
-次のSQLが発行されます。
+C<append>はSQLの末尾に追加される文字列です。
+
+次のSQLが実行されます。
 
     select * book where author = ? for update;
 
@@ -350,35 +350,26 @@ C<delete()>、C<delete_all()>、C<select()>で使用することもできます�
 
 =head3 SQLの実行 C<execute()>
 
-任意のSQLを実行するにはexecuteメソッドを使用します。
+SQLを実行するにはC<execute()>を使用します。
 
     $dbi->execute("select * from book;");
 
-C<execute()>はL<DBIx::Custom>の根幹のメソッドでありタグを展開します。
+タグを処理してSQLを実行します。
 
     $dbi->execute(
         "select * from book {= title} and {= author};"
         param => {title => 'Perl', author => 'Ken'}
     );
 
-上記のタグを含んだSQLは次のように展開されます。
+次のSQLが実行されます。
 
     select * from book title = ? and author = ?;
 
-SQLが実行されるときにプレースホルダ(?)に対応する位置にtitleとauthor
-の値がが自動的に埋め込まれます。
+プレースホルダにtitleとauthorの値が埋め込まれます。
 
-タグについてはL<5. タグ/"5. タグ">で詳しく解説しますが、
-ひとつの注意点があります。
-タグを展開するためにC<{>とC<}>は予約語になっています。
-もし利用したい場合は直前に\をおいてエスケープを行う必要があります。
+タグについてはL<5. タグ/"5. タグ">を見てください。
 
-    $dbi->execute("... \\{ ... \\} ...");
-
-\自体がPerlのエスケープ文字ですので、二つ必要になるという点に注意してください。
-
-またexecuteのキュートな機能として、SQLの最後にセミコロンをおかなくても
-かまいません。
+またC<execute()>のSQLの末尾にはセミコロンを置く必要はありません。
 
     $dbi->execute('select * from book');
 
@@ -747,81 +738,81 @@ C<table>を指定する必要があります。
     $dbi->execute($sql, param => {title => 'Perl', author => '%Ken%'}
                   table => ['book']);
 
-=head2 タグ一覧
+=head3 タグ一覧
 
 L<DBIx::Custom>では次のタグが使用可能です。
 
 このようにタグを使ってSQL文を表現するのがL<DBIx::Custom>の
 特徴です。以下のタグが利用可能です。
 
-=head3 C<?>
+=head4 C<?>
 
 C<?>タグは以下のように展開されます。
 
     {? NAME}    ->   ?
 
-=head3 C<=>
+=head4 C<=>
 
 C<=>タグは以下のように展開されます。
 
     {= NAME}    ->   NAME = ?
 
-=head3 C<E<lt>E<gt>>
+=head4 C<E<lt>E<gt>>
 
 C<E<lt>E<gt>>タグは以下のように展開されます。
 
     {<> NAME}   ->   NAME <> ?
 
-=head3 C<E<lt>>
+=head4 C<E<lt>>
 
 C<E<lt>>タグは以下のように展開されます。
 
     {< NAME}    ->   NAME < ?
 
-=head3 C<E<gt>>
+=head4 C<E<gt>>
 
 C<E<gt>>タグは以下のように展開されます。
 
     {> NAME}    ->   NAME > ?
 
-=head3 C<E<gt>=>
+=head4 C<E<gt>=>
 
 C<E<gt>=>タグは以下のように展開されます。
 
     {>= NAME}   ->   NAME >= ?
 
-=head3 C<E<lt>=>
+=head4 C<E<lt>=>
 
 C<E<lt>=>タグは以下のように展開されます。
 
     {<= NAME}   ->   NAME <= ?
 
-=head3 C<like>
+=head4 C<like>
 
 C<like>タグは以下のように展開されます。
 
     {like NAME}   ->   NAME like ?
 
-=head3 C<in>
+=head4 C<in>
 
 C<in>タグは以下のように展開されます。プレースホルダの
 数を引数で指定する必要があることに注意してください。
 
     {in NAME COUNT}   ->   NAME in [?, ?, ..]
 
-=head3 C<insert_param>
+=head4 C<insert_param>
 
 C<insert_param>タグは以下のように展開されます。
 
     {insert_param NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
 
-=head3 C<update_param>
+=head4 C<update_param>
 
 C<update_param>タグは以下のように展開されます。
 
     {update_param NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?
 
-=head2 同名の列の扱い
+=head3 同名の列の扱い
 
 同名の列を含むタグがある場合にも、SQLを実行することができます。
 たとえば、二つの日付で比較しなければならない場合を
@@ -833,7 +824,7 @@ C<update_param>タグは以下のように展開されます。
 
     my $dbi->execute($sql, param => {date => ['2010-10-01', '2012-02-10']});
 
-=head2 タグの追加 C<register_tag()>
+=head3 タグの追加 C<register_tag()>
 
 L<DBIx::Custom>ではタグを独自に追加することができます。
 タグを追加するにはC<register_tag()>を使用します。
