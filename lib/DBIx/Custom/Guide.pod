@@ -366,38 +366,37 @@ You don't have to wirte last semicolon in C<execute()>.
 
     $dbi->execute('select * from book');
 
-=head2 3. 行のフェッチ
+=head2 3. Fetch row
 
-C<select()>メソッドの戻り値はL<DBIx::Custom::Result>オブジェクトです。
-L<DBIx::Custom::Result>には行をフェッチするためのさまざまなメソッドが
-用意されています。
+Return value of C<select()> is L<DBIx::Custom::Result> object.
+There are many methods to fetch row.
 
-=head3 1行づつフェッチ(配列) C<fetch()>
+=head3 Fetch a row (array) C<fetch()>
 
-一行フェッチして配列のリファレンスに格納するにはC<fetch()>を使用します。
+use C<fetch()> to fetch a row and assign it into array reference.
+
+    my $row = $result->fetch;
+
+You can get all rows.
 
     while (my $row = $result->fetch) {
         my $title  = $row->[0];
         my $author = $row->[1];
     }
 
-whileループを使って、すべての行を取得することができます。
+=head3 Fetch only first row (array) C<fetch_first()>
 
-=head3 最初の行だけフェッチ(配列) C<fetch_first()>
-
-一行だけフェッチして配列のリファレンスに格納するにはC<fetch_first()>
-を使用します。
+use C<fetch_first()> to fetch only first row.
 
     my $row = $result->fetch_first;
 
-一行のフェッチが終わった後はそれ以上フェッチできなくなります。
-内部的には1行のフェッチが終わった後に
-ステートメントハンドルのC<finish()>が実行されます。
+You can't fetch rest rows
+because statement handle C<finish()> is executed.
 
-=head3 複数行を順にフェッチ(配列) C<fetch_multi()>
+=head3 Fetch rows (array) C<fetch_multi()>
 
-複数行をフェッチして配列のリファレンスを要素に持つ
-配列のリファレンスに格納するにはC<fetch_multi()>を使用します。
+use C<fetch_multi()> to fetch rows and assign it into
+array reference which has array references as element.
 
     while (my $rows = $result->fetch_multi(2)) {
         my $title0   = $rows->[0][0];
@@ -407,54 +406,52 @@ whileループを使って、すべての行を取得することができます。
         my $author1  = $rows->[1][1];
     }
 
-引数には取り出したい行数を指定します。
+Specify row count as argument.
 
-指定した行を格納した次のようなデータを取得できます。
+You can get the following data.
 
     [
         ['Perl', 'Ken'],
         ['Ruby', 'Mark']
     ]
 
-=head3 すべての行をフェッチ(配列) C<fetch_all>
+=head3 Fetch all rows (array) C<fetch_all>
 
-すべての行をフェッチして配列のリファレンスを要素に持つ
-配列のリファレンスに格納するにはC<fetch_all()>を使用します。
+use C<fetch_all()> to fetch all rows and assign it into
+array reference which has array reference as element.
 
     my $rows = $result->fetch_all;
 
-すべての行を格納した次のようなデータを取得できます。
+You can get the following data.
 
     [
         ['Perl', 'Ken'],
         ['Ruby', 'Mark']
     ]
 
-=head3 1行づつフェッチ(ハッシュ) C<fetch_hash()>
+=head3 Fetch a row (hash) C<fetch_hash()>
 
-一行フェッチしてハッシュのリファレンスに格納するにはC<fetch_hash()>を使用します。
+use C<fetch_hash()> to fetch a row and assign it into hash reference.
 
     while (my $row = $result->fetch_hash) {
         my $title  = $row->{title};
         my $author = $row->{author};
     }
 
-=head3 最初の行だけフェッチ(ハッシュ) C<fetch_hash_first()>
+=head3 Fetch only first row (hash) C<fetch_hash_first()>
 
-一行だけフェッチしてハッシュのリファレンスに格納するには
-C<fetch_hash_first()>を使用します。
+use C<fetch_hash_first()> to fetch only first row
+and assign it into hash reference.
 
     my $row = $result->fetch_hash_first;
 
-一行のフェッチが終わった後はそれ以上フェッチできなくなります。
-内部的には1行のフェッチが終わった後に
-ステートメントハンドルのC<finish()>が実行されます。
+You can't fetch rest rows
+because statement handle C<finish()> is executed.
 
-=head3 複数行を順にフェッチ(ハッシュ) C<fetch_hash_multi()>
+=head3 Fetch rows (hash) C<fetch_hash_multi()>
 
-複数行をフェッチしてハッシュのリファレンスを要素に持つ
-配列のリファレンスに格納するにはC<fetch_hash_multi()>
-を使用します。
+use C<fetch_hash_multi()> to fetch rows and
+assign it into array reference which has hash references as element.
 
     while (my $rows = $result->fetch_hash_multi(5)) {
         my $title0   = $rows->[0]{title};
@@ -463,40 +460,35 @@ C<fetch_hash_first()>を使用します。
         my $author1 = $rows->[1]{author};
     }
 
-引数には取り出したい行数を指定します。
+Specify row count as argument.
 
-指定した行を格納した次のようなデータを取得できます。
+You can get the following data.
 
     [
         {title => 'Perl', author => 'Ken'},
         {title => 'Ruby', author => 'Mark'}
     ]
 
-=head3 すべての行をフェッチ(ハッシュ) C<fetch_hash_all()>
+=head3 Fetch all rows (hash) C<fetch_hash_all()>
 
-すべての行をフェッチしてハッシュのリファレンスを要素に持つ
-配列のリファレンスに格納するにはC<fetch_hash_all()>
-を使用します。
+use C<fetch_hash_all()> to fetch all rows and
+assign it into array reference which has hash 
+references as element.
 
     my $rows = $result->fetch_hash_all;
 
-すべての行を格納した次のようなデータを取得できます。
+You can get the following data.
 
     [
         {title => 'Perl', author => 'Ken'},
         {title => 'Ruby', author => 'Mark'}
     ]
 
-=head3 ステートメントハンドル C<sth()>
+=head3 Statement handle C<sth()>
 
-ステートメントハンドルに直接アクセスしたい場合は
-<sth>で取得することができます。
+use <sth()> to get statement handle.
 
     my $sth = $result->sth;
-
-フェッチのパフォーマンスが用件を満たさないときには、
-ステートメントハンドルから
-利用できる速度の速いメソッドを利用することができます。
 
 =head2 4. フィルタリング
 
