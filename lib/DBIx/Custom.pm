@@ -25,7 +25,8 @@ __PACKAGE__->attr(
     query_builder => sub { DBIx::Custom::QueryBuilder->new },
     result_class  => 'DBIx::Custom::Result',
     base_table    => sub { DBIx::Custom::Table->new(dbi => shift) },
-    safety_column_name => sub { qr/^[\w\.]*$/ }
+    safety_column_name => sub { qr/^[\w\.]*$/ },
+    stash => sub { {} }
 );
 
 __PACKAGE__->attr(
