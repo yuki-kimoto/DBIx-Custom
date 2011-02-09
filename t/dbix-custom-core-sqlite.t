@@ -1329,3 +1329,9 @@ $result = $dbi->select(
 );
 is($result->fetch_first->[0], 'B');
 
+test 'selection';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$result = $dbi->select(selection => '* from table1', where => {key1 => 1});
+is_deeply($result->fetch_hash_all, [{key1 => 1, key2 => 2}]);

@@ -487,7 +487,7 @@ sub register_filter {
 sub register_tag { shift->query_builder->register_tag(@_) }
 
 our %VALID_SELECT_ARGS
-  = map { $_ => 1 } qw/table column where append relation filter query/;
+  = map { $_ => 1 } qw/table column where append relation filter query selection/;
 
 sub select {
     my ($self, %args) = @_;
@@ -503,33 +503,41 @@ sub select {
     my $tables = ref $table eq 'ARRAY' ? $table
                : defined $table ? [$table]
                : [];
-    croak qq{"table" option must be specified} unless @$tables;
-    my $columns  = $args{column} || [];
-    my $where    = $args{where} || {};
-    my $relation = $args{relation};
-    my $append   = $args{append};
-    my $filter   = $args{filter};
+    my $columns   = $args{column} || [];
+    my $selection = $args{selection} || '';
+    my $where     = $args{where} || {};
+    my $relation  = $args{relation};
+    my $append    = $args{append};
+    my $filter    = $args{filter};
     
     # SQL stack
     my @sql;
     
     push @sql, 'select';
     
-    # Column clause
-    if (@$columns) {
-        foreach my $column (@$columns) {
-            push @sql, ($column, ',');
+    if ($selection) {
+        croak qq{Can't contain "where" clause in selection}
+          if $selection =~ /\swhere\s/;
+        push @sql, $selection;
+    }
+    else {
+        # Column clause
+        if (@$columns) {
+            foreach my $column (@$columns) {
+                push @sql, ($column, ',');
+            }
+            pop @sql if $sql[-1] eq ',';
+        }
+        else { push @sql, '*' }
+        
+        # Table
+        croak qq{"table" option must be specified} unless @$tables;
+        push @sql, 'from';
+        foreach my $table (@$tables) {
+            push @sql, ($table, ',');
         }
         pop @sql if $sql[-1] eq ',';
     }
-    else { push @sql, '*' }
-    
-    # Table
-    push @sql, 'from';
-    foreach my $table (@$tables) {
-        push @sql, ($table, ',');
-    }
-    pop @sql if $sql[-1] eq ',';
     
     # Where
     my $w;
@@ -1243,7 +1251,8 @@ This is same as L<DBI>'s C<rollback>.
                               append   => $append,
                               relation => \%relation,
                               filter   => \%filter,
-                              query    => 1);
+                              query    => 1,
+                              selection => $selection);
 
 Execute select statement.
 C<select> method have C<table>, C<column>, C<where>, C<append>,
@@ -1254,6 +1263,10 @@ C<append> is a string added at the end of the SQL statement.
 C<filter> is filters when parameter binding is executed.
 C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
 default to 0. This is experimental.
+C<selection> is string of column name and tables. This is experimental
+
+    selection => 'name, location.name as location_name ' .
+                 'from company inner join location'
 
 First element is a string. it contains tags,
 such as "{= title} or {like author}".
@@ -1322,7 +1335,7 @@ Method to set and get caches.
 
 The following tags is available.
 
-=head2 C<table>
+=head2 C<(experimental) table>
 
 Table tag
 
