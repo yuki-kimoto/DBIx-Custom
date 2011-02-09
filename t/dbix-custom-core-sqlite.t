@@ -481,7 +481,7 @@ $dbi->execute($CREATE_TABLE->{0});
 $source = 'select * from table1 where {= key1} and {= key2};';
 $dbi->create_query($source);
 is_deeply($dbi->{_cached}->{$source}, 
-          {sql => "select * from table1 where key1 = ? and key2 = ?;", columns => ['key1', 'key2']}, "cache");
+          {sql => "select * from table1 where key1 = ? and key2 = ?;", columns => ['key1', 'key2'], tables => []}, "cache");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -663,6 +663,18 @@ $result = $dbi->execute("select * from table1 where {= key1} and {= key2};",
                         table => ['table1']);
 $rows   = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 4, key2 => 2}], "execute");
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->register_filter(twice => sub { $_[0] * 2 });
+$dbi->apply_filter(
+    'table1', 'key1' => {out => 'twice', in => 'twice'}
+);
+$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, filter => {key1 => undef});
+$result = $dbi->execute("select * from {table table1} where {= key1} and {= key2};",
+                        param => {key1 => 1, key2 => 2});
+$rows   = $result->fetch_hash_all;
+is_deeply($rows, [{key1 => 4, key2 => 2}], "execute table tag");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});

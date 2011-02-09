@@ -183,7 +183,10 @@ sub create_query {
         my $q = $self->cache_method->($self, $source);
         
         # Create query
-        $query = DBIx::Custom::Query->new($q) if $q;
+        if ($q) {
+            $query = DBIx::Custom::Query->new($q);
+            $query->filters($self->filters);
+        }
     }
     
     unless ($query) {
@@ -197,7 +200,8 @@ sub create_query {
         # Cache query
         $self->cache_method->($self, $source,
                              {sql     => $query->sql, 
-                              columns => $query->columns})
+                              columns => $query->columns,
+                              tables  => $query->tables})
           if $cache;
     }
     
@@ -299,11 +303,13 @@ sub execute{
     $query = $self->create_query($query)
       unless ref $query;
     
-    # Auto filter
+    # Applied filter
     my $filter = {};
-    my $tables = $args{table} || [];
-    $tables = [$tables]
-      unless ref $tables eq 'ARRAY';
+    my $tables = $query->tables;
+    my $arg_tables = $args{table} || [];
+    $arg_tables = [$arg_tables]
+      unless ref $arg_tables eq 'ARRAY';
+    push @$tables, @$arg_tables;
     foreach my $table (@$tables) {
         $filter = {
             %$filter,
@@ -1315,6 +1321,14 @@ Method to set and get caches.
 =head1 Tags
 
 The following tags is available.
+
+=head2 C<table>
+
+Table tag
+
+    {table TABLE}    ->    TABLE
+
+This is used to teach what is applied table to C<execute()>.
 
 =head2 C<?>
 

@@ -7,7 +7,7 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 
-__PACKAGE__->attr([qw/columns sql sth filters/]);
+__PACKAGE__->attr([qw/columns sql sth filters tables/]);
 
 sub filter {
     my $self = shift;

@@ -46,6 +46,9 @@ sub _build_query {
     # All Columns
     my $all_columns = [];
     
+    # Tables
+    my $tables = [];
+    
     # Build SQL 
     foreach my $node (@$tree) {
         
@@ -61,6 +64,14 @@ sub _build_query {
             # Tag arguments
             my $tag_args = $node->{tag_args};
             
+            # Table
+            if ($tag_name eq 'table') {
+                my $table = $tag_args->[0];
+                push @$tables, $table;
+                $sql .= $table;
+                next;
+            }
+
             # Get tag
             my $tag = $self->tag_processors->{$tag_name}
                              || $self->tags->{$tag_name};
@@ -101,7 +112,11 @@ sub _build_query {
     $sql .= ';' unless $sql =~ /;$/;
     
     # Query
-    my $query = DBIx::Custom::Query->new(sql => $sql, columns => $all_columns);
+    my $query = DBIx::Custom::Query->new(
+        sql => $sql,
+        columns => $all_columns,
+        tables => $tables
+    );
     
     return $query;
 }
