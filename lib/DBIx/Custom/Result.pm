@@ -20,7 +20,11 @@ sub filter {
         
         foreach my $column (keys %$filter) {
             my $fname = $filter->{$column};
-            unless (ref $fname eq 'CODE') {
+
+            if  (exists $filter->{$column}
+              && defined $fname
+              && ref $fname ne 'CODE') 
+            {
               croak qq{Filter "$fname" is not registered"}
                 unless exists $self->filters->{$fname};
               
@@ -44,7 +48,11 @@ sub end_filter {
         
         foreach my $column (keys %$end_filter) {
             my $fname = $end_filter->{$column};
-            unless (ref $fname eq 'CODE') {
+            
+            if  (exists $end_filter->{$column}
+              && defined $fname
+              && ref $fname ne 'CODE') 
+            {
               croak qq{Filter "$fname" is not registered"}
                 unless exists $self->filters->{$fname};
               

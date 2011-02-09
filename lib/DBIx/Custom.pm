@@ -81,54 +81,45 @@ sub apply_filter {
     
     # Create filters
     my $usage = "Usage: \$dbi->apply_filter(" .
-                "TABLE, COLUMN1, {in => INFILTER1, out => OUTFILTER1}, " .
-                "COLUMN2, {in => INFILTER2, out => OUTFILTER2}, ...)";
+                "TABLE, COLUMN1, {in => INFILTER1, out => OUTFILTER1, end => ENDFILTER1}, " .
+                "COLUMN2, {in => INFILTER2, out => OUTFILTER2, end => ENDFILTER2}, ...)";
 
     for (my $i = 0; $i < @cinfos; $i += 2) {
         
         # Column
         my $column = $cinfos[$i];
         
-        # Filter
-        my $filter = $cinfos[$i + 1] || {};
-        croak $usage unless  ref $filter eq 'HASH';
-        foreach my $ftype (keys %$filter) {
-            croak $usage unless $ftype eq 'in' || $ftype eq 'out'; 
+        # Filter info
+        my $finfo = $cinfos[$i + 1] || {};
+        croak $usage unless  ref $finfo eq 'HASH';
+        foreach my $ftype (keys %$finfo) {
+            croak $usage unless $ftype eq 'in' || $ftype eq 'out'
+                             || $ftype eq 'end'; 
         }
-        my $in_filter = $filter->{in};
-        my $out_filter = $filter->{out};
         
-        # Out filter
-        if (ref $out_filter eq 'CODE') {
-            $self->{filter}{out}{$table}{$column}
-              = $out_filter;
-            $self->{filter}{out}{$table}{"$table.$column"}
-              = $out_filter;
-        }
-        elsif (defined $out_filter) {
-            croak qq{Filter "$out_filter" is not registered}
-              unless exists $self->filters->{$out_filter};
+        foreach my $way (qw/in out end/) {
+            my $filter = $finfo->{$way};
             
-            $self->{filter}{out}{$table}{$column}
-              = $self->filters->{$out_filter};
-            $self->{filter}{out}{$table}{"$table.$column"}
-              = $self->filters->{$out_filter};
-        }
-        
-        # In filter
-        if (ref $in_filter eq 'CODE') {
-            $self->{filter}{in}{$table}{$column}
-              = $in_filter;
-            $self->{filter}{in}{$table}{"$table.$column"}
-              = $in_filter;
-        }
-        elsif (defined $in_filter) {
-            croak qq{Filter "$in_filter" is not registered}
-              unless exists $self->filters->{$in_filter};
-            $self->{filter}{in}{$table}{$column}
-              = $self->filters->{$in_filter};
-            $self->{filter}{in}{$table}{"$table.$column"}
-              = $self->filters->{$in_filter};
+            # State
+            my $state = !exists $finfo->{$way} ? 'not_exists'
+                      : !defined $filter        ? 'not_defined'
+                      : ref $filter eq 'CODE'   ? 'code'
+                      : 'name';
+            
+            next if $state eq 'not_exists';
+            
+            # Check filter
+            croak qq{Filter "$filter" is not registered}
+              if  $state eq 'name'
+               && ! exists $self->filters->{$filter};
+            
+            # Filter
+            my $f = $state eq 'not_defined' ? undef
+                  : $state eq 'code'        ? $filter
+                  : $self->filters->{$filter};
+            $self->{filter}{$way}{$table}{$column} = $f;
+            $self->{filter}{$way}{$table}{"$table.$column"} = $f;
+            $self->{filter}{$way}{$table}{"${table}__$column"} = $f;
         }
     }
     
@@ -345,13 +336,18 @@ sub execute{
     # Return resultset if select statement is executed
     if ($sth->{NUM_OF_FIELDS}) {
         
-        # Auto in filter
-        my $in_filter = {};
+        # Result in and end filter
+        my $in_filter  = {};
+        my $end_filter = {};
         foreach my $table (@$tables) {
             $in_filter = {
                 %$in_filter,
                 %{$self->{filter}{in}{$table} || {}}
-            }
+            };
+            $end_filter = {
+                %$end_filter,
+                %{$self->{filter}{end}{$table} || {}}
+            };
         }
         
         # Result
@@ -360,7 +356,8 @@ sub execute{
             filters        => $self->filters,
             filter_check   => $self->filter_check,
             default_filter => $self->{default_in_filter},
-            filter         => $in_filter || {}
+            filter         => $in_filter || {},
+            end_filter     => $end_filter || {}
         );
 
         return $result;
@@ -1028,8 +1025,8 @@ and implements the following new ones.
 
     $dbi->apply_filter(
         $table,
-        $column1 => {in => $infilter1, out => $outfilter1}
-        $column2 => {in => $infilter2, out => $outfilter2}
+        $column1 => {in => $infilter1, out => $outfilter1, end => $endfilter1}
+        $column2 => {in => $infilter2, out => $outfilter2, end =. $endfilter2}
         ...,
     );
 
@@ -1045,7 +1042,13 @@ arguments.
          param => {key1 => 1, key2 => 2},
          table => ['table1']
     );
-    
+
+You can use three name as column name.
+
+    1. column        : author
+    2. table.column  : book.author
+    3. table__column : book__author
+
 =head2 C<connect>
 
     my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=dbname",

@@ -36,7 +36,6 @@ Column names.
                                  title  => 'to_something'});
 
 Filters when parameter binding is executed.
-This overwrites C<default_filter>.
 
 =head2 C<sql>
 

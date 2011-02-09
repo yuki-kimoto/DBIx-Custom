@@ -603,6 +603,21 @@ is_deeply($row, {key1 => 6, key2 => 12}, "insert");
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
+$dbi->register_filter(three_times => sub { $_[0] * 3});
+$dbi->apply_filter(
+    'table1', 'key1' => {out => 'twice', in => 'three_times'}, 
+              'key2' => {out => 'three_times', in => 'twice'});
+$dbi->apply_filter(
+    'table1', 'key1' => {out => undef}
+); 
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$result = $dbi->execute($SELECT_SOURCES->{0});
+$row   = $result->fetch_hash_first;
+is_deeply($row, {key1 => 1, key2 => 6}, "insert");
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
     'table1', 'key1' => {out => 'twice', in => 'twice'}
 );
@@ -852,6 +867,27 @@ $result->end_filter({key1 => sub { $_[0] * 3 }, key2 => 'five_times' });
 $row = $result->fetch_hash_first;
 is_deeply($row, {key1 => 6, key2 => 40});
 
+$dbi->register_filter(five_times => sub { $_[0] * 5 });
+$dbi->apply_filter('table1',
+    key1 => {end => sub { $_[0] * 3 } },
+    key2 => {end => 'five_times'}
+);
+$result = $dbi->select(table => 'table1');
+$result->filter(key1 => sub { $_[0] * 2 }, key2 => sub { $_[0] * 4 });
+$row = $result->fetch_hash_first;
+is_deeply($row, {key1 => 6, key2 => 40}, 'apply_filter');
+
+$dbi->register_filter(five_times => sub { $_[0] * 5 });
+$dbi->apply_filter('table1',
+    key1 => {end => sub { $_[0] * 3 } },
+    key2 => {end => 'five_times'}
+);
+$result = $dbi->select(table => 'table1');
+$result->filter(key1 => sub { $_[0] * 2 }, key2 => sub { $_[0] * 4 });
+$result->filter(key1 => undef);
+$result->end_filter(key1 => undef);
+$row = $result->fetch_hash_first;
+is_deeply($row, {key1 => 1, key2 => 40}, 'apply_filter overwrite');
 
 test 'empty where select';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -1263,4 +1299,21 @@ is($table->twice(1), 2, 'inherit method');
 is($table->three_times(1), 3, 'child table method');
 eval {$dbi->base_two};
 ok($@);
+
+test 'filter __ expression';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute('create table company (id, name, location_id)');
+$dbi->execute('create table location (id, name)');
+$dbi->apply_filter('location',
+  name => {in => sub { uc $_[0] } }
+);
+
+$dbi->insert(table => 'company', param => {id => 1, name => 'a', location_id => 2});
+$dbi->insert(table => 'location', param => {id => 2, name => 'b'});
+
+$result = $dbi->select(
+    table => ['company', 'location'], relation => {'company.location_id' => 'location.id'},
+    column => ['location.name as location__name']
+);
+is($result->fetch_first->[0], 'B');
 

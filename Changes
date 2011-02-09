@@ -1,3 +1,7 @@
+0.1641
+  fix  bug : filter can't overwirite undef value.
+  add feature to apply_filter(). you can apply end filter.
+  add feature to apply_filter(). TABLE__COLUMN is filterded now.
 0.1640
   removed experimental DBIx::Custom::Table base() method
   table created by tabled method can call base_$method correponding to base_table's one
