@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1642';
+our $VERSION = '0.1643';
 
 use 5.008001;
 use strict;
@@ -208,6 +208,9 @@ sub create_query {
     
     # Set statement handle
     $query->sth($sth);
+    
+    # Set filters
+    $query->filters($self->filters);
     
     return $query;
 }

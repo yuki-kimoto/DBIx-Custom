@@ -5,7 +5,37 @@ use warnings;
 
 use base 'Object::Simple';
 
-__PACKAGE__->attr([qw/columns filter sql sth/]);
+use Carp 'croak';
+
+__PACKAGE__->attr([qw/columns sql sth filters/]);
+
+sub filter {
+    my $self = shift;
+    
+    if (@_) {
+        my $filter = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+        
+        foreach my $column (keys %$filter) {
+            my $fname = $filter->{$column};
+
+            if  (exists $filter->{$column}
+              && defined $fname
+              && ref $fname ne 'CODE') 
+            {
+              croak qq{Filter "$fname" is not registered"}
+                unless exists $self->filters->{$fname};
+              
+              $filter->{$column} = $self->filters->{$fname};
+            }
+        }
+        
+        $self->{filter} = {%{$self->filter}, %$filter};
+        
+        return $self;
+    }
+    
+    return $self->{filter} ||= {};
+}
 
 # DEPRECATED!
 __PACKAGE__->attr('default_filter');
@@ -32,8 +62,8 @@ Column names.
 =head2 C<filter>
 
     my $filter = $query->filter;
-    $query     = $query->filter({author => 'to_something',
-                                 title  => 'to_something'});
+    $query     = $query->filter(author => 'to_something',
+                                 title  => 'to_something');
 
 Filters when parameter binding is executed.
 
