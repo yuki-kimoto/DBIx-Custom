@@ -849,7 +849,6 @@ C<=>タグの場合は
 
 複数の検索条件を指定して、検索を行いたい場合があります。
 次の3つのケースのwhere句を考えてみましょう。
-下記のようなwhere句が必要になります。
 
 titleの値だけで検索したい場合
 
@@ -889,10 +888,11 @@ C<clause>の指定は入れ子にすることもでき、さらに複雑な条�
       ['or', '{= author}', '{like date}']
     ]
 
-このようにC<clause>を設定した後にC<param>にパラメータを指定します。
+これは "{=title} and ( {=author} or {like date} )" 意味しています。
+
+C<clause>を設定した後にC<param>にパラメータを指定します。
     
-    my $param => {title => 'Perl'};
-    $where->param($param);
+    $where->param({title => 'Perl'});
 
 この例ではtitleだけがパラメータに含まれています。
 
@@ -923,13 +923,10 @@ where句を作成することができます。
 
     my $param = {start_date => '2010-11-15', end_date => '2011-11-21'};
 
-また開始日付と終了日付の片方だけや、どちらも受け取らない場合もあるかもしれません。
-
-この場合は次のようなパラメータに変換することで対応することができます。
+この場合はパラメータの値を配列のリファレンスにしてください。
 
     my $p = {date => ['2010-11-15', '2011-11-21']};
 
-値が配列のリファレンスになっていることに注目してください。このようにすれば
 同名の列を含むタグに順番に埋め込むことができます。
 
     $where->clause(
@@ -941,7 +938,7 @@ where句を作成することができます。
 
     my $p = {date => [$dbi->not_exists, '2011-11-21']};
 
-L<DBIx::Custom>のC<not_exists>でDBIx::Custom::NotExistsオブジェクトを
+C<not_exists()>でDBIx::Custom::NotExistsオブジェクトを
 取得できます。これは対応する値が存在しないことを示すためのものです。
 
 また終了日付が存在しない場合は次のようなデータを作成します。
@@ -982,7 +979,7 @@ C<execute()>との連携です。SQLを作成するときに埋め込むこと�
     $where->clause(...);
     $where->param($param);
 
-    my $sql = <<"EOS"
+    my $sql = <<"EOS";
     select * from book;
     $where
     EOS

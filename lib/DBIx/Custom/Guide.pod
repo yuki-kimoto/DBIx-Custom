@@ -355,7 +355,7 @@ This is used to specify column names and table names at once
 Note that you can't use where clause in C<selection>.
 use clause like "inner join".
 
-=head3 C<execute()> SQL
+=head3 C<execute()>
 
 use C<execute()> to execute SQL
 
@@ -385,7 +385,7 @@ You don't have to wirte last semicolon in C<execute()>.
 Return value of C<select()> is L<DBIx::Custom::Result> object.
 There are many methods to fetch row.
 
-=head3 Fetch a row (array) C<fetch()>
+=head3 Fetch a row (array) : C<fetch()>
 
 use C<fetch()> to fetch a row and assign it into array reference.
 
@@ -398,7 +398,7 @@ You can get all rows.
         my $author = $row->[1];
     }
 
-=head3 Fetch only first row (array) C<fetch_first()>
+=head3 Fetch only first row (array) : C<fetch_first()>
 
 use C<fetch_first()> to fetch only first row.
 
@@ -407,7 +407,7 @@ use C<fetch_first()> to fetch only first row.
 You can't fetch rest rows
 because statement handle C<finish()> is executed.
 
-=head3 Fetch rows (array) C<fetch_multi()>
+=head3 Fetch rows (array) : C<fetch_multi()>
 
 use C<fetch_multi()> to fetch rows and assign it into
 array reference which has array references as element.
@@ -429,7 +429,7 @@ You can get the following data.
         ['Ruby', 'Mark']
     ]
 
-=head3 Fetch all rows (array) C<fetch_all>
+=head3 Fetch all rows (array) : C<fetch_all>
 
 use C<fetch_all()> to fetch all rows and assign it into
 array reference which has array reference as element.
@@ -443,7 +443,7 @@ You can get the following data.
         ['Ruby', 'Mark']
     ]
 
-=head3 Fetch a row (hash) C<fetch_hash()>
+=head3 Fetch a row (hash) : C<fetch_hash()>
 
 use C<fetch_hash()> to fetch a row and assign it into hash reference.
 
@@ -452,7 +452,7 @@ use C<fetch_hash()> to fetch a row and assign it into hash reference.
         my $author = $row->{author};
     }
 
-=head3 Fetch only first row (hash) C<fetch_hash_first()>
+=head3 Fetch only first row (hash) : C<fetch_hash_first()>
 
 use C<fetch_hash_first()> to fetch only first row
 and assign it into hash reference.
@@ -462,7 +462,7 @@ and assign it into hash reference.
 You can't fetch rest rows
 because statement handle C<finish()> is executed.
 
-=head3 Fetch rows (hash) C<fetch_hash_multi()>
+=head3 Fetch rows (hash) : C<fetch_hash_multi()>
 
 use C<fetch_hash_multi()> to fetch rows and
 assign it into array reference which has hash references as element.
@@ -483,7 +483,7 @@ You can get the following data.
         {title => 'Ruby', author => 'Mark'}
     ]
 
-=head3 Fetch all rows (hash) C<fetch_hash_all()>
+=head3 Fetch all rows (hash) : C<fetch_hash_all()>
 
 use C<fetch_hash_all()> to fetch all rows and
 assign it into array reference which has hash 
@@ -498,7 +498,7 @@ You can get the following data.
         {title => 'Ruby', author => 'Mark'}
     ]
 
-=head3 Statement handle C<sth()>
+=head3 Statement handle : C<sth()>
 
 use <sth()> to get statement handle.
 
@@ -512,7 +512,7 @@ database date format when register data into database.
 and convert database date fromat to L<Time::Piece> object
 when get data from database.
 
-=head3 Register filter C<register_filter()>
+=head3 Register filter : C<register_filter()>
 
 use C<register_filter() to register filter.
 
@@ -536,7 +536,7 @@ use C<register_filter() to register filter.
 
 Registered filter is used by C<apply_filter()> or etc.
 
-=head3 Apply filter C<apply_filter()>
+=head3 Apply filter : C<apply_filter()>
 
 use C<apply_filter()> to apply registered filter.
 
@@ -641,7 +641,7 @@ use C<end_filter()> to add end filter.
 
 In this example, L<Time::Piece> object is converted to readable format.
 
-=head3 Automate applying filter C<each_column()>
+=head3 Automate applying filter : C<each_column()>
 
 It is useful to apply filter automatically at date type columns.
 You can use C<each_column()> to process all column infos.
@@ -712,8 +712,6 @@ You have to use C<table> tag in SQL
 
 =head3 Tag list
 
-L<DBIx::Custom>では次のタグが使用可能です。
-
 The following tag is available.
 
 =head4 C<table>
@@ -779,7 +777,7 @@ In this case, You specify paramter values as array reference.
 
     my $dbi->execute($sql, param => {date => ['2010-10-01', '2012-02-10']});
 
-=head3 Register Tag C<register_tag()>
+=head3 Register Tag : C<register_tag()>
 
 You can register custom tag.
 use C<register_tag()> to register tag.
@@ -827,116 +825,107 @@ You return the following array reference.
 
 See source of L<DBIx::Custom::Tag> to see many implementation.
 
-=head2 6. Where句の動的な生成
+=head2 6. Dinamically create where clause
 
-=head3 Where句の動的な生成 where()
+=head3 Dinamically create where clause : where()
 
-複数の検索条件を指定して、検索を行いたい場合があります。
-次の3つのケースのwhere句を考えてみましょう。
-下記のようなwhere句が必要になります。
+You want to search multiple conditions in many times.
+Let's think the following three cases.
 
-titleの値だけで検索したい場合
+Case1: Search only C<title>
 
     where {= title}
 
-authorの値だけで検索したい場合
+Case2: Search only C<author>
 
     where {= author}
 
-titleとauthorの両方の値で検索したい場合
+Case3: Search C<title> and C<author>
 
     where {= title} and {=author}
 
-L<DBIx::Custom>では動的なWhere句の生成をサポートしています。
-まずC<where()>でL<DBIx::Custom::Where>オブジェクトを生成します。
+L<DBIx::Custom> support dinamic where clause creating.
+At first, create L<DBIx::Custom::Where> object by C<where()>.
 
     my $where = $dbi->where;
 
-次にC<clause()>を使用してwhere句を記述します。
+Set clause by C<clause()>
 
     $where->clause(
         ['and', '{= title'}, '{= author}']
     );
 
-clauseの指定方法は次のようになります。
+C<clause> is the following format.
 
-    ['or' あるいは 'and', タグ1, タグ2, タグ3]
+    ['or' or 'and', TAG1, TAG2, TAG3]
 
-第一引数にはorあるいはandを指定します。第二引数以降には
-検索条件をタグを使って記述します。
+First argument is 'or' or 'and'.
+Later than first argument are tag names.
 
-C<clause>の指定は入れ子にすることもでき、さらに複雑な条件
-を記述することもできます。
+You can write more complex format.
 
     ['and', 
       '{= title}', 
       ['or', '{= author}', '{like date}']
     ]
 
-このようにC<clause>を設定した後にC<param>にパラメータを指定します。
+This mean "{=title} and ( {=author} or {like date} )".
+
+After setting C<clause>, set C<param>.
     
-    my $param => {title => 'Perl'};
-    $where->param($param);
+    $where->param({title => 'Perl'});
 
-この例ではtitleだけがパラメータに含まれています。
+In this example, parameter contains only title.
 
-この後C<to_string()>を実行すると$paramに含まれるパラメータを満たす
-where句を生成することができます。
+If you execute C<string_to()>, you can get where clause
+which contain only parameter name.
 
     my $where_clause = $where->to_string;
 
-パラメータはtitleだけですので、次のようなwhere句が生成されます。
+Parameter name is only title, the following where clause is created.
 
     where {= title}
 
-またL<DBIx::Custom>は文字列の評価をオーバーロードして、C<to_string()>
-を呼び出すようにしていますので、次のようにしてwhere句を生成することも
-できます。
+You can also create where clause by stringification.
 
     my $where_clause = "$where";
 
-これはSQLの中にwhere句を埋め込むときにとても役立つ機能です。
+This is useful to embbed it into SQL. 
 
-=head3 同一の列名を含む場合
+=head3 In case where clause contains same name columns
 
-タグの中に同一の名前を持つものが存在した場合でも動的に
-where句を作成することができます。
-
-たとえば、パラメータとして開始日付と終了日付を受け取ったことを
-考えてみてください。
+Even if same name tags exists, you can create where clause.
+Let's think that there are starting date and ending date.
 
     my $param = {start_date => '2010-11-15', end_date => '2011-11-21'};
 
-また開始日付と終了日付の片方だけや、どちらも受け取らない場合もあるかもしれません。
-
-この場合は次のようなパラメータに変換することで対応することができます。
+In this case, you set parameter value as array reference.
 
     my $p = {date => ['2010-11-15', '2011-11-21']};
 
-値が配列のリファレンスになっていることに注目してください。このようにすれば
-同名の列を含むタグに順番に埋め込むことができます。
+You can embbed these values into same name tags.
 
     $where->clause(
         ['and', '{> date}', '{< date}']
     );
     $where->param($p);
 
-また開始日付が存在しない場合は次のようなデータを作成します。
+If starting date isn't exists, create the following parameter.
 
     my $p = {date => [$dbi->not_exists, '2011-11-21']};
 
-L<DBIx::Custom>のC<not_exists>でDBIx::Custom::NotExistsオブジェクトを
-取得できます。これは対応する値が存在しないことを示すためのものです。
+You can get DBIx::Custom::NotExists object by C<not_exists()>
+This mean correnspondinf value isn't exists.
 
-また終了日付が存在しない場合は次のようなデータを作成します。
+If ending date isn't exists, create the following parameter.
 
     my $p = {date => ['2010-11-15']};
 
-どちらも存在しない場合は次のようなデータを作成します。
+If both date isn't exists, create the following parameter.
 
     my $p = {date => []};
 
-少し難しいので一番簡単に作成できるロジックを示しておきます。
+This logic is a little difficut. See the following ones.
 
     my @date;
     push @date, exists $param->{start_date} ? $param->{start_date}
@@ -944,30 +933,27 @@ L<DBIx::Custom>のC<not_exists>でDBIx::Custom::NotExistsオブジェクトを
     push @date, $param->{end_date} if exists $param->{end_date};
     my $p = {date => \@date};
 
-=head3 C<select()>との連携
+=head3 With C<select()>
 
-L<DBIx::Custom::Where>オブジェクトは
-C<select()>のC<where>に直接渡すことが
-できます。
+You can pass L<DBIx::Custom::Where> object to C<where> of C<select()>.
     
     my $where = $dbi->where;
-    $where->clause(...);
-    $where->param($param);
+    $where->clause(['and', '{= title}', '{= author}']);
+    $where->param({title => 'Perl'});
     my $result = $dbi->select(table => 'book', where => $where);
 
-あるいはC<update()>、C<delete()>のwhereに指定することも可能です。
+You can also pass it to C<where> of C<update()>、C<delete()>
 
-=head3 C<execute()>との連携
+=head3 With C<execute()>
 
-C<execute()>との連携です。SQLを作成するときに埋め込むことができます。
-
+L<DBIx::Custom::Where> object is embedded into SQL.
 
     my $where = $dbi->where;
-    $where->clause(...);
-    $where->param($param);
+    $where->clause(['and', '{= title}', '{= author}']);
+    $where->param({title => 'Perl'});
 
-    my $sql = <<"EOS"
-    select * from book;
+    my $sql = <<"EOS";
+    select * from {table book};
     $where
     EOS
 
@@ -1153,7 +1139,7 @@ You can change result class. By default it is L<DBIx::Custom::Result>.
     my $dbi = DBIx::Custom->connect(...);
     $dbi->result_class('MyResult');
 
-=head3 キャッシング
+=head3 Caching
 
 SQL after parsing tag is cached for performance.
 You can set C<cache()>. By default, chaching is true.
