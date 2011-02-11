@@ -341,6 +341,20 @@ Following SQL is executed.
 C<appned> is also used at C<insert()>, C<update()>, C<update_all()>
 C<delete()>, C<delete_all()>, and C<select()>.
 
+Instead of C<column> and C<table>,
+you can use C<selection>.
+This is used to specify column names and table names at once
+
+    my $selection = <<"EOS";
+    title, author, company_name
+    from book inner join company on book.company_id = company.id
+    EOS
+
+    $dbi->select(selection => $selection);
+
+Note that you can't use where clause in C<selection>.
+use clause like "inner join".
+
 =head3 C<execute()> SQL
 
 use C<execute()> to execute SQL
@@ -562,6 +576,18 @@ You can also use column name which contains table name.
         where => {'book.issue_date' => $tp}
     );
 
+In fetching, Filter is effective if you use "TABLE__COLUMN" as column name.
+
+    my $result = $dbi->execute(
+       "select issue_date as book__issue_date from book");
+
+You can apply C<end> filter execute after C<in> filter.
+
+    $dbi->apply_filter('book',
+        issue_date => {out => 'tp_to_date', in => 'date_to_tp',
+                       end => 'tp_to_displaydate'},
+    );
+
 =head3 Individual filter C<filter>
 
 You can apply individual filter .
@@ -661,9 +687,6 @@ If you want to use these, escape it by '\';
 
 \ is perl's escape character, you need two \.
 
-C<\>自体がPerlのエスケープ文字ですので、
-C<\>は二つ必要になります。
-
 Tag is expanded before executing SQL.
 
     select * from book where title = ? and author like ?;
@@ -683,16 +706,23 @@ You can specify C<filter()> at C<execute()>.
 
 Note that at C<execute()> the filter applied by C<apply_filter()>
 don't has effective to columns.
-You need specify C<table> to have effective.
+You have to use C<table> tag in SQL
 
-    $dbi->execute($sql, param => {title => 'Perl', author => '%Ken%'}
-                  table => ['book']);
+    my $sql = "select * from {table book} where {= author} and {like title};"
 
 =head3 Tag list
 
 L<DBIx::Custom>では次のタグが使用可能です。
 
 The following tag is available.
+
+=head4 C<table>
+
+    {table NAME} -> NAME
+
+This is used to specify table name in SQL.
+If you specify table name, Filtering by 
+C<apply_filter()> is effective.
 
 =head4 C<?>
 
@@ -950,86 +980,43 @@ C<execute()>との連携です。SQLを作成するときに埋め込むことができます。
 
     $dbi->execute($sql, param => $param);
 
-=head2 7. テーブルモデル
+=head2 7. Table object
 
-=head3 テーブルオブジェクトの作成 C<table()>
+=head3 Create table object C<table()>
 
-L<DBIx::Custom>はロジックとしてテーブルを中心にすえた
-モデルの作成を支援します。
-
-アプリケーションのロジックを記述するときに、そのロジックを
-データベースのテーブルにすえることは、RDBMSを利用する
-モデルであれば、コードの重複も少なく
-わかりやすいものになります。
-
-テーブルオブジェクトを生成するにはC<table()>を使用します。
+You can create table object to access table in database.
+use C<tabel()> to create table object.
 
     my $table = $dbi->table('book');
 
-実際にデータベースにテーブルは存在している必要はありません。
-これは仮想的なテーブルオブジェクトです。これは
-L<DBIx::Customm::Table>オブジェクトになります。
-
-テーブルオブジェクトからはC<insert()>、C<update()>、C<update_all()>、
-C<delete()>、C<delete_all()>、C<select()>などのメソッド呼び出すことができます。
-L<DBIx::Custom>と異なるところは、C<table>を必ずしも指定する必要が
-ないということです。
+Return value is L<DBIx::Custom::Table>.
+From table object, you can call C<insert()>, C<update()>, C<update_all()>、
+C<delete()>, C<delete_all()>, C<select()>.
+You don't have to specify table name.
 
     $table->insert(param => $param);
 
-C<table＞の値は自動的にbookに設定されます。
-
-またテーブルオブジェクトには独自のメソッドを追加することができます。
+You can add any method to table object.
 
     $table->method(
         register => sub {
             my $self = shift;
             my $table_name = $self->name;
-            # something
+            # ...
         },
-        list => sub {
-            my $self = shift;
-            my $table_name = $self->name;
-            # something
-        }
+        list => sub { ... }
     );
 
-メソッドに渡される第一引数はL<DBIx::Custom::Table>オブジェクトです。
-C<name()>を使用して、テーブル名を取得することができます。
+You can get table name by C<name()>.
 
-このようにして登録したメソッドは直接呼び出すことができます。
+You can call these method from table object.
 
     $table->register(...);
     $table->list(...);
 
-またテーブル専用のメソッドをオーバーライドして作成することもできます。
+=head2 Use L<DBIx::Custom> and <DBI> methods
 
-    $table->method(
-        insert => sub {
-            my $self = shift;
-            
-            $self->base_insert(...);
-            
-            # something
-        }
-    );
-
-もともと存在していたC<insert()>を呼ぶにはC<base_$method>とします。L<DBIx::Custom::Table>
-のオーバーライドの機能は簡易的なものですが、とても便利です。
-
-=head2 テーブルで共有のメソッドの登録
-
-すべてのテーブルでメソッドを共有するにはC<table>メソッドでテーブルを作成する前に、
-C<base_table>にメソッドを登録しておきます。
-
-    $dbi->base_table->method(
-        count => sub {
-            my $self = shift;
-            return $self->select(column => ['count(*)']);
-        }
-    );
-
-またテーブルからはL<DBIx::Custom>とL<DBI>のすべてのメソッドを呼び出すことができます。
+You can call all methods of L<DBIx::Custom> and L<DBI>
 
     # DBIx::Custom method
     $table->execute($sql);
@@ -1038,10 +1025,40 @@ C<base_table>にメソッドを登録しておきます。
     $table->begin_work;
     $table->commit;
 
-=head2 一般的なモデルの構成
+=head2 Add table shared method
 
-一般的には、L<DBIx::Custom>を継承してコンストラクタの中に、モデルを作成
-するのがよいでしょう。
+To share methods in all tables,
+add method to base table.
+You can get base table by C<base_table()>.
+
+    $dbi->base_table->method(
+        count => sub {
+            my $self = shift;
+            return $self->select(column => ['count(*)']);
+        }
+    );
+
+This method is used by all talbes.
+
+    $dbi->table('book')->count(...);
+
+Even if same method name is added to table,
+You can use base table method by C<base_METHOD()>.
+
+    $table->method(
+        count => sub {
+            my $self = shift;
+            
+            $self->base_count(...);
+            
+            # ...
+        }
+    );
+
+=head2 Model example
+
+Generally, it is good to create model in constructor
+in the class extending L<DBIx::Custom>.
 
     package MyDBI;
     
@@ -1051,82 +1068,63 @@ C<base_table>にメソッドを登録しておきます。
         my $self = shift->SUPER::connect(@_);
         
         $self->base_table->method(
-            ... => sub { ... }
+            delete_multi => sub { ... }
         );
         
         $self->table('book')->method(
-            insert_multi => sub { ... },
-            ... => sub { ... }
+            register => sub { ... },
+            remove   => sub { ... },
         );
         
         $self->table('company')->method(
-            ... => sub { ... },
+            register => sub { ... },
+            remove   => sub { ... },
         );
     }
 
-このようにして定義しておけば、次のように利用することができます。
+You can use this class in the following way.
 
     my $dbi = MyDBI->connect(...);
-    $dbi->table('book')->insert_multi(...);
+    $dbi->table('book')->delete_multi(...);
 
-=head2 8. パフォーマンスの改善
+=head2 8. Improve performance
 
-=head3 クエリの作成
+=head3 Create query
 
-もしC<insert()>メソッドを使用してインサートを実行した場合、
-必要なパフォーマンスを得られない場合があるかもしれません。
-C<insert()>メソッドは、SQL文とステートメントハンドルを
-毎回作成するためです。
+If you can't get performance, create query by C<query> option.
+For example, many insert is needed.
 
-そのような場合は、C<query>オプションを指定することで、
-クエリを取得することができます。
+    my $params = [
+        {title => 'Perl', author => 'Ken'},
+        {title => 'Good day', author => 'Tom'}
+    ]
+    my $query = $dbi->insert(table => 'book', param => $params->[0], query => 1);
 
-    my $query = $dbi->insert(table => 'book', param => $param, query => 1);
+Return value is L<DBIx::Custom::Query> object.
+This query is executed by C<execute()>.
 
-またC<create_query()>メソッドを使って任意のSQLのクエリを作成
-することもできます。
+    foreach my $param (@$params) {
+        $dbi->execute($query, $param);
+    }
+
+Performance is improved because statement handle is reused
+C<query> option is used in C<insert()>, C<update()>, C<update_all()>,
+C<delete()>, C<delete_all()>.
+
+Note that parameters count is same as method for creating query and C<execute()>.
+
+You can create query from any SQL by C<create_query()>.
 
     my $query = $dbi->create_query(
         "insert into book {insert_param title author};";
     );
 
-戻り値はL<DBIx::Custom::Query>オブジェクトです。
-このオブジェクトはSQL文とパラメータバインド時の列名を
-保持しています。またステートメントハンドルも保持しています。
+=head2 9. Other features
 
-    {
-        sql     => 'insert into book (title, author) values (?, ?);',
-        columns => ['title', 'author'],
-        sth     => $sth
-    }
+=head3 Add method
 
-クエリオブジェクトを使って繰り返し実行するにはC<execute()>を使用します。
-    
-    my $params = [
-        {title => 'Perl',      author => 'Ken'},
-        {title => 'Good days', author => 'Mike'}
-    ];
-    
-    foreach my $param (@$paramss) {
-        $dbi->execute($query, table => 'book', param => $input);
-    }
-
-C<execute>メソッドの第一引数にクエリオブジェトを渡すことができます。
-C<insert()>メソッドよりも高速です。
-
-注意点がいくつかあります。それはパラメータの数は必ず同じでなくてはならない
-ということです。最初に3つのパラメータだけを渡したのに、次の実行では
-二つのパラメータを渡すと予期しない結果になります。それは
-動的に生成されたSQLに含まれるプレースホルダの数が異なるからです。
-またC<execute()>によっては自動的にはフィルタが有効にならないので、
-C<table>を指定する必要のあることに注意してください。
-本当に必要な場合だけ利用してください。
-
-=head2 9. その他の機能
-
-=head3 メソッドの登録
-
-メソッドを登録するにはC<method()>を使用します。
+You can add method to L<DBIx::Custom> object.
+use C<method().
 
     $dbi->method(
         update_or_insert => sub {
@@ -1139,15 +1137,14 @@ C<table>を指定する必要のあることに注意してください。
         }
     );
 
-<method()>で登録したメソッドは
-L<DBIx::Custom>オブジェクトから直接呼び出すことができます。
+You can call these methods from L<DBIx::Custom> object.
 
     $dbi->update_or_insert;
     $dbi->find_or_create;
 
-=head3 結果クラスの変更
+=head3 Change result class
 
-必要ならば結果クラスを変更することができます。
+You can change result class. By default it is L<DBIx::Custom::Result>.
 
     package MyResult;
     use base 'DBIx::Custom::Result';
@@ -1165,16 +1162,14 @@ L<DBIx::Custom>オブジェクトから直接呼び出すことができます。
 
 =head3 キャッシング
 
-タグの展開後のSQLはパフォーマンスの理由のためにキャッシュされます。
-これはC<chace>で設定でき、デフォルトではキャッシュを行う設定です。
+SQL after parsing tag is cached for performance.
+You can set C<cache()>. By default, chaching is true.
 
     $dbi->cache(1);
 
-キャッシュ方法はC<cache_method>にメソッドを指定することで
-変更することができます。
-データの保存と取得のためのメソッドを定義します。
-
-デフォルトでは次のようにメモリ上にキャッシュを行うものになっています。
+The way to cache is changed by C<cache_method()>.
+Default method is the following one.
+Cache is saved to memory.
 
     $dbi->cache_method(sub {
         sub {
@@ -1183,27 +1178,26 @@ L<DBIx::Custom>オブジェクトから直接呼び出すことができます。
             $self->{_cached} ||= {};
             
             if (@_ > 1) {
-                # Set
+                # Save cache
                 $self->{_cached}{$_[0]} = $_[1] 
             }
             else {
-                # Get
+                # Get cache
                 return $self->{_cached}{$_[0]}
             }
         }
     });
     
-第一はL<DBIx::Custom>オブジェクトです。
-第二引数はタグの展開される前のSQLです。
-第三引数はタグの展開後のSQLです。
+First argument is L<DBIx::Custom> object.
+Second argument is SQL before parsing.
+Third argument is SQL information after parsing. This is hash reference.
 
-自分で作成する場合は第三引数が存在した場合はキャッシュを設定し、
-存在しなかった場合はキャッシュを取得する実装に
-してください。
-
-=cut
+If third argument exists, you save cache,
+and if third argument isn't exists, you get chace.
 
 =head1 EXAMPLES
+
+You can see exsamples in the following wiki.
 
 L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki> - Many useful examples
 

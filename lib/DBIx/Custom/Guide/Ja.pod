@@ -348,6 +348,19 @@ C<append>はSQLの末尾に追加される文字列です。
 またC<append>は、C<select>だけでなくC<insert()>、C<update()>、C<update_all()>
 C<delete()>、C<delete_all()>、C<select()>で使用することもできます。
 
+C<column>とC<table>を使用する代わりに、C<selection>を使用することも
+できます。列名とテーブル名をまとめて指定する場合に利用します。
+    
+    my $selection = <<"EOS";
+    title, author, company_name
+    from book inner join company on book.company_id = company.id
+    EOS
+
+    $dbi->select(selection => $selection);
+
+C<selection>においてはwhere句を利用できないということに注意してください。
+"inner join"などの句を利用してください。
+
 =head3 SQLの実行 C<execute()>
 
 SQLを実行するにはC<execute()>を使用します。
@@ -575,6 +588,19 @@ L<Time::Piece>オブジェクトに変換されます。
         where => {'book.title' => 'Perl', 'book.author' => 'Ken'}
     );
 
+フェッチを行う場合に"TABLE__COLUMN"という名前を使用した場合もフィルタは
+有効になります。
+
+    my $result = $dbi->execute(
+       "select issue_date as book__issue_date from book");
+
+C<in>フィルタの後に実行されるC<end>フィルタを適用することもできます。
+
+    $dbi->apply_filter('book',
+        issue_date => {out => 'tp_to_date', in => 'date_to_tp',
+                       end => 'tp_to_displaydate'},
+    );
+
 =head3 個別のフィルタ C<filter>
 
 個別にフィルタを適用することもできます。
@@ -693,12 +719,19 @@ C<execute()>においてもC<filter>を指定することができます。
 C<execute>ではC<apply_filter()>で適用されたフィルタ
 は有効ではないということに注意してください。
 C<apply_filter()>で適用されたフィルタを有効にするには、
-C<table>を指定する必要があります。
+C<table>タグを利用します。
 
-    $dbi->execute($sql, param => {title => 'Perl', author => '%Ken%'}
-                  table => ['book']);
+    my $sql = "select * from {table book} where {= author} and {like title};"
 
 =head3 タグ一覧
+
+=head4 C<table>
+
+    {table NAME} -> NAME
+
+これはSQLの中でテーブル名を指定する場合に利用します。
+テーブル名を指定することによって、C<apply_filter()>
+によるフィルタリングが有効になります。
 
 =head4 C<?>
 
@@ -957,36 +990,25 @@ C<execute()>との連携です。SQLを作成するときに埋め込むこと�
 
     $dbi->execute($sql, param => $param);
 
-=head2 7. テーブルモデル
+=head2 7. テーブルオブジェクト
 
 =head3 テーブルオブジェクトの作成 C<table()>
 
-L<DBIx::Custom>はロジックとしてテーブルを中心にすえた
-モデルの作成を支援します。
-
-アプリケーションのロジックを記述するときに、そのロジックを
-データベースのテーブルにすえることは、RDBMSを利用する
-モデルであれば、コードの重複も少なく
-わかりやすいものになります。
+データベースのテーブルにアクセスするための
+テーブルオブジェクトを作成することができます。
 
 テーブルオブジェクトを生成するにはC<table()>を使用します。
 
     my $table = $dbi->table('book');
 
-実際にデータベースにテーブルは存在している必要はありません。
-これは仮想的なテーブルオブジェクトです。これは
-L<DBIx::Customm::Table>オブジェクトになります。
-
+戻り値はL<DBIx::Custom::Table>オブジェクトです。
 テーブルオブジェクトからはC<insert()>、C<update()>、C<update_all()>、
 C<delete()>、C<delete_all()>、C<select()>などのメソッド呼び出すことができます。
-L<DBIx::Custom>と異なるところは、C<table>を必ずしも指定する必要が
-ないということです。
+C<table>を指定する必要はありません。
 
     $table->insert(param => $param);
 
-C<table＞の値は自動的にbookに設定されます。
-
-またテーブルオブジェクトには独自のメソッドを追加することができます。
+テーブルオブジェクトには任意のメソッドを追加することができます。
 
     $table->method(
         register => sub {
@@ -994,49 +1016,19 @@ C<table＞の値は自動的にbookに設定されます。
             my $table_name = $self->name;
             # something
         },
-        list => sub {
-            my $self = shift;
-            my $table_name = $self->name;
-            # something
-        }
+        list => sub { ... },
     );
 
-メソッドに渡される第一引数はL<DBIx::Custom::Table>オブジェクトです。
 C<name()>を使用して、テーブル名を取得することができます。
 
-このようにして登録したメソッドは直接呼び出すことができます。
+このようにして登録したメソッドはテーブルオブジェクトから呼び出すことができます。
 
     $table->register(...);
     $table->list(...);
 
-またテーブル専用のメソッドをオーバーライドして作成することもできます。
+=head2 L<DBIx::Custom>と<DBI>のメソッドの利用
 
-    $table->method(
-        insert => sub {
-            my $self = shift;
-            
-            $self->base_insert(...);
-            
-            # something
-        }
-    );
-
-もともと存在していたC<insert()>を呼ぶにはC<base_$method>とします。L<DBIx::Custom::Table>
-のオーバーライドの機能は簡易的なものですが、とても便利です。
-
-=head2 テーブルで共有のメソッドの登録
-
-すべてのテーブルでメソッドを共有するにはC<table>メソッドでテーブルを作成する前に、
-C<base_table>にメソッドを登録しておきます。
-
-    $dbi->base_table->method(
-        count => sub {
-            my $self = shift;
-            return $self->select(column => ['count(*)']);
-        }
-    );
-
-またテーブルからはL<DBIx::Custom>とL<DBI>のすべてのメソッドを呼び出すことができます。
+テーブルからはL<DBIx::Custom>とL<DBI>のすべてのメソッドを呼び出すことができます。
 
     # DBIx::Custom method
     $table->execute($sql);
@@ -1045,7 +1037,37 @@ C<base_table>にメソッドを登録しておきます。
     $table->begin_work;
     $table->commit;
 
-=head2 一般的なモデルの構成
+=head2 テーブルで共有のメソッドの追加
+
+すべてのテーブルでメソッドを共有するには
+ベーステーブルにメソッドを登録します。
+ベーステーブルを取得するにはC<base_table>を使用します。
+
+    $dbi->base_table->method(
+        count => sub {
+            my $self = shift;
+            return $self->select(column => ['count(*)']);
+        }
+    );
+
+このメソッドはすべてのテーブルから利用することができます。
+
+    $dbi->table('book')->count(...);
+
+また同名のメソッドをテーブルに追加して、ベーステーブルの
+メソッドを利用したい場合はC<base_METHOD()>と記述します。
+
+    $table->method(
+        count => sub {
+            my $self = shift;
+            
+            $self->base_count(...);
+            
+            # ...
+        }
+    );
+
+=head2 モデルのサンプル
 
 一般的には、L<DBIx::Custom>を継承してコンストラクタの中に、モデルを作成
 するのがよいでしょう。
@@ -1058,82 +1080,69 @@ C<base_table>にメソッドを登録しておきます。
         my $self = shift->SUPER::connect(@_);
         
         $self->base_table->method(
-            ... => sub { ... }
+            delete_multi => sub { ... }
         );
         
         $self->table('book')->method(
-            insert_multi => sub { ... },
-            ... => sub { ... }
+            register => sub { ... },
+            remove   => sub { ... },
         );
         
         $self->table('company')->method(
-            ... => sub { ... },
+            register => sub { ... },
+            remove   => sub { ... },
         );
     }
 
-このようにして定義しておけば、次のように利用することができます。
+次のようにこのクラスを利用することができます。
 
     my $dbi = MyDBI->connect(...);
-    $dbi->table('book')->insert_multi(...);
+    $dbi->table('book')->delete_multi(...);
+    $dbi->table('book')->register(...);
 
 =head2 8. パフォーマンスの改善
 
 =head3 クエリの作成
 
-もしC<insert()>メソッドを使用してインサートを実行した場合、
-必要なパフォーマンスを得られない場合があるかもしれません。
-C<insert()>メソッドは、SQL文とステートメントハンドルを
-毎回作成するためです。
+パフォーマンスが得られない場合はC<query>オプションを使って
+クエリを作成してみてください。
 
-そのような場合は、C<query>オプションを指定することで、
-クエリを取得することができます。
+    my $params = [
+        {title => 'Perl', author => 'Ken'},
+        {title => 'Good day', author => 'Tom'}
+    ]
+    my $query = $dbi->insert(table => 'book', param => $params->[0], query => 1);
 
-    my $query = $dbi->insert(table => 'book', param => $param, query => 1);
+戻り値はL<DBIx::Custom::Query>オブジェクトです。
+作成したクエリはC<execute()>で実行することができます。
 
-またC<create_query()>メソッドを使って任意のSQLのクエリを作成
+    foreach my $param (@$params) {
+        $dbi->execute($query, $param);
+    }
+
+ステートメントハンドルが再利用されるので、パフォーマンスが
+改善されます。
+C<query>オプションはC<insert()>, C<update()>, C<update_all()>,
+C<delete()>, C<delete_all()>で利用することができます.
+
+クエリを作成するメソッドに渡すパラメータと
+C<execute()>に渡すパラメータの個数は同じでなければならない
+ことに注意してください。
+
+C<create_query()>を使って任意のSQLのクエリを作成
 することもできます。
 
     my $query = $dbi->create_query(
         "insert into book {insert_param title author};";
     );
 
-戻り値はL<DBIx::Custom::Query>オブジェクトです。
-このオブジェクトはSQL文とパラメータバインド時の列名を
-保持しています。またステートメントハンドルも保持しています。
-
-    {
-        sql     => 'insert into book (title, author) values (?, ?);',
-        columns => ['title', 'author'],
-        sth     => $sth
-    }
-
-クエリオブジェクトを使って繰り返し実行するにはC<execute()>を使用します。
-    
-    my $params = [
-        {title => 'Perl',      author => 'Ken'},
-        {title => 'Good days', author => 'Mike'}
-    ];
-    
-    foreach my $param (@$paramss) {
-        $dbi->execute($query, table => 'book', param => $input);
-    }
-
-C<execute>メソッドの第一引数にクエリオブジェトを渡すことができます。
-C<insert()>メソッドよりも高速です。
-
-注意点がいくつかあります。それはパラメータの数は必ず同じでなくてはならない
-ということです。最初に3つのパラメータだけを渡したのに、次の実行では
-二つのパラメータを渡すと予期しない結果になります。それは
-動的に生成されたSQLに含まれるプレースホルダの数が異なるからです。
-またC<execute()>によっては自動的にはフィルタが有効にならないので、
-C<table>を指定する必要のあることに注意してください。
-本当に必要な場合だけ利用してください。
 
 =head2 9. その他の機能
 
 =head3 メソッドの登録
 
-メソッドを登録するにはC<method()>を使用します。
+D<DBIx::Custom>オブジェクトにメソッドを追加することができます。
+C<method()>を使用します。
 
     $dbi->method(
         update_or_insert => sub {
@@ -1146,15 +1155,16 @@ C<table>を指定する必要のあることに注意してください。
         }
     );
 
-<method()>で登録したメソッドは
-L<DBIx::Custom>オブジェクトから直接呼び出すことができます。
+これらのメソッドは
+L<DBIx::Custom>オブジェクトから呼び出すことができます。
 
     $dbi->update_or_insert;
     $dbi->find_or_create;
 
 =head3 結果クラスの変更
 
-必要ならば結果クラスを変更することができます。
+結果クラスを変更することができます。
+デフォルトはL<DBIx::Custom::Result>です。
 
     package MyResult;
     use base 'DBIx::Custom::Result';
@@ -1172,16 +1182,14 @@ L<DBIx::Custom>オブジェクトから直接呼び出すことができます�
 
 =head3 キャッシング
 
-タグの展開後のSQLはパフォーマンスの理由のためにキャッシュされます。
+タグの解析後のSQLはパフォーマンスの理由のためにキャッシュされます。
 これはC<chace>で設定でき、デフォルトではキャッシュを行う設定です。
 
     $dbi->cache(1);
 
-キャッシュ方法はC<cache_method>にメソッドを指定することで
-変更することができます。
-データの保存と取得のためのメソッドを定義します。
-
-デフォルトでは次のようにメモリ上にキャッシュを行うものになっています。
+キャッシュ方法はC<cache_method>で変更することができます。
+デフォルトのメソッドは以下のようになっていて、
+メモリ上にキャッシュが保存されます。
 
     $dbi->cache_method(sub {
         sub {
@@ -1190,22 +1198,28 @@ L<DBIx::Custom>オブジェクトから直接呼び出すことができます�
             $self->{_cached} ||= {};
             
             if (@_ > 1) {
-                # Set
+                # キャッシュの保存
                 $self->{_cached}{$_[0]} = $_[1] 
             }
             else {
-                # Get
+                # キャッシュの取得
                 return $self->{_cached}{$_[0]}
             }
         }
     });
     
 第一はL<DBIx::Custom>オブジェクトです。
-第二引数はタグの展開される前のSQLです。
-第三引数はタグの展開後のSQLです。
+第二引数はタグが解析される前のSQLです。
+第三引数はタグの解析後のSQLの情報です。これはハッシュのリファレンスです。
 
-自分で作成する場合は第三引数が存在した場合はキャッシュを設定し、
+第三引数が存在した場合はキャッシュを設定し、
 存在しなかった場合はキャッシュを取得する実装に
 してください。
+
+=head1 サンプル
+
+以下のWikiでサンプルを見ることができます。
+
+L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
 
 =cut
