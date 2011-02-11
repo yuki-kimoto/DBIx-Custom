@@ -781,7 +781,7 @@ In this case, You specify paramter values as array reference.
 
 =head3 Register Tag C<register_tag()>
 
-You can register your tag.
+You can register custom tag.
 use C<register_tag()> to register tag.
 
     $dbi->register_tag(
@@ -792,47 +792,40 @@ use C<register_tag()> to register tag.
         }
     );
 
-ここではデフォルトのC<=>タグがどのように実装されているかを示しています。
-タグを登録する関数の引数はタグの中に書かれた引数になります。
+This is implementation of C<=> tag.
+Tag format is the following one.
 
-    {タグ名 引数1 引数2}
+    {TAG_NAME ARG1 ARG2 ...}
 
-C<=>タグの場合は
+In case C<=> tag. Format is
 
     {= title}
 
-という形式ですから、サブルーチンにはtitleというひとつの列名がわたってきます。
-
-サブルーチンの戻り値には次の形式の配列のリファレンスを返す必要があります。
+So subroutine receive one argument "title".
+You have to return array reference in the following format.
 
     [
-        展開後の文字列,
-        [プレースホルダに埋め込みに利用する列名1, 列名2, ...]
+        String after expanding,
+        [COLUMN1(This is used for place holder), COLUMN2 , ...]
     ]
 
-一つ目の要素は展開後の文字列です。この例では
+First element is expanded stirng. In this example,
 
     'title = ?'
 
-を返す必要があります。
-
-二つ目の要素はプレースホルダに埋め込みに利用する列名を含む配列の
-リファレンスです。今回の例では
+Secount element is array reference which is used to embedd value to
+place holder. In this example,
 
     ['title']
 
-を返す必要があります。複数のプレースホルダを含む場合は、この部分が
-複数になります。C<insert_param>タグやC<update_param>タグは
-この部分が実際複数になっています。
+If there are more than one placeholders,
+This elements is multipul.
 
-上記を合わせると
+You return the following array reference.
 
     ['title = ?', ['title']]
-    
-を返す必要があるということです。
 
-タグの実装の他のサンプルはL<DBIx::Custom::Tag>のソースコード
-をご覧になってみてください。
+See source of L<DBIx::Custom::Tag> to see many implementation.
 
 =head2 6. Where句の動的な生成
 
