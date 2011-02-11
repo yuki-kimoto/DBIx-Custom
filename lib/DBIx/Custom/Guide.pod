@@ -13,7 +13,7 @@ This is L<DBI> wrapper class like L<DBIx::Class> or L<DBIx::Simple>.
 You can do thing more easy than L<DBIx::Class>, more flexible
 than L<DBIx::Simple>.
 
-L<DBIx::Custom> is B<not< O/R mapper, O/R mapper is usefule, but
+L<DBIx::Custom> is not O/R mapper, O/R mapper is usefule, but
 you must learn many things. Created SQL is sometimes inefficient,
 and in many cases you create raw SQL because
 O/R mapper can't make complex SQL
@@ -514,7 +514,7 @@ when get data from database.
 
 =head3 Register filter : C<register_filter()>
 
-use C<register_filter() to register filter.
+use C<register_filter()> to register filter.
 
     $dbi->register_filter(
         # Time::Piece object to DATE format
@@ -661,7 +661,7 @@ You can use C<each_column()> to process all column infos.
         }
     );
 
-C<each_column() receive callback.
+C<each_column()> receive callback.
 callback arguments are L<DBIx::Custom> object, table name, column name, column information.
 Filter is applied automatically by column type.
 
@@ -678,7 +678,7 @@ You can embedd tag into SQL.
     {TAG_NAME ARG1 ARG2 ...}
 
 Tag start C<{> and end C<}>. 
-Don't insert space between C<{} and tag name.
+Don't insert space between C<{}> and tag name.
 
 C<{> and C<}> are reserved word.
 If you want to use these, escape it by '\';
@@ -1103,7 +1103,7 @@ You can create query from any SQL by C<create_query()>.
 =head3 Add method
 
 You can add method to L<DBIx::Custom> object.
-use C<method().
+use C<method()>.
 
     $dbi->method(
         update_or_insert => sub {

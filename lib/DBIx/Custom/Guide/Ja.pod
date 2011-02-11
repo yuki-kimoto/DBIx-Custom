@@ -1137,7 +1137,7 @@ C<create_query()>を使って任意のSQLのクエリを作成
 
 =head3 メソッドの登録
 
-D<DBIx::Custom>オブジェクトにメソッドを追加することができます。
+L<DBIx::Custom>オブジェクトにメソッドを追加することができます。
 C<method()>を使用します。
 
     $dbi->method(
