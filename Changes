@@ -1,3 +1,7 @@
+0.1645
+  removed experimental base_table() for class expandability.
+  experimental table() can't set table object any more.
+  added experimental include_table().
 0.1644
   update pod
 0.1643

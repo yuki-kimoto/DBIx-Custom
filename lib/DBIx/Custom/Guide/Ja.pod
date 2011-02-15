@@ -986,45 +986,53 @@ C<execute()>との連携です。SQLを作成するときに埋め込むこと�
 
     $dbi->execute($sql, param => $param);
 
-=head2 7. テーブルオブジェクト
+=head2 7. テーブルクラス
 
-=head3 テーブルオブジェクトの作成 C<table()>
+=head3 テーブルクラス
 
-データベースのテーブルにアクセスするための
-テーブルオブジェクトを作成することができます。
+ソースコードの見通しをよくするために、
+L<DBIx::Custom::Table>を継承してテーブルクラスを作成することができます。
 
-テーブルオブジェクトを生成するにはC<table()>を使用します。
+    package MyTable::book;
+    use base 'DBIx::Custom::Table';
+    
+    sub insert { ... }
+    sub list { ... }
 
-    my $table = $dbi->table('book');
+このクラスを取り込んで、インスタンス化することができます。
 
-戻り値はL<DBIx::Custom::Table>オブジェクトです。
-テーブルオブジェクトからはC<insert()>、C<update()>、C<update_all()>、
-C<delete()>、C<delete_all()>、C<select()>などのメソッド呼び出すことができます。
-C<table>を指定する必要はありません。
-
-    $table->insert(param => $param);
-
-テーブルオブジェクトには任意のメソッドを追加することができます。
-
-    $table->method(
-        register => sub {
-            my $self = shift;
-            my $table_name = $self->name;
-            # something
-        },
-        list => sub { ... },
+    $dbi->include_table(
+        MyTable => [
+            'book',
+        ]
     );
 
-C<name()>を使用して、テーブル名を取得することができます。
+最初の引数は名前空間です。第二引数は、クラスの末尾の名前を含む
+配列のリファレンスです。
 
-このようにして登録したメソッドはテーブルオブジェクトから呼び出すことができます。
+このテーブルは次のように利用することができます。
 
-    $table->register(...);
-    $table->list(...);
+    my $result = $dbi->table('book')->list;
 
-=head2 L<DBIx::Custom>と<DBI>のメソッドの利用
+テーブルクラスでは、テーブル名を指定することなしに
+C<insert()>, C<update()>, C<update_all()>,
+C<delete()>, C<delete_all()>, C<select()>などのメソッドを
+利用できるので
+L<DBIx::Custom>よりも少し便利です。
 
-テーブルからはL<DBIx::Custom>とL<DBI>のすべてのメソッドを呼び出すことができます。
+    $dbi->table('book')->insert(param => $param);
+
+テーブルクラスはL<DBIx::Custom::Table>です。
+
+必要であれば、C<name()>でテーブル名を取得することができます。
+
+    my $name = $table->name;
+
+L<DBIx::Custom>オブジェクトを取得することもできます。
+
+    my $dbi = $table->dbi;
+
+L<DBIx::Custom>とL<DBI>のすべてのメソッドを呼び出すこともできます。
 
     # DBIx::Custom method
     $table->execute($sql);
@@ -1033,40 +1041,9 @@ C<name()>を使用して、テーブル名を取得することができます�
     $table->begin_work;
     $table->commit;
 
-=head2 テーブルで共有のメソッドの追加
+=head2 テーブルクラスのサンプル
 
-すべてのテーブルでメソッドを共有するには
-ベーステーブルにメソッドを登録します。
-ベーステーブルを取得するにはC<base_table>を使用します。
-
-    $dbi->base_table->method(
-        count => sub {
-            my $self = shift;
-            return $self->select(column => ['count(*)']);
-        }
-    );
-
-このメソッドはすべてのテーブルから利用することができます。
-
-    $dbi->table('book')->count(...);
-
-また同名のメソッドをテーブルに追加して、ベーステーブルの
-メソッドを利用したい場合はC<base_METHOD()>と記述します。
-
-    $table->method(
-        count => sub {
-            my $self = shift;
-            
-            $self->base_count(...);
-            
-            # ...
-        }
-    );
-
-=head2 モデルのサンプル
-
-一般的には、L<DBIx::Custom>を継承してコンストラクタの中に、モデルを作成
-するのがよいでしょう。
+テーブルクラスのサンプルです。
 
     package MyDBI;
     
@@ -1075,26 +1052,25 @@ C<name()>を使用して、テーブル名を取得することができます�
     sub connect {
         my $self = shift->SUPER::connect(@_);
         
-        $self->base_table->method(
-            delete_multi => sub { ... }
-        );
-        
-        $self->table('book')->method(
-            register => sub { ... },
-            remove   => sub { ... },
-        );
-        
-        $self->table('company')->method(
-            register => sub { ... },
-            remove   => sub { ... },
+        $self->include_table(
+            MyTable => [
+                'book',
+                'company'
+            ]
         );
     }
-
-次のようにこのクラスを利用することができます。
-
-    my $dbi = MyDBI->connect(...);
-    $dbi->table('book')->delete_multi(...);
-    $dbi->table('book')->register(...);
+    
+    package MyTable::book;
+    use base 'DBIx::Custom::Table';
+    
+    sub insert { ... }
+    sub list { ... }
+    
+    package MyTable::company;
+    use base 'DBIx::Custom::Table';
+    
+    sub insert { ... }
+    sub list { ... }
 
 =head2 8. パフォーマンスの改善
 

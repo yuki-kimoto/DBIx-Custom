@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1644';
+our $VERSION = '0.1645';
 
 use 5.008001;
 use strict;
@@ -24,7 +24,6 @@ __PACKAGE__->attr(
     dbi_option    => sub { {} },
     query_builder => sub { DBIx::Custom::QueryBuilder->new },
     result_class  => 'DBIx::Custom::Result',
-    base_table    => sub { DBIx::Custom::Table->new(dbi => shift) },
     safety_column_name => sub { qr/^[\w\.]*$/ },
     stash => sub { {} }
 );
@@ -588,36 +587,53 @@ sub select {
 }
 
 sub table {
-    my $self = shift;
-    my $name = shift;
+    my ($self, $name, $table) = @_;
     
-    # Create table
-    $self->{_tables} ||= {};
-    unless (defined $self->{_tables}->{$name}) {
-        # Base table
-        my $base_table = $self->base_table;
-        
-        # Base methods
-        my $bmethods = ref $base_table->{_methods} eq 'HASH'
-                     ? $base_table->{_methods}
-                     : {};
-        
-        # Copy Methods
-        my $methods = {};
-        $methods->{$_} = $bmethods->{$_} for keys %$bmethods;
-        $methods->{"base_$_"} = $bmethods->{$_} for keys %$bmethods;
-        
-        # Create table
-        my $table = $base_table->new(
-            dbi      => $self,
-            name     => $name,
-        );
-        $table->method($methods);
-        
-        $self->{_tables}->{$name} = $table;
+    # Set
+    $self->{table} ||= {};
+    if ($table) {
+        $self->{table}{$name} = $table;
+        return $self;
     }
     
-    return $self->{_tables}{$name};
+    # Check table existance
+    croak qq{Table "$name" is not included}
+      unless $self->{table}{$name};
+    
+    # Get
+    return $self->{table}{$name};
+}
+
+sub include_table {
+    my ($self, $name_space, $table_infos) = @_;
+    
+    foreach my $table_info (@$table_infos) {
+        
+        # Table name and class
+        my $table_name;
+        my $table_class;
+        if (ref $table_info eq 'HASH') {
+            $table_name = (keys %$table_info)[0];
+            $table_class = $table_info->{$table_name};
+        }
+        else { $table_name = $table_class = $table_info }
+        my $tclass = "${name_space}::$table_class";
+        
+        # Load
+        croak qq{"$tclass" is invalid class name}
+          if $tclass =~ /[^\w:]/;
+        unless ($tclass->can('isa')) {
+            eval "use $tclass";
+            croak $@ if $@;
+        }
+        
+        # Instantiate
+        my $table = $tclass->new(dbi => $self, name => $table_name);
+        
+        # Set
+        $self->table($table_name, $table);
+    }
+    return $self;
 }
 
 our %VALID_UPDATE_ARGS
@@ -1164,6 +1180,37 @@ Argument is callback.
 You can do anything in callback.
 Callback receive four arguments, dbi object, table name,
 column name and columninformation.
+
+=head2 C<(experimental) include_table>
+
+    $dbi->include_table(
+        'MyTable' => [
+            'book', 'person', 'company'
+        ]
+    );
+
+Include tables. First argument is name space.
+Second argument is array reference of class base names.
+
+The following table is instantiated and included.
+
+    MyTable::book
+    MyTable::person
+    MyTable::company
+
+You can get these instance by C<table()>.
+
+    my $book_table = $dbi->table('book');
+
+If you want to other name as table class,
+you can do like this.
+
+    $dbi->include_table(
+        'MyTable' => [
+            {'book' => 'Book'},
+            {'person' => 'Person'}
+        ]
+    );
 
 =head2 C<(experimental) method>
 

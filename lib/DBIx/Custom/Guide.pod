@@ -959,43 +959,51 @@ L<DBIx::Custom::Where> object is embedded into SQL.
 
     $dbi->execute($sql, param => $param);
 
-=head2 7. Table object
+=head2 7. Table class
 
-=head3 Create table object C<table()>
+=head3 Define table clas
 
-You can create table object to access table in database.
-use C<tabel()> to create table object.
+You can define table class extending L<DBIx::Custom::Table>
+to improve source code view.
 
-    my $table = $dbi->table('book');
+    package MyTable::book;
+    use base 'DBIx::Custom::Table';
+    
+    sub insert { ... }
+    sub list { ... }
 
-Return value is L<DBIx::Custom::Table>.
-From table object, you can call C<insert()>, C<update()>, C<update_all()>ÅA
-C<delete()>, C<delete_all()>, C<select()>.
-You don't have to specify table name.
+You can include and instantiate this class.
 
-    $table->insert(param => $param);
-
-You can add any method to table object.
-
-    $table->method(
-        register => sub {
-            my $self = shift;
-            my $table_name = $self->name;
-            # ...
-        },
-        list => sub { ... }
+    $dbi->include_table(
+        MyTable => [
+            'book',
+        ]
     );
 
-You can get table name by C<name()>.
+First argument is name space.
+Second argument is array reference of class base names.
 
-You can call these method from table object.
+You can use this table like this.
 
-    $table->register(...);
-    $table->list(...);
+    my $result = $dbi->table('book')->list;
 
-=head2 Use L<DBIx::Custom> and <DBI> methods
+Table class is a little more useful than L<DBIx::Custom>,
+because you can use method C<insert()>, C<update()>, C<update_all()>,
+C<delete()>, C<delete_all()>, C<select()> without table name.
 
-You can call all methods of L<DBIx::Custom> and L<DBI>
+    $dbi->table('book')->insert(param => $param);
+
+This table is L<DBIx::Custom::Table> object.
+
+If you need table name, you can get C<name()>.
+
+    my $name = $table->name;
+
+You can get L<DBIx::Custom> object.
+
+    my $dbi = $table->dbi;
+
+You can also call all methods of L<DBIx::Custom> and L<DBI>.
 
     # DBIx::Custom method
     $table->execute($sql);
@@ -1004,40 +1012,9 @@ You can call all methods of L<DBIx::Custom> and L<DBI>
     $table->begin_work;
     $table->commit;
 
-=head2 Add table shared method
+=head2 Table class example
 
-To share methods in all tables,
-add method to base table.
-You can get base table by C<base_table()>.
-
-    $dbi->base_table->method(
-        count => sub {
-            my $self = shift;
-            return $self->select(column => ['count(*)']);
-        }
-    );
-
-This method is used by all talbes.
-
-    $dbi->table('book')->count(...);
-
-Even if same method name is added to table,
-You can use base table method by C<base_METHOD()>.
-
-    $table->method(
-        count => sub {
-            my $self = shift;
-            
-            $self->base_count(...);
-            
-            # ...
-        }
-    );
-
-=head2 Model example
-
-Generally, it is good to create model in constructor
-in the class extending L<DBIx::Custom>.
+Model example.
 
     package MyDBI;
     
@@ -1046,25 +1023,25 @@ in the class extending L<DBIx::Custom>.
     sub connect {
         my $self = shift->SUPER::connect(@_);
         
-        $self->base_table->method(
-            delete_multi => sub { ... }
-        );
-        
-        $self->table('book')->method(
-            register => sub { ... },
-            remove   => sub { ... },
-        );
-        
-        $self->table('company')->method(
-            register => sub { ... },
-            remove   => sub { ... },
+        $self->include_table(
+            MyTable => [
+                'book',
+                'company'
+            ]
         );
     }
-
-You can use this class in the following way.
-
-    my $dbi = MyDBI->connect(...);
-    $dbi->table('book')->delete_multi(...);
+    
+    package MyTable::book;
+    use base 'DBIx::Custom::Table';
+    
+    sub insert { ... }
+    sub list { ... }
+    
+    package MyTable::company;
+    use base 'DBIx::Custom::Table';
+    
+    sub insert { ... }
+    sub list { ... }
 
 =head2 8. Improve performance
 

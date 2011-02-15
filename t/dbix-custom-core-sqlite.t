@@ -15,6 +15,9 @@ BEGIN {
     use_ok('DBIx::Custom');
 }
 
+use FindBin;
+use lib "$FindBin::Bin/dbix-custom-core-sqlite";
+
 # Function for test name
 sub test { print "# $_[0]\n" }
 
@@ -732,54 +735,6 @@ is_deeply($infos,
     
 );
 
-test 'table';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->execute($CREATE_TABLE->{0});
-$table = $dbi->table('table1');
-$table->insert(param => {key1 => 1, key2 => 2});
-$table->insert(param => {key1 => 3, key2 => 4});
-$rows = $table->select->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}],
-                 "select");
-$rows = $table->select(where => {key2 => 2}, append => 'order by key1',
-                              column => ['key1', 'key2'])->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 2}],
-                 "insert insert select");
-$table->update(param => {key1 => 3}, where => {key2 => 2});
-$table->update(param => {key1 => 5}, where => {key2 => 4});
-$rows = $table->select(where => {key2 => 2})->fetch_hash_all;
-is_deeply($rows, [{key1 => 3, key2 => 2}],
-                 "update");
-$table->delete(where => {key2 => 2});
-$rows = $table->select->fetch_hash_all;
-is_deeply($rows, [{key1 => 5, key2 => 4}], "delete");
-$table->update_all(param => {key1 => 3});
-$rows = $table->select->fetch_hash_all;
-is_deeply($rows, [{key1 => 3, key2 => 4}], "update_all");
-$table->delete_all;
-$rows = $table->select->fetch_hash_all;
-is_deeply($rows, [], "delete_all");
-
-$dbi->dbh->do($CREATE_TABLE->{2});
-$dbi->table('table2')->method(
-    ppp => sub {
-        my $self = shift;
-    
-        return $self->name;
-    }
-);
-is($dbi->table('table2')->ppp, 'table2', "method");
-
-$dbi->table('table2')->method({
-    qqq => sub {
-        my $self = shift;
-    
-        return $self->name;
-    }
-});
-is($dbi->table('table2')->qqq, 'table2', "method");
-
-
 test 'limit';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -1272,10 +1227,6 @@ ok(!defined $result->default_filter);
 $result->default_filter('one');
 is($result->default_filter->(), 1);
 
-$dbi->table('book');
-eval{$dbi->table('book')->no_exists};
-like($@, qr/locate/);
-
 test 'dbi_option';
 $dbi = DBIx::Custom->connect(data_source => 'dbi:SQLite:dbname=:memory:',
                              dbi_option => {PrintError => 1});
@@ -1289,28 +1240,6 @@ $result = DBIx::Custom::Result->new;
 is_deeply($result->stash, {}, 'default');
 $result->stash->{foo} = 1;
 is($result->stash->{foo}, 1, 'get and set');
-
-test 'base_table';
-$dbi = DBIx::Custom->new;
-$dbi->base_table->method(
-    twice => sub {
-        my $self = shift;
-        
-        return $_[0] * 2;
-    }
-);
-$table = $dbi->table('book');
-$table->method(
-    three_times => sub {
-        my $self = shift;
-        return  $_[0] * 3;
-    }
-);
-is($table->base_twice(1), 2, 'method');
-is($table->twice(1), 2, 'inherit method');
-is($table->three_times(1), 3, 'child table method');
-eval {$dbi->base_two};
-ok($@);
 
 test 'filter __ expression';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -1335,3 +1264,85 @@ $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(selection => '* from table1', where => {key1 => 1});
 is_deeply($result->fetch_hash_all, [{key1 => 1, key2 => 2}]);
+
+test 'Table class';
+use MyDBI1;
+$dbi = MyDBI1->connect($NEW_ARGS->{0});
+$dbi->execute("create table book (title, author)");
+$table = $dbi->table('book');
+$table->insert({title => 'a', author => 'b'});
+is_deeply($table->list->fetch_hash_all, [{title => 'a', author => 'b'}], 'basic');
+$dbi->execute("create table company (name)");
+$table = $dbi->table('company');
+$table->insert({name => 'a'});
+is_deeply($table->list->fetch_hash_all, [{name => 'a'}], 'basic');
+
+$dbi->table('book');
+eval{$dbi->table('book')->no_exists};
+like($@, qr/locate/);
+
+{
+    package MyDBI4;
+
+    use strict;
+    use warnings;
+
+    use base 'DBIx::Custom';
+
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_table(
+            MyTable2 => [
+                'book',
+                {company => 'Company'}
+            ]
+        );
+    }
+
+    package MyTable2::Base1;
+
+    use strict;
+    use warnings;
+
+    use base 'DBIx::Custom::Table';
+
+    package MyTable2::book;
+
+    use strict;
+    use warnings;
+
+    use base 'MyTable2::Base1';
+
+    sub insert {
+        my ($self, $param) = @_;
+        
+        return $self->SUPER::insert(param => $param);
+    }
+
+    sub list { shift->select; }
+
+    package MyTable2::Company;
+
+    use strict;
+    use warnings;
+
+    use base 'MyTable2::Base1';
+
+    sub insert {
+        my ($self, $param) = @_;
+        
+        return $self->SUPER::insert(param => $param);
+    }
+
+    sub list { shift->select; }
+}
+$dbi = MyDBI4->connect($NEW_ARGS->{0});
+$dbi->execute("create table book (title, author)");
+$table = $dbi->table('book');
+$table->insert({title => 'a', author => 'b'});
+is_deeply($table->list->fetch_hash_all, [{title => 'a', author => 'b'}], 'basic');
+$dbi->execute("create table company (name)");
+$table = $dbi->table('company');
+$table->insert({name => 'a'});
+is_deeply($table->list->fetch_hash_all, [{name => 'a'}], 'basic');
