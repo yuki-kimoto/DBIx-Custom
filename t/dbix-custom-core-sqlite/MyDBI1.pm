@@ -8,8 +8,8 @@ use base 'DBIx::Custom';
 sub connect {
     my $self = shift->SUPER::connect(@_);
     
-    $self->include_table(
-        MyTable1 => [
+    $self->include_model(
+        MyModel1 => [
             'book',
             {company => 'Company'}
         ]

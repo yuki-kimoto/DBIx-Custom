@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1645';
+our $VERSION = '0.1646';
 
 use 5.008001;
 use strict;
@@ -14,7 +14,7 @@ use DBIx::Custom::Result;
 use DBIx::Custom::Query;
 use DBIx::Custom::QueryBuilder;
 use DBIx::Custom::Where;
-use DBIx::Custom::Table;
+use DBIx::Custom::Model;
 use DBIx::Custom::Tag;
 use Encode qw/encode_utf8 decode_utf8/;
 
@@ -63,11 +63,15 @@ sub AUTOLOAD {
 
     # Method
     $self->{_methods} ||= {};
-    my $method = $self->{_methods}->{$mname};
-    return $self->$method(@_) if $method;
-    
-    # DBI method
-    return $self->dbh->$mname(@_);
+    if (my $method = $self->{_methods}->{$mname}) {
+        return $self->$method(@_)
+    }
+    elsif ($self->dbh->can($mname)) {
+        $self->dbh->$mname(@_);
+    }
+    else {
+        croak qq/Can't locate object method "$mname" via "$package"/
+    }
 }
 
 sub apply_filter {
@@ -586,52 +590,75 @@ sub select {
     return $result;
 }
 
-sub table {
-    my ($self, $name, $table) = @_;
+sub model {
+    my ($self, $name, $model) = @_;
     
     # Set
-    $self->{table} ||= {};
-    if ($table) {
-        $self->{table}{$name} = $table;
+    $self->{model} ||= {};
+    if ($model) {
+        $self->{model}{$name} = $model;
         return $self;
     }
     
-    # Check table existance
-    croak qq{Table "$name" is not included}
-      unless $self->{table}{$name};
+    # Check model existance
+    croak qq{Model "$name" is not included}
+      unless $self->{model}{$name};
     
     # Get
-    return $self->{table}{$name};
+    return $self->{model}{$name};
 }
 
-sub include_table {
-    my ($self, $name_space, $table_infos) = @_;
+sub include_model {
+    my ($self, $name_space, $model_infos) = @_;
     
-    foreach my $table_info (@$table_infos) {
+    $name_space ||= '';
+    unless ($model_infos) {
+        # Load name space module
+        croak qq{"$name_space" is invalid class name}
+          if $name_space =~ /[^\w:]/;
+        eval "use $name_space";
+        croak qq{Name space module "$name_space.pm" is needed. $@} if $@;
         
-        # Table name and class
-        my $table_name;
-        my $table_class;
-        if (ref $table_info eq 'HASH') {
-            $table_name = (keys %$table_info)[0];
-            $table_class = $table_info->{$table_name};
+        # Search model modules
+        my $path = $INC{"$name_space.pm"};
+        $path =~ s/\.pm$//;
+        opendir my $dh, $path
+          or croak qq{Can't open directory "$path": $!};
+        $model_infos = [];
+        while (my $module = readdir $dh) {
+            push @$model_infos, $module
+              if $module =~ s/\.pm$//;
         }
-        else { $table_name = $table_class = $table_info }
-        my $tclass = "${name_space}::$table_class";
+        
+        close $dh;
+    }
+    
+    foreach my $model_info (@$model_infos) {
+        
+        # Model name and class
+        my $model_name;
+        my $model_class;
+        if (ref $model_info eq 'HASH') {
+            $model_name = (keys %$model_info)[0];
+            $model_class = $model_info->{$model_name};
+        }
+        else { $model_name = $model_class = $model_info }
+        my $mclass = "${name_space}::$model_class";
         
         # Load
-        croak qq{"$tclass" is invalid class name}
-          if $tclass =~ /[^\w:]/;
-        unless ($tclass->can('isa')) {
-            eval "use $tclass";
+        croak qq{"$mclass" is invalid class name}
+          if $mclass =~ /[^\w:]/;
+        unless ($mclass->can('isa')) {
+            eval "use $mclass";
             croak $@ if $@;
         }
         
         # Instantiate
-        my $table = $tclass->new(dbi => $self, name => $table_name);
+        my $model = $mclass->new(dbi => $self);
+        $model->table($model_name) unless $model->table;
         
         # Set
-        $self->table($table_name, $table);
+        $self->model($model_name, $model);
     }
     return $self;
 }
@@ -1181,32 +1208,44 @@ You can do anything in callback.
 Callback receive four arguments, dbi object, table name,
 column name and columninformation.
 
-=head2 C<(experimental) include_table>
+=head2 C<(experimental) include_model>
 
-    $dbi->include_table(
-        'MyTable' => [
+    $dbi->include_model(
+        'MyModel' => [
             'book', 'person', 'company'
         ]
     );
 
-Include tables. First argument is name space.
+Include models. First argument is name space.
 Second argument is array reference of class base names.
 
-The following table is instantiated and included.
+If you don't specify second argument, All models under name space is
+included.
 
-    MyTable::book
-    MyTable::person
-    MyTable::company
+    $dbi->include_model('MyModel');
 
-You can get these instance by C<table()>.
+Note that in this case name spece module is needed.
 
-    my $book_table = $dbi->table('book');
+    # MyModel.pm
+    package MyModel;
+    
+    use base 'DBIx::Custom::Model';
 
-If you want to other name as table class,
+The following model is instantiated and included.
+
+    MyModel::book
+    MyModel::person
+    MyModel::company
+
+You can get these instance by C<model()>.
+
+    my $book_model = $dbi->model('book');
+
+If you want to other name as model class,
 you can do like this.
 
-    $dbi->include_table(
-        'MyTable' => [
+    $dbi->include_model(
+        'MyModel' => [
             {'book' => 'Book'},
             {'person' => 'Person'}
         ]
@@ -1341,17 +1380,16 @@ default to 0. This is experimental.
 This is overwrites C<default_bind_filter>.
 Return value of C<update()> is the count of affected rows.
 
-=head2 C<(experimental) table>
+=head2 C<(experimental) model>
 
-    $dbi->table('book')->method(
+    $dbi->model('book')->method(
         insert => sub { ... },
         update => sub { ... }
     );
     
-    my $table = $dbi->table('book');
+    my $model = $dbi->model('book');
 
-Create a L<DBIx::Custom::Table> object,
-or get a L<DBIx::Custom::Table> object.
+Set and get a L<DBIx::Custom::Model> object,
 
 =head2 C<update_all>
 

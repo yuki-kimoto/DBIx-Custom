@@ -959,23 +959,23 @@ L<DBIx::Custom::Where> object is embedded into SQL.
 
     $dbi->execute($sql, param => $param);
 
-=head2 7. Table class
+=head2 7. Model
 
-=head3 Define table clas
+=head3 Model
 
-You can define table class extending L<DBIx::Custom::Table>
+you can define model extending L<DBIx::Custom::Model>
 to improve source code view.
 
-    package MyTable::book;
-    use base 'DBIx::Custom::Table';
+    package MyModel::book;
+    use base 'DBIx::Custom::Model';
     
     sub insert { ... }
     sub list { ... }
 
-You can include and instantiate this class.
+You can include and instantiate this class
 
-    $dbi->include_table(
-        MyTable => [
+    $dbi->include_model(
+        MyModel => [
             'book',
         ]
     );
@@ -983,38 +983,57 @@ You can include and instantiate this class.
 First argument is name space.
 Second argument is array reference of class base names.
 
-You can use this table like this.
+If you don't specify second argument, All models under name space is
+included.
 
-    my $result = $dbi->table('book')->list;
+    $dbi->include_model('MyModel');
 
-Table class is a little more useful than L<DBIx::Custom>,
-because you can use method C<insert()>, C<update()>, C<update_all()>,
-C<delete()>, C<delete_all()>, C<select()> without table name.
+Note that in this case name spece module is needed.
 
-    $dbi->table('book')->insert(param => $param);
+    # MyModel.pm
+    package MyModel;
+    
+    use base 'DBIx::Custom::Model';
 
-This table is L<DBIx::Custom::Table> object.
+The follwoing modules location is needed.
 
-If you need table name, you can get C<name()>.
+    MyModel.pm
+    MyModel / book.pm
+            / company.pm
+    
+You can use model like this.
 
-    my $name = $table->name;
+    my $result = $dbi->model('book')->list;
 
-You can get L<DBIx::Custom> object.
+In mode, You can use such as methods,
+C<insert()>, C<update()>, C<update_all()>,
+C<delete()>, C<delete_all()>, C<select()>
+without C<table> option.
 
-    my $dbi = $table->dbi;
+    $dbi->model('book')->insert(param => $param);
 
-You can also call all methods of L<DBIx::Custom> and L<DBI>.
+Model is L<DBIx::Custom::Model>.
+
+If you need table nameÅAyou can get it by C<table()>.
+
+    my $table = $model->table;
+
+You can get L<DBIx::Custom>.
+
+    my $dbi = $model->dbi;
+
+You can also call all methods of L<DBIx::Custom> and L<DBI>. 
 
     # DBIx::Custom method
-    $table->execute($sql);
+    $model->execute($sql);
     
     # DBI method
-    $table->begin_work;
-    $table->commit;
+    $model->begin_work;
+    $model->commit;
 
-=head2 Table class example
+=head2 Model Examples
 
-Model example.
+Model examples
 
     package MyDBI;
     
@@ -1023,22 +1042,22 @@ Model example.
     sub connect {
         my $self = shift->SUPER::connect(@_);
         
-        $self->include_table(
-            MyTable => [
+        $self->include_model(
+            MyModel => [
                 'book',
                 'company'
             ]
         );
     }
     
-    package MyTable::book;
-    use base 'DBIx::Custom::Table';
+    package MyModel::book;
+    use base 'DBIx::Custom::Model';
     
     sub insert { ... }
     sub list { ... }
     
-    package MyTable::company;
-    use base 'DBIx::Custom::Table';
+    package MyModel::company;
+    use base 'DBIx::Custom::Model';
     
     sub insert { ... }
     sub list { ... }

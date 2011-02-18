@@ -62,7 +62,7 @@ my $insert_query;
 my $update_query;
 my $ret_val;
 my $infos;
-my $table;
+my $model;
 my $where;
 
 # Prepare table
@@ -1265,20 +1265,20 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(selection => '* from table1', where => {key1 => 1});
 is_deeply($result->fetch_hash_all, [{key1 => 1, key2 => 2}]);
 
-test 'Table class';
+test 'Model class';
 use MyDBI1;
 $dbi = MyDBI1->connect($NEW_ARGS->{0});
 $dbi->execute("create table book (title, author)");
-$table = $dbi->table('book');
-$table->insert({title => 'a', author => 'b'});
-is_deeply($table->list->fetch_hash_all, [{title => 'a', author => 'b'}], 'basic');
+$model = $dbi->model('book');
+$model->insert({title => 'a', author => 'b'});
+is_deeply($model->list->fetch_hash_all, [{title => 'a', author => 'b'}], 'basic');
 $dbi->execute("create table company (name)");
-$table = $dbi->table('company');
-$table->insert({name => 'a'});
-is_deeply($table->list->fetch_hash_all, [{name => 'a'}], 'basic');
+$model = $dbi->model('company');
+$model->insert({name => 'a'});
+is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'basic');
 
-$dbi->table('book');
-eval{$dbi->table('book')->no_exists};
+$dbi->model('book');
+eval{$dbi->model('book')->no_exists};
 like($@, qr/locate/);
 
 {
@@ -1292,27 +1292,27 @@ like($@, qr/locate/);
     sub connect {
         my $self = shift->SUPER::connect(@_);
         
-        $self->include_table(
-            MyTable2 => [
+        $self->include_model(
+            MyModel2 => [
                 'book',
                 {company => 'Company'}
             ]
         );
     }
 
-    package MyTable2::Base1;
+    package MyModel2::Base1;
 
     use strict;
     use warnings;
 
-    use base 'DBIx::Custom::Table';
+    use base 'DBIx::Custom::Model';
 
-    package MyTable2::book;
+    package MyModel2::book;
 
     use strict;
     use warnings;
 
-    use base 'MyTable2::Base1';
+    use base 'MyModel2::Base1';
 
     sub insert {
         my ($self, $param) = @_;
@@ -1322,12 +1322,12 @@ like($@, qr/locate/);
 
     sub list { shift->select; }
 
-    package MyTable2::Company;
+    package MyModel2::Company;
 
     use strict;
     use warnings;
 
-    use base 'MyTable2::Base1';
+    use base 'MyModel2::Base1';
 
     sub insert {
         my ($self, $param) = @_;
@@ -1339,10 +1339,34 @@ like($@, qr/locate/);
 }
 $dbi = MyDBI4->connect($NEW_ARGS->{0});
 $dbi->execute("create table book (title, author)");
-$table = $dbi->table('book');
-$table->insert({title => 'a', author => 'b'});
-is_deeply($table->list->fetch_hash_all, [{title => 'a', author => 'b'}], 'basic');
+$model = $dbi->model('book');
+$model->insert({title => 'a', author => 'b'});
+is_deeply($model->list->fetch_hash_all, [{title => 'a', author => 'b'}], 'basic');
 $dbi->execute("create table company (name)");
-$table = $dbi->table('company');
-$table->insert({name => 'a'});
-is_deeply($table->list->fetch_hash_all, [{name => 'a'}], 'basic');
+$model = $dbi->model('company');
+$model->insert({name => 'a'});
+is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'basic');
+
+{
+     package MyDBI5;
+
+    use strict;
+    use warnings;
+
+    use base 'DBIx::Custom';
+
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel4');
+    }
+}
+$dbi = MyDBI5->connect($NEW_ARGS->{0});
+$dbi->execute("create table company (name)");
+$model = $dbi->model('company');
+$model->insert({name => 'a'});
+is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'include all model');
+$model = $dbi->model('book');
+is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'include all model');
+
+

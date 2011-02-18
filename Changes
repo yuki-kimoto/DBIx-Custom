@@ -1,3 +1,9 @@
+0.1646
+  add feture. all model class in namespace is included by include_model
+  rename experimental include_table to include_model
+  rename experimental table to model
+  rename experimental DBIx::Custom::Table to DBIx::Custom::Model
+  remame experimental DBIx::Custom::Table::name() to DBIx::Custom::Model::table();
 0.1645
   removed experimental base_table() for class expandability.
   experimental table() can't set table object any more.

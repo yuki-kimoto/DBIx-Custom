@@ -1,4 +1,4 @@
-package DBIx::Custom::Table;
+package DBIx::Custom::Model;
 
 use strict;
 use warnings;
@@ -10,7 +10,7 @@ use Carp 'croak';
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-__PACKAGE__->attr(['dbi', 'name']);
+__PACKAGE__->attr(['dbi', 'table']);
 
 our $AUTOLOAD;
 
@@ -22,14 +22,18 @@ sub AUTOLOAD {
 
     # Method
     $self->{_methods} ||= {};
-    
-    # Method
     if (my $method = $self->{_methods}->{$mname}) {
         return $self->$method(@_)
     }
-    
-    # DBI method
-    return $self->dbi->$mname(@_);
+    elsif ($self->dbi->can($mname)) {
+        $self->dbi->$mname(@_);
+    }
+    elsif ($self->dbi->dbh->can($mname)) {
+        $self->dbi->dbh->$mname(@_);
+    }
+    else {
+        croak qq/Can't locate object method "$mname" via "$package"/
+    }
 }
 
 sub method {
@@ -51,7 +55,7 @@ sub new {
         $self->method(
             $method => sub {
                 my $self = shift;
-                return $self->dbi->$method(table => $self->name, @_);
+                return $self->dbi->$method(table => $self->table, @_);
             }
         );
     }
@@ -71,7 +75,7 @@ DBIx::Custom::Table - Table base class(experimental)
 
 use DBIx::Custom::Table;
 
-my $table = DBIx::Custom::Table->new(name => 'books');
+my $table = DBIx::Custom::Model->new(table => 'books');
 
 =head1 METHODS
 

@@ -986,23 +986,23 @@ C<execute()>との連携です。SQLを作成するときに埋め込むこと�
 
     $dbi->execute($sql, param => $param);
 
-=head2 7. テーブルクラス
+=head2 7. モデル
 
-=head3 テーブルクラス
+=head3 モデル
 
 ソースコードの見通しをよくするために、
-L<DBIx::Custom::Table>を継承してテーブルクラスを作成することができます。
+L<DBIx::Custom::Model>を継承してモデルを作成することができます。
 
-    package MyTable::book;
-    use base 'DBIx::Custom::Table';
+    package MyModel::book;
+    use base 'DBIx::Custom::Model';
     
     sub insert { ... }
     sub list { ... }
 
 このクラスを取り込んで、インスタンス化することができます。
 
-    $dbi->include_table(
-        MyTable => [
+    $dbi->include_model(
+        MyModel => [
             'book',
         ]
     );
@@ -1010,40 +1010,58 @@ L<DBIx::Custom::Table>を継承してテーブルクラスを作成すること�
 最初の引数は名前空間です。第二引数は、クラスの末尾の名前を含む
 配列のリファレンスです。
 
-このテーブルは次のように利用することができます。
+第二引数を指定しなかった場合は、名前空間以下にあるすべてのモデル
+が取り込まれます。
 
-    my $result = $dbi->table('book')->list;
+    $dbi->include_model('MyModel');
 
-テーブルクラスでは、テーブル名を指定することなしに
+ただし、名前空間名そのものを表すモジュールが
+存在していることが必要なことに注意してください。
+
+    # MyModel.pm
+    package MyModel;
+    
+    use base 'DBIx::Custom::Model';
+
+次のようなモジュールの配置が必要です。
+
+    MyModel.pm
+    MyModel / book.pm
+            / company.pm
+    
+モデルは次のように利用することができます。
+
+    my $result = $dbi->model('book')->list;
+
+モデルではテーブル名を指定することなしに
 C<insert()>, C<update()>, C<update_all()>,
 C<delete()>, C<delete_all()>, C<select()>などのメソッドを
-利用できるので
-L<DBIx::Custom>よりも少し便利です。
+利用できます。
 
-    $dbi->table('book')->insert(param => $param);
+    $dbi->model('book')->insert(param => $param);
 
-テーブルクラスはL<DBIx::Custom::Table>です。
+モデルはL<DBIx::Custom::Model>です。
 
-必要であれば、C<name()>でテーブル名を取得することができます。
+必要であれば、C<table()>でテーブル名を取得することができます。
 
-    my $name = $table->name;
+    my $table = $model->table;
 
 L<DBIx::Custom>オブジェクトを取得することもできます。
 
-    my $dbi = $table->dbi;
+    my $dbi = $model->dbi;
 
 L<DBIx::Custom>とL<DBI>のすべてのメソッドを呼び出すこともできます。
 
     # DBIx::Custom method
-    $table->execute($sql);
+    $model->execute($sql);
     
     # DBI method
-    $table->begin_work;
-    $table->commit;
+    $model->begin_work;
+    $model->commit;
 
-=head2 テーブルクラスのサンプル
+=head2 モデルのサンプル
 
-テーブルクラスのサンプルです。
+モデルのサンプルです。
 
     package MyDBI;
     
@@ -1052,22 +1070,22 @@ L<DBIx::Custom>とL<DBI>のすべてのメソッドを呼び出すこともで�
     sub connect {
         my $self = shift->SUPER::connect(@_);
         
-        $self->include_table(
-            MyTable => [
+        $self->include_model(
+            MyModel => [
                 'book',
                 'company'
             ]
         );
     }
     
-    package MyTable::book;
-    use base 'DBIx::Custom::Table';
+    package MyModel::book;
+    use base 'DBIx::Custom::Model';
     
     sub insert { ... }
     sub list { ... }
     
-    package MyTable::company;
-    use base 'DBIx::Custom::Table';
+    package MyModel::company;
+    use base 'DBIx::Custom::Model';
     
     sub insert { ... }
     sub list { ... }

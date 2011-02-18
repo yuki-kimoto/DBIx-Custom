@@ -1,9 +1,9 @@
-package MyTable1::Company;
+package MyModel1::Company;
 
 use strict;
 use warnings;
 
-use base 'DBIx::Custom::Table';
+use base 'DBIx::Custom::Model';
 
 
 sub insert {
