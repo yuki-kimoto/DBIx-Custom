@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1646';
+our $VERSION = '0.1647';
 
 use 5.008001;
 use strict;
@@ -21,7 +21,12 @@ use Encode qw/encode_utf8 decode_utf8/;
 __PACKAGE__->attr(
     [qw/data_source dbh password user/],
     cache => 1,
-    dbi_option    => sub { {} },
+    dbi_option => sub { {} },
+    default_dbi_option => sub {{
+        RaiseError => 1,
+        PrintError => 0,
+        AutoCommit => 1
+    }},
     query_builder => sub { DBIx::Custom::QueryBuilder->new },
     result_class  => 'DBIx::Custom::Result',
     safety_column_name => sub { qr/^[\w\.]*$/ },
@@ -156,9 +161,7 @@ sub connect {
         $user,
         $password,
         {
-            RaiseError => 1,
-            PrintError => 0,
-            AutoCommit => 1,
+            %{$self->default_dbi_option},
             %$dbi_option
         }
     )};
@@ -1025,6 +1028,23 @@ L<DBI> object. You can call all methods of L<DBI>.
     $dbi            = $dbi->dbi_option($dbi_option);
 
 DBI options.
+
+Each option specified can ovewrite C<default_dbi_option>.
+
+C<connect()> method use this value to connect the database.
+
+
+=head2 C<default_dbi_option>
+
+    my $default_dbi_option = $dbi->default_dbi_option;
+    $dbi            = $dbi->default_dbi_option($default_dbi_option);
+
+DBI default options.
+
+    RaiseError => 1,
+    PrintError => 0,
+    AutoCommit => 1,
+
 C<connect()> method use this value to connect the database.
 
 Default filter when row is fetched.

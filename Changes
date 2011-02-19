@@ -1,3 +1,5 @@
+0.1647
+  add default_dbi_option()
 0.1646
   add feture. all model class in namespace is included by include_model
   rename experimental include_table to include_model
