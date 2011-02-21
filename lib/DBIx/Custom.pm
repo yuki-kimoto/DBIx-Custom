@@ -607,7 +607,7 @@ sub select {
     push @sql, $swhere;
     
     # Relation
-    if ($relation) {
+    if (!$selection && $relation) {
         push @sql, $swhere eq '' ? 'where' : 'and';
         foreach my $rcolumn (keys %$relation) {
             push @sql, ("$rcolumn = " . $relation->{$rcolumn},  'and');

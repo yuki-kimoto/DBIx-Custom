@@ -1,4 +1,5 @@
 0.1648
+  add experimental DBIx::Custom::Model relation() attribute
   add experimental update_at(), delete_at(), select_at()
   add experimental setup_model()
   add experimental DBIx::Custom::Model columns attirbute

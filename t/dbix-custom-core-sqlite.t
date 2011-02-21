@@ -1500,3 +1500,9 @@ is($row->{key2}, 2);
 is($row->{key3}, 3);
 
 
+test 'columns';
+use MyDBI1;
+$dbi = MyDBI1->connect($NEW_ARGS->{0});
+$model = $dbi->model('book');
+$model->relation({'book.id' => 'company.id'});
+is_deeply($model->relation, {'book.id' => 'company.id'});

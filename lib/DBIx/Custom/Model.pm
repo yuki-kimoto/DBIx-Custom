@@ -13,7 +13,8 @@ push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 __PACKAGE__->attr(
     ['dbi', 'table'],
     columns => sub { [] },
-    primary_key => sub { [] }
+    primary_key => sub { [] },
+    relation => sub { {} }
 );
 
 our $AUTOLOAD;
