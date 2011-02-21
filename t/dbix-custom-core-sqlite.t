@@ -1385,3 +1385,12 @@ $model = $dbi->model('book');
 $model->columns(['id', 'number']);
 is_deeply($model->columns, ['id', 'number']);
 
+test 'setup_model';
+use MyDBI1;
+$dbi = MyDBI1->connect($NEW_ARGS->{0});
+$dbi->execute('create table book (id)');
+$dbi->execute('create table company (id, name);');
+$dbi->execute('create table test (id, name, primary key (id, name));');
+$dbi->setup_model;
+is_deeply($dbi->model('book')->columns, ['id']);
+is_deeply($dbi->model('company')->columns, ['id', 'name']);

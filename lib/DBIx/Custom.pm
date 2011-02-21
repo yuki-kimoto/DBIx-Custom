@@ -666,6 +666,20 @@ sub include_model {
     return $self;
 }
 
+sub setup_model {
+    my $self = shift;
+    
+    $self->each_column(
+        sub {
+            my ($self, $table, $column, $column_info) = @_;
+            
+            if (my $model = $self->models->{$table}) {
+                push @{$model->columns}, $column;
+            }
+        }
+    );
+}
+
 our %VALID_UPDATE_ARGS
   = map { $_ => 1 } qw/table param
                        where append filter allow_update_all query/;
@@ -1222,9 +1236,9 @@ Return value of C<insert()> is the count of affected rows.
 
     $dbi->each_column(
         sub {
-            my ($self, $table, $column, $info) = @_;
+            my ($self, $table, $column, $column_info) = @_;
             
-            my $type = $info->{TYPE_NAME};
+            my $type = $column_info->{TYPE_NAME};
             
             if ($type eq 'DATE') {
                 # ...
@@ -1235,7 +1249,7 @@ Get column informations from database.
 Argument is callback.
 You can do anything in callback.
 Callback receive four arguments, dbi object, table name,
-column name and columninformation.
+column name and column information.
 
 =head2 C<(experimental) include_model>
 
@@ -1419,6 +1433,13 @@ Return value of C<update()> is the count of affected rows.
     my $model = $dbi->model('book');
 
 Set and get a L<DBIx::Custom::Model> object,
+
+=head2 C<(experimental) setup_model>
+
+    $dbi->setup_model;
+
+Setup all model objects.
+C<columns> and C<primary_key> is automatically set.
 
 =head2 C<update_all>
 

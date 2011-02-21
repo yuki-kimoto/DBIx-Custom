@@ -1074,6 +1074,11 @@ C<select_at()>で利用されます。
 
     $model->columns(['id', 'number_id']);
 
+列名はC<setup_model()>で自動的に設定することができます。
+このメソッドはC<include_model()>の後で呼び出してください。
+
+    $dbi->setup_model;
+
 =head2 モデルのサンプル
 
 モデルのサンプルです。

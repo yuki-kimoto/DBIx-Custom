@@ -1046,6 +1046,11 @@ You can set column names
 
     $model->columns(['id', 'number_id']);
 
+Column names is automarically set by C<setup_model()>.
+This method is needed to be call after C<include_model()>.
+
+    $dbi->setup_model;
+
 =head2 Model Examples
 
 Model examples

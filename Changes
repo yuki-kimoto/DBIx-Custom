@@ -1,7 +1,9 @@
 0.1648
-  add DBIx::Custom::Model columns attirbute
-  add DBIx::Custom::Model foreign_key() attribute 
-  add models() attribute
+  add experimental each_table() method
+  add experimental setup_model()
+  add experimental DBIx::Custom::Model columns attirbute
+  add experimental DBIx::Custom::Model foreign_key() attribute 
+  add experimental models() attribute
 0.1647
   add default_dbi_option()
 0.1646
