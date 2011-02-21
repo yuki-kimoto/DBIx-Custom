@@ -51,20 +51,41 @@ sub method {
     return $self;
 }
 
-sub new {
-    my $self = shift->SUPER::new(@_);
+sub insert     { my $self = shift; $self->dbi->insert(table => $self->table, @_) }
+sub update     { my $self = shift; $self->dbi->update(table => $self->table, @_) }
+sub update_all { my $self = shift; $self->dbi->update_all(table => $self->table, @_) }
+sub delete     { my $self = shift; $self->dbi->delete(table => $self->table, @_) }
+sub delete_all { my $self = shift; $self->dbi->delete_all(table => $self->table, @_) }
+sub select     { my $self = shift; $self->dbi->select(table => $self->table, @_) }
+
+sub update_at {
+    my $self = shift;
     
-    # Methods
-    my @methods = qw/insert update update_all delete delete_all select/;
-    foreach my $method (@methods) {
-        $self->method(
-            $method => sub {
-                my $self = shift;
-                return $self->dbi->$method(table => $self->table, @_);
-            }
-        );
-    }
+    return $self->dbi->update_at(
+        table => $self->table,
+        primary_key => $self->primary_key,
+        @_
+    );
+}
+
+sub delete_at {
+    my $self = shift;
     
+    return $self->dbi->delete_at(
+        table => $self->table,
+        primary_key => $self->primary_key,
+        @_
+    );
+}
+
+sub select_at {
+    my $self = shift;
+    
+    return $self->dbi->select_at(
+        table => $self->table,
+        primary_key => $self->primary_key,
+        @_
+    );
     return $self;
 }
 

@@ -1079,6 +1079,13 @@ C<delete()>, C<delete_all()>, C<select()>などのメソッドを
 
     $dbi->model('book')->insert(param => $param);
 
+またモデルクラスでC<primary_key>の設定がなされていれば、
+プライマリキーを指定することなしに
+C<update_at()>, C<delete_at()>, C<select_at()>のメソッドを
+利用できます。
+
+    $dbi->model('book')->delete_at(where => 123);
+
 モデルはL<DBIx::Custom::Model>です。
 
 必要であれば、C<table()>でテーブル名を取得することができます。

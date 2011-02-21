@@ -1506,3 +1506,49 @@ $dbi = MyDBI1->connect($NEW_ARGS->{0});
 $model = $dbi->model('book');
 $model->relation({'book.id' => 'company.id'});
 is_deeply($model->relation, {'book.id' => 'company.id'});
+
+
+test 'model delete_at';
+{
+    package MyDBI6;
+    
+    use base 'DBIx::Custom';
+    
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel5');
+        
+        return $self;
+    }
+}
+$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->model('table1')->delete_at(where => [1, 2]);
+is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
+
+
+test 'update_at';
+$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->model('table1')->update_at(
+    where => [1, 2],
+    param => {key3 => 4}
+);
+$result = $dbi->model('table1')->select;
+$row = $result->fetch_hash_first;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 4);
+
+test 'select_at';
+$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$result = $dbi->model('table1')->select_at(where => [1, 2]);
+$row = $result->fetch_hash_first;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 3);
