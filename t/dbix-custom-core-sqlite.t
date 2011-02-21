@@ -1276,6 +1276,8 @@ $dbi->execute("create table company (name)");
 $model = $dbi->model('company');
 $model->insert({name => 'a'});
 is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'basic');
+is($dbi->models->{'book'}, $dbi->model('book'));
+is($dbi->models->{'company'}, $dbi->model('company'));
 
 $dbi->model('book');
 eval{$dbi->model('book')->no_exists};

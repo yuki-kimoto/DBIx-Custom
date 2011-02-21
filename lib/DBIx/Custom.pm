@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1647';
+our $VERSION = '0.1648';
 
 use 5.008001;
 use strict;
@@ -27,6 +27,7 @@ __PACKAGE__->attr(
         PrintError => 0,
         AutoCommit => 1
     }},
+    models => sub { {} },
     query_builder => sub { DBIx::Custom::QueryBuilder->new },
     result_class  => 'DBIx::Custom::Result',
     safety_column_name => sub { qr/^[\w\.]*$/ },
@@ -597,18 +598,17 @@ sub model {
     my ($self, $name, $model) = @_;
     
     # Set
-    $self->{model} ||= {};
     if ($model) {
-        $self->{model}{$name} = $model;
+        $self->models->{$name} = $model;
         return $self;
     }
     
     # Check model existance
     croak qq{Model "$name" is not included}
-      unless $self->{model}{$name};
+      unless $self->models->{$name};
     
     # Get
-    return $self->{model}{$name};
+    return $self->models->{$name};
 }
 
 sub include_model {
@@ -1053,6 +1053,15 @@ Default filter when row is fetched.
 
     my $filters = $dbi->filters;
     $dbi        = $dbi->filters(\%filters);
+
+Filters
+
+=head2 C<(experimental) models>
+
+    my $models = $dbi->models;
+    $dbi       = $dbi->models(\%models);
+
+Models
 
 =head2 C<password>
 

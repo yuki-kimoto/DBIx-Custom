@@ -1031,6 +1031,10 @@ You can also call all methods of L<DBIx::Custom> and L<DBI>.
     $model->begin_work;
     $model->commit;
 
+If you want to get all models, you can get them by keys of C<models()>.
+
+    my @models = keys %{$self->models};
+
 =head2 Model Examples
 
 Model examples
