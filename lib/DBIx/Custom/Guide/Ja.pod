@@ -386,6 +386,45 @@ SQLを実行するにはC<execute()>を使用します。
 
     $dbi->execute('select * from book');
 
+=head3 プライマリーキーを利用した行の更新 C<update_at()>
+
+プライマリーを使用して行を更新するにはC<update_at()>を使用します。
+
+    $dbi->update_at(
+        table => 'book', primary_key => ['id'],
+        where => ['123'], param => {name => 'Ken'}
+    );
+
+この例ではidの列が123の行が更新されます。C<where>には、配列の
+リファレンスを渡す必要があることに注意してください。
+なおC<param>にプライマリーキーが含まれていた場合は、そのキーが削除さされます。
+
+=head3 プライマリーキーを利用した行の削除 C<delete_at()>
+
+プライマリーを使用して行を削除するにはC<delete_at()>を使用します。
+
+    $dbi->delete_at(table => 'book', primary_key => ['id'], where => ['123']);
+
+この例ではidの列が123の行が削除されます。C<where>には、配列の
+リファレンスを渡す必要があることに注意してください。
+
+また下のような記述方法も許されています。
+
+    $dbi->delete_at(table => 'book', primary_key => ['id'], param => {id => '123'});
+
+=head3 プライマリーキーを利用した行の選択 C<select_at()>
+
+プライマリーを使用して行を選択するにはC<select_at()>を使用します。
+
+    $dbi->select_at(table => 'book', primary_key => ['id'], where => ['123']);
+
+この例ではidの列が123の行が選択されます。C<where>には、配列の
+リファレンスを渡す必要があることに注意してください。
+
+また下のような記述方法も許されています。
+
+    $dbi->select_at(table => 'book', primary_key => ['id'], param => {id => '123'});
+
 =head2 3. 行のフェッチ
 
 C<select()>メソッドの戻り値はL<DBIx::Custom::Result>オブジェクトです。
@@ -1101,11 +1140,15 @@ C<select_at()>で利用されます。
     package MyModel::book;
     use base 'DBIx::Custom::Model';
     
+    __PACKAGE__->attr('primary_key' => sub { ['id'] };
+    
     sub insert { ... }
     sub list { ... }
     
     package MyModel::company;
     use base 'DBIx::Custom::Model';
+
+    __PACKAGE__->attr('primary_key' => sub { ['id'] };
     
     sub insert { ... }
     sub list { ... }

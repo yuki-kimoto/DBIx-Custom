@@ -380,6 +380,45 @@ You don't have to wirte last semicolon in C<execute()>.
 
     $dbi->execute('select * from book');
 
+=head3 Update by using primary key : C<update_at()>
+
+To update row by using primary key, use C<update_at()>
+
+    $dbi->update_at(
+        table => 'book', primary_key => ['id'],
+        where => ['123'], param => {name => 'Ken'}
+    );
+
+In this example, row which id column is 123 is updated.
+NOTE that you must pass array reference as C<where>.
+If C<param> contains primary key, the key and value is delete from C<param>.
+
+=head3 Delete by using primary key : C<delete_at()>
+
+To delete row by using primary key, use C<delete_at()>
+
+    $dbi->delete_at(table => 'book', primary_key => ['id'], where => ['123']);
+
+In this example, row which id column is 123 is deleted.
+NOTE that you must pass array reference as C<where>.
+
+You can also write arguments like this.
+
+    $dbi->delete_at(table => 'book', primary_key => ['id'], param => {id => '123'});
+
+=head3 Select by using primary key : C<select_at()>
+
+To select row by using primary key, use C<select_at()>.
+
+    $dbi->select_at(table => 'book', primary_key => ['id'], where => ['123']);
+
+In this example, row which id colunm is 123 is selected.
+NOTE that you must pass array reference as C<where>.
+
+You can also write arguments like this.
+
+    $dbi->select_at(table => 'book', primary_key => ['id'], param => {id => '123'});
+
 =head2 3. Fetch row
 
 Return value of C<select()> is L<DBIx::Custom::Result> object.
@@ -1073,11 +1112,15 @@ Model examples
     package MyModel::book;
     use base 'DBIx::Custom::Model';
     
+    __PACKAGE__->attr('primary_key' => sub { ['id'] };
+    
     sub insert { ... }
     sub list { ... }
     
     package MyModel::company;
     use base 'DBIx::Custom::Model';
+
+    __PACKAGE__->attr('primary_key' => sub { ['id'] };
     
     sub insert { ... }
     sub list { ... }

@@ -291,6 +291,45 @@ sub delete {
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
 
+our %VALID_DELETE_AT_ARGS
+  = map { $_ => 1 } qw/table where append filter query
+                       primary_key param/;
+
+sub delete_at {
+    my ($self, %args) = @_;
+    
+    # Check arguments
+    foreach my $name (keys %args) {
+        croak qq{"$name" is invalid argument}
+          unless $VALID_DELETE_AT_ARGS{$name};
+    }
+    
+    # Primary key
+    my $primary_keys = delete $args{primary_key};
+    $primary_keys = [$primary_keys] unless ref $primary_keys;
+    
+    # Where clause
+    my $where = {};
+    if (exists $args{where}) {
+        my $where_columns = delete $args{where};
+        $where_columns = [$where_columns] unless ref $where_columns;
+        
+        for(my $i = 0; $i < @$primary_keys; $i ++) {
+           $where->{$primary_keys->[$i]} = $where_columns->[$i];
+        }
+    }
+    elsif (exists $args{param}) {
+        my $param = delete $args{param};
+        
+        for(my $i = 0; $i < @$primary_keys; $i ++) {
+           $where->{$primary_keys->[$i]}
+             = delete $param->{$primary_keys->[$i]};
+        }
+    }
+    
+    return $self->delete(where => $where, %args);
+}
+
 sub DESTROY { }
 
 our %VALID_EXECUTE_ARGS = map { $_ => 1 } qw/param filter table/;
@@ -594,6 +633,44 @@ sub select {
     return $result;
 }
 
+our %VALID_SELECT_AT_ARGS
+  = map { $_ => 1 } qw/table column where append relation filter query selection
+                       param primary_key/;
+
+sub select_at {
+    my ($self, %args) = @_;
+    
+    # Check arguments
+    foreach my $name (keys %args) {
+        croak qq{"$name" is invalid argument}
+          unless $VALID_SELECT_AT_ARGS{$name};
+    }
+    
+    # Primary key
+    my $primary_keys = delete $args{primary_key};
+    $primary_keys = [$primary_keys] unless ref $primary_keys;
+    
+    # Where clause
+    my $where = {};
+    if (exists $args{where}) {
+        my $where_columns = delete $args{where};
+        $where_columns = [$where_columns] unless ref $where_columns;
+        
+        for(my $i = 0; $i < @$primary_keys; $i ++) {
+           $where->{$primary_keys->[$i]} = $where_columns->[$i];
+        }
+    }
+    elsif (exists $args{param}) {
+        my $param = delete $args{param};
+        for(my $i = 0; $i < @$primary_keys; $i ++) {
+           $where->{$primary_keys->[$i]}
+             = delete $param->{$primary_keys->[$i]};
+        }
+    }
+    
+    return $self->select(where => $where, %args);
+}
+
 sub model {
     my ($self, $name, $model) = @_;
     
@@ -777,6 +854,47 @@ sub update {
 }
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
+
+our %VALID_UPDATE_AT_ARGS
+  = map { $_ => 1 } qw/table param
+                       where append filter query
+                       primary_key param/;
+
+sub update_at {
+    my ($self, %args) = @_;
+    
+    # Check arguments
+    foreach my $name (keys %args) {
+        croak qq{"$name" is invalid argument}
+          unless $VALID_UPDATE_AT_ARGS{$name};
+    }
+    
+    # Primary key
+    my $primary_keys = delete $args{primary_key};
+    $primary_keys = [$primary_keys] unless ref $primary_keys;
+    
+    # Where clause
+    my $where = {};
+    my $param = {};
+    
+    if (exists $args{where}) {
+        my $where_columns = delete $args{where};
+        $where_columns = [$where_columns] unless ref $where_columns;
+        
+        for(my $i = 0; $i < @$primary_keys; $i ++) {
+           $where->{$primary_keys->[$i]} = $where_columns->[$i];
+        }
+    }
+    elsif (exists $args{param}) {
+        $param = delete $args{param};
+        for(my $i = 0; $i < @$primary_keys; $i ++) {
+           $where->{$primary_keys->[$i]}
+             = delete $param->{$primary_keys->[$i]};
+        }
+    }
+    
+    return $self->update(where => $where, param => $param, %args);
+}
 
 sub where {
     my $self = shift;
@@ -1212,6 +1330,27 @@ Arguments is same as C<delete> method,
 except that C<delete_all> don't have C<where> argument.
 Return value of C<delete_all()> is the count of affected rows.
 
+=head3 C<delete_at()>
+
+To delete row by using primary key, use C<delete_at()>
+
+    $dbi->delete_at(
+        table => 'book',
+        primary_key => ['id'],
+        where => ['123']
+    );
+
+In this example, row which id column is 123 is deleted.
+NOTE that you must pass array reference as C<where>.
+
+You can also write arguments like this.
+
+    $dbi->delete_at(
+        table => 'book',
+        primary_key => ['id'],
+        param => {id => '123'}
+    );
+
 =head2 C<insert>
 
     $dbi->insert(table  => $table, 
@@ -1401,6 +1540,15 @@ First element is a string. it contains tags,
 such as "{= title} or {like author}".
 Second element is paramters.
 
+=head3 C<select_at()>
+
+To select row by using primary key, use C<select_at()>.
+
+    $dbi->select_at(table => 'book', primary_key => ['id'], where => ['123']);
+
+In this example, row which id colunm is 123 is selected.
+NOTE that you must pass array reference as C<where>.
+
 =head2 C<update>
 
     $dbi->update(table  => $table, 
@@ -1452,6 +1600,22 @@ Execute update statement to update all rows.
 Arguments is same as C<update> method,
 except that C<update_all> don't have C<where> argument.
 Return value of C<update_all()> is the count of affected rows.
+
+=head3 C<update_at()>
+
+To update row by using primary key, use C<update_at()>
+
+    $dbi->update_at(
+        table => 'book',
+        primary_key => ['id'],
+        where => ['123'],
+        param => {name => 'Ken'}
+    );
+
+In this example, row which id column is 123 is updated.
+NOTE that you must pass array reference as C<where>.
+If C<param> contains primary key,
+the key and value is delete from C<param>.
 
 =head2 C<(experimental) where>
 
