@@ -555,6 +555,23 @@ sub select {
     my $relation  = $args{relation};
     my $append    = $args{append};
     my $filter    = $args{filter};
+
+    # Relation table
+    if (!$selection && $relation) {
+        foreach my $rcolumn (keys %$relation) {
+            my $table1 = (split (/\./, $rcolumn))[0];
+            my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
+            
+            my $table1_exists;
+            my $table2_exists;
+            foreach my $table (@$tables) {
+                $table1_exists = 1 if $table eq $table1;
+                $table2_exists = 1 if $table eq $table2;
+            }
+            push @$tables, $table1 unless $table1_exists;
+            push @$tables, $table2 unless $table2_exists;
+        }
+    }
     
     # SQL stack
     my @sql;
@@ -610,6 +627,10 @@ sub select {
     if (!$selection && $relation) {
         push @sql, $swhere eq '' ? 'where' : 'and';
         foreach my $rcolumn (keys %$relation) {
+            my $table1 = (split (/\./, $rcolumn))[0];
+            my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
+            push @$tables, ($table1, $table2);
+            
             push @sql, ("$rcolumn = " . $relation->{$rcolumn},  'and');
         }
     }

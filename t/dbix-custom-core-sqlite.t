@@ -1258,6 +1258,12 @@ $result = $dbi->select(
 );
 is($result->fetch_first->[0], 'B');
 
+$result = $dbi->select(
+    table => 'company', relation => {'company.location_id' => 'location.id'},
+    column => ['location.name as location__name']
+);
+is($result->fetch_first->[0], 'B');
+
 test 'selection';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
