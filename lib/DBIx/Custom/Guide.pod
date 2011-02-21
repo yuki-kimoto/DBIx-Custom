@@ -1035,6 +1035,13 @@ If you want to get all models, you can get them by keys of C<models()>.
 
     my @models = keys %{$self->models};
 
+You can set primary key to model.
+
+   $model->primary_key(['id', 'number_id']);
+
+Primary key is used by C<update_at()>, C<delete_at()>,
+C<select_at()>.
+
 =head2 Model Examples
 
 Model examples

@@ -10,7 +10,10 @@ use Carp 'croak';
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-__PACKAGE__->attr(['dbi', 'table']);
+__PACKAGE__->attr(
+    ['dbi', 'table'],
+    primary_key => sub { [] }
+);
 
 our $AUTOLOAD;
 
@@ -69,13 +72,37 @@ sub DESTROY { }
 
 =head1 NAME
 
-DBIx::Custom::Table - Table base class(experimental)
+DBIx::Custom::Model - Model (experimental)
 
 =head1 SYNOPSIS
 
 use DBIx::Custom::Table;
 
 my $table = DBIx::Custom::Model->new(table => 'books');
+
+=head1 ATTRIBUTES
+
+=head2 C<dbi>
+
+    my $dbi = $model->dbi;
+    $model  = $model->dbi($dbi);
+
+L<DBIx::Custom> object.
+
+=head2 C<table>
+
+    my $table = $model->table;
+    $model    = $model->table('book');
+
+Table name.
+    
+=head2 C<primary_key>
+
+    my $primary_key = $model->primary_key;
+    $model          = $model->primary_key(['id', 'number']);
+
+Foreign key. This is used by C<update_at()>, C<delete_at()>,
+C<select_at()>.
 
 =head1 METHODS
 

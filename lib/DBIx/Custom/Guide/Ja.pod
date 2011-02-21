@@ -1063,6 +1063,13 @@ L<DBIx::Custom>とL<DBI>のすべてのメソッドを呼び出すこともで�
 
     my @models = keys %{$self->models};
 
+モデルにはプライマリーキーを設定することもできます。
+
+   $model->primary_key(['id', 'number_id']);
+
+ここで設定したプライマリーキーはC<update_at()>, C<delete_at()>,
+C<select_at()>で利用されます。
+
 =head2 モデルのサンプル
 
 モデルのサンプルです。

@@ -1371,4 +1371,11 @@ is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'include all model');
 $model = $dbi->model('book');
 is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'include all model');
 
+test 'primary_key';
+use MyDBI1;
+$dbi = MyDBI1->connect($NEW_ARGS->{0});
+$model = $dbi->model('book');
+$model->primary_key(['id', 'number']);
+is_deeply($model->primary_key, ['id', 'number']);
+
 
