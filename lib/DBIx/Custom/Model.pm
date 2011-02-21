@@ -12,6 +12,7 @@ push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
 __PACKAGE__->attr(
     ['dbi', 'table'],
+    columns => sub { [] },
     primary_key => sub { [] }
 );
 
@@ -81,6 +82,11 @@ use DBIx::Custom::Table;
 my $table = DBIx::Custom::Model->new(table => 'books');
 
 =head1 ATTRIBUTES
+
+=head2 C<(experimental) columns>
+
+    my $columns = $model->columns;
+    $model      = $model->columns(['id', 'number']);
 
 =head2 C<dbi>
 

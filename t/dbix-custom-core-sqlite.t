@@ -1378,4 +1378,10 @@ $model = $dbi->model('book');
 $model->primary_key(['id', 'number']);
 is_deeply($model->primary_key, ['id', 'number']);
 
+test 'columns';
+use MyDBI1;
+$dbi = MyDBI1->connect($NEW_ARGS->{0});
+$model = $dbi->model('book');
+$model->columns(['id', 'number']);
+is_deeply($model->columns, ['id', 'number']);
 

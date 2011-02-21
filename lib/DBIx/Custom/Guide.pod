@@ -1042,6 +1042,10 @@ You can set primary key to model.
 Primary key is used by C<update_at()>, C<delete_at()>,
 C<select_at()>.
 
+You can set column names
+
+    $model->columns(['id', 'number_id']);
+
 =head2 Model Examples
 
 Model examples

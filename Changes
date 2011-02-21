@@ -1,4 +1,5 @@
 0.1648
+  add DBIx::Custom::Model columns attirbute
   add DBIx::Custom::Model foreign_key() attribute 
   add models() attribute
 0.1647

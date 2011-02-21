@@ -1070,6 +1070,10 @@ L<DBIx::Custom>とL<DBI>のすべてのメソッドを呼び出すこともで�
 ここで設定したプライマリーキーはC<update_at()>, C<delete_at()>,
 C<select_at()>で利用されます。
 
+モデルには列名を設定することもできます。
+
+    $model->columns(['id', 'number_id']);
+
 =head2 モデルのサンプル
 
 モデルのサンプルです。
