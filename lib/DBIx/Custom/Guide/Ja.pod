@@ -1125,6 +1125,12 @@ C<select_at()>で利用されます。
 
     $dbi->setup_model;
 
+モデルにはリレーションを設定することもできます。
+
+    $model->relation({'book.company_id' => 'company.id'});
+
+ここで設定したリレーションはC<select()>, C<select_at()>で利用されます。
+
 =head2 モデルのサンプル
 
 モデルのサンプルです。

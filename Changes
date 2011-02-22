@@ -1,5 +1,6 @@
 0.1649
-    - DBIx::Custom::Model select() think about relation attirbute
+    - add DBIx::Custom::Model column_clause() method.
+    - DBIx::Custom::Model select() and select_at() think about relation attirbute
 0.1648
     - add experimental DBIx::Custom::Model relation() attribute
     - add experimental update_at(), delete_at(), select_at()

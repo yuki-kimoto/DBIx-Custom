@@ -1090,6 +1090,12 @@ This method is needed to be call after C<include_model()>.
 
     $dbi->setup_model;
 
+You can set C<relation>
+
+    $model->relation({'book.company_id' => 'company.id'});
+
+This relation is used by C<select()>, C<select_at()>
+
 =head2 Model Examples
 
 Model examples
