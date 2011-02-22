@@ -1131,6 +1131,28 @@ C<select_at()>で利用されます。
 
 ここで設定したリレーションはC<select()>, C<select_at()>で利用されます。
 
+=head2 列名の自動生成 : column_clause()
+
+列名の節を自動生成するにはC<column_clause()>を使用します。
+C<table>とC<columns>の値が利用されます。
+
+    my $column_clause = $model->column_clause;
+
+C<table>の値が'book'、C<column>の値が['id', 'name']で
+あった場合は次のような列名の節が生成されます。
+
+    book.id as id, book.name as name
+
+このように列名の節を生成するのは、列名のあいまいさをなくすためです。
+
+不必要な列がある場合はC<remove>オプションで指定することができます。
+
+    my $column_clause = $model->column_clause(remove => ['id']);
+
+追加したい列がある場合は、C<add>オプションで追加することができます。
+
+    my $column_clause = $model->column_clause(add => ['company.id as company__id']);
+
 =head2 モデルのサンプル
 
 モデルのサンプルです。

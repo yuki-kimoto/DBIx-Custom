@@ -781,6 +781,7 @@ sub setup_model {
             }
         }
     );
+    return $self;
 }
 
 our %VALID_UPDATE_ARGS

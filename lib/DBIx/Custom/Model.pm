@@ -190,6 +190,28 @@ L<DBIx::Custom> inherits all methods from L<Object::Simple>,
 and you can use all methods of the object set to C<dbi>.
 and implements the following new ones.
 
+=head2 C<column_clause()>
+
+To create column clause automatically, use C<column_clause()>.
+Valude of C<table> and C<columns> is used.
+
+    my $column_clause = $model->column_clause;
+
+If C<table> is 'book'ÅAC<column> is ['id', 'name'],
+the following clause is created.
+
+    book.id as id, book.name as name
+
+These column name is for removing column name ambiguities.
+
+If you remove some columns, use C<remove> option.
+
+    my $column_clause = $model->column_clause(remove => ['id']);
+
+If you add some column, use C<add> option.
+
+    my $column_clause = $model->column_clause(add => ['company.id as company__id']);
+
 =head2 C<delete>
 
     $table->delete(...);

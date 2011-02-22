@@ -4,6 +4,7 @@ use warnings;
 
 use utf8;
 use Encode qw/encode_utf8 decode_utf8/;
+use Data::Dumper;
 
 BEGIN {
     eval { require DBD::SQLite; 1 }
@@ -1571,6 +1572,7 @@ test 'model select relation';
         
         $self->include_model('MyModel6');
         
+        
         return $self;
     }
 }
@@ -1583,3 +1585,20 @@ $result = $dbi->model('table1')->select(column => ['key3'], where => {'table1.ke
 is($result->fetch_hash_first->{key3}, 3);
 $result = $dbi->model('table1')->select_at(column => ['key3'], where => [1]);
 is($result->fetch_hash_first->{key3}, 3);
+
+test 'column_clause';
+$dbi = MyDBI7->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->execute($CREATE_TABLE->{2});
+$dbi->setup_model;
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
+$model = $dbi->model('table1');
+$result = $model->select(column => $model->column_clause, where => {'table1.key1' => 1});
+is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 2});
+$result = $model->select(column => $model->column_clause(remove => ['key1']), where => {'table1.key1' => 1});
+is_deeply($result->fetch_hash_first, {key2 => 2});
+$result = $model->select(column => $model->column_clause(add => ['key3']), where => {'table1.key1' => 1});
+is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 2, key3 => 3});
+
+
