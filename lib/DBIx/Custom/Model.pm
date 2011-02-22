@@ -41,29 +41,28 @@ sub AUTOLOAD {
     }
 }
 
-sub method {
+sub column_clause {
     my $self = shift;
     
-    # Merge
-    my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $self->{_methods} = {%{$self->{_methods} || {}}, %$methods};
+    my $args = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     
-    return $self;
-}
-
-sub insert {
-    my $self = shift;
-    $self->dbi->insert(table => $self->table, @_);
-}
-
-sub update {
-    my $self = shift;
-    $self->dbi->update(table => $self->table, @_)
-}
-
-sub update_all {
-    my $self = shift;
-    $self->dbi->update_all(table => $self->table, @_);
+    my $table   = $self->table;
+    my $columns = $self->columns;
+    my $add     = $args->{add} || [];
+    my $remove  = $args->{remove} || [];
+    my %remove  = map {$_ => 1} @$remove;
+    
+    my @column;
+    foreach my $column (@$columns) {
+        push @column, "$table.$column as $column"
+          unless $remove{$column};
+    }
+    
+    foreach my $column (@$add) {
+        push @column, $column;
+    }
+    
+    return join (', ', @column);
 }
 
 sub delete {
@@ -76,31 +75,38 @@ sub delete_all {
     $self->dbi->delete_all(table => $self->table, @_);
 }
 
-sub select {
-    my $self = shift;
-    $self->dbi->select(
-        table => $self->table,
-        relation => $self->relation,
-        @_
-    );
-}
-
-sub update_at {
-    my $self = shift;
-    
-    return $self->dbi->update_at(
-        table => $self->table,
-        primary_key => $self->primary_key,
-        @_
-    );
-}
-
 sub delete_at {
     my $self = shift;
     
     return $self->dbi->delete_at(
         table => $self->table,
         primary_key => $self->primary_key,
+        @_
+    );
+}
+
+sub DESTROY { }
+
+sub insert {
+    my $self = shift;
+    $self->dbi->insert(table => $self->table, @_);
+}
+
+sub method {
+    my $self = shift;
+    
+    # Merge
+    my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $self->{_methods} = {%{$self->{_methods} || {}}, %$methods};
+    
+    return $self;
+}
+
+sub select {
+    my $self = shift;
+    $self->dbi->select(
+        table => $self->table,
+        relation => $self->relation,
         @_
     );
 }
@@ -116,7 +122,26 @@ sub select_at {
     );
 }
 
-sub DESTROY { }
+sub update {
+    my $self = shift;
+    $self->dbi->update(table => $self->table, @_)
+}
+
+sub update_all {
+    my $self = shift;
+    $self->dbi->update_all(table => $self->table, @_);
+}
+
+
+sub update_at {
+    my $self = shift;
+    
+    return $self->dbi->update_at(
+        table => $self->table,
+        primary_key => $self->primary_key,
+        @_
+    );
+}
 
 1;
 

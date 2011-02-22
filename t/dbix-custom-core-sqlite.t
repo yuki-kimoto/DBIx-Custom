@@ -418,7 +418,7 @@ $dbi->execute($CREATE_TABLE->{2});
 $dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
 $rows = $dbi->select(
     table => [qw/table1 table2/],
-    column => ['table1.key1 as table1_key1', 'table2.key1 as table2_key1', 'key2', 'key3'],
+    column => 'table1.key1 as table1_key1, table2.key1 as table2_key1, key2, key3',
     where   => {'table1.key2' => 2},
     relation  => {'table1.key1' => 'table2.key1'}
 )->fetch_hash_all;

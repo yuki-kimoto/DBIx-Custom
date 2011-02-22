@@ -1,5 +1,6 @@
 0.1649
     - add DBIx::Custom::Model column_clause() method.
+    - select method column option can receive string.
     - DBIx::Custom::Model select() and select_at() think about relation attirbute
 0.1648
     - add experimental DBIx::Custom::Model relation() attribute

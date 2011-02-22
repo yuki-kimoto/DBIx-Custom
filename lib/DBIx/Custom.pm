@@ -550,6 +550,7 @@ sub select {
                : defined $table ? [$table]
                : [];
     my $columns   = $args{column} || [];
+    $columns = [$columns] unless ref $columns;
     my $selection = $args{selection} || '';
     my $where     = $args{where} || {};
     my $relation  = $args{relation} || {};
@@ -1538,19 +1539,22 @@ This is same as L<DBI>'s C<rollback>.
 
 =head2 C<select>
     
-    my $result = $dbi->select(table    => $table,
-                              column   => [@column],
-                              where    => \%where,
-                              append   => $append,
-                              relation => \%relation,
-                              filter   => \%filter,
-                              query    => 1,
-                              selection => $selection);
+    my $result = $dbi->select(
+        table     => $table,
+        column    => [@column],
+        where     => \%where,
+        append    => $append,
+        relation  => \%relation,
+        filter    => \%filter,
+        query     => 1,
+        selection => $selection
+    );
 
 Execute select statement.
 C<select> method have C<table>, C<column>, C<where>, C<append>,
 C<relation> and C<filter> arguments.
 C<table> is a table name.
+C<column> is column names. this is array reference or string.
 C<where> is where clause. this is normally hash reference.
 C<append> is a string added at the end of the SQL statement.
 C<filter> is filters when parameter binding is executed.
