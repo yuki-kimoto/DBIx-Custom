@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1648';
+our $VERSION = '0.1649';
 
 use 5.008001;
 use strict;
@@ -552,12 +552,12 @@ sub select {
     my $columns   = $args{column} || [];
     my $selection = $args{selection} || '';
     my $where     = $args{where} || {};
-    my $relation  = $args{relation};
+    my $relation  = $args{relation} || {};
     my $append    = $args{append};
     my $filter    = $args{filter};
 
-    # Relation table
-    if (!$selection && $relation) {
+    # Relation
+    if (!$selection && keys %$relation) {
         foreach my $rcolumn (keys %$relation) {
             my $table1 = (split (/\./, $rcolumn))[0];
             my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
@@ -568,8 +568,8 @@ sub select {
                 $table1_exists = 1 if $table eq $table1;
                 $table2_exists = 1 if $table eq $table2;
             }
-            push @$tables, $table1 unless $table1_exists;
-            push @$tables, $table2 unless $table2_exists;
+            unshift @$tables, $table1 unless $table1_exists;
+            unshift @$tables, $table2 unless $table2_exists;
         }
     }
     
@@ -624,7 +624,7 @@ sub select {
     push @sql, $swhere;
     
     # Relation
-    if (!$selection && $relation) {
+    if (!$selection && keys %$relation) {
         push @sql, $swhere eq '' ? 'where' : 'and';
         foreach my $rcolumn (keys %$relation) {
             my $table1 = (split (/\./, $rcolumn))[0];
@@ -671,6 +671,10 @@ sub select_at {
     my $primary_keys = delete $args{primary_key};
     $primary_keys = [$primary_keys] unless ref $primary_keys;
     
+    # Table
+    croak qq{"table" option must be specified} unless $args{table};
+    my $table = ref $args{table} ? $args{table}->[-1] : $args{table};
+    
     # Where clause
     my $where = {};
     if (exists $args{where}) {
@@ -678,7 +682,7 @@ sub select_at {
         $where_columns = [$where_columns] unless ref $where_columns;
         
         for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $where->{$primary_keys->[$i]} = $where_columns->[$i];
+           $where->{$table . '.' . $primary_keys->[$i]} = $where_columns->[$i];
         }
     }
     elsif (exists $args{param}) {

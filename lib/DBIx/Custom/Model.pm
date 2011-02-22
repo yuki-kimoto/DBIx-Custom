@@ -51,12 +51,39 @@ sub method {
     return $self;
 }
 
-sub insert     { my $self = shift; $self->dbi->insert(table => $self->table, @_) }
-sub update     { my $self = shift; $self->dbi->update(table => $self->table, @_) }
-sub update_all { my $self = shift; $self->dbi->update_all(table => $self->table, @_) }
-sub delete     { my $self = shift; $self->dbi->delete(table => $self->table, @_) }
-sub delete_all { my $self = shift; $self->dbi->delete_all(table => $self->table, @_) }
-sub select     { my $self = shift; $self->dbi->select(table => $self->table, @_) }
+sub insert {
+    my $self = shift;
+    $self->dbi->insert(table => $self->table, @_);
+}
+
+sub update {
+    my $self = shift;
+    $self->dbi->update(table => $self->table, @_)
+}
+
+sub update_all {
+    my $self = shift;
+    $self->dbi->update_all(table => $self->table, @_);
+}
+
+sub delete {
+    my $self = shift;
+    $self->dbi->delete(table => $self->table, @_);
+}
+
+sub delete_all {
+    my $self = shift;
+    $self->dbi->delete_all(table => $self->table, @_);
+}
+
+sub select {
+    my $self = shift;
+    $self->dbi->select(
+        table => $self->table,
+        relation => $self->relation,
+        @_
+    );
+}
 
 sub update_at {
     my $self = shift;
@@ -84,9 +111,9 @@ sub select_at {
     return $self->dbi->select_at(
         table => $self->table,
         primary_key => $self->primary_key,
+        relation => $self->relation,
         @_
     );
-    return $self;
 }
 
 sub DESTROY { }

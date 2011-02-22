@@ -1558,3 +1558,28 @@ $row = $result->fetch_hash_first;
 is($row->{key1}, 1);
 is($row->{key2}, 2);
 is($row->{key3}, 3);
+
+
+test 'model select relation';
+{
+    package MyDBI7;
+    
+    use base 'DBIx::Custom';
+    
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel6');
+        
+        return $self;
+    }
+}
+$dbi = MyDBI7->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->execute($CREATE_TABLE->{2});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
+$result = $dbi->model('table1')->select(column => ['key3'], where => {'table1.key1' => 1});
+is($result->fetch_hash_first->{key3}, 3);
+$result = $dbi->model('table1')->select_at(column => ['key3'], where => [1]);
+is($result->fetch_hash_first->{key3}, 3);

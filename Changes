@@ -1,260 +1,262 @@
+0.1649
+    - DBIx::Custom::Model select() think about relation attirbute
 0.1648
-  add experimental DBIx::Custom::Model relation() attribute
-  add experimental update_at(), delete_at(), select_at()
-  add experimental setup_model()
-  add experimental DBIx::Custom::Model columns attirbute
-  add experimental DBIx::Custom::Model foreign_key() attribute 
-  add experimental models() attribute
+    - add experimental DBIx::Custom::Model relation() attribute
+    - add experimental update_at(), delete_at(), select_at()
+    - add experimental setup_model()
+    - add experimental DBIx::Custom::Model columns attirbute
+    - add experimental DBIx::Custom::Model foreign_key() attribute 
+    - add experimental models() attribute
 0.1647
-  add default_dbi_option()
+    - add default_dbi_option()
 0.1646
-  add feture. all model class in namespace is included by include_model
-  rename experimental include_table to include_model
-  rename experimental table to model
-  rename experimental DBIx::Custom::Table to DBIx::Custom::Model
-  remame experimental DBIx::Custom::Table::name() to DBIx::Custom::Model::table();
+    - add feture. all model class in namespace is included by include_model
+    - rename experimental include_table to include_model
+    - rename experimental table to model
+    - rename experimental DBIx::Custom::Table to DBIx::Custom::Model
+    - remame experimental DBIx::Custom::Table::name() to DBIx::Custom::Model::table();
 0.1645
-  removed experimental base_table() for class expandability.
-  experimental table() can't set table object any more.
-  added experimental include_table().
+    - removed experimental base_table() for class expandability.
+    - experimental table() can't set table object any more.
+    - added experimental include_table().
 0.1644
-  update pod
+    - update pod
 0.1643
-  add experimental selection option to select()
-  add experimental table tag
-  fix bug : filter can't overwirite undef value.
-  add experimental feature to apply_filter(). you can apply end filter.
-  add experimental feature to apply_filter(). TABLE__COLUMN is filterded now.
+    - add experimental selection option to select()
+    - add experimental table tag
+    - fix bug : filter can't overwirite undef value.
+    - add experimental feature to apply_filter(). you can apply end filter.
+    - add experimental feature to apply_filter(). TABLE__COLUMN is filterded now.
 0.1642
-  removed experimental DBIx::Custom::Table base() method
-  table created by tabled method can call base_$method correponding to base_table's one
+    - removed experimental DBIx::Custom::Table base() method
+    - table created by tabled method can call base_$method correponding to base_table's one
 0.1641
-  select() where can't receive array reference to prevend SQL injection easily(not backward compatible. sorry. use where() instead)
-  added experimental safety_column_name attribute
-  fix SQL injection security hole about column name
+    - select() where can't receive array reference to prevend SQL injection easily(not backward compatible. sorry. use where() instead)
+    - added experimental safety_column_name attribute
+    - fix SQL injection security hole about column name
 0.1640
-  autoload DBI method
-  removed experimental expand
+    - autoload DBI method
+    - removed experimental expand
 0.1639
-  improved delete() and update() where option. you can use DBIx::Custom::Where object
-  added experimental not_exists()
+    - improved delete() and update() where option. you can use DBIx::Custom::Where object
+    - added experimental not_exists()
 0.1638
-  table object call dbi object method if not found method.
-  added experimental base_table attribute and removed experimental table_class attribute
-  renamed helper to method.
-  added experimental DBIx::Custom::Result::stash()
-  renamed experimental DBIx::Custom::Table helper to method
+    - table object call dbi object method if not found method.
+    - added experimental base_table attribute and removed experimental table_class attribute
+    - renamed helper to method.
+    - added experimental DBIx::Custom::Result::stash()
+    - renamed experimental DBIx::Custom::Table helper to method
 0.1637
-  renamed dbi_options to dbi_option. dbi_options is available, but deprecated.
-  renamed DBIx::Custom::TagProcessor to DBIx::Custom::Tag, and function names is cleanuped.
-  renamed register_tag_processor to register_tag. register_tag_processor is available, but deprecated.
-  renamed tag_processors to tags. tag_prosessors is available, but deprecated.
-  improved error message
-  build all clause if param is undefined.
-  each_column callback receive self as first argument.
-  removed experimental txn_scope
+    - renamed dbi_options to dbi_option. dbi_options is available, but deprecated.
+    - renamed DBIx::Custom::TagProcessor to DBIx::Custom::Tag, and function names is cleanuped.
+    - renamed register_tag_processor to register_tag. register_tag_processor is available, but deprecated.
+    - renamed tag_processors to tags. tag_prosessors is available, but deprecated.
+    - improved error message
+    - build all clause if param is undefined.
+    - each_column callback receive self as first argument.
+    - removed experimental txn_scope
 0.1636
-  added tests and cleanup
+    - added tests and cleanup
 0.1635
-  renamed iterate_all_columns to each_column
+    - renamed iterate_all_columns to each_column
 0.1634
-  became more useful where method
-  changed DBIx::Custom::Where greatly
+    - became more useful where method
+    - changed DBIx::Custom::Where greatly
 0.1633
-  fixed test
+    - fixed test
 0.1632
-  added experimental where method
-  added experimental DBIx::Custom::Where.
-  removed DBIx::Custom::Or
+    - added experimental where method
+    - added experimental DBIx::Custom::Where.
+    - removed DBIx::Custom::Or
 0.1631
-  added experimental DBIx::Custom::Result end_filter method
-  experimental extended select method's where option
-  fix select method empty where failed bug
-  added experimental suger method query option
-  added experimental or method
+    - added experimental DBIx::Custom::Result end_filter method
+    - experimental extended select method's where option
+    - fix select method empty where failed bug
+    - added experimental suger method query option
+    - added experimental or method
 0.1630
-  fix test bug
+    - fix test bug
 0.1629
-  renamed auto_filter to apply_filter
-  changed apply_filter method arguments
-  deprecated cache_method
+    - renamed auto_filter to apply_filter
+    - changed apply_filter method arguments
+    - deprecated cache_method
 0.1628
-  remove DBIx::Custom::Model
-  move table method and table_class attribute to DBIx::Custom
-  added examples
-  fixed connect method bug
+    - remove DBIx::Custom::Model
+    - move table method and table_class attribute to DBIx::Custom
+    - added examples
+    - fixed connect method bug
 0.1627
-  added insert, update, update_all, delete, delete_all, select method to DBIx::Custom::Table
-  added experimental txn_scope
+    - added insert, update, update_all, delete, delete_all, select method to DBIx::Custom::Table
+    - added experimental txn_scope
 0.1626
-  simplified DBIx::Custom::Model and DBIx::Custom::Table
+    - simplified DBIx::Custom::Model and DBIx::Custom::Table
 0.1625
-  added experimental DBIx::Custom::Model and DBIx::Custom::Table
+    - added experimental DBIx::Custom::Model and DBIx::Custom::Table
 0.1624
-  added experimental iterate_all_columns method.
+    - added experimental iterate_all_columns method.
 0.1623
-  added experimental auto_filter method
-  deprecated default_bind_filter and default_fetch_filter because these are global effect.
-  changed defautl_bind_filter and default_fetch_filter attributes to methods.
-  changed DBIx::Custom::Result default_filter attribute to method
-  changed DBIx::Custom::Result filter attribute to method.
-  filter_check is always done for usability
+    - added experimental auto_filter method
+    - deprecated default_bind_filter and default_fetch_filter because these are global effect.
+    - changed defautl_bind_filter and default_fetch_filter attributes to methods.
+    - changed DBIx::Custom::Result default_filter attribute to method
+    - changed DBIx::Custom::Result filter attribute to method.
+    - filter_check is always done for usability
 0.1622
-  deprecated DBIx::Custom::SQLite and DBIx::Custom::MySQL
-  added dbi_options attribute
-  checked attributes passed to connect method
+    - deprecated DBIx::Custom::SQLite and DBIx::Custom::MySQL
+    - added dbi_options attribute
+    - checked attributes passed to connect method
 0.1621
-  cleanup (removed undocumented features)
+    - cleanup (removed undocumented features)
 0.1620
-  updated document
+    - updated document
 0.1619
-  updated document
-  added experimental expand method
+    - updated document
+    - added experimental expand method
 0.1618
-  added helper method
-  added begin_work, commit, and rollback method
+    - added helper method
+    - added begin_work, commit, and rollback method
 0.1617
-  L<DBIx::Custom> is now stable. APIs keep backword compatible in the feature.
+    - L<DBIx::Custom> is now stable. APIs keep backword compatible in the feature.
 0.1616
-  removed experimental register_method(), and methods attribute, because it is too magical
+    - removed experimental register_method(), and methods attribute, because it is too magical
 0.1615
-  fixed DBIx::Custom::QueryBuilder build_query() bug
-  required Perl 5.008001 to use @CARP_NOT 
+    - fixed DBIx::Custom::QueryBuilder build_query() bug
+    - required Perl 5.008001 to use @CARP_NOT 
 0.1614
-  removed DBIx::Custom::Query start_tag and end tag attributes
-  enable escaping '{' and '}' in the source of SQL
-  fixed Carp Carp trust relationship
+    - removed DBIx::Custom::Query start_tag and end tag attributes
+    - enable escaping '{' and '}' in the source of SQL
+    - fixed Carp Carp trust relationship
 0.1613
-  added experimental register_method() method
-  added experimental methods attribute
+    - added experimental register_method() method
+    - added experimental methods attribute
 0.1612
-  added tests
-  updated document
-  removed DBIx::Custom::SQLite last_insert_rawid() mehtod(not backword compatible)
-  removed DBIx::Custom::MySQL last_insert_id() method(not backword compatible)
+    - added tests
+    - updated document
+    - removed DBIx::Custom::SQLite last_insert_rawid() mehtod(not backword compatible)
+    - removed DBIx::Custom::MySQL last_insert_id() method(not backword compatible)
 0.1611
-  renamed update tag to update_param
-  renamed insert tag to insert_param
-  renamed sql_builder to query_builder
+    - renamed update tag to update_param
+    - renamed insert tag to insert_param
+    - renamed sql_builder to query_builder
 0.1610
-  added filter_check attribute.
+    - added filter_check attribute.
 0.1609
-  updated document.
+    - updated document.
 0.1608
-  update document
-  renamed DBIx::Custom::QueryBuilder::TagProcessors functions(not backword compatible)
+    - update document
+    - renamed DBIx::Custom::QueryBuilder::TagProcessors functions(not backword compatible)
 0.1607
-  where argument of select() method can specify array(string, paramters)
-  renamed build_query() to create_query()(not backword compatible)
+    - where argument of select() method can specify array(string, paramters)
+    - renamed build_query() to create_query()(not backword compatible)
 0.1606
-  fix testing bug
+    - fix testing bug
 0.1605
-  remove DBIx::Custom::QueryBuilder::tag_syntax()  (not backword compatible)
-  renamed DBIx::Custom::TagProcessor to DBIx::Custom::TagProcessors (not backword compatible)
-  changed arguments of tag processor(not backword compatible)
-  renamed DBIx::Custom::QueryBuilder::TagProcessors functions(not backword compatible)
+    - remove DBIx::Custom::QueryBuilder::tag_syntax()  (not backword compatible)
+    - renamed DBIx::Custom::TagProcessor to DBIx::Custom::TagProcessors (not backword compatible)
+    - changed arguments of tag processor(not backword compatible)
+    - renamed DBIx::Custom::QueryBuilder::TagProcessors functions(not backword compatible)
 0.1604
-  changed argument of tag processor(not backword compatible)
-  renamed default_query_filter to default_bind_filter(not backword compatible)
-  renamed DBIx::Custom::SQLTemplate to DBIx::Custom::SQLBuilder(not backword compatible)
-  renamed create_query to build_query(not backword compatible)
-  renamed sql_template to sql_builder(not backword compatible)
-  removed DESTROY method(not backword compatible)
-  removed disconnect method(not backword compatible)
-  fixed DBIx::Custom::MySQL connect_memory
+    - changed argument of tag processor(not backword compatible)
+    - renamed default_query_filter to default_bind_filter(not backword compatible)
+    - renamed DBIx::Custom::SQLTemplate to DBIx::Custom::SQLBuilder(not backword compatible)
+    - renamed create_query to build_query(not backword compatible)
+    - renamed sql_template to sql_builder(not backword compatible)
+    - removed DESTROY method(not backword compatible)
+    - removed disconnect method(not backword compatible)
+    - fixed DBIx::Custom::MySQL connect_memory
 0.1603
-  removed DBIx::Custom commit method (not backword compatible)
-  removed DBIx::Custom rollback method (not backword compatible)
-  removed DBIx::Custom auto_commit method (not backword compatible)
+    - removed DBIx::Custom commit method (not backword compatible)
+    - removed DBIx::Custom rollback method (not backword compatible)
+    - removed DBIx::Custom auto_commit method (not backword compatible)
 0.1602
-  added cache_method attribute
+    - added cache_method attribute
 0.1601
-  added cache attribute
-  select, insert, update, update_all, delete, delete_all, execute only receive hash argument(not backword compatible)
+    - added cache attribute
+    - select, insert, update, update_all, delete, delete_all, execute only receive hash argument(not backword compatible)
 0.1503
-  removed reconnect method
-  removed connected method
-  removed reconnect_memroy method
-  renamed fetch_single to fetch_first
-  renamed fetch_hash_single to fetch_hash_first
-  updated document
+    - removed reconnect method
+    - removed connected method
+    - removed reconnect_memroy method
+    - renamed fetch_single to fetch_first
+    - renamed fetch_hash_single to fetch_hash_first
+    - updated document
 0.1502
-  added commit method
-  added rollback method
-  changed select argument, added relation option
-  moved host attribute to DBIx::Custom::MySQL
-  moved port attribute to DBIx::Custom::MySQL
-  moved database attribute to DBIx::Custom::MySQL and DBIx::Custom::SQLite
+    - added commit method
+    - added rollback method
+    - changed select argument, added relation option
+    - moved host attribute to DBIx::Custom::MySQL
+    - moved port attribute to DBIx::Custom::MySQL
+    - moved database attribute to DBIx::Custom::MySQL and DBIx::Custom::SQLite
 0.1501
-  removed register_format()
-  removed formats()
-  removed run_transaction()
-  removed create_table()
-  removed drop_table()
-  changed select() arguments
-  changed insert() arguments
-  changed update() arguments
-  changed update_all() arguments
-  changed delete() arguments
-  changed delete_all() arguments
-  changed execute() arguments
+    - removed register_format()
+    - removed formats()
+    - removed run_transaction()
+    - removed create_table()
+    - removed drop_table()
+    - changed select() arguments
+    - changed insert() arguments
+    - changed update() arguments
+    - changed update_all() arguments
+    - changed delete() arguments
+    - changed delete_all() arguments
+    - changed execute() arguments
 0.1402
-  remove finish(), error()
-  can receive code ref to filter()
-  renamed resist to register
+    - remove finish(), error()
+    - can receive code ref to filter()
+    - renamed resist to register
 0.1401
-  renamed fetch_rows to fetch_multi
-  renamed fetch_hash_rows to fetch_hash_multi
+    - renamed fetch_rows to fetch_multi
+    - renamed fetch_hash_rows to fetch_hash_multi
 0.1301
-  Changed many(not backword compatible)
+    - Changed many(not backword compatible)
 0.1201
-  Changed many(not backword compatible)
+    - Changed many(not backword compatible)
 0.1101
-  rename DBIx::Custom::SQLite last_insert_id to last_insert_rowid
+    - rename DBIx::Custom::SQLite last_insert_id to last_insert_rowid
 0.1001
-  remove run_transaction().
-  add transaction() and DBIx::Custom::Transaction
-  rename fetch_first to fetch_single
-  rename fetch_hash_first to fetch_hash_single
+    - remove run_transaction().
+    - add transaction() and DBIx::Custom::Transaction
+    - rename fetch_first to fetch_single
+    - rename fetch_hash_first to fetch_hash_single
 0.0906
-  fix some bug
+    - fix some bug
 0.0905
-  catch up with Object::Simple update
+    - catch up with Object::Simple update
 0.0904
-  cleanup
+    - cleanup
 0.0903
-  catch up with Object::Simple update
+    - catch up with Object::Simple update
 0.0902
-  cleanup
+    - cleanup
 0.0901
-  DBIx::Basic filter 'encode_utf8' utf8::upgrade process is deleted
+    - DBIx::Basic filter 'encode_utf8' utf8::upgrade process is deleted
 0.0801
-  add 'create_table', 'drop_table' methods
+    - add 'create_table', 'drop_table' methods
 0.0701
-  rename sql_template to sql_tmpl (not backword compatible)
-  rename dbi_options to options (not backword compatible)
+    - rename sql_template to sql_tmpl (not backword compatible)
+    - rename dbi_options to options (not backword compatible)
 0.0605
-  fix encode_utf8 filter
+    - fix encode_utf8 filter
 0.0604
-  fix timeformat tests
+    - fix timeformat tests
 0.0603
-  fix cache system bug
+    - fix cache system bug
 0.0602
-  update document
+    - update document
 0.0601
-  bind_filter argument is changed to ($value, $key, $dbi, $infos) (not backword compatible)
-  fetch_filter argument is changed to ($value, $key, $dbi, $infos) (not backword compatible)
-  run_transaction argument is changed to ($dbi)
+    - bind_filter argument is changed to ($value, $key, $dbi, $infos) (not backword compatible)
+    - fetch_filter argument is changed to ($value, $key, $dbi, $infos) (not backword compatible)
+    - run_transaction argument is changed to ($dbi)
 0.0502
-  update document
+    - update document
 0.0501
-  packaging DBIx::Custom::Result DBIx::Custom::Query DBIx::Custom::MySQL DBIx::Custom::SQLite DBIx::Custom::SQL::Template 
+    - packaging DBIx::Custom::Result DBIx::Custom::Query DBIx::Custom::MySQL DBIx::Custom::SQLite DBIx::Custom::SQL::Template 
 0.0401
-  catch up with DBIx::Custom::Result version up
+    - catch up with DBIx::Custom::Result version up
 0.0301
-  exchange filter argument 'key', 'value' (not backword compatible)
+    - exchange filter argument 'key', 'value' (not backword compatible)
 0.0201
-  rename tranzaction to transaction
-  add filter_off
+    - rename tranzaction to transaction
+    - add filter_off
 0.0101
-  First release
+    - First release

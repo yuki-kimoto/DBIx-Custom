@@ -317,7 +317,7 @@ C<column>は列名、C<where>は条件です。
 次のサンプルです。
 
     my $result = $dbi->select(
-        table    => ['book', 'rental'],
+        table    => 'book',
         where    => {book.name => 'Perl'},
         relation => {'book.id' => 'rental.book_id'}
     );

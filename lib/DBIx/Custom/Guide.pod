@@ -313,7 +313,7 @@ Following SQL is executed.
 Next example.
 
     my $result = $dbi->select(
-        table    => ['book', 'rental'],
+        table    => 'book',
         where    => {'book.name' => 'Perl'},
         relation => {'book.id' => 'rental.book_id'}
     );
