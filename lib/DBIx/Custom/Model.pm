@@ -11,7 +11,7 @@ use Carp 'croak';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
 __PACKAGE__->attr(
-    ['dbi', 'table'],
+    ['dbi', 'name', 'table'],
     columns => sub { [] },
     primary_key => sub { [] },
     relation => sub { {} }
@@ -169,13 +169,21 @@ my $table = DBIx::Custom::Model->new(table => 'books');
 
 L<DBIx::Custom> object.
 
+=head2 C<name>
+
+    my $name = $model->name;
+    $model   = $model->name('book');
+
+Model name.
+
 =head2 C<table>
 
     my $table = $model->table;
     $model    = $model->table('book');
 
-Table name.
-    
+Table name. Model name and table name is different.
+Table name is real table name in database.
+
 =head2 C<primary_key>
 
     my $primary_key = $model->primary_key;

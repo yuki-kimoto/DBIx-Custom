@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1649';
+our $VERSION = '0.1650';
 
 use 5.008001;
 use strict;
@@ -741,14 +741,19 @@ sub include_model {
     
     foreach my $model_info (@$model_infos) {
         
-        # Model name and class
-        my $model_name;
+        # Model class, name, table
         my $model_class;
+        my $model_name;
+        my $model_table;
         if (ref $model_info eq 'HASH') {
-            $model_name = (keys %$model_info)[0];
-            $model_class = $model_info->{$model_name};
+            $model_class = $model_info->{class};
+            $model_name  = $model_info->{name};
+            $model_table = $model_info->{table};
+            
+            $model_name  ||= $model_class;
+            $model_table ||= $model_name;
         }
-        else { $model_name = $model_class = $model_info }
+        else { $model_class =$model_name = $model_table = $model_info }
         my $mclass = "${name_space}::$model_class";
         
         # Load
@@ -761,10 +766,11 @@ sub include_model {
         
         # Instantiate
         my $model = $mclass->new(dbi => $self);
-        $model->table($model_name) unless $model->table;
+        $model->name($model_name) unless $model->name;
+        $model->table($model_table) unless $model->table;
         
         # Set
-        $self->model($model_name, $model);
+        $self->model($model->name, $model);
     }
     return $self;
 }

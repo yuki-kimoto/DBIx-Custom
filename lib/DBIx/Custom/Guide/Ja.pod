@@ -1032,42 +1032,45 @@ C<execute()>との連携です。SQLを作成するときに埋め込むこと�
 ソースコードの見通しをよくするために、
 L<DBIx::Custom::Model>を継承してモデルを作成することができます。
 
-    package MyModel::book;
-    use base 'DBIx::Custom::Model';
-    
-    sub insert { ... }
-    sub list { ... }
+まず最初にモデルの元になるクラスを<DBIx::Custom::Model>
+を継承して作成します。
 
-このクラスを取り込んで、インスタンス化することができます。
-
-    $dbi->include_model(
-        MyModel => [
-            'book',
-        ]
-    );
-
-最初の引数は名前空間です。第二引数は、クラスの末尾の名前を含む
-配列のリファレンスです。
-
-第二引数を指定しなかった場合は、名前空間以下にあるすべてのモデル
-が取り込まれます。
-
-    $dbi->include_model('MyModel');
-
-ただし、名前空間名そのものを表すモジュールが
-存在していることが必要なことに注意してください。
-
-    # MyModel.pm
     package MyModel;
     
     use base 'DBIx::Custom::Model';
 
-次のようなモジュールの配置が必要です。
+次に個々のモデルクラスを作成します。
+
+MyModel::book
+
+    package MyModel::book;
+    
+    use base 'MyModel';
+    
+    sub insert { ... }
+    sub list { ... }
+
+MyModel::company
+
+    package MyModel::company;
+    
+    use base 'MyModel';
+    
+    sub insert { ... }
+    sub list { ... }
+
+このように作成したモジュールを次のように配置してください。
 
     MyModel.pm
     MyModel / book.pm
             / company.pm
-    
+
+このように作成したモデルはC<include_model()>で取り込むことができます。
+
+    $dbi->include_model('MyModel');
+
+第一引数は、モデルの名前空間になります。
+
 モデルは次のように利用することができます。
 
     my $result = $dbi->model('book')->list;
@@ -1130,6 +1133,40 @@ C<select_at()>で利用されます。
     $model->relation({'book.company_id' => 'company.id'});
 
 ここで設定したリレーションはC<select()>, C<select_at()>で利用されます。
+
+=head2 クラス名、モデル名、テーブル名
+
+クラス名とモデル名とテーブル名の関係について書いておきます。
+通常はクラス名がモデル名に利用され、テーブル名にはモデル名が利用されます。
+
+    クラス名     モデル名              テーブル名
+    book         (クラス名) -> book    (モデル名) -> book
+
+モデル名を変更することもできます。
+
+    package MyModel::book;
+    
+    __PACAKGE__->attr(name => 'book_model');
+
+    クラス名     モデル名      テーブル名
+    book         book_model    (モデル名) -> book_model
+
+モデル名というのは、L<DBIx::Custom>のL<model()>で利用される名前です。
+
+    $dbi->model('book_model');
+
+テーブル名を変更することもできます。
+
+    package MyModel::book;
+    
+    __PACAKGE__->attr(table => 'book_table');
+
+    クラス名     モデル名              テーブル名
+    book         (クラス名) -> book    book_table
+
+テーブル名というのは、実際にアクセスされるテーブルです。
+
+    $dbi->model('book')->insert(...); # book_tableにアクセス
 
 =head2 列名の自動生成 : column_clause()
 

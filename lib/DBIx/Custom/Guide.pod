@@ -1005,41 +1005,44 @@ L<DBIx::Custom::Where> object is embedded into SQL.
 you can define model extending L<DBIx::Custom::Model>
 to improve source code view.
 
-    package MyModel::book;
+At first, you create basic model class extending <DBIx::Custom::Model>.
+
+    package MyModel;
+    
     use base 'DBIx::Custom::Model';
+
+Next, you create each model classes.
+
+MyModel::book
+
+    package MyModel::book;
+    
+    use base 'MyModel';
     
     sub insert { ... }
     sub list { ... }
 
-You can include and instantiate this class
+MyModel::company
 
-    $dbi->include_model(
-        MyModel => [
-            'book',
-        ]
-    );
-
-First argument is name space.
-Second argument is array reference of class base names.
-
-If you don't specify second argument, All models under name space is
-included.
-
-    $dbi->include_model('MyModel');
-
-Note that in this case name spece module is needed.
-
-    # MyModel.pm
-    package MyModel;
+    package MyModel::company;
     
-    use base 'DBIx::Custom::Model';
+    use base 'MyModel';
+    
+    sub insert { ... }
+    sub list { ... }
 
 The follwoing modules location is needed.
 
     MyModel.pm
     MyModel / book.pm
             / company.pm
-    
+
+You can include these models by C<include_model()>
+
+    $dbi->include_model('MyModel');
+
+First argument is name space of model.
+
 You can use model like this.
 
     my $result = $dbi->model('book')->list;
@@ -1095,6 +1098,40 @@ You can set C<relation>
     $model->relation({'book.company_id' => 'company.id'});
 
 This relation is used by C<select()>, C<select_at()>
+
+=head2 Class name, Model name, Table name
+
+Class name, model name, and table name is a little different.
+Generally Class name is model name, and table name is model name.
+
+    CLASS        MODEL              TABLE
+    book         (CLASS) -> book    (MODEL) -> book
+
+You can change model name.
+
+    package MyModel::book;
+    
+    __PACAKGE__->attr(name => 'book_model');
+
+    CLASS        MODEL         TABLE
+    book         book_model    (MODEL) -> book_model
+
+Model name is the name used by L<model()> of L<DBIx::Custom>.
+
+    $dbi->model('book_model');
+
+You can change table name.
+
+    package MyModel::book;
+    
+    __PACAKGE__->attr(table => 'book_table');
+
+    CLASS        MODEL              TABLE
+    book         (CLASS) -> book    book_table
+
+Table name is the table really accessed.
+
+    $dbi->model('book')->insert(...); # access to "book_table"
 
 =head2 Create column clause automatically : column_clause()
 

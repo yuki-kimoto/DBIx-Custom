@@ -11,7 +11,7 @@ sub connect {
     $self->include_model(
         MyModel1 => [
             'book',
-            {company => 'Company'}
+            {class => 'Company', name => 'company'}
         ]
     );
 }

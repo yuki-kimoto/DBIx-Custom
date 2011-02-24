@@ -1304,7 +1304,7 @@ like($@, qr/locate/);
         $self->include_model(
             MyModel2 => [
                 'book',
-                {company => 'Company'}
+                {class => 'Company', name => 'company'}
             ]
         );
     }
@@ -1533,6 +1533,12 @@ $dbi = MyDBI6->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1')->delete_at(where => [1, 2]);
+is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->model('table1_1')->delete_at(where => [1, 2]);
+is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->model('table1_3')->delete_at(where => [1, 2]);
 is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
 
 
