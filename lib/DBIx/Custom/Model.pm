@@ -13,6 +13,7 @@ push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 __PACKAGE__->attr(
     ['dbi', 'name', 'table'],
     columns => sub { [] },
+    filter => sub { {} },
     primary_key => sub { [] },
     relation => sub { {} }
 );
@@ -157,7 +158,7 @@ my $table = DBIx::Custom::Model->new(table => 'books');
 
 =head1 ATTRIBUTES
 
-=head2 C<(experimental) columns>
+=head2 C<columns>
 
     my $columns = $model->columns;
     $model      = $model->columns(['id', 'number']);
@@ -168,6 +169,13 @@ my $table = DBIx::Custom::Model->new(table => 'books');
     $model  = $model->dbi($dbi);
 
 L<DBIx::Custom> object.
+
+=head2 C<filter>
+
+    my $dbi = $model->filter
+    $model  = $model->filter({out => 'tp_to_date', in => 'date_to_tp'});
+
+This filter is applied when L<DBIx::Custom> C<include_model()> is called.
 
 =head2 C<name>
 

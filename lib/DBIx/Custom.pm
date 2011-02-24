@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1650';
+our $VERSION = '0.1651';
 
 use 5.008001;
 use strict;
@@ -771,6 +771,9 @@ sub include_model {
         
         # Set
         $self->model($model->name, $model);
+        
+        # Apply filter
+        $self->apply_filter($model->table, %{$model->filter});
     }
     return $self;
 }

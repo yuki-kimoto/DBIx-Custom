@@ -1591,6 +1591,10 @@ $result = $dbi->model('table1')->select(column => ['key3'], where => {'table1.ke
 is($result->fetch_hash_first->{key3}, 3);
 $result = $dbi->model('table1')->select_at(column => ['key3'], where => [1]);
 is($result->fetch_hash_first->{key3}, 3);
+$dbi->execute('create table table3 (key1);');
+$dbi->model('table3')->insert(param => {key1 => 'a'});
+is_deeply($dbi->model('table3')->select(where => {key1 => 'a'})->fetch_hash_first,
+   {key1 => 'A'});
 
 test 'column_clause';
 $dbi = MyDBI7->connect($NEW_ARGS->{0});

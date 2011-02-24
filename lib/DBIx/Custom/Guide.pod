@@ -1084,6 +1084,15 @@ You can set primary key to model.
 Primary key is used by C<update_at()>, C<delete_at()>,
 C<select_at()>.
 
+by C<filter> you can define filters applied by C<apply_filter()>
+
+    $model->filter({
+        title  => {out => ..., in => ..., end => ...},
+        author => {out => ..., in => ..., end => ...}
+    });
+
+This filters is applied when C<include_model()> is called.
+
 You can set column names
 
     $model->columns(['id', 'number_id']);

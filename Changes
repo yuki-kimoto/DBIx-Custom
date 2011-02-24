@@ -1,6 +1,7 @@
+0.1651
+    - add experimental DBIx::Custom::Model filter attribute.
 0.1650
     - add experimental DBIx::Custom::Model name() attribute
-    - remove name specified feature from experimantal include_model().
 0.1649
     - add experimental DBIx::Custom::Model column_clause() method.
     - select method column option can receive string.

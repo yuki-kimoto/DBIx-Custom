@@ -1119,6 +1119,15 @@ L<DBIx::Custom>とL<DBI>のすべてのメソッドを呼び出すこともで�
 ここで設定したプライマリーキーはC<update_at()>, C<delete_at()>,
 C<select_at()>で利用されます。
 
+C<filter>でC<apply_filter()>で適用されるフィルタを定義しておくこともできます。
+
+    $model->filter({
+        title  => {out => ..., in => ..., end => ...},
+        author => {out => ..., in => ..., end => ...}
+    });
+
+このフィルタはC<include_model()>を呼び出したときに自動的に適用されます。
+
 モデルには列名を設定することもできます。
 
     $model->columns(['id', 'number_id']);
@@ -1134,6 +1143,7 @@ C<select_at()>で利用されます。
 
 ここで設定したリレーションはC<select()>, C<select_at()>で利用されます。
 
+
 =head2 クラス名、モデル名、テーブル名
 
 クラス名とモデル名とテーブル名の関係について書いておきます。
@@ -1145,6 +1155,8 @@ C<select_at()>で利用されます。
 モデル名を変更することもできます。
 
     package MyModel::book;
+    
+    use base 'MyModel';
     
     __PACAKGE__->attr(name => 'book_model');
 
@@ -1158,9 +1170,11 @@ C<select_at()>で利用されます。
 テーブル名を変更することもできます。
 
     package MyModel::book;
+
+    use base 'MyModel';
     
     __PACAKGE__->attr(table => 'book_table');
-
+    
     クラス名     モデル名              テーブル名
     book         (クラス名) -> book    book_table
 
