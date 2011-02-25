@@ -13,7 +13,7 @@ push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 __PACKAGE__->attr(
     ['dbi', 'name', 'table'],
     columns => sub { [] },
-    filter => sub { {} },
+    filter => sub { [] },
     primary_key => sub { [] },
     relation => sub { {} }
 );

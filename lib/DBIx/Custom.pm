@@ -16,6 +16,7 @@ use DBIx::Custom::QueryBuilder;
 use DBIx::Custom::Where;
 use DBIx::Custom::Model;
 use DBIx::Custom::Tag;
+use DBIx::Custom::Util;
 use Encode qw/encode_utf8 decode_utf8/;
 
 __PACKAGE__->attr(
@@ -87,6 +88,7 @@ sub apply_filter {
     $self->{filter} ||= {};
     $self->{filter}{out} ||= {};
     $self->{filter}{in} ||= {};
+    $self->{filter}{end} ||= {};
     
     # Create filters
     my $usage = "Usage: \$dbi->apply_filter(" .
@@ -98,11 +100,18 @@ sub apply_filter {
         # Column
         my $column = $cinfos[$i];
         
+        if (ref $column eq 'ARRAY') {
+            foreach my $c (@$column) {
+                push @cinfos, $c, $cinfos[$i + 1];
+            }
+            next;
+        }
+        
         # Filter info
         my $finfo = $cinfos[$i + 1] || {};
-        croak $usage unless  ref $finfo eq 'HASH';
+        croak "$usage (table: $table)" unless  ref $finfo eq 'HASH';
         foreach my $ftype (keys %$finfo) {
-            croak $usage unless $ftype eq 'in' || $ftype eq 'out'
+            croak "$usage (table: $table 2)" unless $ftype eq 'in' || $ftype eq 'out'
                              || $ftype eq 'end'; 
         }
         
@@ -351,6 +360,7 @@ sub execute{
     
     # Applied filter
     my $filter = {};
+    
     my $tables = $query->tables;
     my $arg_tables = $args{table} || [];
     $arg_tables = [$arg_tables]
@@ -364,7 +374,8 @@ sub execute{
     }
     
     # Filter argument
-    my $f = $args{filter} || $query->filter || {};
+    my $f = DBIx::Custom::Util::array_filter_to_hash($args{filter})
+         || $query->filter || {};
     foreach my $column (keys %$f) {
         my $fname = $f->{$column};
         if (!defined $fname) {
@@ -773,7 +784,9 @@ sub include_model {
         $self->model($model->name, $model);
         
         # Apply filter
-        $self->apply_filter($model->table, %{$model->filter});
+        croak "${name_space}::$model_class filter must be array reference"
+          unless ref $model->filter eq 'ARRAY';
+        $self->apply_filter($model->table, @{$model->filter});
     }
     return $self;
 }
@@ -1075,23 +1088,23 @@ DBIx::Custom - DBI interface, having hash parameter binding and filtering system
     # Insert 
     $dbi->insert(table  => 'book',
                  param  => {title => 'Perl', author => 'Ken'},
-                 filter => {title => 'to_something'});
+                 filter => [title => 'to_something']);
     
     # Update 
     $dbi->update(table  => 'book', 
                  param  => {title => 'Perl', author => 'Ken'}, 
                  where  => {id => 5},
-                 filter => {title => 'to_something'});
+                 filter => [title => 'to_something']);
     
     # Update all
     $dbi->update_all(table  => 'book',
                      param  => {title => 'Perl'},
-                     filter => {title => 'to_something'});
+                     filter => [title => 'to_something']);
     
     # Delete
     $dbi->delete(table  => 'book',
                  where  => {author => 'Ken'},
-                 filter => {title => 'to_something'});
+                 filter => [title => 'to_something']);
     
     # Delete all
     $dbi->delete_all(table => 'book');
@@ -1103,7 +1116,7 @@ DBIx::Custom - DBI interface, having hash parameter binding and filtering system
         where  => {author => 'Ken'},
         relation => {'book.id' => 'rental.book_id'},
         append => 'order by id limit 5',
-        filter => {title => 'to_something'}
+        filter => [title => 'to_something']
     );
 
     # Execute SQL
@@ -1112,7 +1125,7 @@ DBIx::Custom - DBI interface, having hash parameter binding and filtering system
     # Execute SQL with hash binding and filtering
     $dbi->execute("select id from book where {= author} and {like title}",
                   param  => {author => 'ken', title => '%Perl%'},
-                  filter => {title => 'to_something'});
+                  filter => [title => 'to_something']);
 
     # Create query and execute it
     my $query = $dbi->create_query(
@@ -1331,8 +1344,8 @@ instead of suger methods.
 
 =head2 C<execute>
 
-    my $result = $dbi->execute($query,  param => $params, filter => \%filter);
-    my $result = $dbi->execute($source, param => $params, filter => \%filter);
+    my $result = $dbi->execute($query,  param => $params, filter => \@filter);
+    my $result = $dbi->execute($source, param => $params, filter => \@filter);
 
 Execute query or the source of SQL.
 Query is L<DBIx::Custom::Query> object.
@@ -1344,7 +1357,7 @@ or the count of affected rows if insert, update, delete statement is executed.
     $dbi->delete(table  => $table,
                  where  => \%where,
                  append => $append,
-                 filter => \%filter,
+                 filter => \@filter,
                  query  => 1);
 
 Execute delete statement.
@@ -1392,7 +1405,7 @@ You can also write arguments like this.
     $dbi->insert(table  => $table, 
                  param  => \%param,
                  append => $append,
-                 filter => \%filter,
+                 filter => \@filter,
                  query  => 1);
 
 Execute insert statement.
@@ -1594,7 +1607,7 @@ NOTE that you must pass array reference as C<where>.
                  param  => \%params,
                  where  => \%where,
                  append => $append,
-                 filter => \%filter,
+                 filter => \@filter,
                  query  => 1)
 
 Execute update statement.
@@ -1632,7 +1645,7 @@ C<columns> and C<primary_key> is automatically set.
 
     $dbi->update_all(table  => $table, 
                      param  => \%params,
-                     filter => \%filter,
+                     filter => \@filter,
                      append => $append);
 
 Execute update statement to update all rows.

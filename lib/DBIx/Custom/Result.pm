@@ -6,6 +6,7 @@ use warnings;
 use base 'Object::Simple';
 
 use Carp 'croak';
+use DBIx::Custom::Util;
 
 __PACKAGE__->attr(
     [qw/filters sth/],
@@ -16,8 +17,17 @@ sub filter {
     my $self = shift;
     
     if (@_) {
-        my $filter = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+        my $filter = {};
         
+        if (ref $_[0] eq 'HASH') {
+            $filter = $_[0];
+        }
+        else {
+            $filter = DBIx::Custom::Util::array_filter_to_hash(
+                @_ > 1 ? [@_] : $_[0]
+            );
+        }
+                
         foreach my $column (keys %$filter) {
             my $fname = $filter->{$column};
 
@@ -44,7 +54,16 @@ sub end_filter {
     my $self = shift;
     
     if (@_) {
-        my $end_filter = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+        my $end_filter = {};
+        
+        if (ref $_[0] eq 'HASH') {
+            $end_filter = $_[0];
+        }
+        else {
+            $end_filter = DBIx::Custom::Util::array_filter_to_hash(
+                @_ > 1 ? [@_] : $_[0]
+            );
+        }
         
         foreach my $column (keys %$end_filter) {
             my $fname = $end_filter->{$column};
@@ -339,8 +358,10 @@ and implements the following new ones.
 
 =head2 C<(experimental) end_filter>
 
-    $result    = $result->end_filter(title  => 'to_something',
+    $result = $result->end_filter(title  => 'to_something',
                                      author => 'to_something');
+
+    $result = $result->end_filter([qw/title author/] => 'to_something');
 
 End filters.
 These each filters is executed after the filters applied by C<apply_filter> of
@@ -400,6 +421,8 @@ Row count must be specified.
 
     $result = $result->filter(title  => 'to_something',
                               author => 'to_something');
+
+    $result = $result->filter([qw/title author/] => 'to_something');
 
 Filters.
 These each filters override the filters applied by C<apply_filter> of

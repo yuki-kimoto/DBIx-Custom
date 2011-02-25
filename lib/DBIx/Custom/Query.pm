@@ -13,7 +13,28 @@ sub filter {
     my $self = shift;
     
     if (@_) {
-        my $filter = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+        my $filter = {};
+        
+        if (ref $_[0] eq 'HASH') {
+            $filter = $_[0];
+        }
+        else {
+            my $ef = @_ > 1 ? [@_] : $_[0];
+            
+            for (my $i = 0; $i < @$ef; $i += 2) {
+                my $column = $ef->[$i];
+                my $f = $ef->[$i + 1];
+                
+                if (ref $column eq 'ARRAY') {
+                    foreach my $c (@$column) {
+                        $filter->{$c} = $f;
+                    }
+                }
+                else {
+                    $filter->{$column} = $f;
+                }
+            }
+        }
         
         foreach my $column (keys %$filter) {
             my $fname = $filter->{$column};
@@ -64,6 +85,8 @@ Column names.
     my $filter = $query->filter;
     $query     = $query->filter(author => 'to_something',
                                  title  => 'to_something');
+
+    $query     = $query->filter([qw/author title/] => 'to_something');
 
 Filters when parameter binding is executed.
 
