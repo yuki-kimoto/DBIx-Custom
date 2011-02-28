@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1651';
+our $VERSION = '0.1653';
 
 use 5.008001;
 use strict;
@@ -322,17 +322,20 @@ sub delete_at {
     if (exists $args{where}) {
         my $where_columns = delete $args{where};
         $where_columns = [$where_columns] unless ref $where_columns;
+
+        croak qq{"where" must be constant value or array reference}
+          unless !ref $where_columns || ref $where_columns eq 'ARRAY';
         
         for(my $i = 0; $i < @$primary_keys; $i ++) {
            $where->{$primary_keys->[$i]} = $where_columns->[$i];
         }
     }
-    elsif (exists $args{param}) {
+    
+    if (exists $args{param}) {
         my $param = delete $args{param};
         
         for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $where->{$primary_keys->[$i]}
-             = delete $param->{$primary_keys->[$i]};
+            delete $param->{$primary_keys->[$i]};
         }
     }
     
@@ -481,6 +484,52 @@ sub insert {
     );
     
     return $ret_val;
+}
+
+our %VALID_INSERT_AT_ARGS
+  = map { $_ => 1 } qw/table param
+                       where append filter query
+                       primary_key param/;
+
+sub insert_at {
+    my ($self, %args) = @_;
+    
+    # Check arguments
+    foreach my $name (keys %args) {
+        croak qq{"$name" is invalid argument}
+          unless $VALID_INSERT_AT_ARGS{$name};
+    }
+    
+    # Primary key
+    my $primary_keys = delete $args{primary_key};
+    $primary_keys = [$primary_keys] unless ref $primary_keys;
+    
+    # Where clause
+    my $where = {};
+    my $param = {};
+    
+    if (exists $args{where}) {
+        my $where_columns = delete $args{where};
+        $where_columns = [$where_columns] unless ref $where_columns;
+
+        croak qq{"where" must be constant value or array reference}
+          unless !ref $where_columns || ref $where_columns eq 'ARRAY';
+        
+        for(my $i = 0; $i < @$primary_keys; $i ++) {
+           $where->{$primary_keys->[$i]} = $where_columns->[$i];
+        }
+    }
+    
+    if (exists $args{param}) {
+        $param = delete $args{param};
+        for(my $i = 0; $i < @$primary_keys; $i ++) {
+             delete $param->{$primary_keys->[$i]};
+        }
+    }
+    
+    $param = {%$param, %$where};
+    
+    return $self->insert(param => $param, %args);
 }
 
 sub each_column {
@@ -691,17 +740,21 @@ sub select_at {
     my $where = {};
     if (exists $args{where}) {
         my $where_columns = delete $args{where};
+        
+        croak qq{"where" must be constant value or array reference}
+          unless !ref $where_columns || ref $where_columns eq 'ARRAY';
+        
         $where_columns = [$where_columns] unless ref $where_columns;
         
         for(my $i = 0; $i < @$primary_keys; $i ++) {
            $where->{$table . '.' . $primary_keys->[$i]} = $where_columns->[$i];
         }
     }
-    elsif (exists $args{param}) {
+    
+    if (exists $args{param}) {
         my $param = delete $args{param};
         for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $where->{$primary_keys->[$i]}
-             = delete $param->{$primary_keys->[$i]};
+             delete $param->{$primary_keys->[$i]};
         }
     }
     
@@ -929,16 +982,19 @@ sub update_at {
     if (exists $args{where}) {
         my $where_columns = delete $args{where};
         $where_columns = [$where_columns] unless ref $where_columns;
+
+        croak qq{"where" must be constant value or array reference}
+          unless !ref $where_columns || ref $where_columns eq 'ARRAY';
         
         for(my $i = 0; $i < @$primary_keys; $i ++) {
            $where->{$primary_keys->[$i]} = $where_columns->[$i];
         }
     }
-    elsif (exists $args{param}) {
+    
+    if (exists $args{param}) {
         $param = delete $args{param};
         for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $where->{$primary_keys->[$i]}
-             = delete $param->{$primary_keys->[$i]};
+            delete $param->{$primary_keys->[$i]};
         }
     }
     

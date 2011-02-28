@@ -1,3 +1,9 @@
+0.1653
+    - added experimental DBIx::Custom::Model insert_at()
+    - added experimental insert_at()
+    - improved error message
+0.1652
+    - all filter can receive array reference and receiving hash reference is DEPRECATED!
 0.1651
     - add experimental DBIx::Custom::Model filter attribute.
 0.1650

@@ -93,6 +93,16 @@ sub insert {
     $self->dbi->insert(table => $self->table, @_);
 }
 
+sub insert_at {
+    my $self = shift;
+    
+    return $self->dbi->insert_at(
+        table => $self->table,
+        primary_key => $self->primary_key,
+        @_
+    );
+}
+
 sub method {
     my $self = shift;
     
