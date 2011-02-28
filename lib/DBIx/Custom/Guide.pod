@@ -693,6 +693,10 @@ use C<end_filter()> to add end filter.
 
 In this example, L<Time::Piece> object is converted to readable format.
 
+You can remove end_filter by C<end_filter>
+
+    $result->remove_end_filter;
+
 =head3 Automate applying filter : C<each_column()>
 
 It is useful to apply filter automatically at date type columns.

@@ -1,4 +1,5 @@
 0.1653
+    - added experimental DBIx::Custom::Result remove_end_filter()
     - added experimental DBIx::Custom::Model insert_at()
     - added experimental insert_at()
     - improved error message

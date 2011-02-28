@@ -1435,7 +1435,7 @@ Arguments is same as C<delete> method,
 except that C<delete_all> don't have C<where> argument.
 Return value of C<delete_all()> is the count of affected rows.
 
-=head3 C<delete_at()>
+=head3 C<(experimental) delete_at()>
 
 To delete row by using primary key, use C<delete_at()>
 
@@ -1475,6 +1475,22 @@ C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as re
 default to 0. This is experimental.
 This is overwrites C<default_bind_filter>.
 Return value of C<insert()> is the count of affected rows.
+
+=head3 C<(experimental) insert_at()>
+
+To insert row by using primary key, use C<insert_at()>
+
+    $dbi->insert_at(
+        table => 'book',
+        primary_key => ['id'],
+        where => ['123'],
+        param => {name => 'Ken'}
+    );
+
+In this example, row which id column is 123 is inserted.
+NOTE that you must pass array reference as C<where>.
+If C<param> contains primary key,
+the key and value is delete from C<param>.
 
 =head2 C<(experimental) each_column>
 
@@ -1648,7 +1664,7 @@ First element is a string. it contains tags,
 such as "{= title} or {like author}".
 Second element is paramters.
 
-=head3 C<select_at()>
+=head3 C<(experimental) select_at()>
 
 To select row by using primary key, use C<select_at()>.
 
@@ -1709,7 +1725,7 @@ Arguments is same as C<update> method,
 except that C<update_all> don't have C<where> argument.
 Return value of C<update_all()> is the count of affected rows.
 
-=head3 C<update_at()>
+=head3 C<(experimental) update_at()>
 
 To update row by using primary key, use C<update_at()>
 

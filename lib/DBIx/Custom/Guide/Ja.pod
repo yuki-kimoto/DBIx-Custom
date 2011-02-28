@@ -703,6 +703,10 @@ C<DBIx::Custom::Result>のC<filter()>を使用します。
 
 この例ではL<Time::Piece>オブジェクトを読みやすい書式に変換しています。
 
+最後のフィルタリングをC<remove_filter()>で取り除くこともできます。
+
+$result->remove_end_filter;
+
 =head3 フィルタの適用の自動化 C<each_column()>
 
 日付型の列は自動的にフィルタを適用できると便利です。
