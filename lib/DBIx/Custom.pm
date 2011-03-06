@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1653';
+our $VERSION = '0.1654';
 
 use 5.008001;
 use strict;
@@ -640,8 +640,6 @@ sub select {
     push @sql, 'select';
     
     if ($selection) {
-        croak qq{Can't contain "where" clause in selection}
-          if $selection =~ /\swhere\s/;
         push @sql, $selection;
     }
     else {

@@ -6,6 +6,10 @@ DBIx::Custom::Guide::Ja - DBIx::Customのガイドブック
 
 =head1 ガイド
 
+(このモジュールはまだ実験的な機能を多く含んでいます
+モジュールのドキュメントにexperimentalがついているものは、
+予告なしに変更されることがあります。)
+
 L<DBIx::Custom>はSQLの実行を簡単に行うためのクラスです。
 L<DBIx::Class>やL<DBIx::Simple>と同じように
 L<DBI>のラッパクラスになっています。L<DBIx::Class>よりも簡単に、
@@ -687,6 +691,10 @@ EOS
 C<DBIx::Custom::Result>のC<filter()>を使用します。
 
     $result->filter(issue_year => 'year_to_tp');
+
+C<remove_filter()>でフィルタを取り除くこともできます。
+
+    $result->remove_filter
 
 =head3 最後のフィルタリング : C<end_filter()>
 

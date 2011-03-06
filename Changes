@@ -1,4 +1,6 @@
 0.1653
+    - selection can contain where clause.
+0.1653
     - added experimental DBIx::Custom::Result remove_filter()
     - added experimental DBIx::Custom::Result remove_end_filter()
     - added experimental DBIx::Custom::Model insert_at()
