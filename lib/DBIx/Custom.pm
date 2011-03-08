@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1654';
+our $VERSION = '0.1655';
 
 use 5.008001;
 use strict;
@@ -369,7 +369,9 @@ sub execute{
     $arg_tables = [$arg_tables]
       unless ref $arg_tables eq 'ARRAY';
     push @$tables, @$arg_tables;
+    
     foreach my $table (@$tables) {
+        next unless $table;
         $filter = {
             %$filter,
             %{$self->{filter}{out}->{$table} || {}}
@@ -409,6 +411,7 @@ sub execute{
         my $in_filter  = {};
         my $end_filter = {};
         foreach my $table (@$tables) {
+            next unless $table;
             $in_filter = {
                 %$in_filter,
                 %{$self->{filter}{in}{$table} || {}}
@@ -532,6 +535,22 @@ sub insert_at {
     return $self->insert(param => $param, %args);
 }
 
+sub insert_param {
+    my ($self, $param) = @_;
+    
+    my @tag;
+    
+    push @tag, '{insert_param';
+    
+    foreach my $column (keys %$param) {
+        push @tag, $column;
+    }
+    
+    push @tag, '}';
+    
+    return join ' ', @tag;
+}
+
 sub each_column {
     my ($self, $cb) = @_;
     
@@ -593,7 +612,7 @@ sub register_filter {
 sub register_tag { shift->query_builder->register_tag(@_) }
 
 our %VALID_SELECT_ARGS
-  = map { $_ => 1 } qw/table column where append relation filter query selection/;
+  = map { $_ => 1 } qw/table column where append relation filter query selection left_join/;
 
 sub select {
     my ($self, %args) = @_;
@@ -616,7 +635,11 @@ sub select {
     my $relation  = $args{relation} || {};
     my $append    = $args{append};
     my $filter    = $args{filter};
-
+    my $left_join = $args{left_join} || [];
+    
+    my @left_join_tables;
+    unshift @left_join_tables, $tables->[-1];
+    
     # Relation
     if (!$selection && keys %$relation) {
         foreach my $rcolumn (keys %$relation) {
@@ -641,11 +664,13 @@ sub select {
     
     if ($selection) {
         push @sql, $selection;
+        push @left_join_tables, @{$self->_tables($selection)};
     }
     else {
         # Column clause
         if (@$columns) {
             foreach my $column (@$columns) {
+                push @left_join_tables, @{$self->_tables($column)};
                 push @sql, ($column, ',');
             }
             pop @sql if $sql[-1] eq ',';
@@ -680,6 +705,34 @@ sub select {
     
     # String where
     my $swhere = "$w";
+    
+    # Table name in Where
+    unshift @left_join_tables, @{$self->_tables($swhere)};
+    
+    # Left join
+    if (@$left_join) {
+        for (my $i = 0; $i < @$left_join; $i += 2) {
+            my $column1 = $left_join->[$i];
+            my $column2 = $left_join->[$i + 1];
+            
+            my $table1 = (split (/\./, $column1))[0];
+            my $table2 = (split (/\./, $column2))[0];
+            
+            my $table1_exists;
+            my $table2_exists;
+            
+            foreach my $table (@left_join_tables) {
+                $table1_exists = 1 if $table eq $table1;
+                $table2_exists = 1 if $table eq $table2;
+            }
+            
+            if ($table1_exists && $table2_exists) {
+                push @sql, "left outer join $table2 on $column1 = $column2";
+            }
+        }
+    }
+    
+    # Add where
     push @sql, $swhere;
     
     # Relation
@@ -694,7 +747,7 @@ sub select {
         }
     }
     pop @sql if $sql[-1] eq 'and';
-    
+        
     # Append statement
     push @sql, $append if $append;
     
@@ -704,6 +757,8 @@ sub select {
     # Create query
     my $query = $self->create_query($sql);
     return $query if $args{query};
+    
+    unshift @$tables, @left_join_tables;
     
     # Execute query
     my $result = $self->execute(
@@ -715,7 +770,7 @@ sub select {
 
 our %VALID_SELECT_AT_ARGS
   = map { $_ => 1 } qw/table column where append relation filter query selection
-                       param primary_key/;
+                       param primary_key left_join/;
 
 sub select_at {
     my ($self, %args) = @_;
@@ -999,6 +1054,22 @@ sub update_at {
     return $self->update(where => $where, param => $param, %args);
 }
 
+sub update_param {
+    my ($self, $param) = @_;
+    
+    my @tag;
+    
+    push @tag, '{update_param';
+    
+    foreach my $column (keys %$param) {
+        push @tag, $column;
+    }
+    
+    push @tag, '}';
+    
+    return join ' ', @tag;
+}
+
 sub where {
     my $self = shift;
 
@@ -1068,6 +1139,20 @@ sub _croak {
         
         croak "$error$append";
     }
+}
+
+sub _tables {
+    my ($self, $source) = @_;
+    
+    my $tables = [];
+    
+    my $safety_name = $self->safety_column_name;
+    
+    while ($source =~ /\b(\w+)\./g) {
+        push @$tables, $1;
+    }
+    
+    return $tables;
 }
 
 # DEPRECATED!

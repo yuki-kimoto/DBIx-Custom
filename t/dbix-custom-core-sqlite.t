@@ -1300,7 +1300,7 @@ test 'selection';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$result = $dbi->select(selection => '* from table1', where => {key1 => 1});
+$result = $dbi->select(selection => '* from {table table1}', where => {key1 => 1});
 is_deeply($result->fetch_hash_all, [{key1 => 1, key2 => 2}]);
 
 test 'Model class';
@@ -1586,8 +1586,6 @@ test 'columns';
 use MyDBI1;
 $dbi = MyDBI1->connect($NEW_ARGS->{0});
 $model = $dbi->model('book');
-$model->relation({'book.id' => 'company.id'});
-is_deeply($model->relation, {'book.id' => 'company.id'});
 
 
 test 'model delete_at';
@@ -1654,7 +1652,7 @@ is($row->{key2}, 2);
 is($row->{key3}, 3);
 
 
-test 'model select relation';
+test 'column_clause';
 {
     package MyDBI7;
     
@@ -1672,21 +1670,6 @@ test 'model select relation';
 $dbi = MyDBI7->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
-$result = $dbi->model('table1')->select(column => ['key3'], where => {'table1.key1' => 1});
-is($result->fetch_hash_first->{key3}, 3);
-$result = $dbi->model('table1')->select_at(column => ['key3'], where => [1]);
-is($result->fetch_hash_first->{key3}, 3);
-$dbi->execute('create table table3 (key1);');
-$dbi->model('table3')->insert(param => {key1 => 'a'});
-is_deeply($dbi->model('table3')->select(where => {key1 => 'a'})->fetch_hash_first,
-   {key1 => 'A'});
-
-test 'column_clause';
-$dbi = MyDBI7->connect($NEW_ARGS->{0});
-$dbi->execute($CREATE_TABLE->{0});
-$dbi->execute($CREATE_TABLE->{2});
 $dbi->setup_model;
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
@@ -1695,7 +1678,7 @@ $result = $model->select(column => $model->column_clause, where => {'table1.key1
 is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 2});
 $result = $model->select(column => $model->column_clause(remove => ['key1']), where => {'table1.key1' => 1});
 is_deeply($result->fetch_hash_first, {key2 => 2});
-$result = $model->select(column => $model->column_clause(add => ['key3']), where => {'table1.key1' => 1});
+$result = $model->select(relation => {'table1.key1' => 'table2.key1'}, column => $model->column_clause(add => ['key3']), where => {'table1.key1' => 1});
 is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 2, key3 => 3});
 
 

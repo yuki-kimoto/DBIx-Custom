@@ -15,7 +15,6 @@ __PACKAGE__->attr(
     columns => sub { [] },
     filter => sub { [] },
     primary_key => sub { [] },
-    relation => sub { {} }
 );
 
 our $AUTOLOAD;
@@ -117,7 +116,6 @@ sub select {
     my $self = shift;
     $self->dbi->select(
         table => $self->table,
-        relation => $self->relation,
         @_
     );
 }
@@ -128,7 +126,6 @@ sub select_at {
     return $self->dbi->select_at(
         table => $self->table,
         primary_key => $self->primary_key,
-        relation => $self->relation,
         @_
     );
 }

@@ -1,4 +1,6 @@
-0.1653
+0.1655
+    - remove experimental DBIx::Custom::Model relation
+0.1654
     - selection can contain where clause.
 0.1653
     - added experimental DBIx::Custom::Result remove_filter()
