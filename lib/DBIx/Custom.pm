@@ -538,14 +538,15 @@ sub insert_at {
 sub insert_param {
     my ($self, $param) = @_;
     
+    # Insert paramter tag
     my @tag;
-    
     push @tag, '{insert_param';
-    
+    my $safety = $self->safety_column_name;
     foreach my $column (keys %$param) {
+        croak qq{"$column" is not safety column name}
+          unless $column =~ /$safety/;
         push @tag, $column;
     }
-    
     push @tag, '}';
     
     return join ' ', @tag;
@@ -1057,14 +1058,15 @@ sub update_at {
 sub update_param {
     my ($self, $param) = @_;
     
+    # Update parameter tag
     my @tag;
-    
     push @tag, '{update_param';
-    
+    my $safety = $self->safety_column_name;
     foreach my $column (keys %$param) {
+        croak qq{"$column" is not safety column name}
+          unless $column =~ /$safety/;
         push @tag, $column;
     }
-    
     push @tag, '}';
     
     return join ' ', @tag;
@@ -1575,6 +1577,14 @@ NOTE that you must pass array reference as C<where>.
 If C<param> contains primary key,
 the key and value is delete from C<param>.
 
+=head2 C<(experimental) insert_param>
+
+    my $insert_param = $dbi->insert_param({title => 'a', age => 2});
+
+Create insert parameter tag.
+
+    {title => 'a', age => 2}   ->   {insert_param title age}
+
 =head2 C<(experimental) each_column>
 
     $dbi->each_column(
@@ -1777,6 +1787,14 @@ C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as re
 default to 0. This is experimental.
 This is overwrites C<default_bind_filter>.
 Return value of C<update()> is the count of affected rows.
+
+=head2 C<(experimental) update_param>
+
+    my $update_param = $dbi->update_param({title => 'a', age => 2});
+
+Create update parameter tag.
+
+    {title => 'a', age => 2}   ->   {update_param title age}
 
 =head2 C<(experimental) model>
 

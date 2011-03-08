@@ -1,4 +1,5 @@
 0.1655
+    - added experimental update_param and insert_param
     - remove experimental DBIx::Custom::Model relation
 0.1654
     - selection can contain where clause.

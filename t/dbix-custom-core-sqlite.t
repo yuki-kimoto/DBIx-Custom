@@ -50,6 +50,7 @@ my @sources;
 my $select_SOURCE;
 my $insert_SOURCE;
 my $update_SOURCE;
+my $param;
 my $params;
 my $sql;
 my $result;
@@ -65,6 +66,8 @@ my $ret_val;
 my $infos;
 my $model;
 my $where;
+my $update_param;
+my $insert_param;
 
 # Prepare table
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -1681,4 +1684,41 @@ is_deeply($result->fetch_hash_first, {key2 => 2});
 $result = $model->select(relation => {'table1.key1' => 'table2.key1'}, column => $model->column_clause(add => ['key3']), where => {'table1.key1' => 1});
 is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 2, key3 => 3});
 
+test 'update_param';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 
+$param = {key2 => 11};
+$update_param = $dbi->update_param($param);
+$sql = <<"EOS";
+update {table table1} $update_param
+where key1 = 1
+EOS
+$dbi->execute($sql, param => $param);
+$result = $dbi->execute($SELECT_SOURCES->{0});
+$rows   = $result->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
+                  "basic");
+
+
+eval { $dbi->update_param({";" => 1}) };
+like($@, qr/not safety/);
+
+
+test 'insert_param';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$param = {key1 => 1};
+$insert_param = $dbi->insert_param($param);
+$sql = <<"EOS";
+insert into {table table1} $insert_param
+EOS
+
+$dbi->execute($sql, param => $param);
+is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
+
+eval { $dbi->insert_param({";" => 1}) };
+like($@, qr/not safety/);
