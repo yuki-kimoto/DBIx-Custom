@@ -1722,3 +1722,29 @@ is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
 
 eval { $dbi->insert_param({";" => 1}) };
 like($@, qr/not safety/);
+
+
+test 'left_join';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+$dbi->execute($CREATE_TABLE->{2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
+$rows = $dbi->select(
+    table => 'table1',
+    column => 'table1.key1 as table1_key1, table2.key1 as table2_key1, key2, key3',
+    where   => {'table1.key2' => 2},
+    left_join  => ['table1.key1' => 'table2.key1']
+)->fetch_hash_all;
+is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}]);
+
+eval {
+    $rows = $dbi->select(
+        table => 'table1',
+        column => 'table1.key1 as table1_key1, table2.key1 as table2_key1, key2, key3',
+        where   => {'table1.key2' => 2},
+        left_join  => {'table1.key1' => 'table2.key1'}
+    );
+};
+like ($@, qr/array/);

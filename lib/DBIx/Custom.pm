@@ -633,30 +633,17 @@ sub select {
     $columns = [$columns] unless ref $columns;
     my $selection = $args{selection} || '';
     my $where     = $args{where} || {};
-    my $relation  = $args{relation} || {};
     my $append    = $args{append};
     my $filter    = $args{filter};
     my $left_join = $args{left_join} || [];
+    croak qq{"left_join" must be array reference}
+      unless ref $left_join eq 'ARRAY';
     
-    my @left_join_tables;
-    unshift @left_join_tables, $tables->[-1];
+    my @join_tables;
+    unshift @join_tables, $tables->[-1];
     
-    # Relation
-    if (!$selection && keys %$relation) {
-        foreach my $rcolumn (keys %$relation) {
-            my $table1 = (split (/\./, $rcolumn))[0];
-            my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
-            
-            my $table1_exists;
-            my $table2_exists;
-            foreach my $table (@$tables) {
-                $table1_exists = 1 if $table eq $table1;
-                $table2_exists = 1 if $table eq $table2;
-            }
-            unshift @$tables, $table1 unless $table1_exists;
-            unshift @$tables, $table2 unless $table2_exists;
-        }
-    }
+    # Relation table(DEPRECATED!);
+    $self->_add_relation_table($args{relation}, $tables);
     
     # SQL stack
     my @sql;
@@ -665,13 +652,13 @@ sub select {
     
     if ($selection) {
         push @sql, $selection;
-        push @left_join_tables, @{$self->_tables($selection)};
+        push @join_tables, @{$self->_tables($selection)};
     }
     else {
         # Column clause
         if (@$columns) {
             foreach my $column (@$columns) {
-                push @left_join_tables, @{$self->_tables($column)};
+                push @join_tables, @{$self->_tables($column)};
                 push @sql, ($column, ',');
             }
             pop @sql if $sql[-1] eq ',';
@@ -708,7 +695,7 @@ sub select {
     my $swhere = "$w";
     
     # Table name in Where
-    unshift @left_join_tables, @{$self->_tables($swhere)};
+    unshift @join_tables, @{$self->_tables($swhere)};
     
     # Left join
     if (@$left_join) {
@@ -722,7 +709,7 @@ sub select {
             my $table1_exists;
             my $table2_exists;
             
-            foreach my $table (@left_join_tables) {
+            foreach my $table (@join_tables) {
                 $table1_exists = 1 if $table eq $table1;
                 $table2_exists = 1 if $table eq $table2;
             }
@@ -736,19 +723,9 @@ sub select {
     # Add where
     push @sql, $swhere;
     
-    # Relation
-    if (!$selection && keys %$relation) {
-        push @sql, $swhere eq '' ? 'where' : 'and';
-        foreach my $rcolumn (keys %$relation) {
-            my $table1 = (split (/\./, $rcolumn))[0];
-            my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
-            push @$tables, ($table1, $table2);
-            
-            push @sql, ("$rcolumn = " . $relation->{$rcolumn},  'and');
-        }
-    }
-    pop @sql if $sql[-1] eq 'and';
-        
+    # Relation(DEPRECATED!);
+    $self->_push_relation(\@sql, $tables, $args{relation}, $swhere eq '' ? 1 : 0);
+    
     # Append statement
     push @sql, $append if $append;
     
@@ -759,7 +736,7 @@ sub select {
     my $query = $self->create_query($sql);
     return $query if $args{query};
     
-    unshift @$tables, @left_join_tables;
+    unshift @$tables, @join_tables;
     
     # Execute query
     my $result = $self->execute(
@@ -1157,6 +1134,8 @@ sub _tables {
     return $tables;
 }
 
+
+
 # DEPRECATED!
 __PACKAGE__->attr(
     dbi_options => sub { {} },
@@ -1211,6 +1190,42 @@ sub default_fetch_filter {
 # DEPRECATED!
 sub register_tag_processor {
     return shift->query_builder->register_tag_processor(@_);
+}
+
+# DEPRECATED!
+sub _push_relation {
+    my ($self, $sql, $tables, $relation, $need_where) = @_;
+    
+    if (keys %{$relation || {}}) {
+        push @$sql, $need_where ? 'where' : 'and';
+        foreach my $rcolumn (keys %$relation) {
+            my $table1 = (split (/\./, $rcolumn))[0];
+            my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
+            push @$tables, ($table1, $table2);
+            push @$sql, ("$rcolumn = " . $relation->{$rcolumn},  'and');
+        }
+    }
+    pop @$sql if $sql->[-1] eq 'and';    
+}
+
+# DEPRECATED!
+sub _add_relation_table {
+    my ($self, $relation, $tables) = @_;
+    
+    if (keys %{$relation || {}}) {
+        foreach my $rcolumn (keys %$relation) {
+            my $table1 = (split (/\./, $rcolumn))[0];
+            my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
+            my $table1_exists;
+            my $table2_exists;
+            foreach my $table (@$tables) {
+                $table1_exists = 1 if $table eq $table1;
+                $table2_exists = 1 if $table eq $table2;
+            }
+            unshift @$tables, $table1 unless $table1_exists;
+            unshift @$tables, $table2 unless $table2_exists;
+        }
+    }
 }
 
 1;
@@ -1733,6 +1748,7 @@ This is same as L<DBI>'s C<rollback>.
         where     => \%where,
         append    => $append,
         relation  => \%relation,
+        left_join => ['book.company_id' => 'company.id']
         filter    => \%filter,
         query     => 1,
         selection => $selection
@@ -1756,6 +1772,9 @@ C<selection> is string of column name and tables. This is experimental
 First element is a string. it contains tags,
 such as "{= title} or {like author}".
 Second element is paramters.
+
+C<left_join> is add left outer join clause after from clause.
+This is experimental.
 
 =head3 C<(experimental) select_at()>
 
