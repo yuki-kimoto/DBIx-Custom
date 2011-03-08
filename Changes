@@ -1,4 +1,7 @@
 0.1655
+    - added experimental DBIx::Custom::Model join attribute
+    - added experimental select() join option
+    - deprecated select() relation option
     - added experimental update_param and insert_param
     - remove experimental DBIx::Custom::Model relation
 0.1654

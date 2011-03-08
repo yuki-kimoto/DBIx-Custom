@@ -27,7 +27,8 @@ my $CREATE_TABLE = {
     0 => 'create table table1 (key1 char(255), key2 char(255));',
     1 => 'create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));',
     2 => 'create table table2 (key1 char(255), key3 char(255));',
-    3 => 'create table table1 (key1 Date, key2 datetime);'
+    3 => 'create table table1 (key1 Date, key2 datetime);',
+    4 => 'create table table3 (key3 int, key4 int);'
 };
 
 my $SELECT_SOURCES = {
@@ -1681,7 +1682,7 @@ $result = $model->select(column => $model->column_clause, where => {'table1.key1
 is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 2});
 $result = $model->select(column => $model->column_clause(remove => ['key1']), where => {'table1.key1' => 1});
 is_deeply($result->fetch_hash_first, {key2 => 2});
-$result = $model->select(relation => {'table1.key1' => 'table2.key1'}, column => $model->column_clause(add => ['key3']), where => {'table1.key1' => 1});
+$result = $model->select(column => $model->column_clause(add => ['table2.key3']), where => {'table1.key1' => 1});
 is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 2, key3 => 3});
 
 test 'update_param';
@@ -1724,27 +1725,62 @@ eval { $dbi->insert_param({";" => 1}) };
 like($@, qr/not safety/);
 
 
-test 'left_join';
+test 'join';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
+$dbi->execute($CREATE_TABLE->{4});
+$dbi->insert(table => 'table3', param => {key3 => 5, key4 => 4});
 $rows = $dbi->select(
     table => 'table1',
     column => 'table1.key1 as table1_key1, table2.key1 as table2_key1, key2, key3',
     where   => {'table1.key2' => 2},
-    left_join  => ['table1.key1' => 'table2.key1']
+    join  => ['left outer join table2 on table1.key1 = table2.key1']
 )->fetch_hash_all;
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}]);
+
+$rows = $dbi->select(
+    table => 'table1',
+    where   => {'key1' => 1},
+    join  => ['left outer join table2 on table1.key1 = table2.key1']
+)->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
 eval {
     $rows = $dbi->select(
         table => 'table1',
         column => 'table1.key1 as table1_key1, table2.key1 as table2_key1, key2, key3',
         where   => {'table1.key2' => 2},
-        left_join  => {'table1.key1' => 'table2.key1'}
+        join  => {'table1.key1' => 'table2.key1'}
     );
 };
 like ($@, qr/array/);
+
+$rows = $dbi->select(
+    table => 'table1',
+    where   => {'key1' => 1},
+    join  => ['left outer join table2 on table1.key1 = table2.key1',
+              'left outer join table3 on table2.key3 = table3.key3']
+)->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2}]);
+
+$rows = $dbi->select(
+    column => 'table3.key4 as table3__key4',
+    table => 'table1',
+    where   => {'table1.key1' => 1},
+    join  => ['left outer join table2 on table1.key1 = table2.key1',
+              'left outer join table3 on table2.key3 = table3.key3']
+)->fetch_hash_all;
+is_deeply($rows, [{table3__key4 => 4}]);
+
+$rows = $dbi->select(
+    column => 'table1.key1 as table1__key1',
+    table => 'table1',
+    where   => {'table3.key4' => 4},
+    join  => ['left outer join table2 on table1.key1 = table2.key1',
+              'left outer join table3 on table2.key3 = table3.key3']
+)->fetch_hash_all;
+is_deeply($rows, [{table1__key1 => 1}]);

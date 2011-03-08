@@ -613,7 +613,19 @@ sub register_filter {
 sub register_tag { shift->query_builder->register_tag(@_) }
 
 our %VALID_SELECT_ARGS
-  = map { $_ => 1 } qw/table column where append relation filter query selection left_join/;
+  = map { $_ => 1 } qw/table column where append relation filter query selection join/;
+
+sub _need_tables {
+    my ($self, $tree, $need_tables, $tables) = @_;
+    
+    foreach my $table (@$tables) {
+        
+        if ($tree->{$table}) {
+            $need_tables->{$table} = 1;
+            $self->_need_tables($tree, $need_tables, [$tree->{$table}{parent}])
+        }
+    }
+}
 
 sub select {
     my ($self, %args) = @_;
@@ -635,9 +647,9 @@ sub select {
     my $where     = $args{where} || {};
     my $append    = $args{append};
     my $filter    = $args{filter};
-    my $left_join = $args{left_join} || [];
-    croak qq{"left_join" must be array reference}
-      unless ref $left_join eq 'ARRAY';
+    my $join =     $args{join} || [];
+    croak qq{"join" must be array reference}
+      unless ref $join eq 'ARRAY';
     
     my @join_tables;
     unshift @join_tables, $tables->[-1];
@@ -697,26 +709,38 @@ sub select {
     # Table name in Where
     unshift @join_tables, @{$self->_tables($swhere)};
     
-    # Left join
-    if (@$left_join) {
-        for (my $i = 0; $i < @$left_join; $i += 2) {
-            my $column1 = $left_join->[$i];
-            my $column2 = $left_join->[$i + 1];
+    # Join
+    if (@$join) {
+        my $tree = {};
+        
+        for (my $i = 0; $i < @$join; $i++) {
             
-            my $table1 = (split (/\./, $column1))[0];
-            my $table2 = (split (/\./, $column2))[0];
+            my $join_clause = $join->[$i];
             
-            my $table1_exists;
-            my $table2_exists;
-            
-            foreach my $table (@join_tables) {
-                $table1_exists = 1 if $table eq $table1;
-                $table2_exists = 1 if $table eq $table2;
+            if ($join_clause =~ /\s([^\.\s]+?)\..+\s([^\.\s]+?)\./) {
+                
+                my $table1 = $1;
+                my $table2 = $2;
+                
+                croak qq{right side table of "$join_clause" must be uniq}
+                  if exists $tree->{$table2};
+                
+                $tree->{$table2}
+                  = {position => $i, parent => $table1, join => $join_clause};
             }
-            
-            if ($table1_exists && $table2_exists) {
-                push @sql, "left outer join $table2 on $column1 = $column2";
+            else {
+                croak qq{join "$join_clause" must be two table name};
             }
+        }
+        
+        my $need_tables = {};
+        $self->_need_tables($tree, $need_tables, \@join_tables);
+        
+        
+        my @need_tables = sort { $tree->{$a}{position} <=> $tree->{$b}{position} } keys %$need_tables;
+
+        foreach my $need_table (@need_tables) {
+            push @sql, $tree->{$need_table}{join};
         }
     }
     
@@ -1748,7 +1772,7 @@ This is same as L<DBI>'s C<rollback>.
         where     => \%where,
         append    => $append,
         relation  => \%relation,
-        left_join => ['book.company_id' => 'company.id']
+        join => ['left outer join company on book.company_id = company.id']
         filter    => \%filter,
         query     => 1,
         selection => $selection
@@ -1773,7 +1797,7 @@ First element is a string. it contains tags,
 such as "{= title} or {like author}".
 Second element is paramters.
 
-C<left_join> is add left outer join clause after from clause.
+C<join> is join clause after from clause.
 This is experimental.
 
 =head3 C<(experimental) select_at()>
