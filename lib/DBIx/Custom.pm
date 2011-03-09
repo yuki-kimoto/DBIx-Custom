@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1655';
+our $VERSION = '0.1656';
 
 use 5.008001;
 use strict;
@@ -658,10 +658,6 @@ sub select {
     croak qq{"join" must be array reference}
       unless ref $join eq 'ARRAY';
     
-    # Join tables
-    my @join_tables;
-    unshift @join_tables, $tables->[-1];
-    
     # Add relation tables(DEPRECATED!);
     $self->_add_relation_table($tables, $args{relation});
     
@@ -670,9 +666,12 @@ sub select {
     push @sql, 'select';
     
     # Selection
-    if ($selection) {
+    if ($selection) { 
         push @sql, $selection;
-        push @join_tables, @{$self->_tables($selection)};
+        if ($selection =~ /from\s+(?:\{table\s+)?([^\s\{]+?)\b/) {
+             unshift @$tables, $1;
+        }
+        unshift @$tables, @{$self->_tables($selection)};
     }
     
     # Column names and table name
@@ -680,7 +679,7 @@ sub select {
         # Column names
         if (@$columns) {
             foreach my $column (@$columns) {
-                push @join_tables, @{$self->_tables($column)};
+                unshift @$tables, @{$self->_tables($column)};
                 push @sql, ($column, ',');
             }
             pop @sql if $sql[-1] eq ',';
@@ -688,13 +687,20 @@ sub select {
         else { push @sql, '*' }
         
         # Table
-        croak qq{"table" option must be specified} unless @$tables;
         push @sql, 'from';
-        foreach my $table (@$tables) {
-            push @sql, ($table, ',');
+        if ($args{relation}) {
+            my $found = {};
+            foreach my $table (@$tables) {
+                push @sql, ($table, ',') unless $found->{$table};
+                $found->{$table} = 1;
+            }
         }
-        pop @sql if $sql[-1] eq ',';
+        else { push @sql, $tables->[-1] }
+        pop @sql if ($sql[-1] || '') eq ',';
     }
+    
+    # Main table
+    croak "Not found table name" unless $tables->[-1];
     
     # Where
     my $w;
@@ -714,43 +720,11 @@ sub select {
     # String where
     my $swhere = "$w";
     
-    # Add table names in where clause to join talbes.
-    unshift @join_tables, @{$self->_tables($swhere)};
+    # Add table names in where clause
+    unshift @$tables, @{$self->_tables($swhere)};
     
-    # Join
-    if (@$join) {
-        my $tree = {};
-        
-        for (my $i = 0; $i < @$join; $i++) {
-            
-            my $join_clause = $join->[$i];
-            
-            if ($join_clause =~ /\s([^\.\s]+?)\..+\s([^\.\s]+?)\./) {
-                
-                my $table1 = $1;
-                my $table2 = $2;
-                
-                croak qq{right side table of "$join_clause" must be uniq}
-                  if exists $tree->{$table2};
-                
-                $tree->{$table2}
-                  = {position => $i, parent => $table1, join => $join_clause};
-            }
-            else {
-                croak qq{join "$join_clause" must be two table name};
-            }
-        }
-        
-        my $need_tables = {};
-        $self->_need_tables($tree, $need_tables, \@join_tables);
-        
-        
-        my @need_tables = sort { $tree->{$a}{position} <=> $tree->{$b}{position} } keys %$need_tables;
-
-        foreach my $need_table (@need_tables) {
-            push @sql, $tree->{$need_table}{join};
-        }
-    }
+    # Push join
+    $self->_push_join(\@sql, $join, $tables);
     
     # Add where clause
     push @sql, $swhere;
@@ -767,8 +741,6 @@ sub select {
     # Create query
     my $query = $self->create_query($sql);
     return $query if $args{query};
-    
-    unshift @$tables, @join_tables;
     
     # Execute query
     my $result = $self->execute(
@@ -1167,7 +1139,42 @@ sub _tables {
     return $tables;
 }
 
+sub _push_join {
+    my ($self, $sql, $join, $join_tables) = @_;
+    
+    return unless @$join;
+    
+    my $tree = {};
+    
+    for (my $i = 0; $i < @$join; $i++) {
+        
+        my $join_clause = $join->[$i];
+        
+        if ($join_clause =~ /\s([^\.\s]+?)\..+\s([^\.\s]+?)\./) {
+            
+            my $table1 = $1;
+            my $table2 = $2;
+            
+            croak qq{right side table of "$join_clause" must be uniq}
+              if exists $tree->{$table2};
+            
+            $tree->{$table2}
+              = {position => $i, parent => $table1, join => $join_clause};
+        }
+        else {
+            croak qq{join "$join_clause" must be two table name};
+        }
+    }
+    
+    my $need_tables = {};
+    $self->_need_tables($tree, $need_tables, $join_tables);
+    
+    my @need_tables = sort { $tree->{$a}{position} <=> $tree->{$b}{position} } keys %$need_tables;
 
+    foreach my $need_table (@need_tables) {
+        push @$sql, $tree->{$need_table}{join};
+    }
+}
 
 # DEPRECATED!
 __PACKAGE__->attr(

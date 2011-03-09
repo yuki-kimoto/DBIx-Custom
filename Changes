@@ -1,3 +1,5 @@
+0.1656
+    - fixed some select() join opition bug
 0.1655
     - added experimental DBIx::Custom::Model join attribute
     - added experimental select() join option
