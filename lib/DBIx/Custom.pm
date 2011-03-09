@@ -241,9 +241,9 @@ our %VALID_DELETE_ARGS
 sub delete {
     my ($self, %args) = @_;
     
-    # Check arguments
+    # Check argument names
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid argument}
+        croak qq{Argument "$name" is invalid name}
           unless $VALID_DELETE_ARGS{$name};
     }
     
@@ -307,9 +307,9 @@ our %VALID_DELETE_AT_ARGS
 sub delete_at {
     my ($self, %args) = @_;
     
-    # Check arguments
+    # Check argument names
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid argument}
+        croak qq{Argument "$name" is invalid name}
           unless $VALID_DELETE_AT_ARGS{$name};
     }
     
@@ -349,9 +349,9 @@ our %VALID_EXECUTE_ARGS = map { $_ => 1 } qw/param filter table/;
 sub execute{
     my ($self, $query, %args)  = @_;
     
-    # Check arguments
+    # Check argument names
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid argument}
+        croak qq{Argument "$name" is invalid name}
           unless $VALID_EXECUTE_ARGS{$name};
     }
     
@@ -369,6 +369,13 @@ sub execute{
     $arg_tables = [$arg_tables]
       unless ref $arg_tables eq 'ARRAY';
     push @$tables, @$arg_tables;
+
+    # Organize tables
+    my %table_set = map {defined $_ ? ($_ => 1) : ()} @$tables;
+    my $main_table = pop @$tables;
+    delete $table_set{$main_table} if $main_table;
+    $tables = [keys %table_set];
+    push @$tables, $main_table if $main_table;
     
     foreach my $table (@$tables) {
         next unless $table;
@@ -442,9 +449,9 @@ our %VALID_INSERT_ARGS = map { $_ => 1 } qw/table param append
 sub insert {
     my ($self, %args) = @_;
 
-    # Check arguments
+    # Check argument names
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid argument}
+        croak qq{Argument "$name" is invalid name}
           unless $VALID_INSERT_ARGS{$name};
     }
     
@@ -497,9 +504,9 @@ our %VALID_INSERT_AT_ARGS
 sub insert_at {
     my ($self, %args) = @_;
     
-    # Check arguments
+    # Check argument names
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid argument}
+        croak qq{Argument "$name" is invalid name}
           unless $VALID_INSERT_AT_ARGS{$name};
     }
     
@@ -630,9 +637,9 @@ sub _need_tables {
 sub select {
     my ($self, %args) = @_;
     
-    # Check arguments
+    # Check argument names
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid argument}
+        croak qq{Argument "$name" is invalid name}
           unless $VALID_SELECT_ARGS{$name};
     }
     
@@ -651,23 +658,26 @@ sub select {
     croak qq{"join" must be array reference}
       unless ref $join eq 'ARRAY';
     
+    # Join tables
     my @join_tables;
     unshift @join_tables, $tables->[-1];
     
-    # Relation table(DEPRECATED!);
-    $self->_add_relation_table($args{relation}, $tables);
+    # Add relation tables(DEPRECATED!);
+    $self->_add_relation_table($tables, $args{relation});
     
     # SQL stack
     my @sql;
-    
     push @sql, 'select';
     
+    # Selection
     if ($selection) {
         push @sql, $selection;
         push @join_tables, @{$self->_tables($selection)};
     }
+    
+    # Column names and table name
     else {
-        # Column clause
+        # Column names
         if (@$columns) {
             foreach my $column (@$columns) {
                 push @join_tables, @{$self->_tables($column)};
@@ -691,9 +701,7 @@ sub select {
     if (ref $where eq 'HASH') {
         my $clause = ['and'];
         push @$clause, "{= $_}" for keys %$where;
-        $w = $self->where;
-        $w->clause($clause);
-        $w->param($where);
+        $w = $self->where(clause => $clause, param => $where);
     }
     elsif (ref $where eq 'DBIx::Custom::Where') {
         $w = $where;
@@ -706,7 +714,7 @@ sub select {
     # String where
     my $swhere = "$w";
     
-    # Table name in Where
+    # Add table names in where clause to join talbes.
     unshift @join_tables, @{$self->_tables($swhere)};
     
     # Join
@@ -744,7 +752,7 @@ sub select {
         }
     }
     
-    # Add where
+    # Add where clause
     push @sql, $swhere;
     
     # Relation(DEPRECATED!);
@@ -777,9 +785,9 @@ our %VALID_SELECT_AT_ARGS
 sub select_at {
     my ($self, %args) = @_;
     
-    # Check arguments
+    # Check argument names
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid argument}
+        croak qq{Argument "$name" is invalid name}
           unless $VALID_SELECT_AT_ARGS{$name};
     }
     
@@ -921,9 +929,9 @@ our %VALID_UPDATE_ARGS
 sub update {
     my ($self, %args) = @_;
     
-    # Check arguments
+    # Check argument names
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid argument}
+        croak qq{Argument "$name" is invalid name}
           unless $VALID_UPDATE_ARGS{$name};
     }
     
@@ -1020,9 +1028,9 @@ our %VALID_UPDATE_AT_ARGS
 sub update_at {
     my ($self, %args) = @_;
     
-    # Check arguments
+    # Check argument names
     foreach my $name (keys %args) {
-        croak qq{"$name" is invalid argument}
+        croak qq{Argument "$name" is invalid name}
           unless $VALID_UPDATE_AT_ARGS{$name};
     }
     
@@ -1078,7 +1086,8 @@ sub where {
 
     return DBIx::Custom::Where->new(
         query_builder => $self->query_builder,
-        safety_column_name => $self->safety_column_name
+        safety_column_name => $self->safety_column_name,
+        @_
     );
 }
 
@@ -1234,7 +1243,7 @@ sub _push_relation {
 
 # DEPRECATED!
 sub _add_relation_table {
-    my ($self, $relation, $tables) = @_;
+    my ($self, $tables, $relation) = @_;
     
     if (keys %{$relation || {}}) {
         foreach my $rcolumn (keys %$relation) {
@@ -1887,7 +1896,10 @@ the key and value is delete from C<param>.
 
 =head2 C<(experimental) where>
 
-    my $where = $dbi->where;
+    my $where = $dbi->where(
+        clause => ['and', '{= title}', '{= author}'],
+        param => {title => 'Perl', author => 'Ken'}
+    );
 
 Create a new L<DBIx::Custom::Where> object.
 

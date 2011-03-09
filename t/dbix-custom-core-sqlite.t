@@ -236,7 +236,7 @@ $rows = $dbi->select(table => 'table1')->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], 'insert append');
 
 eval{$dbi->insert(table => 'table1', noexist => 1)};
-like($@, qr/noexist/, "invalid argument");
+like($@, qr/noexist/, "invalid");
 
 eval{$dbi->insert(table => 'table', param => {';' => 1})};
 like($@, qr/safety/);
@@ -285,7 +285,7 @@ is_deeply($rows, [{key1 => 1, key2 => 22, key3 => 3, key4 => 4, key5 => 5},
 $result = $dbi->update(table => 'table1', param => {key2 => 11}, where => {key1 => 1}, append => '   ');
 
 eval{$dbi->update(table => 'table1', noexist => 1)};
-like($@, qr/noexist/, "invalid argument");
+like($@, qr/noexist/, "invalid");
 
 eval{$dbi->update(table => 'table1')};
 like($@, qr/where/, "not contain where");
@@ -359,7 +359,7 @@ $rows = $dbi->select(table => 'table1')->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "delete multi key");
 
 eval{$dbi->delete(table => 'table1', noexist => 1)};
-like($@, qr/noexist/, "invalid argument");
+like($@, qr/noexist/, "invalid");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -437,7 +437,7 @@ $rows = $dbi->select(
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "relation : no exists where");
 
 eval{$dbi->select(table => 'table1', noexist => 1)};
-like($@, qr/noexist/, "invalid argument");
+like($@, qr/noexist/, "invalid");
 
 
 test 'fetch filter';
@@ -514,7 +514,7 @@ $dbi->execute($CREATE_TABLE->{0});
 }
 
 eval{$dbi->execute('select * from table1', no_exists => 1)};
-like($@, qr/\Q"no_exists" is invalid argument/, "invald SQL");
+like($@, qr/invalid/, "invald SQL");
 
 $query = $dbi->create_query('select * from table1 where {= key1}');
 $dbi->dbh->disconnect;
