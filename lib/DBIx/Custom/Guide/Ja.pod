@@ -321,19 +321,36 @@ C<column>は列名、C<where>は条件です。
 次のサンプルです。
 
     my $result = $dbi->select(
-        table    => 'book',
-        where    => {book.name => 'Perl'},
-        relation => {'book.id' => 'rental.book_id'}
+        table  => 'book',
+        column => ['company.name as company__name']
+        where  => {'book.name' => 'Perl'},
+        join   => ['left outer join company on book.company_id = company.id]
     );
 
-C<relation>テーブル間の関係です。これは内部結合です。
+C<join>でテーブルの結合を行うことができます。
 
 次のSQLが実行されます。
 
-bookテーブルのid列とrentalテーブルのbook_idが関連付けられます。
+    select company.name as company__name from book
+      left outer join company on book.company_id = company.id
+      where book.name = ?;
+
+bookテーブルのcompany_id列とcompanyテーブルのidが左外部結合されます。
 次のSQLが実行されます。
 
-    select * from book, rental where book.name = ? and book.id = rental.book_id;
+C<join>されるのは、C<where>やC<column>にテーブル名が含まれている
+場合だけであることに注意してください。
+次のように指定した場合は結合の必要はないと判断されjoinはされません。
+
+    my $result = $dbi->select(
+        table  => 'book',
+        where  => {'name' => 'Perl'},
+        join   => ['left outer join company on book.company_id = company.id]
+    );
+
+次のSQLが実行されます。
+
+    select * from book where book.name = ?;
 
 次のサンプルです。
 
@@ -1162,11 +1179,11 @@ C<filter>でC<apply_filter()>で適用されるフィルタを定義しておく
 
     $dbi->setup_model;
 
-モデルにはリレーションを設定することもできます。
+モデルにはC<join>を設定することもできます。
 
-    $model->relation({'book.company_id' => 'company.id'});
+    $model->join(['left outer join company on book.company_id = company.id']);
 
-ここで設定したリレーションはC<select()>, C<select_at()>で利用されます。
+ここで設定したC<join>はC<select()>, C<select_at()>で利用されます。
 
 
 =head2 クラス名、モデル名、テーブル名

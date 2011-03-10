@@ -315,17 +315,37 @@ Following SQL is executed.
 Next example.
 
     my $result = $dbi->select(
-        table    => 'book',
-        where    => {'book.name' => 'Perl'},
-        relation => {'book.id' => 'rental.book_id'}
+        table  => 'book',
+        column => ['company.name as company__name']
+        where  => {'book.name' => 'Perl'},
+        join   => ['left outer join company on book.company_id = company.id]
     );
 
-C<relation> is relation of tables. This is inner join.
+You can join table by C<join>.
 
 Following SQL is executed.
 
-    select * from book, rental where book.name = ? and book.id = rental.book_id;
+    select company.name as company__name from book
+      left outer join company on book.company_id = company.id
+      where book.name = ?;
 
+company_if of book and id of company is left outer joined.
+
+Note that only when C<where> or C<column> contain table name,
+C<join> is joined.
+if you specify the following option, C<join> is not joined
+because C<join> is not needed.
+
+    my $result = $dbi->select(
+        table  => 'book',
+        where  => {'name' => 'Perl'},
+        join   => ['left outer join company on book.company_id = company.id]
+    );
+
+Following SQL is executeed.
+
+    select * from book where book.name = ?;
+    
 Next example.
 
     my $result = $dbi->select(
@@ -1125,11 +1145,11 @@ This method is needed to be call after C<include_model()>.
 
     $dbi->setup_model;
 
-You can set C<relation>
+You can set C<join>
 
-    $model->relation({'book.company_id' => 'company.id'});
+    $model->join(['left outer join company on book.company_id = company.id']);
 
-This relation is used by C<select()>, C<select_at()>
+This C<join> is used by C<select()>, C<select_at()>
 
 =head2 Class name, Model name, Table name
 

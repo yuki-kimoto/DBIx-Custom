@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1656';
+our $VERSION = '0.1657';
 
 use 5.008001;
 use strict;
@@ -1469,48 +1469,40 @@ Result class, default to L<DBIx::Custom::Result>.
 =head2 C<(experimental) safety_character>
 
     my $safety_character = $self->safety_character;
+    $dbi                 = $self->safety_character($character);
 
 Regex of safety character consist of table and column name, default to '\w'.
-Note that you don't have to specify like "[\w]".
+Note that you don't have to specify like '[\w]'.
 
 =head2 C<user>
 
     my $user = $dbi->user;
     $dbi     = $dbi->user('Ken');
 
-User name.
-C<connect()> method use this value to connect the database.
+User name, used when C<connect()> is executed.
 
 =head1 METHODS
 
 L<DBIx::Custom> inherits all methods from L<Object::Simple>
-and use all method of L<DBI>
+and use all methods of L<DBI>
 and implements the following new ones.
 
 =head2 C<(experimental) apply_filter>
 
     $dbi->apply_filter(
-        $table,
-        $column1 => {in => $infilter1, out => $outfilter1, end => $endfilter1}
-        $column2 => {in => $infilter2, out => $outfilter2, end =. $endfilter2}
+        'book',
+        $column1 => {out => $outfilter1, in => $infilter1, end => $endfilter1}
+        $column2 => {out => $outfilter2, in => $infilter2, end => $endfilter2}
         ...,
     );
 
-C<apply_filter> is automatically filter for columns of table.
-This have effect C<insert>, C<update>, C<delete>. C<select>
-and L<DBIx::Custom::Result> object. but this has'nt C<execute> method.
+Apply filter to specified column, C<out> is the direction from perl to database,
+C<in> is the direction from database to perl,
+C<end> is filter after C<in> filter.
 
-If you want to have effect C<execute()> method, use C<table>
-arguments.
+You can use three column name to apply filter to column data.
 
-    $result = $dbi->execute(
-        "select * from table1 where {= key1} and {= key2};",
-         param => {key1 => 1, key2 => 2},
-         table => ['table1']
-    );
-
-You can use three name as column name.
-
+                       (Example)
     1. column        : author
     2. table.column  : book.author
     3. table__column : book__author
