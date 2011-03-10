@@ -31,7 +31,7 @@ __PACKAGE__->attr(
     models => sub { {} },
     query_builder => sub { DBIx::Custom::QueryBuilder->new },
     result_class  => 'DBIx::Custom::Result',
-    safety_column_name => sub { qr/^[\w\.]*$/ },
+    safety_character => '\w',
     stash => sub { {} }
 );
 
@@ -464,10 +464,10 @@ sub insert {
     
     # Columns
     my @columns;
-    my $safety = $self->safety_column_name;
+    my $safety = $self->safety_character;
     foreach my $column (keys %$param) {
         croak qq{"$column" is not safety column name}
-          unless $column =~ /$safety/;
+          unless $column =~ /^[$safety\.]+$/;
         push @columns, $column;
     }
     
@@ -548,10 +548,10 @@ sub insert_param {
     # Insert paramter tag
     my @tag;
     push @tag, '{insert_param';
-    my $safety = $self->safety_column_name;
+    my $safety = $self->safety_character;
     foreach my $column (keys %$param) {
         croak qq{"$column" is not safety column name}
-          unless $column =~ /$safety/;
+          unless $column =~ /^[$safety\.]+$/;
         push @tag, $column;
     }
     push @tag, '}';
@@ -921,10 +921,10 @@ sub update {
 
     # Columns
     my @columns;
-    my $safety = $self->safety_column_name;
+    my $safety = $self->safety_character;
     foreach my $column (keys %$param) {
         croak qq{"$column" is not safety column name}
-          unless $column =~ /$safety/;
+          unless $column =~ /^[$safety\.]+$/;
         push @columns, $column;
     }
         
@@ -1042,10 +1042,10 @@ sub update_param {
     # Update parameter tag
     my @tag;
     push @tag, '{update_param';
-    my $safety = $self->safety_column_name;
+    my $safety = $self->safety_character;
     foreach my $column (keys %$param) {
         croak qq{"$column" is not safety column name}
-          unless $column =~ /$safety/;
+          unless $column =~ /^[$safety\.]+$/;
         push @tag, $column;
     }
     push @tag, '}';
@@ -1058,7 +1058,7 @@ sub where {
 
     return DBIx::Custom::Where->new(
         query_builder => $self->query_builder,
-        safety_column_name => $self->safety_column_name,
+        safety_character => $self->safety_character,
         @_
     );
 }
@@ -1130,9 +1130,9 @@ sub _tables {
     
     my $tables = [];
     
-    my $safety_name = $self->safety_column_name;
+    my $safety_character = $self->safety_character;
     
-    while ($source =~ /\b(\w+)\./g) {
+    while ($source =~ /\b($safety_character+)\./g) {
         push @$tables, $1;
     }
     
@@ -1272,107 +1272,118 @@ sub _add_relation_table {
 
 =head1 NAME
 
-DBIx::Custom - DBI interface, having hash parameter binding and filtering system
+DBIx::Custom - Useful database access, respecting SQL!
 
 =head1 SYNOPSYS
 
     use DBIx::Custom;
-    my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=dbname",
-                                    user => 'ken', password => '!LFKD%$&',
-                                    dbi_option => {mysql_enable_utf8 => 1});
+    
+    # Connect
+    my $dbi = DBIx::Custom->connect(
+        data_source => "dbi:mysql:database=dbname",
+        user => 'ken',
+        password => '!LFKD%$&',
+        dbi_option => {mysql_enable_utf8 => 1}
+    );
 
     # Insert 
-    $dbi->insert(table  => 'book',
-                 param  => {title => 'Perl', author => 'Ken'},
-                 filter => [title => 'to_something']);
+    $dbi->insert(
+        table  => 'book',
+        param  => {title => 'Perl', author => 'Ken'}
+    );
     
     # Update 
-    $dbi->update(table  => 'book', 
-                 param  => {title => 'Perl', author => 'Ken'}, 
-                 where  => {id => 5},
-                 filter => [title => 'to_something']);
-    
-    # Update all
-    $dbi->update_all(table  => 'book',
-                     param  => {title => 'Perl'},
-                     filter => [title => 'to_something']);
+    $dbi->update(
+        table  => 'book', 
+        param  => {title => 'Perl', author => 'Ken'}, 
+        where  => {id => 5},
+    );
     
     # Delete
-    $dbi->delete(table  => 'book',
-                 where  => {author => 'Ken'},
-                 filter => [title => 'to_something']);
-    
-    # Delete all
-    $dbi->delete_all(table => 'book');
+    $dbi->delete(
+        table  => 'book',
+        where  => {author => 'Ken'},
+    );
 
     # Select
     my $result = $dbi->select(
         table  => 'book',
-        column => [qw/author title/],
         where  => {author => 'Ken'},
-        relation => {'book.id' => 'rental.book_id'},
-        append => 'order by id limit 5',
-        filter => [title => 'to_something']
     );
 
-    # Execute SQL
-    $dbi->execute("select title from book");
+    # Select, more complex
+    my $result = $dbi->select(
+        table  => 'book',
+        column => [
+            'book.author as book__author',
+            'company.name as company__name'
+        ],
+        where  => {'book.author' => 'Ken'},
+        join => ['left outer join company on book.company_id = company.id'],
+        append => 'order by id limit 5'
+    );
     
-    # Execute SQL with hash binding and filtering
-    $dbi->execute("select id from book where {= author} and {like title}",
-                  param  => {author => 'ken', title => '%Perl%'},
-                  filter => [title => 'to_something']);
-
-    # Create query and execute it
-    my $query = $dbi->create_query(
-        "select id from book where {= author} and {like title}"
-    );
-    $dbi->execute($query, param => {author => 'Ken', title => '%Perl%'})
-
-    # Get DBI object
-    my $dbh = $dbi->dbh;
-
     # Fetch
     while (my $row = $result->fetch) {
-        # ...
+        
     }
     
-    # Fetch hash
+    # Fetch as hash
     while (my $row = $result->fetch_hash) {
         
     }
     
+    # Execute SQL with parameter.
+    $dbi->execute(
+        "select id from book where {= author} and {like title}",
+        param  => {author => 'ken', title => '%Perl%'}
+    );
+    
 =head1 DESCRIPTIONS
 
-L<DBIx::Custom> is one of L<DBI> interface modules,
-such as L<DBIx::Class>, L<DBIx::Simple>.
+L<DBIx::Custom> is L<DBI> wrapper module.
 
-This module is not O/R mapper. O/R mapper is useful,
-but you must learn many syntax of the O/R mapper,
-which is almost another language.
-Created SQL statement is offten not effcient and damage SQL performance.
-so you have to execute raw SQL in the end.
+=head1 FEATURES
 
-L<DBIx::Custom> is middle area between L<DBI> and O/R mapper.
-L<DBIx::Custom> provide flexible hash parameter binding and filtering system,
-and suger methods, such as C<insert()>, C<update()>, C<delete()>, C<select()>
-to execute SQL easily.
+=over 4
 
-L<DBIx::Custom> respects SQL. SQL is very complex and not beautiful,
-but de-facto standard,
-so all people learing database know it.
-If you already know SQL,
-you learn a little thing to use L<DBIx::Custom>.
+=item *
 
-See L<DBIx::Custom::Guide> for more details.
+There are many basic methods to execute various queries.
+C<insert()>, C<update()>, C<update_all()>,C<delete()>,
+C<delete_all()>, C<select()>,
+C<insert_at()>, C<update_at()>, 
+C<delete_at()>, C<select_at()>, C<execute()>
+
+=item *
+
+Filter when data is send or receive.
+
+=item *
+
+Data filtering system
+
+=item *
+
+Model support.
+
+=item *
+
+Generate where clause dinamically.
+
+=item *
+
+Generate join clause dinamically.
+
+=back
 
 =head1 GUIDE
 
-L<DBIx::Custom::Guide> - L<DBIx::Custom> complete guide
+L<DBIx::Custom::Guide> - L<DBIx::Custom> Guide
 
-=head1 EXAMPLES
+=head1 Wiki
 
-L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki> - Many useful examples
+L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
 
 =head1 ATTRIBUTES
 
@@ -1381,97 +1392,86 @@ L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki> - Many usef
     my $cache = $dbi->cache;
     $dbi      = $dbi->cache(1);
 
-Enable parsed L<DBIx::Custom::Query> object caching.
-Default to 1.
+Enable caching of L<DBIx::Custom::Query>,
+default to 1.
 
 =head2 C<data_source>
 
     my $data_source = $dbi->data_source;
     $dbi            = $dbi->data_source("DBI:mysql:database=dbname");
 
-Data source.
-C<connect()> method use this value to connect the database.
+Data source, used when C<connect()> is executed.
 
 =head2 C<dbh>
 
     my $dbh = $dbi->dbh;
     $dbi    = $dbi->dbh($dbh);
 
-L<DBI> object. You can call all methods of L<DBI>.
+Database handle of L<DBI>.
 
 =head2 C<dbi_option>
 
     my $dbi_option = $dbi->dbi_option;
-    $dbi            = $dbi->dbi_option($dbi_option);
+    $dbi           = $dbi->dbi_option($dbi_option);
 
-DBI options.
-
-Each option specified can ovewrite C<default_dbi_option>.
-
-C<connect()> method use this value to connect the database.
-
+L<DBI> option, used when C<connect()> is executed.
+Each value in option override the value of C<default_dbi_option>.
 
 =head2 C<default_dbi_option>
 
     my $default_dbi_option = $dbi->default_dbi_option;
     $dbi            = $dbi->default_dbi_option($default_dbi_option);
 
-DBI default options.
+L<DBI> default option, used when C<connect()> is executed,
+default to the following values.
 
-    RaiseError => 1,
-    PrintError => 0,
-    AutoCommit => 1,
-
-C<connect()> method use this value to connect the database.
-
-Default filter when row is fetched.
+    {
+        RaiseError => 1,
+        PrintError => 0,
+        AutoCommit => 1,
+    }
 
 =head2 C<filters>
 
     my $filters = $dbi->filters;
     $dbi        = $dbi->filters(\%filters);
 
-Filters
+Filters, registered by C<register_filter()>.
 
 =head2 C<(experimental) models>
 
     my $models = $dbi->models;
     $dbi       = $dbi->models(\%models);
 
-Models
+Models, included by C<include_model()>.
 
 =head2 C<password>
 
     my $password = $dbi->password;
     $dbi         = $dbi->password('lkj&le`@s');
 
-Password.
-C<connect()> method use this value to connect the database.
+Password, used when C<connect()> is executed.
 
 =head2 C<query_builder>
 
     my $sql_class = $dbi->query_builder;
     $dbi          = $dbi->query_builder(DBIx::Custom::QueryBuilder->new);
 
-SQL builder. C<query_builder()> must be 
-the instance of L<DBIx::Custom::QueryBuilder> subclass.
-Default to L<DBIx::Custom::QueryBuilder> object.
+Query builder, default to L<DBIx::Custom::QueryBuilder> object.
 
 =head2 C<result_class>
 
     my $result_class = $dbi->result_class;
     $dbi             = $dbi->result_class('DBIx::Custom::Result');
 
-Result class for select statement.
-Default to L<DBIx::Custom::Result>.
+Result class, default to L<DBIx::Custom::Result>.
 
-=head2 C<(experimental) safety_column_name>
+=head2 C<(experimental) safety_character>
 
-    my $safety_column_name = $self->safety_column_name;
-    $dbi                   = $self->safety_column_name($name);
+    my $safety_character = $self->safety_character;
 
-Safety column name regex.
-Default is qr/^[\w\.]*$/
+Regex of safety character consist of table and column name, default to '\w'.
+Note that you don't have to specify like "[\w]".
 
 =head2 C<user>
 

@@ -14,7 +14,7 @@ use Carp 'croak';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
 __PACKAGE__->attr(
-    [qw/param query_builder safety_column_name/],
+    [qw/param query_builder safety_character/],
     clause => sub { [] },
 );
 
@@ -75,9 +75,9 @@ sub _parse {
         croak qq{Each tag contains one column name: tag "$clause"}
           unless @$columns == 1;
         my $column = $columns->[0];
-        my $safety = $self->safety_column_name;
+        my $safety = $self->safety_character;
         croak qq{"$column" is not safety column name}
-          unless $column =~ /$safety/;
+          unless $column =~ /^[$safety\.]+$/;
         
         # Column count up
         my $count = ++$count->{$column};
@@ -138,10 +138,10 @@ If all parameter names is exists.
                                date => ['2010-11-11', '2011-03-05']},
                                name => ['Ken', 'Taro']);
 
-=head2 C<safety_column_name>
+=head2 C<safety_character>
 
-    my $safety_column_name = $self->safety_column_name;
-    $dbi                   = $self->safety_column_name($name);
+    my $safety_character = $self->safety_character;
+    $dbi                 = $self->safety_character($name);
 
 =head1 METHODS
 
