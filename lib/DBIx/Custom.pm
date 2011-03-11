@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1657';
+our $VERSION = '0.1658';
 
 use 5.008001;
 use strict;
@@ -752,7 +752,7 @@ sub select {
 
 our %VALID_SELECT_AT_ARGS
   = map { $_ => 1 } qw/table column where append relation filter query selection
-                       param primary_key left_join/;
+                       param primary_key join/;
 
 sub select_at {
     my ($self, %args) = @_;
@@ -1150,7 +1150,7 @@ sub _push_join {
         
         my $join_clause = $join->[$i];
         
-        if ($join_clause =~ /\s([^\.\s]+?)\..+\s([^\.\s]+?)\./) {
+        if ($join_clause =~ /\s([^\.\s]+?)\..+\s([^\.\s]+?)\..+?$/) {
             
             my $table1 = $1;
             my $table2 = $2;

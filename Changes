@@ -1,3 +1,7 @@
+0.1658
+    - added experimental DBIx::Custom::Model column() prefix option.
+    - fixed select_at join column invalid bug
+    - added DBIx::Custom::Model column() attribute 
 0.1657
     - remaned experimental safty_charcter to safty_name
     - safty_charcter is changed, set only one character regex.

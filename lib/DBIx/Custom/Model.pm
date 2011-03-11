@@ -11,7 +11,7 @@ use Carp 'croak';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
 __PACKAGE__->attr(
-    ['dbi', 'name', 'table'],
+    ['dbi', 'name', 'table', 'column'],
     columns => sub { [] },
     filter => sub { [] },
     primary_key => sub { [] },
@@ -52,10 +52,11 @@ sub column_clause {
     my $add     = $args->{add} || [];
     my $remove  = $args->{remove} || [];
     my %remove  = map {$_ => 1} @$remove;
+    my $prefix  = $args->{prefix} || '';
     
     my @column;
     foreach my $column (@$columns) {
-        push @column, "$table.$column as $column"
+        push @column, "$table.$column as $prefix$column"
           unless $remove{$column};
     }
     
@@ -117,6 +118,7 @@ sub select {
     my $self = shift;
     $self->dbi->select(
         table => $self->table,
+        column => $self->column,
         join => $self->join,
         @_
     );
@@ -127,7 +129,9 @@ sub select_at {
     
     return $self->dbi->select_at(
         table => $self->table,
+        column => $self->column,
         primary_key => $self->primary_key,
+        join => $self->join,
         @_
     );
 }
@@ -245,6 +249,14 @@ If you remove some columns, use C<remove> option.
 If you add some column, use C<add> option.
 
     my $column_clause = $model->column_clause(add => ['company.id as company__id']);
+
+If you add column name prefix, use C<prefix> option
+
+    my $column_clause = $model->column_clause(prefix => 'book__');
+
+The following clause is created.
+
+    book.id as book__id, book.name as book__name
 
 =head2 C<delete>
 
