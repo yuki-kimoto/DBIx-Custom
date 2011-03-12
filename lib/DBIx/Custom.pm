@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1658';
+our $VERSION = '0.1659';
 
 use 5.008001;
 use strict;
@@ -20,7 +20,7 @@ use DBIx::Custom::Util;
 use Encode qw/encode_utf8 decode_utf8/;
 
 __PACKAGE__->attr(
-    [qw/data_source dbh password user/],
+    [qw/data_source password pid user/],
     cache => 1,
     dbi_option => sub { {} },
     default_dbi_option => sub {{
@@ -34,6 +34,29 @@ __PACKAGE__->attr(
     safety_character => '\w',
     stash => sub { {} }
 );
+
+sub dbh {
+    my $self = shift;
+
+    if (@_) {
+        $self->{dbh} = $_[0];
+        return $self;
+    }
+    else {
+        my $pid = $$;
+        if ($self->pid eq $pid) {
+            return $self->{dbh};
+        }
+        else {
+            # Create new connection in child process
+            croak "Process is forked in transaction"
+              unless $self->{dbh}->{AutoCommit};
+            $self->pid($pid);
+            $self->{dbh}->{InactiveDestroy} = 1;
+            return $self->{dbh} = $self->_connect;
+        }
+    }
+}
 
 __PACKAGE__->attr(
     cache_method => sub {
@@ -157,30 +180,13 @@ sub method {
 sub connect {
     my $self = ref $_[0] ? shift : shift->new(@_);;
     
-    # Attributes
-    my $data_source = $self->data_source;
-    croak qq{"data_source" must be specified to connect()"}
-      unless $data_source;
-    my $user        = $self->user;
-    my $password    = $self->password;
-    my $dbi_option = {%{$self->dbi_options}, %{$self->dbi_option}};
-    
-    # Connect
-    my $dbh = eval {DBI->connect(
-        $data_source,
-        $user,
-        $password,
-        {
-            %{$self->default_dbi_option},
-            %$dbi_option
-        }
-    )};
-    
-    # Connect error
-    croak $@ if $@;
+    my $dbh = $self->_connect;
     
     # Database handle
     $self->dbh($dbh);
+    
+    # Process ID
+    $self->pid($$);
     
     return $self;
 }
@@ -1126,6 +1132,34 @@ sub _bind {
     return \@bind;
 }
 
+sub _connect {
+    my $self = shift;
+    
+    # Attributes
+    my $data_source = $self->data_source;
+    croak qq{"data_source" must be specified to connect()"}
+      unless $data_source;
+    my $user        = $self->user;
+    my $password    = $self->password;
+    my $dbi_option = {%{$self->dbi_options}, %{$self->dbi_option}};
+    
+    # Connect
+    my $dbh = eval {DBI->connect(
+        $data_source,
+        $user,
+        $password,
+        {
+            %{$self->default_dbi_option},
+            %$dbi_option
+        }
+    )};
+    
+    # Connect error
+    croak $@ if $@;
+    
+    return $dbh;
+}
+
 sub _croak {
     my ($self, $error, $append) = @_;
     $append ||= "";
@@ -1434,13 +1468,6 @@ default to 1.
 
 Data source, used when C<connect()> is executed.
 
-=head2 C<dbh>
-
-    my $dbh = $dbi->dbh;
-    $dbi    = $dbi->dbh($dbh);
-
-Database handle of L<DBI>.
-
 =head2 C<dbi_option>
 
     my $dbi_option = $dbi->dbi_option;
@@ -1462,6 +1489,11 @@ default to the following values.
         PrintError => 0,
         AutoCommit => 1,
     }
+
+You should not change C<AutoCommit> value directly
+to check if the process is in transaction correctly.
+L<DBIx::Custom> determin the process is in transaction
+if AutoCommit is 0. 
 
 =head2 C<filters>
 
@@ -1561,6 +1593,16 @@ use C<create_query()> method and execute it by C<execute()> method
 instead of suger methods.
 
     $dbi->execute($query, {author => 'Ken', title => '%Perl%'});
+
+=head2 C<dbh>
+
+    my $dbh = $dbi->dbh;
+    $dbi    = $dbi->dbh($dbh);
+
+Get and set database handle of L<DBI>.
+
+If process is changed by forking, new connection is created
+and get new database hande ofL<DBI>. This feature is EXPERIMETNAL.
 
 =head2 C<execute>
 

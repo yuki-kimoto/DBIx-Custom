@@ -30,6 +30,7 @@ sub connect_info {
 my $dbi;
 my $dbname;
 my $rows;
+my $result;
 
 # Constant varialbes for test
 my $CREATE_TABLE = {
@@ -59,6 +60,7 @@ $dbi = DBIx::Custom->connect(
     user => $USER,
     password => $PASSWORD
 );
+$dbi->delete_all(table => 'table1');
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 6});
@@ -93,3 +95,48 @@ $rows = $dbi->select(
 )->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 $dbi->delete_all(table => 'table1');
+
+
+test 'fork';
+{
+    $dbi = DBIx::Custom->connect(
+        data_source => "dbi:mysql:database=$DATABASE",
+        user => $USER,
+        password => $PASSWORD
+    );
+    $dbi->delete_all(table => 'table1');
+    $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+    die "Can't fork" unless defined (my $pid = fork);
+
+    if ($pid) {
+        # Parent
+        my $result = $dbi->select(table => 'table1');
+        is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 2});
+    }
+    else {
+        # Child
+        my $result = $dbi->select(table => 'table1');
+        die "Not OK" unless $result->fetch_hash_first->{key1} == 1;
+    }
+}
+
+test 'fork in transaction';
+{
+    $dbi = DBIx::Custom->connect(
+        data_source => "dbi:mysql:database=$DATABASE",
+        user => $USER,
+        password => $PASSWORD
+    );
+    
+    $dbi->begin_work;
+    die "Can't fork" unless defined (my $pid = fork);
+    
+    if ($pid) {
+        # Parent
+    }
+    else {
+        # Child
+        eval {$dbi->select(table => 'table1') };
+        die "Not OK" unless $@ =~ /transaction/;
+    }
+}
