@@ -369,19 +369,6 @@ C<append>はSQLの末尾に追加される文字列です。
 またC<append>は、C<select>だけでなくC<insert()>、C<update()>、C<update_all()>
 C<delete()>、C<delete_all()>、C<select()>で使用することもできます。
 
-C<column>とC<table>を使用する代わりに、C<selection>を使用することも
-できます。列名とテーブル名をまとめて指定する場合に利用します。
-    
-    my $selection = <<"EOS";
-    title, author, company_name
-    from book inner join company on book.company_id = company.id
-    EOS
-
-    $dbi->select(selection => $selection);
-
-C<selection>においてはwhere句を利用できないということに注意してください。
-"inner join"などの句を利用してください。
-
 =head3 SQLの実行 C<execute()>
 
 SQLを実行するにはC<execute()>を使用します。

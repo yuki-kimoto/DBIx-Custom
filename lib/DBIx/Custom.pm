@@ -1797,13 +1797,6 @@ C<default_filter> and C<filter> of C<DBIx::Custom::Result>
 
 Register tag.
 
-=head2 C<rollback>
-
-    $dbi->rollback;
-
-Rollback transaction.
-This is same as L<DBI>'s C<rollback>.
-
 =head2 C<select>
 
     my $result = $dbi->select(
@@ -1812,7 +1805,7 @@ This is same as L<DBI>'s C<rollback>.
         where  => {author => 'Ken'},
     );
     
-Execute select statement.
+Select statement.
 
 The following opitons are currently available.
 
@@ -1822,7 +1815,7 @@ The following opitons are currently available.
 
 Table name.
 
-    $dbi->select(table => 'book', ...);
+    $dbi->select(table => 'book');
 
 =item C<column>
 
@@ -1841,9 +1834,9 @@ Default is '*' unless C<column> is specified.
 
 =item C<all_column EXPERIMENTAL>
 
-Colum clause, contains all columns. This is true or false value
+Colum clause, contains all columns of joined table. This is true or false value
 
-    $dbi->select(all_column => 1, ...);
+    $dbi->select(all_column => 1);
 
 If main table is C<book> and joined table is C<company>,
 This create the following column clause.
@@ -1856,48 +1849,147 @@ This create the following column clause.
 Columns of main table is consist of only column name,
 Columns of joined table is consist of table and column name joined C<__>.
 
+Note that this option is failed unless L<DBIx::Custom::Model> object is set to
+C<model> and C<columns> of the object is set.
+
+    # Generally do the following way before using all_column option
+    $dbi->include_model('MyModel')->setup_model;
+
 =item C<where>
 
 Where clause. This is hash reference or L<DBIx::Custom::Where> object.
     
     # Hash reference
-    $dbi->select(where => {author => 'Ken', 'title' => 'Perl'}, ...);
+    $dbi->select(where => {author => 'Ken', 'title' => 'Perl'});
     
-    # Where clause
+    # DBIx::Custom::Where object
     my $where = $dbi->where(
         clause => ['and', '{= author}', '{like title}'],
         param  => {author => 'Ken', title => '%Perl%'}
     );
-    $dbi->select(where => $where, ...);
+    $dbi->select(where => $where);
+
+=item C<join EXPERIMENTAL>
+
+Join clause used in need. This is array reference.
+
+    $dbi->select(join =>
+        [
+            'left outer join company on book.company_id = company_id',
+            'left outer join location on company.location_id = location.id'
+        ]
+    );
+
+If column cluase or where clause contain table name like "company.name",
+needed join clause is used automatically.
+
+    $dbi->select(
+        table => 'book',
+        column => ['company.location_id as company__location_id'],
+        where => {'company.name' => 'Orange'},
+        join => [
+            'left outer join company on book.company_id = company.id',
+            'left outer join location on company.location_id = location.id'
+        ]
+    );
+
+In above select, the following SQL is created.
+
+    select company.location_id as company__location_id
+    from book
+      left outer join company on book.company_id = company.id
+    where company.name = Orange
+
+=item C<append>
+
+Appended statement to last of SQL. This is string.
+
+    $dbi->select(append => 'order by title');
+
+=item C<filter>
+
+Filter, executed before data is send to database. This is array reference
+and filter value is code reference or
+filter name registerd by C<register_filter()>.
+
+    # Basic
+    $dbi->select(
+        filter => [
+            title  => sub { uc $_[0] }
+            author => sub { uc $_[0] }
+        ]
+    );
+    
+    # At once
+    $dbi->select(
+        filter => [
+            [qw/title author/]  => sub { uc $_[0] }
+        ]
+    );
+    
+    # Filter name
+    $dbi->select(
+        filter => [
+            title  => 'upper_case',
+            author => 'upper_case'
+        ]
+    );
+
+These filters are added to the C<out> filters set by C<apply_filter()>.
+
+=item C<query EXPERIMENTAL>
+
+Get L<DBIx::Custom::Query> object instead of executing SQL.
+This is true or false value.
+
+    my $query = $dbi->select(query => 1, ...);
+
+You can check executing SQL by this object.
+
+    my $sql = $query->sql;
 
 =back
 
-C<filter> arguments.
-C<where> is where clause. this is normally hash reference.
-C<append> is a string added at the end of the SQL statement.
-C<filter> is filters when parameter binding is executed.
-C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
-default to 0. This is EXPERIMENTAL.
-C<selection> is string of column name and tables. This is EXPERIMENTAL
-
-    selection => 'name, location.name as location_name ' .
-                 'from company inner join location'
-
-First element is a string. it contains tags,
-such as "{= title} or {like author}".
-Second element is paramters.
-
-C<join> is join clause after from clause.
-This is EXPERIMENTAL.
-
 =head3 C<select_at() EXPERIMENTAL>
 
-To select row by using primary key, use C<select_at()>.
+Select statement, using primary key.
 
-    $dbi->select_at(table => 'book', primary_key => ['id'], where => ['123']);
+    $dbi->select_at(
+        table => 'book',
+        primary_key => 'id',
+        where => '5'
+    );
 
-In this example, row which id colunm is 123 is selected.
-NOTE that you must pass array reference as C<where>.
+This method is same as select method exept that
+primary_key is specified and C<where> is array reference.
+all option of C<select()> is available.
+
+=head2 C<primary_key>
+
+Primary key. This is constant value or array reference.
+    
+    # Constant value
+    $dbi->select(primary_key => 'id');
+
+    # Array reference
+    $dbi->select(primary_key => ['id1', 'id2' ]);
+
+=head2 C<where>
+
+Where clause, created by primary key infromation.
+This is constant value or array reference.
+
+    # Constant value
+    $dbi->select(where => 5);
+
+    # Array reference
+    $dbi->select(where => [3, 5]);
+
+In first examle, the following SQL is created.
+
+    select * from book where id = ?
+
+Place holder is set to 5.
 
 =head2 C<update>
 

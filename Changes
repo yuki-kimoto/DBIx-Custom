@@ -1,4 +1,5 @@
 0.1659
+    - removed EXPERIMENTAL selection
     - added select() all_column option
 0.1658
     - added EXPERIMENTAL DBIx::Custom::Model column() prefix option.
