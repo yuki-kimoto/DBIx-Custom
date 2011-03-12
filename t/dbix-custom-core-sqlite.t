@@ -1786,7 +1786,7 @@ $rows = $dbi->select(
 is_deeply($rows, [{table1__key1 => 1}]);
 
 
-test 'column_clause';
+test 'model join and column attribute and all_column option';
 {
     package MyDBI8;
     
@@ -1810,3 +1810,8 @@ $model = $dbi->model('table1');
 $result = $model->select_at(where => 1);
 is_deeply($result->fetch_hash_first,
           {key1 => 1, key2 => 2, table2__key1 => 1, table2__key3 => 3});
+$model->column(undef);
+$result = $model->select(all_column => 1);
+is_deeply($result->fetch_hash_first,
+          {key1 => 1, key2 => 2, table2__key1 => 1, table2__key3 => 3});
+

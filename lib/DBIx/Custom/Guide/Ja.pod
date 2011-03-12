@@ -6,9 +6,9 @@ DBIx::Custom::Guide::Ja - DBIx::Customのガイドブック
 
 =head1 ガイド
 
-(このモジュールはまだ実験的な機能を多く含んでいます
-モジュールのドキュメントにexperimentalがついているものは、
-予告なしに変更されることがあります。)
+(このガイドは将来的なもので実験的な機能についても記述されています。
+L<DBIx::Custom>のPODにEXPERIMENTALとマークされている
+ものは実験的な機能です。)
 
 L<DBIx::Custom>はSQLの実行を簡単に行うためのクラスです。
 L<DBIx::Class>やL<DBIx::Simple>と同じように

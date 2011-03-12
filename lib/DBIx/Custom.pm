@@ -620,19 +620,8 @@ sub register_filter {
 sub register_tag { shift->query_builder->register_tag(@_) }
 
 our %VALID_SELECT_ARGS
-  = map { $_ => 1 } qw/table column where append relation filter query selection join/;
-
-sub _need_tables {
-    my ($self, $tree, $need_tables, $tables) = @_;
-    
-    foreach my $table (@$tables) {
-        
-        if ($tree->{$table}) {
-            $need_tables->{$table} = 1;
-            $self->_need_tables($tree, $need_tables, [$tree->{$table}{parent}])
-        }
-    }
-}
+  = map { $_ => 1 } qw/table column where append relation filter query
+                       selection join all_column/;
 
 sub select {
     my ($self, %args) = @_;
@@ -649,7 +638,8 @@ sub select {
                : defined $table ? [$table]
                : [];
     my $columns   = $args{column} || [];
-    $columns = [$columns] unless ref $columns;
+    $columns = [$columns] unless ref $columns eq 'ARRAY';
+    my $all_column = $args{all_column};
     my $selection = $args{selection} || '';
     my $where     = $args{where} || {};
     my $append    = $args{append};
@@ -674,19 +664,49 @@ sub select {
         unshift @$tables, @{$self->_tables($selection)};
     }
     
-    # Column names and table name
-    else {
-        # Column names
-        if (@$columns) {
-            foreach my $column (@$columns) {
-                unshift @$tables, @{$self->_tables($column)};
-                push @sql, ($column, ',');
+    # Clumn clause, countains all columns of joined tables
+    elsif ($all_column) {
+    
+        # Find tables
+        my $main_table = $tables->[-1] || '';
+        my %tables;
+        foreach my $j (@$join) {
+            my $tables = $self->_tables($j);
+            foreach my $table (@$tables) {
+                $tables{$table} = 1;
             }
-            pop @sql if $sql[-1] eq ',';
         }
-        else { push @sql, '*' }
+        delete $tables{$main_table};
+        my @column_clause;
         
-        # Table
+        # Column clause of main table
+        push @sql, $self->model($main_table)->column_clause;
+        push @sql, ',';
+        
+        # Column cluase of other tables
+        foreach my $table (keys %tables) {
+            unshift @$tables, $table;
+            push @sql, $self->model($table)
+                            ->column_clause(prefix => "${table}__");
+            push @sql, ',';
+        }
+        pop @sql if $sql[-1] eq ',';
+    }
+    
+    # Column clause
+    elsif (@$columns) {
+        foreach my $column (@$columns) {
+            unshift @$tables, @{$self->_tables($column)};
+            push @sql, ($column, ',');
+        }
+        pop @sql if $sql[-1] eq ',';
+    }
+    
+    # "*" is default
+    else { push @sql, '*' }
+    
+    # Table
+    unless ($selection) {
         push @sql, 'from';
         if ($args{relation}) {
             my $found = {};
@@ -752,7 +772,7 @@ sub select {
 
 our %VALID_SELECT_AT_ARGS
   = map { $_ => 1 } qw/table column where append relation filter query selection
-                       param primary_key join/;
+                       param primary_key join all_column/;
 
 sub select_at {
     my ($self, %args) = @_;
@@ -1125,6 +1145,18 @@ sub _croak {
     }
 }
 
+sub _need_tables {
+    my ($self, $tree, $need_tables, $tables) = @_;
+    
+    foreach my $table (@$tables) {
+        
+        if ($tree->{$table}) {
+            $need_tables->{$table} = 1;
+            $self->_need_tables($tree, $need_tables, [$tree->{$table}{parent}])
+        }
+    }
+}
+
 sub _tables {
     my ($self, $source) = @_;
     
@@ -1438,7 +1470,7 @@ default to the following values.
 
 Filters, registered by C<register_filter()>.
 
-=head2 C<(experimental) models>
+=head2 C<models EXPERIMENTAL>
 
     my $models = $dbi->models;
     $dbi       = $dbi->models(\%models);
@@ -1466,7 +1498,7 @@ Query builder, default to L<DBIx::Custom::QueryBuilder> object.
 
 Result class, default to L<DBIx::Custom::Result>.
 
-=head2 C<(experimental) safety_character>
+=head2 C<safety_character EXPERIMENTAL>
 
     my $safety_character = $self->safety_character;
     $dbi                 = $self->safety_character($character);
@@ -1487,7 +1519,7 @@ L<DBIx::Custom> inherits all methods from L<Object::Simple>
 and use all methods of L<DBI>
 and implements the following new ones.
 
-=head2 C<(experimental) apply_filter>
+=head2 C<apply_filter EXPERIMENTAL>
 
     $dbi->apply_filter(
         'book',
@@ -1555,7 +1587,7 @@ C<where> is where clause. this must be hash reference.
 C<append> is a string added at the end of the SQL statement.
 C<filter> is filters when parameter binding is executed.
 C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
-default to 0. This is experimental.
+default to 0. This is EXPERIMENTAL.
 Return value of C<delete()> is the count of affected rows.
 
 =head2 C<delete_all>
@@ -1567,7 +1599,7 @@ Arguments is same as C<delete> method,
 except that C<delete_all> don't have C<where> argument.
 Return value of C<delete_all()> is the count of affected rows.
 
-=head3 C<(experimental) delete_at()>
+=head3 C<delete_at() EXPERIMENTAL>
 
 To delete row by using primary key, use C<delete_at()>
 
@@ -1604,11 +1636,11 @@ C<param> is the pairs of column name value. this must be hash reference.
 C<append> is a string added at the end of the SQL statement.
 C<filter> is filters when parameter binding is executed.
 C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
-default to 0. This is experimental.
+default to 0. This is EXPERIMENTAL.
 This is overwrites C<default_bind_filter>.
 Return value of C<insert()> is the count of affected rows.
 
-=head3 C<(experimental) insert_at()>
+=head3 C<insert_at() EXPERIMENTAL>
 
 To insert row by using primary key, use C<insert_at()>
 
@@ -1624,7 +1656,7 @@ NOTE that you must pass array reference as C<where>.
 If C<param> contains primary key,
 the key and value is delete from C<param>.
 
-=head2 C<(experimental) insert_param>
+=head2 C<insert_param EXPERIMENTAL>
 
     my $insert_param = $dbi->insert_param({title => 'a', age => 2});
 
@@ -1632,7 +1664,7 @@ Create insert parameter tag.
 
     {title => 'a', age => 2}   ->   {insert_param title age}
 
-=head2 C<(experimental) each_column>
+=head2 C<each_column EXPERIMENTAL>
 
     $dbi->each_column(
         sub {
@@ -1651,7 +1683,7 @@ You can do anything in callback.
 Callback receive four arguments, dbi object, table name,
 column name and column information.
 
-=head2 C<(experimental) include_model>
+=head2 C<include_model EXPERIMENTAL>
 
     $dbi->include_model(
         'MyModel' => [
@@ -1694,7 +1726,7 @@ you can do like this.
         ]
     );
 
-=head2 C<(experimental) method>
+=head2 C<method EXPERIMENTAL>
 
     $dbi->method(
         update_or_insert => sub {
@@ -1719,7 +1751,7 @@ Register method. These method is called from L<DBIx::Custom> object directory.
 
 Create a new L<DBIx::Custom> object.
 
-=head2 C<(experimental) not_exists>
+=head2 C<not_exists EXPERIMENTAL>
 
     my $not_exists = $dbi->not_exists;
 
@@ -1773,30 +1805,80 @@ Rollback transaction.
 This is same as L<DBI>'s C<rollback>.
 
 =head2 C<select>
-    
-    my $result = $dbi->select(
-        table     => $table,
-        column    => [@column],
-        where     => \%where,
-        append    => $append,
-        relation  => \%relation,
-        join => ['left outer join company on book.company_id = company.id']
-        filter    => \%filter,
-        query     => 1,
-        selection => $selection
-    );
 
+    my $result = $dbi->select(
+        table  => 'book',
+        column => ['author', 'title'],
+        where  => {author => 'Ken'},
+    );
+    
 Execute select statement.
-C<select> method have C<table>, C<column>, C<where>, C<append>,
-C<relation> and C<filter> arguments.
-C<table> is a table name.
-C<column> is column names. this is array reference or string.
+
+The following opitons are currently available.
+
+=over 4
+
+=item C<table>
+
+Table name.
+
+    $dbi->select(table => 'book', ...);
+
+=item C<column>
+
+Column clause. This is array reference or constant value.
+
+    # Hash refernce
+    $dbi->select(column => ['author', 'title']);
+    
+    # Constant value
+    $dbi->select(column => 'author');
+
+Default is '*' unless C<column> is specified.
+
+    # Default
+    $dbi->select(column => '*');
+
+=item C<all_column EXPERIMENTAL>
+
+Colum clause, contains all columns. This is true or false value
+
+    $dbi->select(all_column => 1, ...);
+
+If main table is C<book> and joined table is C<company>,
+This create the following column clause.
+
+    book.author as author
+    book.company_id as company_id
+    company.id as company__id
+    company.name as company__name
+
+Columns of main table is consist of only column name,
+Columns of joined table is consist of table and column name joined C<__>.
+
+=item C<where>
+
+Where clause. This is hash reference or L<DBIx::Custom::Where> object.
+    
+    # Hash reference
+    $dbi->select(where => {author => 'Ken', 'title' => 'Perl'}, ...);
+    
+    # Where clause
+    my $where = $dbi->where(
+        clause => ['and', '{= author}', '{like title}'],
+        param  => {author => 'Ken', title => '%Perl%'}
+    );
+    $dbi->select(where => $where, ...);
+
+=back
+
+C<filter> arguments.
 C<where> is where clause. this is normally hash reference.
 C<append> is a string added at the end of the SQL statement.
 C<filter> is filters when parameter binding is executed.
 C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
-default to 0. This is experimental.
-C<selection> is string of column name and tables. This is experimental
+default to 0. This is EXPERIMENTAL.
+C<selection> is string of column name and tables. This is EXPERIMENTAL
 
     selection => 'name, location.name as location_name ' .
                  'from company inner join location'
@@ -1806,9 +1888,9 @@ such as "{= title} or {like author}".
 Second element is paramters.
 
 C<join> is join clause after from clause.
-This is experimental.
+This is EXPERIMENTAL.
 
-=head3 C<(experimental) select_at()>
+=head3 C<select_at() EXPERIMENTAL>
 
 To select row by using primary key, use C<select_at()>.
 
@@ -1835,11 +1917,11 @@ C<where> is where clause. this must be hash reference.
 C<append> is a string added at the end of the SQL statement.
 C<filter> is filters when parameter binding is executed.
 C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
-default to 0. This is experimental.
+default to 0. This is EXPERIMENTAL.
 This is overwrites C<default_bind_filter>.
 Return value of C<update()> is the count of affected rows.
 
-=head2 C<(experimental) update_param>
+=head2 C<update_param EXPERIMENTAL>
 
     my $update_param = $dbi->update_param({title => 'a', age => 2});
 
@@ -1847,7 +1929,7 @@ Create update parameter tag.
 
     {title => 'a', age => 2}   ->   {update_param title age}
 
-=head2 C<(experimental) model>
+=head2 C<model EXPERIMENTAL>
 
     $dbi->model('book')->method(
         insert => sub { ... },
@@ -1858,7 +1940,7 @@ Create update parameter tag.
 
 Set and get a L<DBIx::Custom::Model> object,
 
-=head2 C<(experimental) setup_model>
+=head2 C<setup_model EXPERIMENTAL>
 
     $dbi->setup_model;
 
@@ -1877,7 +1959,7 @@ Arguments is same as C<update> method,
 except that C<update_all> don't have C<where> argument.
 Return value of C<update_all()> is the count of affected rows.
 
-=head3 C<(experimental) update_at()>
+=head3 C<update_at() EXPERIMENTAL>
 
 To update row by using primary key, use C<update_at()>
 
@@ -1893,7 +1975,7 @@ NOTE that you must pass array reference as C<where>.
 If C<param> contains primary key,
 the key and value is delete from C<param>.
 
-=head2 C<(experimental) where>
+=head2 C<where EXPERIMENTAL>
 
     my $where = $dbi->where(
         clause => ['and', '{= title}', '{= author}'],
@@ -1913,7 +1995,7 @@ Method to set and get caches.
 
 The following tags is available.
 
-=head2 C<(experimental) table>
+=head2 C<table EXPERIMENTAL>
 
 Table tag
 
@@ -1990,7 +2072,7 @@ Updata parameter tag.
 =head1 STABILITY
 
 L<DBIx::Custom> is stable. APIs keep backword compatible
-except experimental one in the feature.
+except EXPERIMENTAL one in the feature.
 
 =head1 BUGS
 

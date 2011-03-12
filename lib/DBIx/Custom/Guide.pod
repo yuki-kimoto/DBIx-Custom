@@ -6,9 +6,9 @@ DBIx::Custom::Guide - DBIx::Custom Guide
 
 =head1 GUIDE
 
-(This module contain many experimental featrues.
- in each pod of module, experimental marked method
- is maybe changed without warnings)
+(This guide will be completed nearly future and contains EXPERIMENTAL features
+The features marked EXPERIMENTAL in POD of L<DBIx::Custom> is
+EXPERIMENTAL ones)
 
 L<DBIx::Custom> is the class to make easy to execute SQL.
 This is L<DBI> wrapper class like L<DBIx::Class> or L<DBIx::Simple>.

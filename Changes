@@ -1,82 +1,84 @@
+0.1659
+    - added select() all_column option
 0.1658
-    - added experimental DBIx::Custom::Model column() prefix option.
+    - added EXPERIMENTAL DBIx::Custom::Model column() prefix option.
     - fixed select_at join column invalid bug
     - added DBIx::Custom::Model column() attribute 
 0.1657
-    - remaned experimental safty_charcter to safty_name
+    - remaned EXPERIMENTAL safty_charcter to safty_name
     - safty_charcter is changed, set only one character regex.
 0.1656
     - fixed some select() join opition bug
 0.1655
-    - added experimental DBIx::Custom::Model join attribute
-    - added experimental select() join option
+    - added EXPERIMENTAL DBIx::Custom::Model join attribute
+    - added EXPERIMENTAL select() join option
     - deprecated select() relation option
-    - added experimental update_param and insert_param
-    - remove experimental DBIx::Custom::Model relation
+    - added EXPERIMENTAL update_param and insert_param
+    - remove EXPERIMENTAL DBIx::Custom::Model relation
 0.1654
     - selection can contain where clause.
 0.1653
-    - added experimental DBIx::Custom::Result remove_filter()
-    - added experimental DBIx::Custom::Result remove_end_filter()
-    - added experimental DBIx::Custom::Model insert_at()
-    - added experimental insert_at()
+    - added EXPERIMENTAL DBIx::Custom::Result remove_filter()
+    - added EXPERIMENTAL DBIx::Custom::Result remove_end_filter()
+    - added EXPERIMENTAL DBIx::Custom::Model insert_at()
+    - added EXPERIMENTAL insert_at()
     - improved error message
 0.1652
     - all filter can receive array reference and receiving hash reference is DEPRECATED!
 0.1651
-    - add experimental DBIx::Custom::Model filter attribute.
+    - add EXPERIMENTAL DBIx::Custom::Model filter attribute.
 0.1650
-    - add experimental DBIx::Custom::Model name() attribute
+    - add EXPERIMENTAL DBIx::Custom::Model name() attribute
 0.1649
-    - add experimental DBIx::Custom::Model column_clause() method.
+    - add EXPERIMENTAL DBIx::Custom::Model column_clause() method.
     - select method column option can receive string.
     - DBIx::Custom::Model select() and select_at() think about relation attirbute
 0.1648
-    - add experimental DBIx::Custom::Model relation() attribute
-    - add experimental update_at(), delete_at(), select_at()
-    - add experimental setup_model()
-    - add experimental DBIx::Custom::Model columns attirbute
-    - add experimental DBIx::Custom::Model foreign_key() attribute 
-    - add experimental models() attribute
+    - add EXPERIMENTAL DBIx::Custom::Model relation() attribute
+    - add EXPERIMENTAL update_at(), delete_at(), select_at()
+    - add EXPERIMENTAL setup_model()
+    - add EXPERIMENTAL DBIx::Custom::Model columns attirbute
+    - add EXPERIMENTAL DBIx::Custom::Model foreign_key() attribute 
+    - add EXPERIMENTAL models() attribute
 0.1647
     - add default_dbi_option()
 0.1646
     - add feture. all model class in namespace is included by include_model
-    - rename experimental include_table to include_model
-    - rename experimental table to model
-    - rename experimental DBIx::Custom::Table to DBIx::Custom::Model
-    - remame experimental DBIx::Custom::Table::name() to DBIx::Custom::Model::table();
+    - rename EXPERIMENTAL include_table to include_model
+    - rename EXPERIMENTAL table to model
+    - rename EXPERIMENTAL DBIx::Custom::Table to DBIx::Custom::Model
+    - remame EXPERIMENTAL DBIx::Custom::Table::name() to DBIx::Custom::Model::table();
 0.1645
-    - removed experimental base_table() for class expandability.
-    - experimental table() can't set table object any more.
-    - added experimental include_table().
+    - removed EXPERIMENTAL base_table() for class expandability.
+    - EXPERIMENTAL table() can't set table object any more.
+    - added EXPERIMENTAL include_table().
 0.1644
     - update pod
 0.1643
-    - add experimental selection option to select()
-    - add experimental table tag
+    - add EXPERIMENTAL selection option to select()
+    - add EXPERIMENTAL table tag
     - fix bug : filter can't overwirite undef value.
-    - add experimental feature to apply_filter(). you can apply end filter.
-    - add experimental feature to apply_filter(). TABLE__COLUMN is filterded now.
+    - add EXPERIMENTAL feature to apply_filter(). you can apply end filter.
+    - add EXPERIMENTAL feature to apply_filter(). TABLE__COLUMN is filterded now.
 0.1642
-    - removed experimental DBIx::Custom::Table base() method
+    - removed EXPERIMENTAL DBIx::Custom::Table base() method
     - table created by tabled method can call base_$method correponding to base_table's one
 0.1641
     - select() where can't receive array reference to prevend SQL injection easily(not backward compatible. sorry. use where() instead)
-    - added experimental safety_column_name attribute
+    - added EXPERIMENTAL safety_column_name attribute
     - fix SQL injection security hole about column name
 0.1640
     - autoload DBI method
-    - removed experimental expand
+    - removed EXPERIMENTAL expand
 0.1639
     - improved delete() and update() where option. you can use DBIx::Custom::Where object
-    - added experimental not_exists()
+    - added EXPERIMENTAL not_exists()
 0.1638
     - table object call dbi object method if not found method.
-    - added experimental base_table attribute and removed experimental table_class attribute
+    - added EXPERIMENTAL base_table attribute and removed EXPERIMENTAL table_class attribute
     - renamed helper to method.
-    - added experimental DBIx::Custom::Result::stash()
-    - renamed experimental DBIx::Custom::Table helper to method
+    - added EXPERIMENTAL DBIx::Custom::Result::stash()
+    - renamed EXPERIMENTAL DBIx::Custom::Table helper to method
 0.1637
     - renamed dbi_options to dbi_option. dbi_options is available, but deprecated.
     - renamed DBIx::Custom::TagProcessor to DBIx::Custom::Tag, and function names is cleanuped.
@@ -85,7 +87,7 @@
     - improved error message
     - build all clause if param is undefined.
     - each_column callback receive self as first argument.
-    - removed experimental txn_scope
+    - removed EXPERIMENTAL txn_scope
 0.1636
     - added tests and cleanup
 0.1635
@@ -96,15 +98,15 @@
 0.1633
     - fixed test
 0.1632
-    - added experimental where method
-    - added experimental DBIx::Custom::Where.
+    - added EXPERIMENTAL where method
+    - added EXPERIMENTAL DBIx::Custom::Where.
     - removed DBIx::Custom::Or
 0.1631
-    - added experimental DBIx::Custom::Result end_filter method
-    - experimental extended select method's where option
+    - added EXPERIMENTAL DBIx::Custom::Result end_filter method
+    - EXPERIMENTAL extended select method's where option
     - fix select method empty where failed bug
-    - added experimental suger method query option
-    - added experimental or method
+    - added EXPERIMENTAL suger method query option
+    - added EXPERIMENTAL or method
 0.1630
     - fix test bug
 0.1629
@@ -118,15 +120,15 @@
     - fixed connect method bug
 0.1627
     - added insert, update, update_all, delete, delete_all, select method to DBIx::Custom::Table
-    - added experimental txn_scope
+    - added EXPERIMENTAL txn_scope
 0.1626
     - simplified DBIx::Custom::Model and DBIx::Custom::Table
 0.1625
-    - added experimental DBIx::Custom::Model and DBIx::Custom::Table
+    - added EXPERIMENTAL DBIx::Custom::Model and DBIx::Custom::Table
 0.1624
-    - added experimental iterate_all_columns method.
+    - added EXPERIMENTAL iterate_all_columns method.
 0.1623
-    - added experimental auto_filter method
+    - added EXPERIMENTAL auto_filter method
     - deprecated default_bind_filter and default_fetch_filter because these are global effect.
     - changed defautl_bind_filter and default_fetch_filter attributes to methods.
     - changed DBIx::Custom::Result default_filter attribute to method
@@ -142,14 +144,14 @@
     - updated document
 0.1619
     - updated document
-    - added experimental expand method
+    - added EXPERIMENTAL expand method
 0.1618
     - added helper method
     - added begin_work, commit, and rollback method
 0.1617
     - L<DBIx::Custom> is now stable. APIs keep backword compatible in the feature.
 0.1616
-    - removed experimental register_method(), and methods attribute, because it is too magical
+    - removed EXPERIMENTAL register_method(), and methods attribute, because it is too magical
 0.1615
     - fixed DBIx::Custom::QueryBuilder build_query() bug
     - required Perl 5.008001 to use @CARP_NOT 
@@ -158,8 +160,8 @@
     - enable escaping '{' and '}' in the source of SQL
     - fixed Carp Carp trust relationship
 0.1613
-    - added experimental register_method() method
-    - added experimental methods attribute
+    - added EXPERIMENTAL register_method() method
+    - added EXPERIMENTAL methods attribute
 0.1612
     - added tests
     - updated document
