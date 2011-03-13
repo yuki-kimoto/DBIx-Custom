@@ -1458,7 +1458,7 @@ L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
     my $cache = $dbi->cache;
     $dbi      = $dbi->cache(1);
 
-Enable caching of L<DBIx::Custom::Query>,
+Enable caching L<DBIx::Custom::Query>,
 default to 1.
 
 =head2 C<data_source>
@@ -1491,7 +1491,7 @@ default to the following values.
     }
 
 You should not change C<AutoCommit> value directly
-to check if the process is in transaction correctly.
+to check if the process is in transaction.
 L<DBIx::Custom> determin the process is in transaction
 if AutoCommit is 0. 
 
@@ -1571,6 +1571,13 @@ You can use three column name to apply filter to column data.
     2. table.column  : book.author
     3. table__column : book__author
 
+=head2 C<cache_method>
+
+    $dbi          = $dbi->cache_method(\&cache_method);
+    $cache_method = $dbi->cache_method
+
+Method to set and get caches.
+
 =head2 C<connect>
 
     my $dbi = DBIx::Custom->connect(data_source => "dbi:mysql:database=dbname",
@@ -1616,87 +1623,246 @@ or the count of affected rows if insert, update, delete statement is executed.
 
 =head2 C<delete>
 
-    $dbi->delete(table  => $table,
-                 where  => \%where,
-                 append => $append,
-                 filter => \@filter,
-                 query  => 1);
+    $dbi->delete(table => 'book', where => {title => 'Perl'});
 
-Execute delete statement.
-C<delete> method have C<table>, C<where>, C<append>, and C<filter> arguments.
-C<table> is a table name.
-C<where> is where clause. this must be hash reference.
-C<append> is a string added at the end of the SQL statement.
-C<filter> is filters when parameter binding is executed.
-C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
-default to 0. This is EXPERIMENTAL.
-Return value of C<delete()> is the count of affected rows.
+Delete statement.
+
+The following opitons are currently available.
+
+=item C<table>
+
+Table name.
+
+    $dbi->delete(table => 'book');
+
+=item C<where>
+
+Where clause. This is hash reference or L<DBIx::Custom::Where> object.
+    
+    # Hash reference
+    $dbi->delete(where => {title => 'Perl'});
+    
+    # DBIx::Custom::Where object
+    my $where = $dbi->where(
+        clause => ['and', '{= author}', '{like title}'],
+        param  => {author => 'Ken', title => '%Perl%'}
+    );
+    $dbi->delete(where => $where);
+
+=item C<append>
+
+Append statement to last of SQL. This is string.
+
+    $dbi->delete(append => 'order by title');
+
+=item C<filter>
+
+Filter, executed before data is send to database. This is array reference.
+Filter value is code reference or
+filter name registerd by C<register_filter()>.
+
+    # Basic
+    $dbi->delete(
+        filter => [
+            title  => sub { uc $_[0] }
+            author => sub { uc $_[0] }
+        ]
+    );
+    
+    # At once
+    $dbi->delete(
+        filter => [
+            [qw/title author/]  => sub { uc $_[0] }
+        ]
+    );
+    
+    # Filter name
+    $dbi->delete(
+        filter => [
+            title  => 'upper_case',
+            author => 'upper_case'
+        ]
+    );
+
+These filters are added to the C<out> filters, set by C<apply_filter()>.
+
+=item C<query EXPERIMENTAL>
+
+Get L<DBIx::Custom::Query> object instead of executing SQL.
+This is true or false value.
+
+    my $query = $dbi->delete(query => 1);
+
+You can check SQL.
+
+    my $sql = $query->sql;
 
 =head2 C<delete_all>
 
     $dbi->delete_all(table => $table);
 
-Execute delete statement to delete all rows.
-Arguments is same as C<delete> method,
-except that C<delete_all> don't have C<where> argument.
-Return value of C<delete_all()> is the count of affected rows.
+Delete statement to delete all rows.
+Options is same as C<delete()>.
 
-=head3 C<delete_at() EXPERIMENTAL>
+=head2 C<delete_at() EXPERIMENTAL>
 
-To delete row by using primary key, use C<delete_at()>
+Delete statement, using primary key.
 
     $dbi->delete_at(
         table => 'book',
-        primary_key => ['id'],
-        where => ['123']
+        primary_key => 'id',
+        where => '5'
     );
 
-In this example, row which id column is 123 is deleted.
-NOTE that you must pass array reference as C<where>.
+This method is same as C<delete()> exept that
+C<primary_key> is specified and C<where> is constant value or array refrence.
+all option of C<delete()> is available.
 
-You can also write arguments like this.
+=head2 C<primary_key>
 
-    $dbi->delete_at(
-        table => 'book',
-        primary_key => ['id'],
-        param => {id => '123'}
-    );
+Primary key. This is constant value or array reference.
+    
+    # Constant value
+    $dbi->delete(primary_key => 'id');
+
+    # Array reference
+    $dbi->delete(primary_key => ['id1', 'id2' ]);
+
+This is used to create where clause.
+
+=head2 C<where>
+
+Where clause, created from primary key information.
+This is constant value or array reference.
+
+    # Constant value
+    $dbi->delete(where => 5);
+
+    # Array reference
+    $dbi->delete(where => [3, 5]);
+
+In first examle, the following SQL is created.
+
+    delete from book where id = ?;
+
+Place holder is set to 5.
 
 =head2 C<insert>
 
-    $dbi->insert(table  => $table, 
-                 param  => \%param,
-                 append => $append,
-                 filter => \@filter,
-                 query  => 1);
+    $dbi->insert(
+        table  => 'book', 
+        param  => {title => 'Perl', author => 'Ken'}
+    );
 
-Execute insert statement.
-C<insert> method have C<table>, C<param>, C<append>
-and C<filter> arguments.
-C<table> is a table name.
-C<param> is the pairs of column name value. this must be hash reference.
-C<append> is a string added at the end of the SQL statement.
-C<filter> is filters when parameter binding is executed.
-C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
-default to 0. This is EXPERIMENTAL.
-This is overwrites C<default_bind_filter>.
-Return value of C<insert()> is the count of affected rows.
+Insert statement.
 
-=head3 C<insert_at() EXPERIMENTAL>
+The following opitons are currently available.
 
-To insert row by using primary key, use C<insert_at()>
+=item C<table>
+
+Table name.
+
+    $dbi->insert(table => 'book');
+
+=item C<param>
+
+=item C<param>
+
+Insert data. This is hash reference.
+
+    $dbi->insert(param => {title => 'Perl'});
+
+=item C<append>
+
+Append statement to last of SQL. This is string.
+
+    $dbi->insert(append => 'order by title');
+
+=item C<filter>
+
+Filter, executed before data is send to database. This is array reference.
+Filter value is code reference or
+filter name registerd by C<register_filter()>.
+
+    # Basic
+    $dbi->insert(
+        filter => [
+            title  => sub { uc $_[0] }
+            author => sub { uc $_[0] }
+        ]
+    );
+    
+    # At once
+    $dbi->insert(
+        filter => [
+            [qw/title author/]  => sub { uc $_[0] }
+        ]
+    );
+    
+    # Filter name
+    $dbi->insert(
+        filter => [
+            title  => 'upper_case',
+            author => 'upper_case'
+        ]
+    );
+
+These filters are added to the C<out> filters, set by C<apply_filter()>.
+
+=item C<query EXPERIMENTAL>
+
+Get L<DBIx::Custom::Query> object instead of executing SQL.
+This is true or false value.
+
+    my $query = $dbi->insert(query => 1);
+
+You can check SQL.
+
+    my $sql = $query->sql;
+
+=head2 C<insert_at() EXPERIMENTAL>
+
+Insert statement, using primary key.
 
     $dbi->insert_at(
         table => 'book',
-        primary_key => ['id'],
-        where => ['123'],
-        param => {name => 'Ken'}
+        primary_key => 'id',
+        where => '5',
+        param => {title => 'Perl'}
     );
 
-In this example, row which id column is 123 is inserted.
-NOTE that you must pass array reference as C<where>.
-If C<param> contains primary key,
-the key and value is delete from C<param>.
+This method is same as C<insert()> exept that
+C<primary_key> is specified and C<where> is constant value or array refrence.
+all option of C<insert()> is available.
+
+=head2 C<primary_key>
+
+Primary key. This is constant value or array reference.
+    
+    # Constant value
+    $dbi->insert(primary_key => 'id');
+
+    # Array reference
+    $dbi->insert(primary_key => ['id1', 'id2' ]);
+
+This is used to create parts of insert data.
+
+=head2 C<where>
+
+Parts of Insert data, create from primary key information.
+This is constant value or array reference.
+
+    # Constant value
+    $dbi->insert(where => 5);
+
+    # Array reference
+    $dbi->insert(where => [3, 5]);
+
+In first examle, the following SQL is created.
+
+    insert into book (id, title) values (?, ?);
+
+Place holders are set to 5 and 'Perl'.
 
 =head2 C<insert_param EXPERIMENTAL>
 
@@ -1944,14 +2110,14 @@ In above select, the following SQL is created.
 
 =item C<append>
 
-Appended statement to last of SQL. This is string.
+Append statement to last of SQL. This is string.
 
     $dbi->select(append => 'order by title');
 
 =item C<filter>
 
-Filter, executed before data is send to database. This is array reference
-and filter value is code reference or
+Filter, executed before data is send to database. This is array reference.
+Filter value is code reference or
 filter name registerd by C<register_filter()>.
 
     # Basic
@@ -1977,22 +2143,22 @@ filter name registerd by C<register_filter()>.
         ]
     );
 
-These filters are added to the C<out> filters set by C<apply_filter()>.
+These filters are added to the C<out> filters, set by C<apply_filter()>.
 
 =item C<query EXPERIMENTAL>
 
 Get L<DBIx::Custom::Query> object instead of executing SQL.
 This is true or false value.
 
-    my $query = $dbi->select(query => 1, ...);
+    my $query = $dbi->select(query => 1);
 
-You can check executing SQL by this object.
+You can check SQL.
 
     my $sql = $query->sql;
 
 =back
 
-=head3 C<select_at() EXPERIMENTAL>
+=head2 C<select_at() EXPERIMENTAL>
 
 Select statement, using primary key.
 
@@ -2002,8 +2168,8 @@ Select statement, using primary key.
         where => '5'
     );
 
-This method is same as select method exept that
-primary_key is specified and C<where> is array reference.
+This method is same as C<select()> exept that
+C<primary_key> is specified and C<where> is constant value or array refrence.
 all option of C<select()> is available.
 
 =head2 C<primary_key>
@@ -2016,9 +2182,11 @@ Primary key. This is constant value or array reference.
     # Array reference
     $dbi->select(primary_key => ['id1', 'id2' ]);
 
+This is used to create where clause.
+
 =head2 C<where>
 
-Where clause, created by primary key infromation.
+Where clause, created from primary key information.
 This is constant value or array reference.
 
     # Constant value
@@ -2035,33 +2203,78 @@ Place holder is set to 5.
 
 =head2 C<update>
 
-    $dbi->update(table  => $table, 
-                 param  => \%params,
-                 where  => \%where,
-                 append => $append,
-                 filter => \@filter,
-                 query  => 1)
+    $dbi->update(
+        table  => 'book',
+        param  => {title => 'Perl'},
+        where  => {id => 4}
+    );
 
-Execute update statement.
-C<update> method have C<table>, C<param>, C<where>, C<append>
-and C<filter> arguments.
-C<table> is a table name.
-C<param> is column-value pairs. this must be hash reference.
-C<where> is where clause. this must be hash reference.
-C<append> is a string added at the end of the SQL statement.
-C<filter> is filters when parameter binding is executed.
-C<query> is if you don't execute sql and get L<DBIx::Custom::Query> object as return value.
-default to 0. This is EXPERIMENTAL.
-This is overwrites C<default_bind_filter>.
-Return value of C<update()> is the count of affected rows.
+Update statement.
 
-=head2 C<update_param EXPERIMENTAL>
+The following opitons are currently available.
 
-    my $update_param = $dbi->update_param({title => 'a', age => 2});
+=over 4
 
-Create update parameter tag.
+Table name.
 
-    {title => 'a', age => 2}   ->   {update_param title age}
+    $dbi->update(table => 'book');
+
+=item C<param>
+
+Update data. This is hash reference.
+
+    $dbi->update(param => {title => 'Perl'});
+
+=item C<where>
+
+Where clause. This is hash reference or L<DBIx::Custom::Where> object.
+    
+    # Hash reference
+    $dbi->update(where => {author => 'Ken', 'title' => 'Perl'});
+    
+    # DBIx::Custom::Where object
+    my $where = $dbi->where(
+        clause => ['and', '{= author}', '{like title}'],
+        param  => {author => 'Ken', title => '%Perl%'}
+    );
+    $dbi->update(where => $where);
+
+=item C<append>
+
+Append statement to last of SQL. This is string.
+
+    $dbi->update(append => 'order by title');
+
+=item C<filter>
+
+Filter, executed before data is send to database. This is array reference.
+Filter value is code reference or
+filter name registerd by C<register_filter()>.
+
+    # Basic
+    $dbi->update(
+        filter => [
+            title  => sub { uc $_[0] }
+            author => sub { uc $_[0] }
+        ]
+    );
+    
+    # At once
+    $dbi->update(
+        filter => [
+            [qw/title author/]  => sub { uc $_[0] }
+        ]
+    );
+    
+    # Filter name
+    $dbi->update(
+        filter => [
+            title  => 'upper_case',
+            author => 'upper_case'
+        ]
+    );
+
+These filters are added to the C<out> filters, set by C<apply_filter()>.
 
 =head2 C<model EXPERIMENTAL>
 
@@ -2074,40 +2287,75 @@ Create update parameter tag.
 
 Set and get a L<DBIx::Custom::Model> object,
 
-=head2 C<setup_model EXPERIMENTAL>
+=item C<query EXPERIMENTAL>
 
-    $dbi->setup_model;
+Get L<DBIx::Custom::Query> object instead of executing SQL.
+This is true or false value.
 
-Setup all model objects.
-C<columns> and C<primary_key> is automatically set.
+    my $query = $dbi->update(query => 1);
+
+You can check SQL.
+
+    my $sql = $query->sql;
 
 =head2 C<update_all>
 
-    $dbi->update_all(table  => $table, 
-                     param  => \%params,
-                     filter => \@filter,
-                     append => $append);
+    $dbi->update_all(table => 'book', param => {title => 'Perl'});
 
-Execute update statement to update all rows.
-Arguments is same as C<update> method,
-except that C<update_all> don't have C<where> argument.
-Return value of C<update_all()> is the count of affected rows.
+Update statement to update all rows.
+Options is same as C<update()>.
 
-=head3 C<update_at() EXPERIMENTAL>
+=head2 C<update_at() EXPERIMENTAL>
 
-To update row by using primary key, use C<update_at()>
+Update statement, using primary key.
 
     $dbi->update_at(
         table => 'book',
-        primary_key => ['id'],
-        where => ['123'],
-        param => {name => 'Ken'}
+        primary_key => 'id',
+        where => '5',
+        param => {title => 'Perl'}
     );
 
-In this example, row which id column is 123 is updated.
-NOTE that you must pass array reference as C<where>.
-If C<param> contains primary key,
-the key and value is delete from C<param>.
+This method is same as C<update()> exept that
+C<primary_key> is specified and C<where> is constant value or array refrence.
+all option of C<update()> is available.
+
+=head2 C<primary_key>
+
+Primary key. This is constant value or array reference.
+    
+    # Constant value
+    $dbi->update(primary_key => 'id');
+
+    # Array reference
+    $dbi->update(primary_key => ['id1', 'id2' ]);
+
+This is used to create where clause.
+
+=head2 C<where>
+
+Where clause, created from primary key information.
+This is constant value or array reference.
+
+    # Constant value
+    $dbi->update(where => 5);
+
+    # Array reference
+    $dbi->update(where => [3, 5]);
+
+In first examle, the following SQL is created.
+
+    update book set title = ? where id = ?
+
+Place holders are set to 'Perl' and 5.
+
+=head2 C<update_param EXPERIMENTAL>
+
+    my $update_param = $dbi->update_param({title => 'a', age => 2});
+
+Create update parameter tag.
+
+    {update_param title age}
 
 =head2 C<where EXPERIMENTAL>
 
@@ -2118,12 +2366,12 @@ the key and value is delete from C<param>.
 
 Create a new L<DBIx::Custom::Where> object.
 
-=head2 C<cache_method>
+=head2 C<setup_model EXPERIMENTAL>
 
-    $dbi          = $dbi->cache_method(\&cache_method);
-    $cache_method = $dbi->cache_method
+    $dbi->setup_model;
 
-Method to set and get caches.
+Setup all model objects.
+C<columns> and C<primary_key> is automatically set.
 
 =head1 Tags
 
