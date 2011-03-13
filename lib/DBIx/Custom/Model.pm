@@ -161,7 +161,7 @@ sub update_at {
 
 =head1 NAME
 
-DBIx::Custom::Model - Model (experimental)
+DBIx::Custom::Model - Model EXPERIMENTAL
 
 =head1 SYNOPSIS
 
@@ -197,7 +197,7 @@ This filter is applied when L<DBIx::Custom> C<include_model()> is called.
 
 Model name.
 
-=head2 C<(experimental) join>
+=head2 C<join>
 
     my $join = $model->join;
     $model   = $model->join(

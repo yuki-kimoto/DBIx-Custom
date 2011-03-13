@@ -68,7 +68,7 @@ sub placeholder {
 sub update_param {
     my @columns = @_;
     
-    # Update paramters
+    # Update parameters
     my $s = 'set ';
     $s .= "$_ = ?, " for @columns;
     $s =~ s/, $//;

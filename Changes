@@ -1,3 +1,5 @@
+0.1660
+    - update pod
 0.1659
     - EXPERIMETAL fork safety implementaion.
     - removed EXPERIMENTAL selection
@@ -181,7 +183,7 @@
     - update document
     - renamed DBIx::Custom::QueryBuilder::TagProcessors functions(not backword compatible)
 0.1607
-    - where argument of select() method can specify array(string, paramters)
+    - where argument of select() method can specify array(string, parameters)
     - renamed build_query() to create_query()(not backword compatible)
 0.1606
     - fix testing bug
