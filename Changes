@@ -1,5 +1,10 @@
 0.1660
-    - update pod
+    - added EXPERIMENTAL DBIx::Custom::Model view()
+    - added EXPERIMENTAL view()
+    - DBIx::Custom::Model inherit DBIx::Custom
+    - removed EXPERIMETNAL DBIx::Custom::Model method()
+    - added table choice feature to select() EXPERIMENTAL all_column option 
+    - removed EXPERIMENTAL DBIx::Custom::Model column attribute for side effect
 0.1659
     - EXPERIMETAL fork safety implementaion.
     - removed EXPERIMENTAL selection

@@ -3,7 +3,7 @@ package DBIx::Custom::Model;
 use strict;
 use warnings;
 
-use base 'Object::Simple';
+use base 'DBIx::Custom';
 
 use Carp 'croak';
 
@@ -11,36 +11,12 @@ use Carp 'croak';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
 __PACKAGE__->attr(
-    ['dbi', 'name', 'table', 'column'],
+    ['dbi', 'name', 'table', 'view'],
     columns => sub { [] },
     filter => sub { [] },
-    primary_key => sub { [] },
-    join => sub { [] }
+    join => sub { [] },
+    primary_key => sub { [] }
 );
-
-our $AUTOLOAD;
-
-sub AUTOLOAD {
-    my $self = shift;
-
-    # Method name
-    my ($package, $mname) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
-
-    # Method
-    $self->{_methods} ||= {};
-    if (my $method = $self->{_methods}->{$mname}) {
-        return $self->$method(@_)
-    }
-    elsif ($self->dbi->can($mname)) {
-        $self->dbi->$mname(@_);
-    }
-    elsif ($self->dbi->dbh->can($mname)) {
-        $self->dbi->dbh->$mname(@_);
-    }
-    else {
-        croak qq/Can't locate object method "$mname" via "$package"/
-    }
-}
 
 sub column_clause {
     my $self = shift;
@@ -104,21 +80,10 @@ sub insert_at {
     );
 }
 
-sub method {
-    my $self = shift;
-    
-    # Merge
-    my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $self->{_methods} = {%{$self->{_methods} || {}}, %$methods};
-    
-    return $self;
-}
-
 sub select {
     my $self = shift;
     $self->dbi->select(
         table => $self->table,
-        column => $self->column,
         join => $self->join,
         @_
     );
@@ -129,7 +94,6 @@ sub select_at {
     
     return $self->dbi->select_at(
         table => $self->table,
-        column => $self->column,
         primary_key => $self->primary_key,
         join => $self->join,
         @_
@@ -170,11 +134,6 @@ use DBIx::Custom::Table;
 my $table = DBIx::Custom::Model->new(table => 'books');
 
 =head1 ATTRIBUTES
-
-=head2 C<columns>
-
-    my $columns = $model->columns;
-    $model      = $model->columns(['id', 'number']);
 
 =head2 C<dbi>
 
@@ -221,6 +180,14 @@ Table name is real table name in database.
 
 Foreign key. This is used by C<insert_at>,C<update_at()>,
 C<delete_at()>,C<select_at()>.
+
+=head2 C<view>
+
+    my $view = $model->view;
+    $model   = $model->view('select id, DATE(issue_datetime) as date from book');
+
+View. This view is registered by C<view()> of L<DBIx::Custom> when
+model is included by C<include_model>.
 
 =head1 METHODS
 
@@ -278,19 +245,6 @@ you don't have to specify C<table> option.
     
 Same as C<delete()> of L<DBIx::Custom> except that
 you don't have to specify C<table> and C<primary_key> option.
-
-=head2 C<method>
-
-    $table->method(
-        count => sub {
-            my $self = shift;
-        
-            return $self->select(column => 'count(*)', @_)
-                        ->fetch_first->[0];
-        }
-    );
-    
-Add method to a L<DBIx::Custom::Table> object.
 
 =head2 C<insert>
 

@@ -1321,10 +1321,6 @@ is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'basic');
 is($dbi->models->{'book'}, $dbi->model('book'));
 is($dbi->models->{'company'}, $dbi->model('company'));
 
-$dbi->model('book');
-eval{$dbi->model('book')->no_exists};
-like($@, qr/locate/);
-
 {
     package MyDBI4;
 
@@ -1807,11 +1803,46 @@ $dbi->setup_model;
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
 $model = $dbi->model('table1');
-$result = $model->select_at(where => 1);
+$result = $model->select_at(
+    all_column => ['table1', 'table2'],
+    where => 1
+);
 is_deeply($result->fetch_hash_first,
           {key1 => 1, key2 => 2, table2__key1 => 1, table2__key3 => 3});
-$model->column(undef);
 $result = $model->select(all_column => 1);
 is_deeply($result->fetch_hash_first,
           {key1 => 1, key2 => 2, table2__key1 => 1, table2__key3 => 3});
 
+test 'view';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => ' a '});
+$dbi->view('table1_trim' => 'select key1, trim(key2) as key2 from table1');
+$result = $dbi->select(
+    table => 'table1',
+    column => ['table1_trim.key2 as table1_trim__key2'],
+    join => ["left outer join " . $dbi->view('table1_trim') . " on table1.key1 = table1_trim.key1"]
+);
+is($result->fetch_hash_first->{'table1_trim__key2'}, 'a');
+
+$result = $dbi->select(table => 'table1_trim');
+is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 'a'});
+
+{
+    package MyDBI9;
+    
+    use base 'DBIx::Custom';
+    
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel8')->setup_model;
+        
+        return $self;
+    }
+}
+$dbi = MyDBI9->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => ' a '});
+$result = $dbi->model('table1_trim')->select;
+is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 'a'});

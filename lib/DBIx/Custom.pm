@@ -669,20 +669,34 @@ sub select {
     elsif ($all_column) {
     
         # Find tables
-        my $main_table = $tables->[-1] || '';
+        my $main_table;
         my %tables;
-        foreach my $j (@$join) {
-            my $tables = $self->_tables($j);
-            foreach my $table (@$tables) {
-                $tables{$table} = 1;
+        if (ref $all_column eq 'ARRAY') {
+            foreach my $table (@$all_column) {
+                if (($table || '') eq $tables->[-1]) {
+                    $main_table = $table;
+                }
+                else {
+                    $tables{$table} = 1;
+                }
             }
         }
-        delete $tables{$main_table};
-        my @column_clause;
+        else {
+            $main_table = $tables->[-1] || '';
+            foreach my $j (@$join) {
+                my $tables = $self->_tables($j);
+                foreach my $table (@$tables) {
+                    $tables{$table} = 1;
+                }
+            }
+            delete $tables{$main_table};
+        }
         
         # Column clause of main table
-        push @sql, $self->model($main_table)->column_clause;
-        push @sql, ',';
+        if ($main_table) {
+            push @sql, $self->model($main_table)->column_clause;
+            push @sql, ',';
+        }
         
         # Column cluase of other tables
         foreach my $table (keys %tables) {
@@ -716,7 +730,12 @@ sub select {
                 $found->{$table} = 1;
             }
         }
-        else { push @sql, $tables->[-1] }
+        else {
+            my $main_table = $tables->[-1] || '';
+            push @sql, $self->view($main_table)
+                     ? $self->view($main_table)
+                     : $main_table;
+        }
         pop @sql if ($sql[-1] || '') eq ',';
     }
     
@@ -891,6 +910,9 @@ sub include_model {
         
         # Set
         $self->model($model->name, $model);
+        
+        # View
+        $self->view($model->table, $model->view) if $model->view;
         
         # Apply filter
         croak "${name_space}::$model_class filter must be array reference"
@@ -1071,6 +1093,23 @@ sub update_param {
     push @tag, '}';
     
     return join ' ', @tag;
+}
+
+sub view {
+    my $self = shift;
+    my $name = shift;
+    
+    # View
+    $self->{view} ||= {};
+    if (@_) {
+        $self->{view}->{$name} = $_[0];
+        return $self;
+    }
+    else {
+        return $name && $self->{view}->{$name}
+             ? "(" . $self->{view}->{$name} . ") as $name"
+             : undef;
+    }
 }
 
 sub where {
@@ -2189,11 +2228,15 @@ This create the following column clause.
 Columns of main table is consist of only column name,
 Columns of joined table is consist of table and column name joined C<__>.
 
-Note that this option is failed unless L<DBIx::Custom::Model> object is set to
-C<model> and C<columns> of the object is set.
+Note that this option is failed unless modles is included and
+C<columns> attribute is set.
 
     # Generally do the following way before using all_column option
     $dbi->include_model('MyModel')->setup_model;
+
+You can also specify table names to C<all_column>.
+
+    $dbi->select(all_column => ['book', 'company']);
 
 =item C<where>
 
@@ -2505,6 +2548,27 @@ Create a new L<DBIx::Custom::Where> object.
 
 Setup all model objects.
 C<columns> of model object is automatically set, parsing database information.
+
+=head2 C<view> EXPERIMENTAL
+
+    # Register view
+    $dbi->view(
+        book_issue_data
+          => 'select id, DATE(issue_datatime) as issue_date from book');
+    );
+    
+    # Get view
+    my $view = $dbi->view('book_issue_date');
+
+View.
+
+C<view()> return the following statement when you get a view.
+
+    (select id, DATE(issue_datetime) from book) as book_issue_date
+
+You can use this view in from clause
+
+    "select issue_date from " . $dbi->view('book_issue_date')
 
 =head1 Tags
 
