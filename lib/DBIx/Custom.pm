@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1660';
+our $VERSION = '0.1661';
 
 use 5.008001;
 use strict;
@@ -69,8 +69,8 @@ sub AUTOLOAD {
     if (my $method = $self->{_methods}->{$mname}) {
         return $self->$method(@_)
     }
-    elsif ($self->dbh->can($mname)) {
-        $self->dbh->$mname(@_);
+    elsif (my $dbh_method = $self->dbh->can($mname)) {
+        $self->dbh->$dbh_method(@_);
     }
     else {
         croak qq/Can't locate object method "$mname" via "$package"/
@@ -375,6 +375,32 @@ sub execute{
     my %table_set = map {defined $_ ? ($_ => 1) : ()} @$tables;
     my $main_table = pop @$tables;
     delete $table_set{$main_table} if $main_table;
+    foreach my $table (keys %table_set) {
+        push @$tables, $table;
+        
+        if (my $dist = $self->{_table_alias}->{$table}) {
+            $self->{filter} ||= {};
+            
+            unless ($self->{filter}{out}{$table}) {
+                $self->{filter}{out} ||= {};
+                $self->{filter}{in}  ||= {};
+                $self->{filter}{end} ||= {};
+                
+                foreach my $type (qw/out in end/) {
+                    
+                    foreach my $filter_name (keys %{$self->{filter}{$type}{$dist} || {}}) {
+                        my $filter_name_alias = $filter_name;
+                        $filter_name_alias =~ s/^$dist\./$table\./;
+                        $filter_name_alias =~ s/^${dist}__/${table}__/; 
+                        
+                        $self->{filter}{$type}{$table}{$filter_name_alias}
+                          = $self->{filter}{$type}{$dist}{$filter_name}
+                    }
+                }
+            }
+        }
+    }
+    
     $tables = [keys %table_set];
     push @$tables, $main_table if $main_table;
     
@@ -579,6 +605,99 @@ sub each_column {
     }
 }
 
+sub include_model {
+    my ($self, $name_space, $model_infos) = @_;
+    
+    $name_space ||= '';
+    unless ($model_infos) {
+        # Load name space module
+        croak qq{"$name_space" is invalid class name}
+          if $name_space =~ /[^\w:]/;
+        eval "use $name_space";
+        croak qq{Name space module "$name_space.pm" is needed. $@} if $@;
+        
+        # Search model modules
+        my $path = $INC{"$name_space.pm"};
+        $path =~ s/\.pm$//;
+        opendir my $dh, $path
+          or croak qq{Can't open directory "$path": $!};
+        $model_infos = [];
+        while (my $module = readdir $dh) {
+            push @$model_infos, $module
+              if $module =~ s/\.pm$//;
+        }
+        
+        close $dh;
+    }
+    
+    my $table_alias = {};
+    foreach my $model_info (@$model_infos) {
+        
+        # Model class, name, table
+        my $model_class;
+        my $model_name;
+        my $model_table;
+        if (ref $model_info eq 'HASH') {
+            $model_class = $model_info->{class};
+            $model_name  = $model_info->{name};
+            $model_table = $model_info->{table};
+            
+            $model_name  ||= $model_class;
+            $model_table ||= $model_name;
+        }
+        else { $model_class =$model_name = $model_table = $model_info }
+        my $mclass = "${name_space}::$model_class";
+        
+        # Load
+        croak qq{"$mclass" is invalid class name}
+          if $mclass =~ /[^\w:]/;
+        unless ($mclass->can('isa')) {
+            eval "use $mclass";
+            croak $@ if $@;
+        }
+        
+        # Instantiate
+        my $model = $mclass->new(dbi => $self);
+        $model->name($model_name) unless $model->name;
+        $model->table($model_table) unless $model->table;
+        
+        # Set
+        $self->model($model->name, $model);
+        
+        # Apply filter
+        croak "${name_space}::$model_class filter must be array reference"
+          unless ref $model->filter eq 'ARRAY';
+        $self->apply_filter($model->table, @{$model->filter});
+        
+        # Table alias
+        $table_alias = {%$table_alias, %{$model->table_alias}};
+        
+        # Table - Model
+        $self->{_model_from}->{$model->table} = $model->name;
+    }
+    
+    $self->{_table_alias} = $table_alias;
+    
+    return $self;
+}
+
+sub model {
+    my ($self, $name, $model) = @_;
+    
+    # Set
+    if ($model) {
+        $self->models->{$name} = $model;
+        return $self;
+    }
+    
+    # Check model existance
+    croak qq{Model "$name" is not included}
+      unless $self->models->{$name};
+    
+    # Get
+    return $self->models->{$name};
+}
+
 sub new {
     my $self = shift->SUPER::new(@_);
     
@@ -622,7 +741,7 @@ sub register_tag { shift->query_builder->register_tag(@_) }
 
 our %VALID_SELECT_ARGS
   = map { $_ => 1 } qw/table column where append relation filter query
-                       selection join all_column/;
+                       selection join/;
 
 sub select {
     my ($self, %args) = @_;
@@ -638,9 +757,7 @@ sub select {
     my $tables = ref $table eq 'ARRAY' ? $table
                : defined $table ? [$table]
                : [];
-    my $columns   = $args{column} || [];
-    $columns = [$columns] unless ref $columns eq 'ARRAY';
-    my $all_column = $args{all_column};
+    my $columns   = $args{column};
     my $selection = $args{selection} || '';
     my $where     = $args{where} || {};
     my $append    = $args{append};
@@ -665,56 +782,60 @@ sub select {
         unshift @$tables, @{$self->_tables($selection)};
     }
     
-    # Clumn clause, countains all columns of joined tables
-    elsif ($all_column) {
-    
-        # Find tables
-        my $main_table;
-        my %tables;
-        if (ref $all_column eq 'ARRAY') {
-            foreach my $table (@$all_column) {
-                if (($table || '') eq $tables->[-1]) {
-                    $main_table = $table;
-                }
-                else {
-                    $tables{$table} = 1;
+    # Column clause
+    elsif ($columns) {
+
+        $columns = [$columns] if ! ref $columns;
+        
+        if (ref $columns eq 'HASH') {
+            # Find tables
+            my $main_table;
+            my %tables;
+            if ($columns->{table}) {
+                foreach my $table (@{$columns->{table}}) {
+                    if (($table || '') eq $tables->[-1]) {
+                        $main_table = $table;
+                    }
+                    else {
+                        $tables{$table} = 1;
+                    }
                 }
             }
+            elsif ($columns->{all}) {
+                $main_table = $tables->[-1] || '';
+                foreach my $j (@$join) {
+                    my $tables = $self->_tables($j);
+                    foreach my $table (@$tables) {
+                        $tables{$table} = 1;
+                    }
+                }
+                delete $tables{$main_table};
+            }
+            
+            push @sql, $columns->{prepend} if $columns->{prepend};
+            
+            # Column clause of main table
+            if ($main_table) {
+                push @sql, $self->model($main_table)->column_clause;
+                push @sql, ',';
+            }
+            
+            # Column cluase of other tables
+            foreach my $table (keys %tables) {
+                unshift @$tables, $table;
+                push @sql, $self->model($table)
+                                ->column_clause(prefix => "${table}__");
+                push @sql, ',';
+            }
+            pop @sql if $sql[-1] eq ',';
         }
         else {
-            $main_table = $tables->[-1] || '';
-            foreach my $j (@$join) {
-                my $tables = $self->_tables($j);
-                foreach my $table (@$tables) {
-                    $tables{$table} = 1;
-                }
+            foreach my $column (@$columns) {
+                unshift @$tables, @{$self->_tables($column)};
+                push @sql, ($column, ',');
             }
-            delete $tables{$main_table};
+            pop @sql if $sql[-1] eq ',';
         }
-        
-        # Column clause of main table
-        if ($main_table) {
-            push @sql, $self->model($main_table)->column_clause;
-            push @sql, ',';
-        }
-        
-        # Column cluase of other tables
-        foreach my $table (keys %tables) {
-            unshift @$tables, $table;
-            push @sql, $self->model($table)
-                            ->column_clause(prefix => "${table}__");
-            push @sql, ',';
-        }
-        pop @sql if $sql[-1] eq ',';
-    }
-    
-    # Column clause
-    elsif (@$columns) {
-        foreach my $column (@$columns) {
-            unshift @$tables, @{$self->_tables($column)};
-            push @sql, ($column, ',');
-        }
-        pop @sql if $sql[-1] eq ',';
     }
     
     # "*" is default
@@ -732,9 +853,7 @@ sub select {
         }
         else {
             my $main_table = $tables->[-1] || '';
-            push @sql, $self->view($main_table)
-                     ? $self->view($main_table)
-                     : $main_table;
+            push @sql, $main_table;
         }
         pop @sql if ($sql[-1] || '') eq ',';
     }
@@ -792,7 +911,7 @@ sub select {
 
 our %VALID_SELECT_AT_ARGS
   = map { $_ => 1 } qw/table column where append relation filter query selection
-                       param primary_key join all_column/;
+                       param primary_key join/;
 
 sub select_at {
     my ($self, %args) = @_;
@@ -834,92 +953,6 @@ sub select_at {
     }
     
     return $self->select(where => $where, %args);
-}
-
-sub model {
-    my ($self, $name, $model) = @_;
-    
-    # Set
-    if ($model) {
-        $self->models->{$name} = $model;
-        return $self;
-    }
-    
-    # Check model existance
-    croak qq{Model "$name" is not included}
-      unless $self->models->{$name};
-    
-    # Get
-    return $self->models->{$name};
-}
-
-sub include_model {
-    my ($self, $name_space, $model_infos) = @_;
-    
-    $name_space ||= '';
-    unless ($model_infos) {
-        # Load name space module
-        croak qq{"$name_space" is invalid class name}
-          if $name_space =~ /[^\w:]/;
-        eval "use $name_space";
-        croak qq{Name space module "$name_space.pm" is needed. $@} if $@;
-        
-        # Search model modules
-        my $path = $INC{"$name_space.pm"};
-        $path =~ s/\.pm$//;
-        opendir my $dh, $path
-          or croak qq{Can't open directory "$path": $!};
-        $model_infos = [];
-        while (my $module = readdir $dh) {
-            push @$model_infos, $module
-              if $module =~ s/\.pm$//;
-        }
-        
-        close $dh;
-    }
-    
-    foreach my $model_info (@$model_infos) {
-        
-        # Model class, name, table
-        my $model_class;
-        my $model_name;
-        my $model_table;
-        if (ref $model_info eq 'HASH') {
-            $model_class = $model_info->{class};
-            $model_name  = $model_info->{name};
-            $model_table = $model_info->{table};
-            
-            $model_name  ||= $model_class;
-            $model_table ||= $model_name;
-        }
-        else { $model_class =$model_name = $model_table = $model_info }
-        my $mclass = "${name_space}::$model_class";
-        
-        # Load
-        croak qq{"$mclass" is invalid class name}
-          if $mclass =~ /[^\w:]/;
-        unless ($mclass->can('isa')) {
-            eval "use $mclass";
-            croak $@ if $@;
-        }
-        
-        # Instantiate
-        my $model = $mclass->new(dbi => $self);
-        $model->name($model_name) unless $model->name;
-        $model->table($model_table) unless $model->table;
-        
-        # Set
-        $self->model($model->name, $model);
-        
-        # View
-        $self->view($model->table, $model->view) if $model->view;
-        
-        # Apply filter
-        croak "${name_space}::$model_class filter must be array reference"
-          unless ref $model->filter eq 'ARRAY';
-        $self->apply_filter($model->table, @{$model->filter});
-    }
-    return $self;
 }
 
 sub setup_model {
@@ -1093,23 +1126,6 @@ sub update_param {
     push @tag, '}';
     
     return join ' ', @tag;
-}
-
-sub view {
-    my $self = shift;
-    my $name = shift;
-    
-    # View
-    $self->{view} ||= {};
-    if (@_) {
-        $self->{view}->{$name} = $_[0];
-        return $self;
-    }
-    else {
-        return $name && $self->{view}->{$name}
-             ? "(" . $self->{view}->{$name} . ") as $name"
-             : undef;
-    }
 }
 
 sub where {
@@ -2211,11 +2227,15 @@ Default is '*' unless C<column> is specified.
     # Default
     $dbi->select(column => '*');
 
-=item C<all_column> EXPERIMENTAL
+You can use hash option in C<column>
+
+=over 4
+
+=item all EXPERIMENTAL
 
 Colum clause, contains all columns of joined table. This is true or false value
 
-    $dbi->select(all_column => 1);
+    $dbi->select(column => {all => 1});
 
 If main table is C<book> and joined table is C<company>,
 This create the following column clause.
@@ -2234,9 +2254,19 @@ C<columns> attribute is set.
     # Generally do the following way before using all_column option
     $dbi->include_model('MyModel')->setup_model;
 
-You can also specify table names to C<all_column>.
+=item table EXPERIMENTAL
 
-    $dbi->select(all_column => ['book', 'company']);
+You can also specify table names by C<table> option
+
+    $dbi->select(column => {table => ['book', 'company']});
+
+=item prepend EXPERIMENTAL
+
+You can add before created statement
+
+    $dbi->select(column => {prepend => 'SOME', all => 1});
+
+=back
 
 =item C<where>
 
@@ -2548,27 +2578,6 @@ Create a new L<DBIx::Custom::Where> object.
 
 Setup all model objects.
 C<columns> of model object is automatically set, parsing database information.
-
-=head2 C<view> EXPERIMENTAL
-
-    # Register view
-    $dbi->view(
-        book_issue_data
-          => 'select id, DATE(issue_datatime) as issue_date from book');
-    );
-    
-    # Get view
-    my $view = $dbi->view('book_issue_date');
-
-View.
-
-C<view()> return the following statement when you get a view.
-
-    (select id, DATE(issue_datetime) from book) as book_issue_date
-
-You can use this view in from clause
-
-    "select issue_date from " . $dbi->view('book_issue_date')
 
 =head1 Tags
 

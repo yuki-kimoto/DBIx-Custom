@@ -1804,30 +1804,41 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
 $model = $dbi->model('table1');
 $result = $model->select_at(
-    all_column => ['table1', 'table2'],
+    column => {table => ['table1', 'table2'], prepend => 'table1.key1 as key1_1,'},
     where => 1
 );
 is_deeply($result->fetch_hash_first,
-          {key1 => 1, key2 => 2, table2__key1 => 1, table2__key3 => 3});
-$result = $model->select(all_column => 1);
+          {key1_1 => 1, key1 => 1, key2 => 2, table2__key1 => 1, table2__key3 => 3});
+$result = $model->select(column => {all => 1});
 is_deeply($result->fetch_hash_first,
           {key1 => 1, key2 => 2, table2__key1 => 1, table2__key3 => 3});
 
-test 'view';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+test 'mycolumn';
+$dbi = MyDBI8->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => ' a '});
-$dbi->view('table1_trim' => 'select key1, trim(key2) as key2 from table1');
-$result = $dbi->select(
-    table => 'table1',
-    column => ['table1_trim.key2 as table1_trim__key2'],
-    join => ["left outer join " . $dbi->view('table1_trim') . " on table1.key1 = table1_trim.key1"]
+$dbi->execute($CREATE_TABLE->{2});
+$dbi->setup_model;
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
+$model = $dbi->model('table1');
+$result = $model->select_at(
+    column => [
+        $model->mycolumn,
+        $model->column('table2')
+    ]
 );
-is($result->fetch_hash_first->{'table1_trim__key2'}, 'a');
+is_deeply($result->fetch_hash_first,
+          {key1 => 1, key2 => 2, table2__key1 => 1, table2__key3 => 3});
+$result = $model->select_at(
+    column => [
+        $model->mycolumn(['key1']),
+        $model->column(table2 => ['key1'])
+    ]
+);
+is_deeply($result->fetch_hash_first,
+          {key1 => 1, table2__key1 => 1});
 
-$result = $dbi->select(table => 'table1_trim');
-is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 'a'});
-
+test 'dbi method from model';
 {
     package MyDBI9;
     
@@ -1843,6 +1854,24 @@ is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 'a'});
 }
 $dbi = MyDBI9->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => ' a '});
-$result = $dbi->model('table1_trim')->select;
-is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 'a'});
+$model = $dbi->model('table1');
+eval{$model->execute('select * from table1')};
+ok(!$@);
+
+test 'table_alias';
+$dbi = MyDBI9->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->execute($CREATE_TABLE->{2});
+$dbi->setup_model;
+$dbi->execute('insert into table1 (key1, key2) values (1, 2);');
+$dbi->execute('insert into table2 (key1, key3) values (1, 4);');
+$model = $dbi->model('table1');
+$result = $model->select(
+    column => [
+        $model->column('table2_alias')
+    ],
+    where => {'table2_alias.key3' => 2}
+);
+is_deeply($result->fetch_hash_first, 
+          {table2_alias__key1 => 1, table2_alias__key3 => 48});
+

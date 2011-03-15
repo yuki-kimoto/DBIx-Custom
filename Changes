@@ -1,3 +1,13 @@
+0.1661
+    - added EXPERIMENTAL DBIx::Custom::Model table_alias attribute
+    - added EXPERIMENTAL DBIx::Custom::Model mycolumn()
+    - added EXPERIMENTAL DBIx::Custom::Model column()
+    - fixed autoloading bug
+    - added EXPERIMETNAL select() prepend table option
+    - added EXPERIMETNAL select() column table option
+    - added EXPERIMETNAL select() column all option
+    - removed EXPERIMETNAL select() all_column option
+    - removed EXPERIMENTAL view()
 0.1660
     - added EXPERIMENTAL DBIx::Custom::Model view()
     - added EXPERIMENTAL view()

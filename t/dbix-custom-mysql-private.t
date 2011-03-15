@@ -96,7 +96,6 @@ $rows = $dbi->select(
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 $dbi->delete_all(table => 'table1');
 
-
 test 'fork';
 {
     $dbi = DBIx::Custom->connect(

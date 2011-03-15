@@ -3,7 +3,7 @@ package DBIx::Custom::Model;
 use strict;
 use warnings;
 
-use base 'DBIx::Custom';
+use base 'Object::Simple';
 
 use Carp 'croak';
 
@@ -12,11 +12,32 @@ push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
 __PACKAGE__->attr(
     ['dbi', 'name', 'table', 'view'],
+    table_alias => sub { {} },
     columns => sub { [] },
     filter => sub { [] },
     join => sub { [] },
     primary_key => sub { [] }
 );
+
+our $AUTOLOAD;
+
+sub AUTOLOAD {
+    my $self = shift;
+
+    # Method name
+    my ($package, $mname) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
+
+    # Method
+    if (my $dbi_method = $self->dbi->can($mname)) {
+        $self->dbi->$dbi_method(@_);
+    }
+    elsif (my $dbh_method = $self->dbi->dbh->can($mname)) {
+        $self->dbi->dbh->$dbh_method(@_);
+    }
+    else {
+        croak qq/Can't locate object method "$mname" via "$package"/
+    }
+}
 
 sub column_clause {
     my $self = shift;
@@ -39,6 +60,38 @@ sub column_clause {
     foreach my $column (@$add) {
         push @column, $column;
     }
+    
+    return join (', ', @column);
+}
+
+sub mycolumn {
+    my ($self, $columns) = @_;
+    
+    my $table = $self->table || '';
+    $columns ||= $self->columns;
+    
+    my @column;
+    push @column, "$table.$_ as $_" for @$columns;
+    
+    return join (', ', @column);
+}
+
+sub column {
+    my ($self, $table, $columns) = @_;
+    
+    $self->{_table_alias} ||= {};
+    my $dist;
+    $dist = $self->dbi->{_table_alias}{$table}
+          ? $self->dbi->{_table_alias}{$table}
+          : $table;
+    
+    $self->dbi->{_model_from} ||= {};
+    my $model = $self->dbi->{_model_from}->{$dist};
+    
+    $columns ||= $self->model($model)->columns;
+    
+    my @column;
+    push @column, "$table.$_ as ${table}__$_" for @$columns;
     
     return join (', ', @column);
 }
@@ -110,7 +163,6 @@ sub update_all {
     $self->dbi->update_all(table => $self->table, @_);
 }
 
-
 sub update_at {
     my $self = shift;
     
@@ -147,7 +199,7 @@ L<DBIx::Custom> object.
     my $dbi = $model->filter
     $model  = $model->filter({out => 'tp_to_date', in => 'date_to_tp'});
 
-This filter is applied when L<DBIx::Custom> C<include_model()> is called.
+This filter is applied when L<DBIx::Custom>'s C<include_model()> is called.
 
 =head2 C<name>
 
@@ -163,22 +215,22 @@ Model name.
         ['left outer join company on book.company_id = company.id']
     );
     
-Default join clause. This is used by C<select()>.
+Join clause, this is used as C<select()>'s C<join> option.
 
 =head2 C<table>
 
     my $table = $model->table;
     $model    = $model->table('book');
 
-Table name. Model name and table name is different.
-Table name is real table name in database.
+Table name, this is used as C<select()> C<table> option.
+Generally, this is automatically set from class name.
 
 =head2 C<primary_key>
 
     my $primary_key = $model->primary_key;
     $model          = $model->primary_key(['id', 'number']);
 
-Foreign key. This is used by C<insert_at>,C<update_at()>,
+Foreign key, this is used as C<primary_key> of C<insert_at>,C<update_at()>,
 C<delete_at()>,C<select_at()>.
 
 =head2 C<view>
