@@ -325,9 +325,10 @@ You can join table by C<join>.
 
 Following SQL is executed.
 
-    select company.name as company__name from book
+    select company.name as company__name
+    from book
       left outer join company on book.company_id = company.id
-      where book.name = ?;
+    where book.name = ?;
 
 company_if of book and id of company is left outer joined.
 
@@ -345,7 +346,26 @@ because C<join> is not needed.
 Following SQL is executeed.
 
     select * from book where book.name = ?;
-    
+
+You can specify column names easily using C<mycolumn()> and C<column()>.
+
+    my $result = $dbi->select(
+        table  => 'book',
+        column => [
+            $dbi->mycolumn('book' => ['name']),
+            $dbi->column('company' => ['id', 'name'])
+        ],
+        join   => ['left outer join company on book.company_id = company.id]
+    );
+
+The following SQL is executed.
+
+    select book.name as name,
+      company.id as comapny__id,
+      company.name as company__name
+    from book
+      left outer join company on book.company_id = company.id
+
 Next example.
 
     my $result = $dbi->select(
@@ -1170,6 +1190,29 @@ You can change table name.
 Table name is the table really accessed.
 
     $dbi->model('book')->insert(...); # access to "book_table"
+
+=head2 Create column clause automatically : mycolumn(), column()
+
+To create column clause automatically, use C<mycolumn()>.
+Valude of C<table> and C<columns> is used.
+
+    my $column_clause = $model->mycolumn;
+
+If C<table> is 'book'ÅAC<column> is ['id', 'name'],
+the following clause is created.
+
+    book.id as id, book.name as name
+
+These column name is for removing column name ambiguities.
+
+You can create column clause from columns of other table.
+
+    my $column_clause = $model->column('company');
+
+If C<table> is 'company'ÅAC<column> is ['id', 'name'],
+the following clause is created.
+
+    company.id as company__id, company.name as company__name
 
 =head2 Create column clause automatically : column_clause()
 

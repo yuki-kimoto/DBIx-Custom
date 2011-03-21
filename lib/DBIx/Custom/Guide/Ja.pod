@@ -331,9 +331,10 @@ C<join>でテーブルの結合を行うことができます。
 
 次のSQLが実行されます。
 
-    select company.name as company__name from book
+    select company.name as company__name
+    from book
       left outer join company on book.company_id = company.id
-      where book.name = ?;
+    where book.name = ?;
 
 bookテーブルのcompany_id列とcompanyテーブルのidが左外部結合されます。
 次のSQLが実行されます。
@@ -359,6 +360,25 @@ C<join>されるのは、C<where>やC<column>にテーブル名が含まれて�
         where  => {author => 'Ken'},
         append => 'for update',
     );
+
+C<mycolumn()>やC<column()>を使用すると簡単に列名を指定できます。
+
+    my $result = $dbi->select(
+        table  => 'book',
+        column => [
+            $dbi->mycolumn('book' => ['name']),
+            $dbi->column('company' => ['id', 'name'])
+        ],
+        join   => ['left outer join company on book.company_id = company.id]
+    );
+
+次のSQLが実行されます。
+
+    select book.name as name,
+      company.id as comapny__id,
+      company.name as company__name
+    from book
+      left outer join company on book.company_id = company.id
 
 C<append>はSQLの末尾に追加される文字列です。
 
@@ -1211,12 +1231,12 @@ C<filter>でC<apply_filter()>で適用されるフィルタを定義しておく
 
     $dbi->model('book')->insert(...); # book_tableにアクセス
 
-=head2 列名の自動生成 : column_clause()
+=head2 列名の自動生成 : mycolumn(), column()
 
-列名の節を自動生成するにはC<column_clause()>を使用します。
+列名の節を自動生成するにはC<mycolumn()>を使用します。
 C<table>とC<columns>の値が利用されます。
 
-    my $column_clause = $model->column_clause;
+    my $column_clause = $model->mycolumn;
 
 C<table>の値が'book'、C<column>の値が['id', 'name']で
 あった場合は次のような列名の節が生成されます。
@@ -1225,13 +1245,14 @@ C<table>の値が'book'、C<column>の値が['id', 'name']で
 
 このように列名の節を生成するのは、列名のあいまいさをなくすためです。
 
-不必要な列がある場合はC<remove>オプションで指定することができます。
+また他のテーブルの列名から列名を自動生成することもできます。
 
-    my $column_clause = $model->column_clause(remove => ['id']);
+    my $column_clause = $model->column('company');
 
-追加したい列がある場合は、C<add>オプションで追加することができます。
+モデルのC<comparny>のC<column>の値が['id', 'name']で
+あった場合は次のような列名の節が生成されます。
 
-    my $column_clause = $model->column_clause(add => ['company.id as company__id']);
+    company.id as company__id, company.name as company__name
 
 =head2 モデルのサンプル
 

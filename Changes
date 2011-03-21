@@ -1,3 +1,11 @@
+0.1663
+    - added bind_param_option can set bind_param option
+      to insert(), update(), delete(), select(), insert_at(),
+      update_at(), delete_at(), select_at(), delete_all(), update_all()
+0.1662
+    - removed EXPERIMENTAL DBIx::Custom::Model column_clause
+    - added EXPERIMENTAL column()
+    - added EXPERIMENTAL mycolumn()
 0.1661
     - added EXPERIMENTAL DBIx::Custom::Model table_alias attribute
     - added EXPERIMENTAL DBIx::Custom::Model mycolumn()

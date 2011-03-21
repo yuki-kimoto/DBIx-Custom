@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1661';
+our $VERSION = '0.1663';
 
 use 5.008001;
 use strict;
@@ -18,6 +18,8 @@ use DBIx::Custom::Model;
 use DBIx::Custom::Tag;
 use DBIx::Custom::Util;
 use Encode qw/encode_utf8 decode_utf8/;
+
+our @COMMON_ARGS = qw/table query filter bind_param_option/;
 
 __PACKAGE__->attr(
     [qw/data_source password pid user/],
@@ -140,14 +142,15 @@ sub apply_filter {
     return $self;
 }
 
-sub method {
-    my $self = shift;
+sub column {
+    my ($self, $table, $columns) = @_;
     
-    # Merge
-    my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $self->{_methods} = {%{$self->{_methods} || {}}, %$methods};
+    $columns ||= [];
     
-    return $self;
+    my @column;
+    push @column, "$table.$_ as ${table}__$_" for @$columns;
+    
+    return join (', ', @column);
 }
 
 sub connect {
@@ -238,7 +241,7 @@ sub dbh {
 }
 
 our %VALID_DELETE_ARGS
-  = map { $_ => 1 } qw/table where append filter allow_delete_all query/;
+  = map { $_ => 1 } @COMMON_ARGS, qw/where append allow_delete_all/;
 
 sub delete {
     my ($self, %args) = @_;
@@ -303,7 +306,7 @@ sub delete {
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
 
 our %VALID_DELETE_AT_ARGS
-  = map { $_ => 1 } qw/table where append filter query primary_key param/;
+  = (%VALID_DELETE_ARGS, where => 1, primary_key => 1);
 
 sub delete_at {
     my ($self, %args) = @_;
@@ -472,7 +475,7 @@ sub execute{
 }
 
 our %VALID_INSERT_ARGS
-  = map { $_ => 1 } qw/table param append filter query/;
+  = map { $_ => 1 } @COMMON_ARGS, qw/param append/;
 
 sub insert {
     my ($self, %args) = @_;
@@ -525,8 +528,7 @@ sub insert {
 }
 
 our %VALID_INSERT_AT_ARGS
-  = map { $_ => 1 } qw/table param where append filter
-                       query primary_key param/;
+  = (%VALID_INSERT_ARGS, where => 1, primary_key => 1);
 
 sub insert_at {
     my ($self, %args) = @_;
@@ -681,6 +683,16 @@ sub include_model {
     return $self;
 }
 
+sub method {
+    my $self = shift;
+    
+    # Merge
+    my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $self->{_methods} = {%{$self->{_methods} || {}}, %$methods};
+    
+    return $self;
+}
+
 sub model {
     my ($self, $name, $model) = @_;
     
@@ -696,6 +708,16 @@ sub model {
     
     # Get
     return $self->models->{$name};
+}
+
+sub mycolumn {
+    my ($self, $table, $columns) = @_;
+    
+    $columns ||= [];
+    my @column;
+    push @column, "$table.$_ as $_" for @$columns;
+    
+    return join (', ', @column);
 }
 
 sub new {
@@ -740,8 +762,8 @@ sub register_filter {
 sub register_tag { shift->query_builder->register_tag(@_) }
 
 our %VALID_SELECT_ARGS
-  = map { $_ => 1 } qw/table column where append relation filter query
-                       selection join/;
+  = map { $_ => 1 } @COMMON_ARGS, qw/column where append relation
+                                     selection join/;
 
 sub select {
     my ($self, %args) = @_;
@@ -816,15 +838,14 @@ sub select {
             
             # Column clause of main table
             if ($main_table) {
-                push @sql, $self->model($main_table)->column_clause;
+                push @sql, $self->model($main_table)->mycolumn;
                 push @sql, ',';
             }
             
             # Column cluase of other tables
             foreach my $table (keys %tables) {
                 unshift @$tables, $table;
-                push @sql, $self->model($table)
-                                ->column_clause(prefix => "${table}__");
+                push @sql, $self->model($table)->column($table);
                 push @sql, ',';
             }
             pop @sql if $sql[-1] eq ',';
@@ -910,8 +931,7 @@ sub select {
 }
 
 our %VALID_SELECT_AT_ARGS
-  = map { $_ => 1 } qw/table column where append relation filter query selection
-                       param primary_key join/;
+  = (%VALID_SELECT_ARGS, where => 1, primary_key => 1);
 
 sub select_at {
     my ($self, %args) = @_;
@@ -971,8 +991,8 @@ sub setup_model {
 }
 
 our %VALID_UPDATE_ARGS
-  = map { $_ => 1 } qw/table param where append filter
-                       allow_update_all query/;
+  = map { $_ => 1 } @COMMON_ARGS, qw/param where append
+                                     allow_update_all/;
 
 sub update {
     my ($self, %args) = @_;
@@ -1069,8 +1089,7 @@ sub update {
 sub update_all { shift->update(allow_update_all => 1, @_) };
 
 our %VALID_UPDATE_AT_ARGS
-  = map { $_ => 1 } qw/table param where append filter
-                       query primary_key param/;
+  = (%VALID_UPDATE_ARGS, where => 1, primary_key => 1);
 
 sub update_at {
     my ($self, %args) = @_;
@@ -1825,6 +1844,15 @@ filter name registerd by C<register_filter()>.
 
 These filters are added to the C<out> filters, set by C<apply_filter()>.
 
+=head2 C<column> EXPERIMENTAL
+
+    my $column = $self->column(book => ['author', 'title']);
+
+Create column clause. The follwoing column clause is created.
+
+    book.author as book__author,
+    book.title as book__title
+
 =item C<query> EXPERIMENTAL
 
 Get L<DBIx::Custom::Query> object instead of executing SQL.
@@ -2120,6 +2148,15 @@ Register method. These method is called directly from L<DBIx::Custom> object.
     my $model = $dbi->model('book');
 
 Set and get a L<DBIx::Custom::Model> object,
+
+=head2 C<mycolumn> EXPERIMENTAL
+
+    my $column = $self->mycolumn(book => ['author', 'title']);
+
+Create column clause for myself. The follwoing column clause is created.
+
+    book.author as author,
+    book.title as title
 
 =head2 C<new>
 

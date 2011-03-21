@@ -39,43 +39,6 @@ sub AUTOLOAD {
     }
 }
 
-sub column_clause {
-    my $self = shift;
-    
-    my $args = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    
-    my $table   = $self->table;
-    my $columns = $self->columns;
-    my $add     = $args->{add} || [];
-    my $remove  = $args->{remove} || [];
-    my %remove  = map {$_ => 1} @$remove;
-    my $prefix  = $args->{prefix} || '';
-    
-    my @column;
-    foreach my $column (@$columns) {
-        push @column, "$table.$column as $prefix$column"
-          unless $remove{$column};
-    }
-    
-    foreach my $column (@$add) {
-        push @column, $column;
-    }
-    
-    return join (', ', @column);
-}
-
-sub mycolumn {
-    my ($self, $columns) = @_;
-    
-    my $table = $self->table || '';
-    $columns ||= $self->columns;
-    
-    my @column;
-    push @column, "$table.$_ as $_" for @$columns;
-    
-    return join (', ', @column);
-}
-
 sub column {
     my ($self, $table, $columns) = @_;
     
@@ -90,10 +53,7 @@ sub column {
     
     $columns ||= $self->model($model)->columns;
     
-    my @column;
-    push @column, "$table.$_ as ${table}__$_" for @$columns;
-    
-    return join (', ', @column);
+    return $self->dbi->column($table, $columns);
 }
 
 sub delete {
@@ -131,6 +91,17 @@ sub insert_at {
         primary_key => $self->primary_key,
         @_
     );
+}
+
+sub mycolumn {
+    my $self = shift;
+    my $table = shift unless ref $_[0];
+    my $columns = shift;
+    
+    $table ||= $self->table || '';
+    $columns ||= $self->columns;
+    
+    return $self->dbi->mycolumn($table, $columns);
 }
 
 sub select {
@@ -247,35 +218,17 @@ L<DBIx::Custom> inherits all methods from L<Object::Simple>,
 and you can use all methods of the object set to C<dbi>.
 and implements the following new ones.
 
-=head2 C<column_clause()>
+=head2 C<column> EXPERIMETNAL
 
-To create column clause automatically, use C<column_clause()>.
-Valude of C<table> and C<columns> is used.
+    my $column = $self->column(book => ['author', 'title']);
+    my $column = $self->column('book');
 
-    my $column_clause = $model->column_clause;
+Create column clause. The follwoing column clause is created.
 
-If C<table> is 'book'ÅAC<column> is ['id', 'name'],
-the following clause is created.
+    book.author as book__author,
+    book.title as book__title
 
-    book.id as id, book.name as name
-
-These column name is for removing column name ambiguities.
-
-If you remove some columns, use C<remove> option.
-
-    my $column_clause = $model->column_clause(remove => ['id']);
-
-If you add some column, use C<add> option.
-
-    my $column_clause = $model->column_clause(add => ['company.id as company__id']);
-
-If you add column name prefix, use C<prefix> option
-
-    my $column_clause = $model->column_clause(prefix => 'book__');
-
-The following clause is created.
-
-    book.id as book__id, book.name as book__name
+If column names is omitted, C<columns> attribute of the model is used.
 
 =head2 C<delete>
 
@@ -311,6 +264,20 @@ you don't have to specify C<table> option.
     
 Same as C<insert_at()> of L<DBIx::Custom> except that
 you don't have to specify C<table> and C<primary_key> option.
+
+=head2 C<mycolumn> EXPERIMENTAL
+
+    my $column = $self->mycolumn;
+    my $column = $self->mycolumn(book => ['author', 'title']);
+    my $column = $self->mycolumn(['author', 'title']);
+
+Create column clause for myself. The follwoing column clause is created.
+
+    book.author as author,
+    book.title as title
+
+If table name is ommited, C<table> attribute of the model is used.
+If column names is omitted, C<columns> attribute of the model is used.
 
 =head2 C<new>
 
