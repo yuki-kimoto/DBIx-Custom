@@ -16,6 +16,7 @@ __PACKAGE__->attr(
     columns => sub { [] },
     filter => sub { [] },
     join => sub { [] },
+    type => sub { [] },
     primary_key => sub { [] }
 );
 
@@ -39,6 +40,25 @@ sub AUTOLOAD {
     }
 }
 
+my @methods = qw/insert insert_at update update_at update_all
+                 delete delete_at delete_all select select_at/;
+foreach my $method (@methods) {
+
+    my $code = sub {
+        my $self = shift;
+        
+        my @args = (table => $self->table, type => $self->type);
+        push @args, (primary_key => $self->primary_key) if $method =~ /_at$/;
+        push @args, (join => $self->join) if $method =~ /^select/;
+        
+        $self->dbi->$method(@args, @_);
+    };
+    
+    no strict 'refs';
+    my $class = __PACKAGE__;
+    *{"${class}::$method"} = $code;
+}
+
 sub column {
     my ($self, $table, $columns) = @_;
     
@@ -56,42 +76,7 @@ sub column {
     return $self->dbi->column($table, $columns);
 }
 
-sub delete {
-    my $self = shift;
-    $self->dbi->delete(table => $self->table, @_);
-}
-
-sub delete_all {
-    my $self = shift;
-    $self->dbi->delete_all(table => $self->table, @_);
-}
-
-sub delete_at {
-    my $self = shift;
-    
-    return $self->dbi->delete_at(
-        table => $self->table,
-        primary_key => $self->primary_key,
-        @_
-    );
-}
-
 sub DESTROY { }
-
-sub insert {
-    my $self = shift;
-    $self->dbi->insert(table => $self->table, @_);
-}
-
-sub insert_at {
-    my $self = shift;
-    
-    return $self->dbi->insert_at(
-        table => $self->table,
-        primary_key => $self->primary_key,
-        @_
-    );
-}
 
 sub mycolumn {
     my $self = shift;
@@ -102,46 +87,6 @@ sub mycolumn {
     $columns ||= $self->columns;
     
     return $self->dbi->mycolumn($table, $columns);
-}
-
-sub select {
-    my $self = shift;
-    $self->dbi->select(
-        table => $self->table,
-        join => $self->join,
-        @_
-    );
-}
-
-sub select_at {
-    my $self = shift;
-    
-    return $self->dbi->select_at(
-        table => $self->table,
-        primary_key => $self->primary_key,
-        join => $self->join,
-        @_
-    );
-}
-
-sub update {
-    my $self = shift;
-    $self->dbi->update(table => $self->table, @_)
-}
-
-sub update_all {
-    my $self = shift;
-    $self->dbi->update_all(table => $self->table, @_);
-}
-
-sub update_at {
-    my $self = shift;
-    
-    return $self->dbi->update_at(
-        table => $self->table,
-        primary_key => $self->primary_key,
-        @_
-    );
 }
 
 1;
@@ -204,6 +149,15 @@ Generally, this is automatically set from class name.
 Foreign key, this is used as C<primary_key> of C<insert_at>,C<update_at()>,
 C<delete_at()>,C<select_at()>.
 
+=head2 C<type>
+
+    my $type = $model->type;
+    $model   = $model->type(['image' => DBI::SQL_BLOB]);
+    
+Database data type, this is used as type optioon of C<insert()>, C<insert_at()>,
+C<update()>, C<update_at()>, C<update_all>, C<delete()>, C<delete_all()>,
+C<select(), C<select_at()>
+
 =head2 C<view>
 
     my $view = $model->view;
@@ -265,7 +219,7 @@ you don't have to specify C<table> option.
 Same as C<insert_at()> of L<DBIx::Custom> except that
 you don't have to specify C<table> and C<primary_key> option.
 
-=head2 C<mycolumn> EXPERIMENTAL
+=head2 C<mycolumn>
 
     my $column = $self->mycolumn;
     my $column = $self->mycolumn(book => ['author', 'title']);

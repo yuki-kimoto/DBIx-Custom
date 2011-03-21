@@ -1,5 +1,6 @@
 0.1663
-    - added bind_param_option can set bind_param option
+    - added EXPERIMENTAL type() attribute to DBIx::Custom::Model
+    - added EXPERIMENTAL bind_param_option can set bind_param option
       to insert(), update(), delete(), select(), insert_at(),
       update_at(), delete_at(), select_at(), delete_all(), update_all()
 0.1662

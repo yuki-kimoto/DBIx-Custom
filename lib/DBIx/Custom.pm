@@ -19,7 +19,7 @@ use DBIx::Custom::Tag;
 use DBIx::Custom::Util;
 use Encode qw/encode_utf8 decode_utf8/;
 
-our @COMMON_ARGS = qw/table query filter bind_param_option/;
+our @COMMON_ARGS = qw/table query filter type/;
 
 __PACKAGE__->attr(
     [qw/data_source password pid user/],
@@ -433,15 +433,23 @@ sub execute{
     }
     $filter = {%$filter, %$f};
     
+    # Type
+    my $type = DBIx::Custom::Util::array_to_hash($args{type});
+    
     # Bind
-    my $bind = $self->_bind($params, $query->columns, $filter);
+    my $bind = $self->_bind($params, $query->columns, $filter, $type);
     
     # Execute
     my $sth = $query->sth;
     my $affected;
     eval {
         for (my $i = 0; $i < @$bind; $i++) {
-            $sth->bind_param($i + 1, $bind->[$i]);
+            if (my $type = $bind->[$i]->{type}) {
+                $sth->bind_param($i + 1, $bind->[$i]->{value}, $type);
+            }
+            else {
+                $sth->bind_param($i + 1, $bind->[$i]->{value});
+            }
         }
         $affected = $sth->execute;
     };
@@ -678,6 +686,8 @@ sub include_model {
         $table_alias = {%$table_alias, %{$model->table_alias}};
         
         # Table - Model
+        croak "Table name is duplicated"
+          if exists $self->{_model_from}->{$model->table};
         $self->{_model_from}->{$model->table} = $model->name;
     }
     
@@ -1163,10 +1173,10 @@ sub where {
 }
 
 sub _bind {
-    my ($self, $params, $columns, $filter) = @_;
+    my ($self, $params, $columns, $filter, $type) = @_;
     
     # bind values
-    my @bind;
+    my $bind = [];
     
     # Build bind values
     my $count = {};
@@ -1196,13 +1206,17 @@ sub _bind {
         # Filter
         my $f = $filter->{$column} || $self->{default_out_filter} || '';
         
-        push @bind, $f ? $f->($value) : $value;
+        # Type
+        push @$bind, {
+            value => $f ? $f->($value) : $value,
+            type => $type->{$column}
+        };
         
         # Count up 
         $count->{$column}++;
     }
     
-    return \@bind;
+    return $bind;
 }
 
 sub _connect {
@@ -2402,6 +2416,17 @@ This is true or false value.
 You can check SQL.
 
     my $sql = $query->sql;
+
+=item C<type> EXPERIMENTAL
+
+Specify database data type.
+
+    $dbi->select(type => [image => DBI::SQL_BLOB]);
+    $dbi->select(type => [[qw/image audio/] => DBI::SQL_BLOB]);
+
+This is used to bind paramter by C<bind_param()> of statment handle.
+
+    $sth->bind_param($pos, $value, DBI::SQL_BLOB);
 
 =back
 

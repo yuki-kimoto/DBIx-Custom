@@ -1403,11 +1403,13 @@ is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'basic');
 }
 $dbi = MyDBI5->connect($NEW_ARGS->{0});
 $dbi->execute("create table company (name)");
+$dbi->execute("create table table1 (key1)");
 $model = $dbi->model('company');
 $model->insert({name => 'a'});
 is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'include all model');
+$dbi->insert(table => 'table1', param => {key1 => 1});
 $model = $dbi->model('book');
-is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'include all model');
+is_deeply($model->list->fetch_hash_all, [{key1 => 1}], 'include all model');
 
 test 'primary_key';
 use MyDBI1;
@@ -1602,13 +1604,15 @@ test 'model delete_at';
 }
 $dbi = MyDBI6->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});
+$dbi->execute("create table table2 (key1, key2, key3)");
+$dbi->execute("create table table3 (key1, key2, key3)");
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1')->delete_at(where => [1, 2]);
 is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->insert(table => 'table2', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1_1')->delete_at(where => [1, 2]);
 is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->insert(table => 'table3', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1_3')->delete_at(where => [1, 2]);
 is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
 
@@ -1872,4 +1876,29 @@ $result = $model->select(
 );
 is_deeply($result->fetch_hash_first, 
           {table2_alias__key1 => 1, table2_alias__key3 => 48});
+
+test 'type() option';
+$dbi = DBIx::Custom->connect(
+    data_source => 'dbi:SQLite:dbname=:memory:',
+    dbi_option => {
+        $DBD::SQLite::VERSION > 1.26 ? (sqlite_unicode => 1) : (unicode => 1)
+    }
+);
+my $binary = pack("I3", 1, 2, 3);
+$dbi->execute('create table table1(key1, key2)');
+$dbi->insert(table => 'table1', param => {key1 => $binary, key2 => 'あ'}, type => [key1 => DBI::SQL_BLOB]);
+$result = $dbi->select(table => 'table1');
+$row   = $result->fetch_hash_first;
+is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
+$result = $dbi->execute('select length(key1) as key1_length from table1');
+$row = $result->fetch_hash_first;
+is($row->{key1_length}, length $binary);
+
+$dbi->insert(table => 'table1', param => {key1 => $binary, key2 => 'あ'}, type => [['key1'] => DBI::SQL_BLOB]);
+$result = $dbi->select(table => 'table1');
+$row   = $result->fetch_hash_first;
+is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
+$result = $dbi->execute('select length(key1) as key1_length from table1');
+$row = $result->fetch_hash_first;
+is($row->{key1_length}, length $binary);
 
