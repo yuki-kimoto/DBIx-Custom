@@ -240,7 +240,7 @@ sub dbh {
     }
 }
 
-our %VALID_DELETE_ARGS
+our %DELETE_ARGS
   = map { $_ => 1 } @COMMON_ARGS, qw/where append allow_delete_all/;
 
 sub delete {
@@ -249,16 +249,15 @@ sub delete {
     # Check argument names
     foreach my $name (keys %args) {
         croak qq{Argument "$name" is invalid name}
-          unless $VALID_DELETE_ARGS{$name};
+          unless $DELETE_ARGS{$name};
     }
     
     # Arguments
-    my $table            = $args{table} || '';
+    my $table = $args{table} || '';
     croak qq{"table" option must be specified} unless $table;
-    my $where            = $args{where} || {};
-    my $append           = $args{append};
-    my $filter           = $args{filter};
-    my $allow_delete_all = $args{allow_delete_all};
+    my $where            = delete $args{where} || {};
+    my $append           = delete $args{append};
+    my $allow_delete_all = delete $args{allow_delete_all};
 
     # Where
     my $w;
@@ -297,16 +296,18 @@ sub delete {
     
     # Execute query
     my $ret_val = $self->execute(
-        $query, param  => $where, filter => $filter,
-        table => $table);
+        $query,
+        param  => $where,
+        table => $table,
+        %args
+    );
     
     return $ret_val;
 }
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
 
-our %VALID_DELETE_AT_ARGS
-  = (%VALID_DELETE_ARGS, where => 1, primary_key => 1);
+our %DELETE_AT_ARGS = (%DELETE_ARGS, where => 1, primary_key => 1);
 
 sub delete_at {
     my ($self, %args) = @_;
@@ -314,7 +315,7 @@ sub delete_at {
     # Check argument names
     foreach my $name (keys %args) {
         croak qq{Argument "$name" is invalid name}
-          unless $VALID_DELETE_AT_ARGS{$name};
+          unless $DELETE_AT_ARGS{$name};
     }
     
     # Primary key
@@ -348,7 +349,7 @@ sub delete_at {
 
 sub DESTROY { }
 
-our %VALID_EXECUTE_ARGS = map { $_ => 1 } qw/param filter table/;
+our %EXECUTE_ARGS = map { $_ => 1 } @COMMON_ARGS, 'param';
 
 sub execute{
     my ($self, $query, %args)  = @_;
@@ -356,7 +357,7 @@ sub execute{
     # Check argument names
     foreach my $name (keys %args) {
         croak qq{Argument "$name" is invalid name}
-          unless $VALID_EXECUTE_ARGS{$name};
+          unless $EXECUTE_ARGS{$name};
     }
     
     my $params = $args{param} || {};
@@ -474,8 +475,7 @@ sub execute{
     return $affected;
 }
 
-our %VALID_INSERT_ARGS
-  = map { $_ => 1 } @COMMON_ARGS, qw/param append/;
+our %INSERT_ARGS = map { $_ => 1 } @COMMON_ARGS, qw/param append/;
 
 sub insert {
     my ($self, %args) = @_;
@@ -483,15 +483,14 @@ sub insert {
     # Check argument names
     foreach my $name (keys %args) {
         croak qq{Argument "$name" is invalid name}
-          unless $VALID_INSERT_ARGS{$name};
+          unless $INSERT_ARGS{$name};
     }
     
     # Arguments
-    my $table  = $args{table};
+    my $table  = delete $args{table};
     croak qq{"table" option must be specified} unless $table;
-    my $param  = $args{param} || {};
-    my $append = $args{append} || '';
-    my $filter = $args{filter};
+    my $param  = delete $args{param} || {};
+    my $append = delete $args{append} || '';
     
     # Columns
     my @columns;
@@ -520,15 +519,14 @@ sub insert {
     my $ret_val = $self->execute(
         $query,
         param  => $param,
-        filter => $filter,
-        table => $table
+        table => $table,
+        %args
     );
     
     return $ret_val;
 }
 
-our %VALID_INSERT_AT_ARGS
-  = (%VALID_INSERT_ARGS, where => 1, primary_key => 1);
+our %INSERT_AT_ARGS = (%INSERT_ARGS, where => 1, primary_key => 1);
 
 sub insert_at {
     my ($self, %args) = @_;
@@ -536,7 +534,7 @@ sub insert_at {
     # Check argument names
     foreach my $name (keys %args) {
         croak qq{Argument "$name" is invalid name}
-          unless $VALID_INSERT_AT_ARGS{$name};
+          unless $INSERT_AT_ARGS{$name};
     }
     
     # Primary key
@@ -761,7 +759,7 @@ sub register_filter {
 
 sub register_tag { shift->query_builder->register_tag(@_) }
 
-our %VALID_SELECT_ARGS
+our %SELECT_ARGS
   = map { $_ => 1 } @COMMON_ARGS, qw/column where append relation
                                      selection join/;
 
@@ -771,25 +769,25 @@ sub select {
     # Check argument names
     foreach my $name (keys %args) {
         croak qq{Argument "$name" is invalid name}
-          unless $VALID_SELECT_ARGS{$name};
+          unless $SELECT_ARGS{$name};
     }
     
     # Arguments
-    my $table = $args{table};
+    my $table = delete $args{table};
     my $tables = ref $table eq 'ARRAY' ? $table
                : defined $table ? [$table]
                : [];
-    my $columns   = $args{column};
-    my $selection = $args{selection} || '';
-    my $where     = $args{where} || {};
-    my $append    = $args{append};
-    my $filter    = $args{filter};
-    my $join =     $args{join} || [];
+    my $columns   = delete $args{column};
+    my $selection = delete $args{selection} || '';
+    my $where     = delete $args{where} || {};
+    my $append    = delete $args{append};
+    my $join      = delete $args{join} || [];
     croak qq{"join" must be array reference}
       unless ref $join eq 'ARRAY';
+    my $relation = delete $args{relation};
     
     # Add relation tables(DEPRECATED!);
-    $self->_add_relation_table($tables, $args{relation});
+    $self->_add_relation_table($tables, $relation);
     
     # SQL stack
     my @sql;
@@ -865,7 +863,7 @@ sub select {
     # Table
     unless ($selection) {
         push @sql, 'from';
-        if ($args{relation}) {
+        if ($relation) {
             my $found = {};
             foreach my $table (@$tables) {
                 push @sql, ($table, ',') unless $found->{$table};
@@ -910,7 +908,7 @@ sub select {
     push @sql, $swhere;
     
     # Relation(DEPRECATED!);
-    $self->_push_relation(\@sql, $tables, $args{relation}, $swhere eq '' ? 1 : 0);
+    $self->_push_relation(\@sql, $tables, $relation, $swhere eq '' ? 1 : 0);
     
     # Append statement
     push @sql, $append if $append;
@@ -924,14 +922,16 @@ sub select {
     
     # Execute query
     my $result = $self->execute(
-        $query, param  => $where, filter => $filter,
-        table => $tables);
+        $query,
+        param  => $where, 
+        table => $tables,
+        %args
+    );
     
     return $result;
 }
 
-our %VALID_SELECT_AT_ARGS
-  = (%VALID_SELECT_ARGS, where => 1, primary_key => 1);
+our %SELECT_AT_ARGS = (%SELECT_ARGS, where => 1, primary_key => 1);
 
 sub select_at {
     my ($self, %args) = @_;
@@ -939,7 +939,7 @@ sub select_at {
     # Check argument names
     foreach my $name (keys %args) {
         croak qq{Argument "$name" is invalid name}
-          unless $VALID_SELECT_AT_ARGS{$name};
+          unless $SELECT_AT_ARGS{$name};
     }
     
     # Primary key
@@ -990,9 +990,8 @@ sub setup_model {
     return $self;
 }
 
-our %VALID_UPDATE_ARGS
-  = map { $_ => 1 } @COMMON_ARGS, qw/param where append
-                                     allow_update_all/;
+our %UPDATE_ARGS
+  = map { $_ => 1 } @COMMON_ARGS, qw/param where append allow_update_all/;
 
 sub update {
     my ($self, %args) = @_;
@@ -1000,17 +999,16 @@ sub update {
     # Check argument names
     foreach my $name (keys %args) {
         croak qq{Argument "$name" is invalid name}
-          unless $VALID_UPDATE_ARGS{$name};
+          unless $UPDATE_ARGS{$name};
     }
     
     # Arguments
-    my $table            = $args{table} || '';
+    my $table = delete $args{table} || '';
     croak qq{"table" option must be specified} unless $table;
-    my $param            = $args{param} || {};
-    my $where            = $args{where} || {};
-    my $append           = $args{append} || '';
-    my $filter           = $args{filter};
-    my $allow_update_all = $args{allow_update_all};
+    my $param            = delete $args{param} || {};
+    my $where            = delete $args{where} || {};
+    my $append           = delete $args{append} || '';
+    my $allow_update_all = delete $args{allow_update_all};
     
     # Update keys
     my @clumns = keys %$param;
@@ -1079,17 +1077,19 @@ sub update {
     return $query if $args{query};
     
     # Execute query
-    my $ret_val = $self->execute($query, param  => $param, 
-                                 filter => $filter,
-                                 table => $table);
+    my $ret_val = $self->execute(
+        $query,
+        param  => $param, 
+        table => $table,
+        %args
+    );
     
     return $ret_val;
 }
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
 
-our %VALID_UPDATE_AT_ARGS
-  = (%VALID_UPDATE_ARGS, where => 1, primary_key => 1);
+our %UPDATE_AT_ARGS = (%UPDATE_ARGS, where => 1, primary_key => 1);
 
 sub update_at {
     my ($self, %args) = @_;
@@ -1097,7 +1097,7 @@ sub update_at {
     # Check argument names
     foreach my $name (keys %args) {
         croak qq{Argument "$name" is invalid name}
-          unless $VALID_UPDATE_AT_ARGS{$name};
+          unless $UPDATE_AT_ARGS{$name};
     }
     
     # Primary key
