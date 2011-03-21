@@ -23,7 +23,7 @@ sub filter {
             $filter = $_[0];
         }
         else {
-            $filter = DBIx::Custom::Util::array_filter_to_hash(
+            $filter = DBIx::Custom::Util::array_to_hash(
                 @_ > 1 ? [@_] : $_[0]
             );
         }
@@ -60,7 +60,7 @@ sub end_filter {
             $end_filter = $_[0];
         }
         else {
-            $end_filter = DBIx::Custom::Util::array_filter_to_hash(
+            $end_filter = DBIx::Custom::Util::array_to_hash(
                 @_ > 1 ? [@_] : $_[0]
             );
         }

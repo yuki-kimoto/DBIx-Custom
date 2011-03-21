@@ -417,7 +417,7 @@ sub execute{
     }
     
     # Filter argument
-    my $f = DBIx::Custom::Util::array_filter_to_hash($args{filter})
+    my $f = DBIx::Custom::Util::array_to_hash($args{filter})
          || $query->filter || {};
     foreach my $column (keys %$f) {
         my $fname = $f->{$column};
@@ -439,7 +439,12 @@ sub execute{
     # Execute
     my $sth = $query->sth;
     my $affected;
-    eval {$affected = $sth->execute(@$bind)};
+    eval {
+        for (my $i = 0; $i < @$bind; $i++) {
+            $sth->bind_param($i + 1, $bind->[$i]);
+        }
+        $affected = $sth->execute;
+    };
     $self->_croak($@, qq{. Following SQL is executed. "$query->{sql}"}) if $@;
     
     # Return resultset if select statement is executed

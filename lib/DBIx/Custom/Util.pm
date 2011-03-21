@@ -3,28 +3,28 @@ package DBIx::Custom::Util;
 use strict;
 use warnings;
 
-sub array_filter_to_hash {
-    my $array_filter = shift;
+sub array_to_hash {
+    my $array = shift;
     
-    return unless $array_filter;
-    return $array_filter if ref $array_filter eq 'HASH';
+    return unless $array;
+    return $array if ref $array eq 'HASH';
     
-    my $filter = {};
+    my $hash = {};
     
-    for (my $i = 0; $i < @$array_filter; $i += 2) {
-        my $column = $array_filter->[$i];
-        my $f = $array_filter->[$i + 1];
+    for (my $i = 0; $i < @$array; $i += 2) {
+        my $key = $array->[$i];
+        my $f = $array->[$i + 1];
         
-        if (ref $column eq 'ARRAY') {
-            foreach my $c (@$column) {
-                $filter->{$c} = $f;
+        if (ref $key eq 'ARRAY') {
+            foreach my $k (@$key) {
+                $hash->{$k} = $f;
             }
         }
         else {
-            $filter->{$column} = $f;
+            $hash->{$key} = $f;
         }
     }
-    return $filter;
+    return $hash;
 }
 
 1;
