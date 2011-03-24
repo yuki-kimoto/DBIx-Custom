@@ -156,7 +156,7 @@ C<delete_at()>,C<select_at()>.
     
 Database data type, this is used as type optioon of C<insert()>, C<insert_at()>,
 C<update()>, C<update_at()>, C<update_all>, C<delete()>, C<delete_all()>,
-C<select(), C<select_at()>
+C<select()>, C<select_at()>
 
 =head2 C<view>
 

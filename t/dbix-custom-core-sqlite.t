@@ -298,7 +298,21 @@ $where->clause(['and', '{= key1}', '{= key2}']);
 $where->param({key1 => 1, key2 => 2});
 $dbi->update(table => 'table1', param => {key1 => 3}, where => $where);
 $result = $dbi->select(table => 'table1');
-is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 2}], 'delete() where');
+is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 2}], 'update() where');
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->update(
+    table => 'table1',
+    param => {key1 => 3},
+    where => [
+        ['and', '{= key1}', '{= key2}'],
+        {key1 => 1, key2 => 2}
+    ]
+);
+$result = $dbi->select(table => 'table1');
+is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 2}], 'update() where');
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -308,7 +322,7 @@ $where->clause(['and', '{= key2}']);
 $where->param({key2 => 2});
 $dbi->update(table => 'table1', param => {key1 => 3}, where => $where);
 $result = $dbi->select(table => 'table1');
-is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 2}], 'delete() where');
+is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 2}], 'update() where');
 
 eval{$dbi->update(table => 'table1', param => {';' => 1})};
 like($@, qr/safety/);
@@ -369,6 +383,20 @@ $where = $dbi->where;
 $where->clause(['and', '{= key1}', '{= key2}']);
 $where->param({ke1 => 1, key2 => 2});
 $dbi->delete(table => 'table1', where => $where);
+$result = $dbi->select(table => 'table1');
+is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 4}], 'delete() where');
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+$dbi->delete(
+    table => 'table1',
+    where => [
+        ['and', '{= key1}', '{= key2}'],
+        {ke1 => 1, key2 => 2}
+    ]
+);
 $result = $dbi->select(table => 'table1');
 is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 4}], 'delete() where');
 
@@ -927,6 +955,16 @@ $where = $dbi->where
 $result = $dbi->select(
     table => 'table1',
     where => $where
+);
+$row = $result->fetch_hash_all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$result = $dbi->select(
+    table => 'table1',
+    where => [
+        ['and', '{= key1}', '{= key2}'],
+        {key1 => 1}
+    ]
 );
 $row = $result->fetch_hash_all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);

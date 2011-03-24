@@ -1,3 +1,5 @@
+0.1664
+    - where can recieve array refrence, which contains where cluase and paramter.
 0.1663
     - added EXPERIMENTAL type() attribute to DBIx::Custom::Model
     - added EXPERIMENTAL bind_param_option can set bind_param option

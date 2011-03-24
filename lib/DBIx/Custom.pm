@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1663';
+our $VERSION = '0.1664';
 
 use 5.008001;
 use strict;
@@ -260,20 +260,8 @@ sub delete {
     my $allow_delete_all = delete $args{allow_delete_all};
 
     # Where
-    my $w;
-    if (ref $where eq 'HASH') {
-        my $clause = ['and'];
-        push @$clause, "{= $_}" for keys %$where;
-        $w = $self->where;
-        $w->clause($clause);
-        $w->param($where);
-    }
-    elsif (ref $where eq 'DBIx::Custom::Where') {
-        $w = $where;
-        $where = $w->param;
-    }    
-    croak qq{"where" must be hash refernce or DBIx::Custom::Where object}
-      unless ref $w eq 'DBIx::Custom::Where';
+    my $w = $self->_where($where);
+    $where = $w->param;
     
     # String where
     my $swhere = "$w";
@@ -896,19 +884,8 @@ sub select {
     croak "Not found table name" unless $tables->[-1];
     
     # Where
-    my $w;
-    if (ref $where eq 'HASH') {
-        my $clause = ['and'];
-        push @$clause, "{= $_}" for keys %$where;
-        $w = $self->where(clause => $clause, param => $where);
-    }
-    elsif (ref $where eq 'DBIx::Custom::Where') {
-        $w = $where;
-        $where = $w->param;
-    }
-    
-    croak qq{"where" must be hash reference or DBIx::Custom::Where object}
-      unless ref $w eq 'DBIx::Custom::Where';
+    my $w = $self->_where($where);
+    $where = $w->param;
     
     # String where
     my $swhere = "$w";
@@ -1041,21 +1018,8 @@ sub update {
     my $update_clause = '{update_param ' . join(' ', @clumns) . '}';
 
     # Where
-    my $w;
-    if (ref $where eq 'HASH') {
-        my $clause = ['and'];
-        push @$clause, "{= $_}" for keys %$where;
-        $w = $self->where;
-        $w->clause($clause);
-        $w->param($where);
-    }
-    elsif (ref $where eq 'DBIx::Custom::Where') {
-        $w = $where;
-        $where = $w->param;
-    }  
-    
-    croak qq{"where" must be hash refernce or DBIx::Custom::Where object}
-      unless ref $w eq 'DBIx::Custom::Where';
+    my $w = $self->_where($where);
+    $where = $w->param;
     
     # String where
     my $swhere = "$w";
@@ -1327,6 +1291,32 @@ sub _push_join {
     foreach my $need_table (@need_tables) {
         push @$sql, $tree->{$need_table}{join};
     }
+}
+
+sub _where {
+    my ($self, $where) = @_;
+    
+    my $w;
+    if (ref $where eq 'HASH') {
+        my $clause = ['and'];
+        push @$clause, "{= $_}" for keys %$where;
+        $w = $self->where(clause => $clause, param => $where);
+    }
+    elsif (ref $where eq 'DBIx::Custom::Where') {
+        $w = $where;
+    }
+    elsif (ref $where eq 'ARRAY') {
+        $w = $self->where(
+            clause => $where->[0],
+            param  => $where->[1]
+        );
+    }
+    
+    croak qq{"where" must be hash reference or DBIx::Custom::Where object} .
+          qq{or array reference, which contains where clause and paramter}
+      unless ref $w eq 'DBIx::Custom::Where';
+    
+    return $w;
 }
 
 # DEPRECATED!
@@ -1814,7 +1804,8 @@ Table name.
 
 =item C<where>
 
-Where clause. This is hash reference or L<DBIx::Custom::Where> object.
+Where clause. This is hash reference or L<DBIx::Custom::Where> object
+or array refrence, which contains where clause and paramter.
     
     # Hash reference
     $dbi->delete(where => {title => 'Perl'});
@@ -1826,6 +1817,14 @@ Where clause. This is hash reference or L<DBIx::Custom::Where> object.
     );
     $dbi->delete(where => $where);
 
+    # Array refrendce (where clause and parameter)
+    $dbi->delete(where =>
+        [
+            ['and', '{= author}', '{like title}'],
+            {author => 'Ken', title => '%Perl%'}
+        ]
+    );
+    
 =item C<append>
 
 Append statement to last of SQL. This is string.
@@ -2326,7 +2325,8 @@ You can add before created statement
 
 =item C<where>
 
-Where clause. This is hash reference or L<DBIx::Custom::Where> object.
+Where clause. This is hash reference or L<DBIx::Custom::Where> object,
+or array refrence, which contains where clause and paramter.
     
     # Hash reference
     $dbi->select(where => {author => 'Ken', 'title' => 'Perl'});
@@ -2338,6 +2338,14 @@ Where clause. This is hash reference or L<DBIx::Custom::Where> object.
     );
     $dbi->select(where => $where);
 
+    # Array refrendce (where clause and parameter)
+    $dbi->select(where =>
+        [
+            ['and', '{= author}', '{like title}'],
+            {author => 'Ken', title => '%Perl%'}
+        ]
+    );
+    
 =item C<join> EXPERIMENTAL
 
 Join clause used in need. This is array reference.
@@ -2505,7 +2513,8 @@ Update data. This is hash reference.
 
 =item C<where>
 
-Where clause. This is hash reference or L<DBIx::Custom::Where> object.
+Where clause. This is hash reference or L<DBIx::Custom::Where> object
+or array refrence.
     
     # Hash reference
     $dbi->update(where => {author => 'Ken', 'title' => 'Perl'});
@@ -2516,6 +2525,14 @@ Where clause. This is hash reference or L<DBIx::Custom::Where> object.
         param  => {author => 'Ken', title => '%Perl%'}
     );
     $dbi->update(where => $where);
+    
+    # Array refrendce (where clause and parameter)
+    $dbi->update(where =>
+        [
+            ['and', '{= author}', '{like title}'],
+            {author => 'Ken', title => '%Perl%'}
+        ]
+    );
 
 =item C<append>
 
