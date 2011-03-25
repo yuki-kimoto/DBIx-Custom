@@ -1,3 +1,6 @@
+0.1665
+    - removed EXPERIMETNAL flag from insert_at(), update_at(), delete_at(), select_at(), insert_param(), not_exists(), select()'s query option, update_param(), where, table tag, each column, safety_character, DBIx::Where, where().
+    - added EXPERIMETNAL create_model()
 0.1664
     - where can recieve array refrence, which contains where cluase and paramter.
 0.1663

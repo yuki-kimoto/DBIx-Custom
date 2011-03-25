@@ -89,6 +89,19 @@ sub mycolumn {
     return $self->dbi->mycolumn($table, $columns);
 }
 
+sub new {
+    my $self = shift->SUPER::new(@_);
+    
+    # Check attribute names
+    my @attrs = keys %$self;
+    foreach my $attr (@attrs) {
+        croak qq{"$attr" is invalid attribute name}
+          unless $self->can($attr);
+    }
+    
+    return $self;
+}
+
 1;
 
 =head1 NAME

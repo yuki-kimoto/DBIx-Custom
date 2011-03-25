@@ -1940,3 +1940,35 @@ $result = $dbi->execute('select length(key1) as key1_length from table1');
 $row = $result->fetch_hash_first;
 is($row->{key1_length}, length $binary);
 
+test 'create_model';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->execute($CREATE_TABLE->{2});
+
+$dbi->create_model(
+    table => 'table1',
+    join => [
+       'left outer join table2 on table1.key1 = table2.key1'
+    ],
+    primary_key => ['key1']
+);
+$dbi->create_model(
+    table => 'table2'
+);
+$dbi->create_model(
+    table => 'table3',
+    filter => [
+        key1 => {in => sub { uc $_[0] }}
+    ]
+);
+$dbi->setup_model;
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
+$model = $dbi->model('table1');
+$result = $model->select(
+    column => [$model->mycolumn, $model->column('table2')],
+    where => {'table1.key1' => 1}
+);
+is_deeply($result->fetch_hash_first,
+          {key1 => 1, key2 => 2, 'table2__key1' => 1, 'table2__key3' => 3});
+

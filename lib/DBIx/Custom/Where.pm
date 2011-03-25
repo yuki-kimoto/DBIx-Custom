@@ -112,7 +112,7 @@ sub _parse {
 
 =head1 NAME
 
-DBIx::Custom::Where - Where clause EXPERIMENTAL
+DBIx::Custom::Where - Where clause
 
 =head1 SYNOPSYS
 

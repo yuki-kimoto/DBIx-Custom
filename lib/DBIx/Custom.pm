@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1664';
+our $VERSION = '0.1665';
 
 use 5.008001;
 use strict;
@@ -339,6 +339,60 @@ sub DESTROY { }
 
 our %EXECUTE_ARGS = map { $_ => 1 } @COMMON_ARGS, 'param';
 
+sub create_model {
+    my $self = shift;
+    
+    my $args = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $args->{dbi} = $self;
+    
+    my $model_class = delete $args->{model_class} || 'DBIx::Custom::Model';
+    my $model_name  = delete $args->{name};
+    my $model_table = delete $args->{table};
+    $model_name ||= $model_table;
+    
+    my $model = $model_class->new($args);
+    $model->name($model_name) unless $model->name;
+    $model->table($model_table) unless $model->table;
+    
+    # Apply filter
+    croak "$model_class filter must be array reference"
+      unless ref $model->filter eq 'ARRAY';
+    $self->apply_filter($model->table, @{$model->filter});
+    
+    # Table - Model
+    croak "Table name is duplicated"
+      if exists $self->{_model_from}->{$model->table};
+    $self->{_model_from}->{$model->table} = $model->name;
+
+    # Table alias
+    $self->{_table_alias} ||= {};
+    $self->{_table_alias} = {%{$self->{_table_alias}}, %{$model->table_alias}};
+    
+    # Set model
+    $self->model($model->name, $model);
+    
+    return $self;
+}
+
+sub each_column {
+    my ($self, $cb) = @_;
+    
+    # Iterate all tables
+    my $sth_tables = $self->dbh->table_info;
+    while (my $table_info = $sth_tables->fetchrow_hashref) {
+        
+        # Table
+        my $table = $table_info->{TABLE_NAME};
+        
+        # Iterate all columns
+        my $sth_columns = $self->dbh->column_info(undef, undef, $table, '%');
+        while (my $column_info = $sth_columns->fetchrow_hashref) {
+            my $column = $column_info->{COLUMN_NAME};
+            $self->$cb($table, $column, $column_info);
+        }
+    }
+}
+
 sub execute{
     my ($self, $query, %args)  = @_;
     
@@ -587,25 +641,6 @@ sub insert_param {
     return join ' ', @tag;
 }
 
-sub each_column {
-    my ($self, $cb) = @_;
-    
-    # Iterate all tables
-    my $sth_tables = $self->dbh->table_info;
-    while (my $table_info = $sth_tables->fetchrow_hashref) {
-        
-        # Table
-        my $table = $table_info->{TABLE_NAME};
-        
-        # Iterate all columns
-        my $sth_columns = $self->dbh->column_info(undef, undef, $table, '%');
-        while (my $column_info = $sth_columns->fetchrow_hashref) {
-            my $column = $column_info->{COLUMN_NAME};
-            $self->$cb($table, $column, $column_info);
-        }
-    }
-}
-
 sub include_model {
     my ($self, $name_space, $model_infos) = @_;
     
@@ -631,7 +666,6 @@ sub include_model {
         close $dh;
     }
     
-    my $table_alias = {};
     foreach my $model_info (@$model_infos) {
         
         # Model class, name, table
@@ -646,7 +680,7 @@ sub include_model {
             $model_name  ||= $model_class;
             $model_table ||= $model_name;
         }
-        else { $model_class =$model_name = $model_table = $model_info }
+        else { $model_class = $model_name = $model_table = $model_info }
         my $mclass = "${name_space}::$model_class";
         
         # Load
@@ -658,28 +692,14 @@ sub include_model {
         }
         
         # Instantiate
-        my $model = $mclass->new(dbi => $self);
-        $model->name($model_name) unless $model->name;
-        $model->table($model_table) unless $model->table;
+        my $args = {};
+        $args->{model_class} = $mclass if $mclass;
+        $args->{name}        = $model_name if $model_name;
+        $args->{table}       = $model_table if $model_table;
         
-        # Set
-        $self->model($model->name, $model);
-        
-        # Apply filter
-        croak "${name_space}::$model_class filter must be array reference"
-          unless ref $model->filter eq 'ARRAY';
-        $self->apply_filter($model->table, @{$model->filter});
-        
-        # Table alias
-        $table_alias = {%$table_alias, %{$model->table_alias}};
-        
-        # Table - Model
-        croak "Table name is duplicated"
-          if exists $self->{_model_from}->{$model->table};
-        $self->{_model_from}->{$model->table} = $model->name;
+        # Create model
+        $self->create_model($args);
     }
-    
-    $self->{_table_alias} = $table_alias;
     
     return $self;
 }
@@ -1605,7 +1625,7 @@ Query builder, default to L<DBIx::Custom::QueryBuilder> object.
 
 Result class, default to L<DBIx::Custom::Result>.
 
-=head2 C<safety_character> EXPERIMENTAL
+=head2 C<safety_character>
 
     my $safety_character = $self->safety_character;
     $dbi                 = $self->safety_character($character);
@@ -1704,6 +1724,28 @@ L<DBIx::Custom> is a wrapper of L<DBI>.
 C<AutoCommit> and C<RaiseError> options are true, 
 and C<PrintError> option is false by default.
 
+=head2 create_model
+
+    $dbi->create_model(
+        table => 'book',
+        primary_key => 'id',
+        join => [
+            'inner join company on book.comparny_id = company.id'
+        ],
+        filter => [
+            publish_date => {
+                out => 'tp_to_date',
+                in => 'date_to_tp',
+                end => 'tp_to_displaydate'
+            }
+        ]
+    );
+
+Create L<DBIx::Custom::Model> object and initialize model.
+the module is used from model() method.
+
+   $dbi->model('book')->select(...);
+
 =head2 C<create_query>
     
     my $query = $dbi->create_query(
@@ -1726,7 +1768,25 @@ instead of other methods, such as C<insert>, C<update>.
 Get and set database handle of L<DBI>.
 
 If process is spawn by forking, new connection is created automatically.
-This feature is EXPERIMETNAL.
+
+=head2 C<each_column>
+
+    $dbi->each_column(
+        sub {
+            my ($dbi, $table, $column, $column_info) = @_;
+            
+            my $type = $column_info->{TYPE_NAME};
+            
+            if ($type eq 'DATE') {
+                # ...
+            }
+        }
+    );
+
+Iterate all column informations of all table from database.
+Argument is callback when one column is found.
+Callback receive four arguments, dbi object, table name,
+column name and column information.
 
 =head2 C<execute>
 
@@ -1871,7 +1931,7 @@ Create column clause. The follwoing column clause is created.
     book.author as book__author,
     book.title as book__title
 
-=item C<query> EXPERIMENTAL
+=item C<query>
 
 Get L<DBIx::Custom::Query> object instead of executing SQL.
 This is true or false value.
@@ -1891,7 +1951,7 @@ You can check SQL.
 Delete statement to delete all rows.
 Options is same as C<delete()>.
 
-=head2 C<delete_at()> EXPERIMENTAL
+=head2 C<delete_at()>
 
 Delete statement, using primary key.
 
@@ -2000,7 +2060,7 @@ filter name registerd by C<register_filter()>.
 
 These filters are added to the C<out> filters, set by C<apply_filter()>.
 
-=item C<query> EXPERIMENTAL
+=item C<query>
 
 Get L<DBIx::Custom::Query> object instead of executing SQL.
 This is true or false value.
@@ -2013,7 +2073,7 @@ You can check SQL.
 
 =back
 
-=head2 C<insert_at()> EXPERIMENTAL
+=head2 C<insert_at()>
 
 Insert statement, using primary key.
 
@@ -2061,32 +2121,13 @@ Place holders are set to 5 and 'Perl'.
 
 =back
 
-=head2 C<insert_param> EXPERIMENTAL
+=head2 C<insert_param>
 
     my $insert_param = $dbi->insert_param({title => 'a', age => 2});
 
 Create insert parameter tag.
 
     {insert_param title age}
-
-=head2 C<each_column> EXPERIMENTAL
-
-    $dbi->each_column(
-        sub {
-            my ($dbi, $table, $column, $column_info) = @_;
-            
-            my $type = $column_info->{TYPE_NAME};
-            
-            if ($type eq 'DATE') {
-                # ...
-            }
-        }
-    );
-
-Iterate all column informations of all table from database.
-Argument is callback when one column is found.
-Callback receive four arguments, dbi object, table name,
-column name and column information.
 
 =head2 C<include_model> EXPERIMENTAL
 
@@ -2187,7 +2228,7 @@ Create column clause for myself. The follwoing column clause is created.
 
 Create a new L<DBIx::Custom> object.
 
-=head2 C<not_exists> EXPERIMENTAL
+=head2 C<not_exists>
 
     my $not_exists = $dbi->not_exists;
 
@@ -2414,7 +2455,7 @@ filter name registerd by C<register_filter()>.
 
 These filters are added to the C<out> filters, set by C<apply_filter()>.
 
-=item C<query> EXPERIMENTAL
+=item C<query>
 
 Get L<DBIx::Custom::Query> object instead of executing SQL.
 This is true or false value.
@@ -2438,7 +2479,7 @@ This is used to bind paramter by C<bind_param()> of statment handle.
 
 =back
 
-=head2 C<select_at()> EXPERIMENTAL
+=head2 C<select_at()>
 
 Select statement, using primary key.
 
@@ -2571,7 +2612,7 @@ filter name registerd by C<register_filter()>.
 
 These filters are added to the C<out> filters, set by C<apply_filter()>.
 
-=item C<query> EXPERIMENTAL
+=item C<query>
 
 Get L<DBIx::Custom::Query> object instead of executing SQL.
 This is true or false value.
@@ -2591,7 +2632,7 @@ You can check SQL.
 Update statement to update all rows.
 Options is same as C<update()>.
 
-=head2 C<update_at()> EXPERIMENTAL
+=head2 C<update_at()>
 
 Update statement, using primary key.
 
@@ -2639,7 +2680,7 @@ Place holders are set to 'Perl' and 5.
 
 =back
 
-=head2 C<update_param> EXPERIMENTAL
+=head2 C<update_param>
 
     my $update_param = $dbi->update_param({title => 'a', age => 2});
 
@@ -2647,7 +2688,7 @@ Create update parameter tag.
 
     {update_param title age}
 
-=head2 C<where> EXPERIMENTAL
+=head2 C<where>
 
     my $where = $dbi->where(
         clause => ['and', '{= title}', '{= author}'],
@@ -2667,7 +2708,7 @@ C<columns> of model object is automatically set, parsing database information.
 
 The following tags is available.
 
-=head2 C<table> EXPERIMENTAL
+=head2 C<table>
 
 Table tag
 
