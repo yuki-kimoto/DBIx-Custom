@@ -1344,41 +1344,6 @@ You can change result class. By default it is L<DBIx::Custom::Result>.
     my $dbi = DBIx::Custom->connect(...);
     $dbi->result_class('MyResult');
 
-=head3 Caching
-
-SQL after parsing tag is cached for performance.
-You can set C<cache()>. By default, chaching is true.
-
-    $dbi->cache(1);
-
-The way to cache is changed by C<cache_method()>.
-Default method is the following one.
-Cache is saved to memory.
-
-    $dbi->cache_method(sub {
-        sub {
-            my $self = shift;
-            
-            $self->{_cached} ||= {};
-            
-            if (@_ > 1) {
-                # Save cache
-                $self->{_cached}{$_[0]} = $_[1] 
-            }
-            else {
-                # Get cache
-                return $self->{_cached}{$_[0]}
-            }
-        }
-    });
-    
-First argument is L<DBIx::Custom> object.
-Second argument is SQL before parsing.
-Third argument is SQL information after parsing. This is hash reference.
-
-If third argument exists, you save cache,
-and if third argument isn't exists, you get chace.
-
 =head1 EXAMPLES
 
 You can see exsamples in the following wiki.

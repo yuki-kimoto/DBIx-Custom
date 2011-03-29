@@ -6,6 +6,7 @@ use warnings;
 sub array_to_hash {
     my $array = shift;
     
+    return $array if ref $array eq 'HASH';
     return unless $array;
     return $array if ref $array eq 'HASH';
     

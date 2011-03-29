@@ -29,7 +29,11 @@ sub AUTOLOAD {
     my ($package, $mname) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
 
     # Method
-    if (my $dbi_method = $self->dbi->can($mname)) {
+    $self->{_methods} ||= {};
+    if (my $method = $self->{_methods}->{$mname}) {
+        return $self->$method(@_)
+    }
+    elsif (my $dbi_method = $self->dbi->can($mname)) {
         $self->dbi->$dbi_method(@_);
     }
     elsif (my $dbh_method = $self->dbi->dbh->can($mname)) {
@@ -77,6 +81,16 @@ sub column {
 }
 
 sub DESTROY { }
+
+sub method {
+    my $self = shift;
+    
+    # Merge
+    my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $self->{_methods} = {%{$self->{_methods} || {}}, %$methods};
+    
+    return $self;
+}
 
 sub mycolumn {
     my $self = shift;
@@ -231,6 +245,25 @@ you don't have to specify C<table> option.
     
 Same as C<insert_at()> of L<DBIx::Custom> except that
 you don't have to specify C<table> and C<primary_key> option.
+
+=head2 C<method> EXPERIMENTAL
+
+    $model->method(
+        update_or_insert => sub {
+            my $self = shift;
+            
+            # ...
+        },
+        find_or_create   => sub {
+            my $self = shift;
+            
+            # ...
+    );
+
+Register method. These method is called directly from L<DBIx::Custom::Model> object.
+
+    $model->update_or_insert;
+    $model->find_or_create;
 
 =head2 C<mycolumn>
 

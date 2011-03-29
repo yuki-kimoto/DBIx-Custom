@@ -1697,7 +1697,7 @@ and C<PrintError> option is false by default.
 
 =head2 create_model
 
-    $dbi->create_model(
+    my $model = $dbi->create_model(
         table => 'book',
         primary_key => 'id',
         join => [
@@ -1713,7 +1713,7 @@ and C<PrintError> option is false by default.
     );
 
 Create L<DBIx::Custom::Model> object and initialize model.
-the module is used from model() method.
+the module is also used from model() method.
 
    $dbi->model('book')->select(...);
 

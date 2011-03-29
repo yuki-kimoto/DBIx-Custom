@@ -1975,3 +1975,13 @@ is_deeply($result->fetch_hash_first,
           {key1 => 1, key2 => 2, 'table2__key1' => 1, 'table2__key3' => 3});
 is_deeply($model2->select->fetch_hash_first, {key1 => 1, key3 => 3});
 
+test 'model method';
+test 'create_model';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
+$model = $dbi->create_model(
+    table => 'table2'
+);
+$model->method(foo => sub { shift->select(@_) });
+is_deeply($model->foo->fetch_hash_first, {key1 => 1, key3 => 3});
