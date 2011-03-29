@@ -66,6 +66,7 @@ my $update_query;
 my $ret_val;
 my $infos;
 my $model;
+my $model2;
 my $where;
 my $update_param;
 my $insert_param;
@@ -1953,7 +1954,7 @@ $dbi->create_model(
     ],
     primary_key => ['key1']
 );
-$dbi->create_model(
+$model2 = $dbi->create_model(
     table => 'table2'
 );
 $dbi->create_model(
@@ -1972,4 +1973,5 @@ $result = $model->select(
 );
 is_deeply($result->fetch_hash_first,
           {key1 => 1, key2 => 2, 'table2__key1' => 1, 'table2__key3' => 3});
+is_deeply($model2->select->fetch_hash_first, {key1 => 1, key3 => 3});
 

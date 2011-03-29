@@ -371,7 +371,7 @@ sub create_model {
     # Set model
     $self->model($model->name, $model);
     
-    return $self;
+    return $self->model($model->name);
 }
 
 sub each_column {
