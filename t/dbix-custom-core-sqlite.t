@@ -513,6 +513,7 @@ ok(! $result->fetch_first, "rollback");
 
 test 'cache';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->cache(1);
 $dbi->execute($CREATE_TABLE->{0});
 $source = 'select * from table1 where {= key1} and {= key2};';
 $dbi->create_query($source);

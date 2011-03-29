@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1665';
+our $VERSION = '0.1666';
 
 use 5.008001;
 use strict;
@@ -23,7 +23,7 @@ our @COMMON_ARGS = qw/table query filter type/;
 
 __PACKAGE__->attr(
     [qw/data_source password pid user/],
-    cache => 1,
+    cache => 0,
     cache_method => sub {
         sub {
             my $self = shift;
@@ -1550,14 +1550,6 @@ L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
 
 =head1 ATTRIBUTES
 
-=head2 C<cache>
-
-    my $cache = $dbi->cache;
-    $dbi      = $dbi->cache(1);
-
-Enable caching L<DBIx::Custom::Query>,
-default to 1.
-
 =head2 C<data_source>
 
     my $data_source = $dbi->data_source;
@@ -1687,27 +1679,6 @@ You can set multiple filters at once.
             end => 'tp_to_displaydate'
         }
     );
-
-=head2 C<cache_method>
-
-    $dbi          = $dbi->cache_method(\&cache_method);
-    $cache_method = $dbi->cache_method
-
-Method to set and get cache.
-Default to the following one.
-
-    sub {
-        my $self = shift;
-        
-        $self->{_cached} ||= {};
-        
-        if (@_ > 1) {
-            $self->{_cached}{$_[0]} = $_[1];
-        }
-        else {
-            return $self->{_cached}{$_[0]};
-        }
-    }
 
 =head2 C<connect>
 
