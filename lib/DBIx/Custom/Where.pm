@@ -16,6 +16,7 @@ push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 __PACKAGE__->attr(
     [qw/param query_builder safety_character/],
     clause => sub { [] },
+    reserved_word_quote => ''
 );
 
 sub to_string {
@@ -75,6 +76,10 @@ sub _parse {
         croak qq{Each tag contains one column name: tag "$clause"}
           unless @$columns == 1;
         my $column = $columns->[0];
+        if (my $q = $self->reserved_word_quote) {
+            $column =~ s/$q//g;
+        }
+        
         my $safety = $self->safety_character;
         croak qq{"$column" is not safety column name}
           unless $column =~ /^[$safety\.]+$/;

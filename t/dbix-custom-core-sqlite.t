@@ -242,6 +242,15 @@ like($@, qr/noexist/, "invalid");
 eval{$dbi->insert(table => 'table', param => {';' => 1})};
 like($@, qr/safety/);
 
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->reserved_word_quote('"');
+$dbi->execute('create table "table" ("select")');
+$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
+$dbi->insert(table => 'table', param => {select => 1});
+$result = $dbi->execute('select * from "table"');
+$rows   = $result->fetch_hash_all;
+is_deeply($rows, [{select => 2}], "reserved word");
+
 test 'update';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});
@@ -331,6 +340,31 @@ like($@, qr/safety/);
 eval{$dbi->update(table => 'table1', param => {'key1' => 1}, where => {';' => 1})};
 like($@, qr/safety/);
 
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->reserved_word_quote('"');
+$dbi->execute('create table "table" ("select", "update")');
+$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
+$dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
+$dbi->insert(table => 'table', param => {select => 1});
+$dbi->update(table => 'table', where => {select => 1}, param => {update => 2});
+$result = $dbi->execute('select * from "table"');
+$rows   = $result->fetch_hash_all;
+is_deeply($rows, [{select => 2, update => 6}], "reserved word");
+
+eval {$dbi->update_all(table => 'table', param => {';' => 2}) };
+like($@, qr/safety/);
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->reserved_word_quote('"');
+$dbi->execute('create table "table" ("select", "update")');
+$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
+$dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
+$dbi->insert(table => 'table', param => {select => 1});
+$dbi->update(table => 'table', where => {'table.select' => 1}, param => {update => 2});
+$result = $dbi->execute('select * from "table"');
+$rows   = $result->fetch_hash_all;
+is_deeply($rows, [{select => 2, update => 6}], "reserved word");
+
 test 'update_all';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});
@@ -411,6 +445,16 @@ like($@, qr/"where" must be specified/,
 eval{$dbi->delete(table => 'table1', where => {';' => 1})};
 like($@, qr/safety/);
 
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->reserved_word_quote('"');
+$dbi->execute('create table "table" ("select", "update")');
+$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
+$dbi->insert(table => 'table', param => {select => 1});
+$dbi->delete(table => 'table', where => {select => 1});
+$result = $dbi->execute('select * from "table"');
+$rows   = $result->fetch_hash_all;
+is_deeply($rows, [], "reserved word");
+
 test 'delete_all';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -468,6 +512,14 @@ is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "
 eval{$dbi->select(table => 'table1', noexist => 1)};
 like($@, qr/noexist/, "invalid");
 
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->reserved_word_quote('"');
+$dbi->execute('create table "table" ("select", "update")');
+$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
+$dbi->insert(table => 'table', param => {select => 1, update => 2});
+$result = $dbi->select(table => 'table', where => {select => 1});
+$rows   = $result->fetch_hash_all;
+is_deeply($rows, [{select => 2, update => 2}], "reserved word");
 
 test 'fetch filter';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -1816,6 +1868,20 @@ $rows = $dbi->select(
 )->fetch_hash_all;
 is_deeply($rows, [{table1__key1 => 1}]);
 
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->reserved_word_quote('"');
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->execute($CREATE_TABLE->{2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
+$rows = $dbi->select(
+    table => 'table1',
+    column => '"table1"."key1" as "table1_key1", "table2"."key1" as "table2_key1", "key2", "key3"',
+    where   => {'table1.key2' => 2},
+    join  => ['left outer join "table2" on "table1"."key1" = "table2"."key1"'],
+)->fetch_hash_all;
+is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}],
+          'reserved_word_quote');
 
 test 'model join and column attribute and all_column option';
 {

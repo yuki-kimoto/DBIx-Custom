@@ -55,6 +55,7 @@ __PACKAGE__->attr(
     models => sub { {} },
     query_builder => sub { DBIx::Custom::QueryBuilder->new },
     result_class  => 'DBIx::Custom::Result',
+    reserved_word_quote => '',
     safety_character => '\w',
     stash => sub { {} }
 );
@@ -147,8 +148,10 @@ sub column {
     
     $columns ||= [];
     
+    my $q = $self->reserved_word_quote;
+    
     my @column;
-    push @column, "$table.$_ as ${table}__$_" for @$columns;
+    push @column, "$q$table$q.$q$_$q as $q${table}${q}__$q$_$q" for @$columns;
     
     return join (', ', @column);
 }
@@ -194,6 +197,14 @@ sub create_query {
         
         # Create query
         $query = $builder->build_query($source);
+
+        # Bind
+        my $columns = $query->columns;
+        if (my $q = $self->reserved_word_quote) {
+            foreach my $column (@$columns) {
+                $column =~ s/$q//g;
+            }
+        }
 
         # Cache query
         $self->cache_method->($self, $source,
@@ -245,6 +256,9 @@ our %DELETE_ARGS
 
 sub delete {
     my ($self, %args) = @_;
+
+    # Quote for reserved word
+    my $q = $self->reserved_word_quote;
     
     # Check argument names
     foreach my $name (keys %args) {
@@ -273,7 +287,7 @@ sub delete {
     my @sql;
 
     # Delete
-    push @sql, "delete from $table $swhere";
+    push @sql, "delete from $q$table$q $swhere";
     push @sql, $append if $append;
     
     my $sql = join(' ', @sql);
@@ -396,6 +410,9 @@ sub each_column {
 sub execute{
     my ($self, $query, %args)  = @_;
     
+    # Quote for reserved word
+    my $q = $self->reserved_word_quote;
+    
     # Check argument names
     foreach my $name (keys %args) {
         croak qq{Argument "$name" is invalid name}
@@ -412,6 +429,11 @@ sub execute{
     my $filter = {};
     
     my $tables = $query->tables;
+    if ($q) {
+        foreach my $table (@$tables) {
+            $table =~ s/$q//g;
+        }
+    }
     my $arg_tables = $args{table} || [];
     $arg_tables = [$arg_tables]
       unless ref $arg_tables eq 'ARRAY';
@@ -534,6 +556,9 @@ our %INSERT_ARGS = map { $_ => 1 } @COMMON_ARGS, qw/param append/;
 
 sub insert {
     my ($self, %args) = @_;
+    
+    # Quote for reserved word
+    my $q = $self->reserved_word_quote;
 
     # Check argument names
     foreach my $name (keys %args) {
@@ -553,6 +578,8 @@ sub insert {
     foreach my $column (keys %$param) {
         croak qq{"$column" is not safety column name}
           unless $column =~ /^[$safety\.]+$/;
+          $column = "$q$column$q";
+          $column =~ s/\./$q.$q/;
         push @columns, $column;
     }
     
@@ -560,7 +587,7 @@ sub insert {
     my @sql;
     
     # Insert
-    push @sql, "insert into $table {insert_param ". join(' ', @columns) . '}';
+    push @sql, "insert into $q$table$q {insert_param ". join(' ', @columns) . '}';
     push @sql, $append if $append;
     
     # SQL
@@ -734,9 +761,11 @@ sub model {
 sub mycolumn {
     my ($self, $table, $columns) = @_;
     
+    my $q = $self->reserved_word_quote;
+    
     $columns ||= [];
     my @column;
-    push @column, "$table.$_ as $_" for @$columns;
+    push @column, "$q$table$q.$q$_$q as $q$_$q" for @$columns;
     
     return join (', ', @column);
 }
@@ -787,6 +816,9 @@ our %SELECT_ARGS
 
 sub select {
     my ($self, %args) = @_;
+
+    # Quote for reserved word
+    my $q = $self->reserved_word_quote;
     
     # Check argument names
     foreach my $name (keys %args) {
@@ -876,13 +908,13 @@ sub select {
     if ($relation) {
         my $found = {};
         foreach my $table (@$tables) {
-            push @sql, ($table, ',') unless $found->{$table};
+            push @sql, ("$q$table$q", ',') unless $found->{$table};
             $found->{$table} = 1;
         }
     }
     else {
         my $main_table = $tables->[-1] || '';
-        push @sql, $main_table;
+        push @sql, "$q$main_table$q";
     }
     pop @sql if ($sql[-1] || '') eq ',';
     
@@ -993,6 +1025,9 @@ our %UPDATE_ARGS
 
 sub update {
     my ($self, %args) = @_;
+
+    # Quote for reserved word
+    my $q = $self->reserved_word_quote;
     
     # Check argument names
     foreach my $name (keys %args) {
@@ -1008,20 +1043,19 @@ sub update {
     my $append           = delete $args{append} || '';
     my $allow_update_all = delete $args{allow_update_all};
     
-    # Update keys
-    my @clumns = keys %$param;
-
     # Columns
     my @columns;
     my $safety = $self->safety_character;
     foreach my $column (keys %$param) {
         croak qq{"$column" is not safety column name}
           unless $column =~ /^[$safety\.]+$/;
-        push @columns, $column;
+          $column = "$q$column$q";
+          $column =~ s/\./$q.$q/;
+        push @columns, "$column";
     }
         
     # Update clause
-    my $update_clause = '{update_param ' . join(' ', @clumns) . '}';
+    my $update_clause = '{update_param ' . join(' ', @columns) . '}';
 
     # Where
     my $w = $self->_where($where);
@@ -1037,7 +1071,7 @@ sub update {
     my @sql;
     
     # Update
-    push @sql, "update $table $update_clause $swhere";
+    push @sql, "update $q$table$q $update_clause $swhere";
     push @sql, $append if $append;
     
     # Rearrange parameters
@@ -1138,6 +1172,7 @@ sub where {
     return DBIx::Custom::Where->new(
         query_builder => $self->query_builder,
         safety_character => $self->safety_character,
+        reserved_word_quote => $self->reserved_word_quote,
         @_
     );
 }
@@ -1254,8 +1289,12 @@ sub _tables {
     my $tables = [];
     
     my $safety_character = $self->safety_character;
+    my $q = $self->reserved_word_quote;
+    my $q_re = quotemeta($q);
     
-    while ($source =~ /\b($safety_character+)\./g) {
+    my $table_re = $q ? qr/\b$q_re?([$safety_character]+)$q_re?\./
+                      : qr/\b([$safety_character]+)\./;
+    while ($source =~ /$table_re/g) {
         push @$tables, $1;
     }
     
@@ -1267,13 +1306,17 @@ sub _push_join {
     
     return unless @$join;
     
+    my $q = $self->reserved_word_quote;
+    
     my $tree = {};
     
     for (my $i = 0; $i < @$join; $i++) {
         
         my $join_clause = $join->[$i];
-        
-        if ($join_clause =~ /\s([^\.\s]+?)\..+\s([^\.\s]+?)\..+?$/) {
+        my $q_re = quotemeta($q);
+        my $join_re = $q ? qr/\s$q_re?([^\.\s$q_re]+?)$q_re?\..+\s$q_re?([^\.\s$q_re]+?)$q_re?\..+?$/
+                         : qr/\s([^\.\s]+?)\..+\s([^\.\s]+?)\..+?$/;
+        if ($join_clause =~ $join_re) {
             
             my $table1 = $1;
             my $table2 = $2;
@@ -1305,7 +1348,13 @@ sub _where {
     my $w;
     if (ref $where eq 'HASH') {
         my $clause = ['and'];
-        push @$clause, "{= $_}" for keys %$where;
+        my $q = $self->reserved_word_quote;
+        foreach my $column (keys %$where) {
+            $column = "$q$column$q";
+            $column =~ s/\./$q.$q/;
+            push @$clause, "{= $column}" for keys %$where;
+        }
+        
         $w = $self->where(clause => $clause, param => $where);
     }
     elsif (ref $where eq 'DBIx::Custom::Where') {
@@ -1595,6 +1644,13 @@ Password, used when C<connect()> is executed.
     $dbi          = $dbi->query_builder(DBIx::Custom::QueryBuilder->new);
 
 Query builder, default to L<DBIx::Custom::QueryBuilder> object.
+
+=head2 C<reserved_word_quote> EXPERIMENTAL
+
+     my reserved_word_quote = $dbi->reserved_word_quote;
+     $dbi                   = $dbi->reserved_word_quote('"');
+
+Quote for reserved word, default to empty string.
 
 =head2 C<result_class>
 
