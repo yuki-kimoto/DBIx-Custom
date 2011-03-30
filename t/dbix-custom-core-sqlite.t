@@ -1775,7 +1775,7 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 
 $param = {key2 => 11};
-$update_param = $dbi->update_param($param);
+$update_param = $dbi->update_param_tag($param);
 $sql = <<"EOS";
 update {table table1} $update_param
 where key1 = 1
@@ -1794,7 +1794,7 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 
 $param = {key2 => 11, key3 => 33};
-$update_param = $dbi->update_param($param);
+$update_param = $dbi->update_param_tag($param);
 $sql = <<"EOS";
 update {table table1} $update_param
 where key1 = 1
@@ -1812,7 +1812,7 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 
 $param = {key2 => 11, key3 => 33};
-$update_param = $dbi->update_param($param, {no_set => 1});
+$update_param = $dbi->update_param_tag($param, {no_set => 1});
 $sql = <<"EOS";
 update {table table1} set $update_param
 where key1 = 1
@@ -1825,7 +1825,7 @@ is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 33, key4 => 4, key5 => 5},
                   "update param no_set");
 
             
-eval { $dbi->update_param({";" => 1}) };
+eval { $dbi->update_param_tag({";" => 1}) };
 like($@, qr/not safety/);
 
 
@@ -1833,7 +1833,7 @@ test 'insert_param';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});
 $param = {key1 => 1, key2 => 2};
-$insert_param = $dbi->insert_param($param);
+$insert_param = $dbi->insert_param_tag($param);
 $sql = <<"EOS";
 insert into {table table1} $insert_param
 EOS
@@ -1845,7 +1845,7 @@ $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->reserved_word_quote('"');
 $dbi->execute($CREATE_TABLE->{1});
 $param = {key1 => 1, key2 => 2};
-$insert_param = $dbi->insert_param($param);
+$insert_param = $dbi->insert_param_tag($param);
 $sql = <<"EOS";
 insert into {table table1} $insert_param
 EOS
@@ -1853,7 +1853,7 @@ $dbi->execute($sql, param => $param);
 is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
 is($dbi->select(table => 'table1')->fetch_hash_first->{key2}, 2);
 
-eval { $dbi->insert_param({";" => 1}) };
+eval { $dbi->insert_param_tag({";" => 1}) };
 like($@, qr/not safety/);
 
 

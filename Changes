@@ -1,4 +1,6 @@
 0.1667
+    - renamed update_param to update_param_tag, update_param is DEPRECATED!
+    - renamed insert_param to insert_param_tag, insert_param is DEPRECATED!
     - added EXPERIMENTAL updat_param no_set option.
     - added EXPERIMENTAL reserved_word_quote attribute.
 0.1666

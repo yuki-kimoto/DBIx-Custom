@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1668';
+our $VERSION = '0.1669';
 
 use 5.008001;
 use strict;
@@ -651,7 +651,7 @@ sub insert_at {
     return $self->insert(param => $param, %args);
 }
 
-sub insert_param {
+sub insert_param_tag {
     my ($self, $param) = @_;
     
     # Insert parameter tag
@@ -1178,7 +1178,7 @@ sub update_at {
     return $self->update(where => $where, param => $param, %args);
 }
 
-sub update_param {
+sub update_param_tag {
     my ($self, $param, $opt) = @_;
     
     # Insert parameter tag
@@ -1464,10 +1464,23 @@ sub default_fetch_filter {
 }
 
 # DEPRECATED!
+sub insert_param {
+    warn "insert_param is renamed to insert_param_tag."
+       . " insert_param is DEPRECATED!";
+    return shift->insert_param_tag(@_);
+}
+
+# DEPRECATED!
 sub register_tag_processor {
     return shift->query_builder->register_tag_processor(@_);
 }
 
+# DEPRECATED!
+sub update_param {
+    warn "update_param is renamed to update_param_tag."
+       . " update_param is DEPRECATED!";
+    return shift->update_param_tag(@_);
+}
 # DEPRECATED!
 sub _push_relation {
     my ($self, $sql, $tables, $relation, $need_where) = @_;
@@ -2172,9 +2185,9 @@ Place holders are set to 5 and 'Perl'.
 
 =back
 
-=head2 C<insert_param>
+=head2 C<insert_param_tag>
 
-    my $insert_param = $dbi->insert_param({title => 'a', age => 2});
+    my $insert_param_tag = $dbi->insert_param_tag({title => 'a', age => 2});
 
 Create insert parameter tag.
 
@@ -2741,17 +2754,18 @@ Place holders are set to 'Perl' and 5.
 
 =back
 
-=head2 C<update_param>
+=head2 C<update_param_tag>
 
-    my $update_param = $dbi->update_param({title => 'a', age => 2});
+    my $update_param_tag = $dbi->update_param_tag({title => 'a', age => 2});
 
 Create update parameter tag.
 
     set title = {? title}, author = {? author}
 
-You can create tag without 'set ' by C<no_set> option. This option is EXPERIMENTAL.
+You can create tag without 'set '
+by C<no_set> option. This option is EXPERIMENTAL.
 
-    my $update_param = $dbi->update_param(
+    my $update_param_tag = $dbi->update_param_tag(
         {title => 'a', age => 2}
         {no_set => 1}
     );
