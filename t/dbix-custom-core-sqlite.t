@@ -1788,6 +1788,43 @@ is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   "basic");
 
 
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+
+$param = {key2 => 11, key3 => 33};
+$update_param = $dbi->update_param($param);
+$sql = <<"EOS";
+update {table table1} $update_param
+where key1 = 1
+EOS
+$dbi->execute($sql, param => $param);
+$result = $dbi->execute($SELECT_SOURCES->{0});
+$rows   = $result->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 33, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
+                  "basic");
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+
+$param = {key2 => 11, key3 => 33};
+$update_param = $dbi->update_param($param, {no_set => 1});
+$sql = <<"EOS";
+update {table table1} set $update_param
+where key1 = 1
+EOS
+$dbi->execute($sql, param => $param);
+$result = $dbi->execute($SELECT_SOURCES->{0});
+$rows   = $result->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 33, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
+                  "update param no_set");
+
+            
 eval { $dbi->update_param({";" => 1}) };
 like($@, qr/not safety/);
 
@@ -1795,14 +1832,26 @@ like($@, qr/not safety/);
 test 'insert_param';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});
-$param = {key1 => 1};
+$param = {key1 => 1, key2 => 2};
 $insert_param = $dbi->insert_param($param);
 $sql = <<"EOS";
 insert into {table table1} $insert_param
 EOS
-
 $dbi->execute($sql, param => $param);
 is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
+is($dbi->select(table => 'table1')->fetch_hash_first->{key2}, 2);
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->reserved_word_quote('"');
+$dbi->execute($CREATE_TABLE->{1});
+$param = {key1 => 1, key2 => 2};
+$insert_param = $dbi->insert_param($param);
+$sql = <<"EOS";
+insert into {table table1} $insert_param
+EOS
+$dbi->execute($sql, param => $param);
+is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
+is($dbi->select(table => 'table1')->fetch_hash_first->{key2}, 2);
 
 eval { $dbi->insert_param({";" => 1}) };
 like($@, qr/not safety/);
@@ -2044,3 +2093,13 @@ $model = $dbi->create_model(
 );
 $model->method(foo => sub { shift->select(@_) });
 is_deeply($model->foo->fetch_hash_first, {key1 => 1, key3 => 3});
+
+test 'merge_param';
+{
+    my $dbi = DBIx::Custom->new;
+    my $param1 = {key1 => 1, key2 => 2, key3 => 3};
+    my $param2 = {key1 => 1, key2 => 2};
+    my $param3 = {key1 => 1};
+    my $param = $dbi->merge_param($param1, $param2, $param3);
+    is_deeply($param, {key1 => [1, 1, 1], key2 => [2, 2], key3 => 3});
+}

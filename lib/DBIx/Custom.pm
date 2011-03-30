@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1667';
+our $VERSION = '0.1668';
 
 use 5.008001;
 use strict;
@@ -655,17 +655,25 @@ sub insert_param {
     my ($self, $param) = @_;
     
     # Insert parameter tag
-    my @tag;
-    push @tag, '{insert_param';
+    my @names;
+    my @placeholders;
+    
     my $safety = $self->safety_character;
+    my $q = $self->reserved_word_quote;
+    
     foreach my $column (keys %$param) {
         croak qq{"$column" is not safety column name}
           unless $column =~ /^[$safety\.]+$/;
-        push @tag, $column;
+        
+        my $c = "$q$column$q";
+        $c =~ s/\./$q.$q/;
+        
+        push @names, $c;
+        push @placeholders, "{? $c}";
     }
-    push @tag, '}';
     
-    return join ' ', @tag;
+    return '(' . join(', ', @names) . ') ' . 'values' .
+           ' (' . join(', ', @placeholders) . ')';
 }
 
 sub include_model {
@@ -729,6 +737,27 @@ sub include_model {
     }
     
     return $self;
+}
+
+sub merge_param {
+    my ($self, @params) = @_;
+    
+    my $param = {};
+    
+    foreach my $p (@params) {
+        foreach my $column (keys %$p) {
+            if (exists $param->{$column}) {
+                $param->{$column} = [$param->{$column}]
+                  unless ref $param->{$column} eq 'ARRAY';
+                push @{$param->{$column}}, $p->{$column};
+            }
+            else {
+                $param->{$column} = $p->{$column};
+            }
+        }
+    }
+    
+    return $param;
 }
 
 sub method {
@@ -1150,20 +1179,29 @@ sub update_at {
 }
 
 sub update_param {
-    my ($self, $param) = @_;
+    my ($self, $param, $opt) = @_;
     
-    # Update parameter tag
-    my @tag;
-    push @tag, '{update_param';
+    # Insert parameter tag
+    my @params;
+    
     my $safety = $self->safety_character;
+    my $q = $self->reserved_word_quote;
+    
     foreach my $column (keys %$param) {
         croak qq{"$column" is not safety column name}
           unless $column =~ /^[$safety\.]+$/;
-        push @tag, $column;
+        
+        my $c = "$q$column$q";
+        $c =~ s/\./$q.$q/;
+        
+        push @params, "$c = {? $c}";
     }
-    push @tag, '}';
     
-    return join ' ', @tag;
+    my $clause;
+    $clause .= 'set ' unless $opt->{no_set};
+    $clause .= join(', ', @params);
+    
+    return $clause;
 }
 
 sub where {
@@ -2140,7 +2178,7 @@ Place holders are set to 5 and 'Perl'.
 
 Create insert parameter tag.
 
-    {insert_param title age}
+    (title, author) values ({? title}, {? author});
 
 =head2 C<include_model> EXPERIMENTAL
 
@@ -2189,6 +2227,16 @@ You can get model object by C<model()>.
     my $company_model = $dbi->model('company');
 
 See L<DBIx::Custom::Model> to know model features.
+
+=head2 C<merge_param> EXPERIMENTAL
+
+    my $param = $dbi->merge_param({key1 => 1}, {key1 => 1, key2 => 2});
+
+Merge paramters.
+
+$param:
+
+    {key1 => [1, 1], key2 => 2}
 
 =head2 C<method> EXPERIMENTAL
 
@@ -2699,7 +2747,16 @@ Place holders are set to 'Perl' and 5.
 
 Create update parameter tag.
 
-    {update_param title age}
+    set title = {? title}, author = {? author}
+
+You can create tag without 'set ' by C<no_set> option. This option is EXPERIMENTAL.
+
+    my $update_param = $dbi->update_param(
+        {title => 'a', age => 2}
+        {no_set => 1}
+    );
+
+    title = {? title}, author = {? author}
 
 =head2 C<where>
 

@@ -1,4 +1,5 @@
 0.1667
+    - added EXPERIMENTAL updat_param no_set option.
     - added EXPERIMENTAL reserved_word_quote attribute.
 0.1666
     - removed from cache() and cache_method() document for a while and cache() value
