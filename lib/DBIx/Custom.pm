@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1666';
+our $VERSION = '0.1667';
 
 use 5.008001;
 use strict;
@@ -783,8 +783,7 @@ sub register_filter {
 sub register_tag { shift->query_builder->register_tag(@_) }
 
 our %SELECT_ARGS
-  = map { $_ => 1 } @COMMON_ARGS, qw/column where append relation
-                                     selection join/;
+  = map { $_ => 1 } @COMMON_ARGS, qw/column where append relation join/;
 
 sub select {
     my ($self, %args) = @_;
@@ -801,7 +800,6 @@ sub select {
                : defined $table ? [$table]
                : [];
     my $columns   = delete $args{column};
-    my $selection = delete $args{selection} || '';
     my $where     = delete $args{where} || {};
     my $append    = delete $args{append};
     my $join      = delete $args{join} || [];
@@ -816,17 +814,7 @@ sub select {
     my @sql;
     push @sql, 'select';
     
-    # Selection
-    if ($selection) { 
-        push @sql, $selection;
-        if ($selection =~ /from\s+(?:\{table\s+)?([^\s\{]+?)\b/) {
-             unshift @$tables, $1;
-        }
-        unshift @$tables, @{$self->_tables($selection)};
-    }
-    
-    # Column clause
-    elsif ($columns) {
+    if ($columns) {
 
         $columns = [$columns] if ! ref $columns;
         
@@ -884,21 +872,19 @@ sub select {
     else { push @sql, '*' }
     
     # Table
-    unless ($selection) {
-        push @sql, 'from';
-        if ($relation) {
-            my $found = {};
-            foreach my $table (@$tables) {
-                push @sql, ($table, ',') unless $found->{$table};
-                $found->{$table} = 1;
-            }
+    push @sql, 'from';
+    if ($relation) {
+        my $found = {};
+        foreach my $table (@$tables) {
+            push @sql, ($table, ',') unless $found->{$table};
+            $found->{$table} = 1;
         }
-        else {
-            my $main_table = $tables->[-1] || '';
-            push @sql, $main_table;
-        }
-        pop @sql if ($sql[-1] || '') eq ',';
     }
+    else {
+        my $main_table = $tables->[-1] || '';
+        push @sql, $main_table;
+    }
+    pop @sql if ($sql[-1] || '') eq ',';
     
     # Main table
     croak "Not found table name" unless $tables->[-1];
