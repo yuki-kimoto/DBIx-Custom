@@ -6,6 +6,8 @@ use utf8;
 use Encode qw/encode_utf8 decode_utf8/;
 use Data::Dumper;
 
+$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
+
 BEGIN {
     eval { require DBD::SQLite; 1 }
         or plan skip_all => 'DBD::SQLite required';
@@ -1932,7 +1934,6 @@ $rows = $dbi->select(
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}],
           'reserved_word_quote');
 
-test 'model join and column attribute and all_column option';
 {
     package MyDBI8;
     
@@ -1946,22 +1947,6 @@ test 'model join and column attribute and all_column option';
         return $self;
     }
 }
-$dbi = MyDBI8->connect($NEW_ARGS->{0});
-$dbi->execute($CREATE_TABLE->{0});
-$dbi->execute($CREATE_TABLE->{2});
-$dbi->setup_model;
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
-$model = $dbi->model('table1');
-$result = $model->select_at(
-    column => {table => ['table1', 'table2'], prepend => 'table1.key1 as key1_1,'},
-    where => 1
-);
-is_deeply($result->fetch_hash_first,
-          {key1_1 => 1, key1 => 1, key2 => 2, table2__key1 => 1, table2__key3 => 3});
-$result = $model->select(column => {all => 1});
-is_deeply($result->fetch_hash_first,
-          {key1 => 1, key2 => 2, table2__key1 => 1, table2__key3 => 3});
 
 test 'mycolumn';
 $dbi = MyDBI8->connect($NEW_ARGS->{0});

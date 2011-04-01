@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1669';
+our $VERSION = '0.1670';
 
 use 5.008001;
 use strict;
@@ -867,6 +867,7 @@ sub select {
     croak qq{"join" must be array reference}
       unless ref $join eq 'ARRAY';
     my $relation = delete $args{relation};
+    my $param = delete $args{param} || {};
     
     # Add relation tables(DEPRECATED!);
     $self->_add_relation_table($tables, $relation);
@@ -875,58 +876,14 @@ sub select {
     my @sql;
     push @sql, 'select';
     
+    # Column clause
     if ($columns) {
-
         $columns = [$columns] if ! ref $columns;
-        
-        if (ref $columns eq 'HASH') {
-            # Find tables
-            my $main_table;
-            my %tables;
-            if ($columns->{table}) {
-                foreach my $table (@{$columns->{table}}) {
-                    if (($table || '') eq $tables->[-1]) {
-                        $main_table = $table;
-                    }
-                    else {
-                        $tables{$table} = 1;
-                    }
-                }
-            }
-            elsif ($columns->{all}) {
-                $main_table = $tables->[-1] || '';
-                foreach my $j (@$join) {
-                    my $tables = $self->_tables($j);
-                    foreach my $table (@$tables) {
-                        $tables{$table} = 1;
-                    }
-                }
-                delete $tables{$main_table};
-            }
-            
-            push @sql, $columns->{prepend} if $columns->{prepend};
-            
-            # Column clause of main table
-            if ($main_table) {
-                push @sql, $self->model($main_table)->mycolumn;
-                push @sql, ',';
-            }
-            
-            # Column cluase of other tables
-            foreach my $table (keys %tables) {
-                unshift @$tables, $table;
-                push @sql, $self->model($table)->column($table);
-                push @sql, ',';
-            }
-            pop @sql if $sql[-1] eq ',';
+        foreach my $column (@$columns) {
+            unshift @$tables, @{$self->_tables($column)};
+            push @sql, ($column, ',');
         }
-        else {
-            foreach my $column (@$columns) {
-                unshift @$tables, @{$self->_tables($column)};
-                push @sql, ($column, ',');
-            }
-            pop @sql if $sql[-1] eq ',';
-        }
+        pop @sql if $sql[-1] eq ',';
     }
     
     # "*" is default
@@ -952,7 +909,8 @@ sub select {
     
     # Where
     my $w = $self->_where($where);
-    $where = $w->param;
+    $param = keys %$param ? $self->merge_param($param, $w->param)
+                         : $w->param;
     
     # String where
     my $swhere = "$w";
@@ -982,7 +940,7 @@ sub select {
     # Execute query
     my $result = $self->execute(
         $query,
-        param  => $where, 
+        param  => $param, 
         table => $tables,
         %args
     );
@@ -1399,6 +1357,9 @@ sub _where {
         $w = $where;
     }
     elsif (ref $where eq 'ARRAY') {
+        warn "\$dbi->select(where => [CLAUSE, PARAMETER]) is DEPRECATED." .
+             "use \$dbi->select(where => \$dbi->where(clause => " .
+             "CLAUSE, param => PARAMETER));";
         $w = $self->where(
             clause => $where->[0],
             param  => $where->[1]
@@ -2396,47 +2357,6 @@ Default is '*' unless C<column> is specified.
 
     # Default
     $dbi->select(column => '*');
-
-You can use hash option in C<column>
-
-=over 4
-
-=item all EXPERIMENTAL
-
-Colum clause, contains all columns of joined table. This is true or false value
-
-    $dbi->select(column => {all => 1});
-
-If main table is C<book> and joined table is C<company>,
-This create the following column clause.
-
-    book.author as author
-    book.company_id as company_id
-    company.id as company__id
-    company.name as company__name
-
-Columns of main table is consist of only column name,
-Columns of joined table is consist of table and column name joined C<__>.
-
-Note that this option is failed unless modles is included and
-C<columns> attribute is set.
-
-    # Generally do the following way before using all_column option
-    $dbi->include_model('MyModel')->setup_model;
-
-=item table EXPERIMENTAL
-
-You can also specify table names by C<table> option
-
-    $dbi->select(column => {table => ['book', 'company']});
-
-=item prepend EXPERIMENTAL
-
-You can add before created statement
-
-    $dbi->select(column => {prepend => 'SOME', all => 1});
-
-=back
 
 =item C<where>
 

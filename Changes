@@ -1,7 +1,11 @@
-0.1667
+0.1670
+    - removed EXPERIMETNAL select() column hash option. it's a little complex
+
+0.1669
     - renamed update_param to update_param_tag, update_param is DEPRECATED!
     - renamed insert_param to insert_param_tag, insert_param is DEPRECATED!
-    - added EXPERIMENTAL updat_param no_set option.
+0.1668
+    - added EXPERIMENTAL update_param no_set option.
     - added EXPERIMENTAL reserved_word_quote attribute.
 0.1666
     - removed from cache() and cache_method() document for a while and cache() value
