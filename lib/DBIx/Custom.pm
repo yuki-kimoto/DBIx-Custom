@@ -840,6 +840,25 @@ sub register_filter {
 
 sub register_tag { shift->query_builder->register_tag(@_) }
 
+sub replace {
+    my ($self, $join, $search, $replace) = @_;
+    
+    my @replace_join;
+    my $is_replaced;
+    foreach my $j (@$join) {
+        if ($search eq $j) {
+            push @replace_join, $replace;
+            $is_replaced = 1;
+        }
+        else {
+            push @replace_join, $j;
+        }
+    }
+    croak qq{Can't replace "$search" with "$replace"} unless $is_replaced;
+    
+    return @replace_join;
+}
+
 our %SELECT_ARGS
   = map { $_ => 1 } @COMMON_ARGS, qw/column where append relation join param/;
 
@@ -2326,6 +2345,21 @@ Column names is
 
     ['title', 'author']
 
+=head2 C<replace> EXPERIMENTAL
+    
+    my $join = [
+        'left outer join table2 on table1.key1 = table2.key1',
+        'left outer join table3 on table2.key3 = table3.key3'
+    ];
+    $join = $dbi->replace(
+        $join,
+        'left outer join table2 on table1.key1 = table2.key1',
+        'left outer join (select * from table2 where {= table2.key1}) ' . 
+          'as table2 on table1.key1 = table2.key1'
+    );
+
+Replace join clauses if match the expression.
+
 =head2 C<select>
 
     my $result = $dbi->select(
@@ -2414,6 +2448,22 @@ In above select, the following SQL is created.
     from book
       left outer join company on book.company_id = company.id
     where company.name = Orange
+
+=item C<param> EXPERIMETNAL
+
+Parameter shown before where clause.
+    
+    $dbi->select(
+        table => 'table1',
+        column => 'table1.key1 as table1_key1, key2, key3',
+        where   => {'table1.key2' => 3},
+        join  => ['inner join (select * from table2 where {= table2.key3})' . 
+                  ' as table2 on table1.key1 = table2.key1'],
+        param => {'table2.key3' => 5}
+    );
+
+For example, if you want to contain tag in join clause, 
+you can pass parameter by C<param> option.
 
 =item C<append>
 

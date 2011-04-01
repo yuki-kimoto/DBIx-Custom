@@ -1,6 +1,7 @@
 0.1670
     - removed EXPERIMETNAL select() column hash option. it's a little complex.
-    - added EXPERIMETAL select() param option.
+    - added EXPERIMENTAL select() param option.
+    - added EXPERIMENTAL replace().
 0.1669
     - renamed update_param to update_param_tag, update_param is DEPRECATED!
     - renamed insert_param to insert_param_tag, insert_param is DEPRECATED!
