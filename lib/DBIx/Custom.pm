@@ -841,7 +841,7 @@ sub register_filter {
 sub register_tag { shift->query_builder->register_tag(@_) }
 
 our %SELECT_ARGS
-  = map { $_ => 1 } @COMMON_ARGS, qw/column where append relation join/;
+  = map { $_ => 1 } @COMMON_ARGS, qw/column where append relation join param/;
 
 sub select {
     my ($self, %args) = @_;
@@ -906,6 +906,9 @@ sub select {
     
     # Main table
     croak "Not found table name" unless $tables->[-1];
+
+    # Add table names in param
+    unshift @$tables, @{$self->_tables(join(' ', keys %$param) || '')};
     
     # Where
     my $w = $self->_where($where);
@@ -1310,8 +1313,8 @@ sub _push_join {
         
         my $join_clause = $join->[$i];
         my $q_re = quotemeta($q);
-        my $join_re = $q ? qr/\s$q_re?([^\.\s$q_re]+?)$q_re?\..+\s$q_re?([^\.\s$q_re]+?)$q_re?\..+?$/
-                         : qr/\s([^\.\s]+?)\..+\s([^\.\s]+?)\..+?$/;
+        my $join_re = $q ? qr/\s$q_re?([^\.\s$q_re]+?)$q_re?\..+?\s$q_re?([^\.\s$q_re]+?)$q_re?\..+?$/
+                         : qr/\s([^\.\s]+?)\..+?\s([^\.\s]+?)\..+?$/;
         if ($join_clause =~ $join_re) {
             
             my $table1 = $1;
