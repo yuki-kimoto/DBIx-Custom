@@ -621,33 +621,33 @@ sub insert_at {
 sub insert_param_tag {
     my ($self, $param) = @_;
     
-    # Insert parameter tag
-    my @names;
-    my @placeholders;
-    
+    # Create insert parameter tag
     my $safety = $self->safety_character;
     my $q = $self->reserved_word_quote;
-    
+    my @columns;
+    my @placeholders;
     foreach my $column (keys %$param) {
         croak qq{"$column" is not safety column name}
           unless $column =~ /^[$safety\.]+$/;
-        
-        my $c = "$q$column$q";
-        $c =~ s/\./$q.$q/;
-        
-        push @names, $c;
-        push @placeholders, "{? $c}";
+        $column = "$q$column$q";
+        $column =~ s/\./$q.$q/;
+        push @columns, $column;
+        push @placeholders, "{? $column}";
     }
     
-    return '(' . join(', ', @names) . ') ' . 'values' .
-           ' (' . join(', ', @placeholders) . ')';
+    return '(' . join(', ', @columns) . ') ' . 'values ' .
+           '(' . join(', ', @placeholders) . ')'
 }
 
 sub include_model {
     my ($self, $name_space, $model_infos) = @_;
     
+    # Name space
     $name_space ||= '';
+    
+    # Get Model infomations
     unless ($model_infos) {
+
         # Load name space module
         croak qq{"$name_space" is invalid class name}
           if $name_space =~ /[^\w:]/;
@@ -664,13 +664,13 @@ sub include_model {
             push @$model_infos, $module
               if $module =~ s/\.pm$//;
         }
-        
         close $dh;
     }
     
+    # Include models
     foreach my $model_info (@$model_infos) {
         
-        # Model class, name, table
+        # Load model
         my $model_class;
         my $model_name;
         my $model_table;
@@ -684,8 +684,6 @@ sub include_model {
         }
         else { $model_class = $model_name = $model_table = $model_info }
         my $mclass = "${name_space}::$model_class";
-        
-        # Load
         croak qq{"$mclass" is invalid class name}
           if $mclass =~ /[^\w:]/;
         unless ($mclass->can('isa')) {
@@ -693,13 +691,11 @@ sub include_model {
             croak $@ if $@;
         }
         
-        # Instantiate
+        # Create model
         my $args = {};
         $args->{model_class} = $mclass if $mclass;
         $args->{name}        = $model_name if $model_name;
         $args->{table}       = $model_table if $model_table;
-        
-        # Create model
         $self->create_model($args);
     }
     
@@ -709,8 +705,8 @@ sub include_model {
 sub merge_param {
     my ($self, @params) = @_;
     
+    # Merge parameters
     my $param = {};
-    
     foreach my $p (@params) {
         foreach my $column (keys %$p) {
             if (exists $param->{$column}) {
@@ -730,7 +726,7 @@ sub merge_param {
 sub method {
     my $self = shift;
     
-    # Merge
+    # Register method
     my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $self->{_methods} = {%{$self->{_methods} || {}}, %$methods};
     
@@ -740,7 +736,7 @@ sub method {
 sub model {
     my ($self, $name, $model) = @_;
     
-    # Set
+    # Set model
     if ($model) {
         $self->models->{$name} = $model;
         return $self;
@@ -750,17 +746,17 @@ sub model {
     croak qq{Model "$name" is not included}
       unless $self->models->{$name};
     
-    # Get
+    # Get model
     return $self->models->{$name};
 }
 
 sub mycolumn {
     my ($self, $table, $columns) = @_;
     
-    my $q = $self->reserved_word_quote;
-    
-    $columns ||= [];
+    # Create column clause
     my @column;
+    my $q = $self->reserved_word_quote;
+    $columns ||= [];
     push @column, "$q$table$q.$q$_$q as $q$_$q" for @$columns;
     
     return join (', ', @column);
@@ -769,13 +765,14 @@ sub mycolumn {
 sub new {
     my $self = shift->SUPER::new(@_);
     
-    # Check attribute names
+    # Check attributes
     my @attrs = keys %$self;
     foreach my $attr (@attrs) {
-        croak qq{"$attr" is invalid attribute name}
+        croak qq{"$attr" is wrong name}
           unless $self->can($attr);
     }
-
+    
+    # Register tag
     $self->register_tag(
         '?'     => \&DBIx::Custom::Tag::placeholder,
         '='     => \&DBIx::Custom::Tag::equal,
@@ -796,13 +793,13 @@ sub new {
 sub not_exists { bless {}, 'DBIx::Custom::NotExists' }
 
 sub register_filter {
-    my $invocant = shift;
+    my $self = shift;
     
     # Register filter
     my $filters = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $invocant->filters({%{$invocant->filters}, %$filters});
+    $self->filters({%{$self->filters}, %$filters});
     
-    return $invocant;
+    return $self;
 }
 
 sub register_tag { shift->query_builder->register_tag(@_) }
@@ -810,6 +807,7 @@ sub register_tag { shift->query_builder->register_tag(@_) }
 sub replace {
     my ($self, $join, $search, $replace) = @_;
     
+    # Replace
     my @replace_join;
     my $is_replaced;
     foreach my $j (@$join) {
@@ -832,15 +830,6 @@ our %SELECT_ARGS
 sub select {
     my ($self, %args) = @_;
 
-    # Reserved word quote
-    my $q = $self->reserved_word_quote;
-    
-    # Check argument names
-    foreach my $name (keys %args) {
-        croak qq{Argument "$name" is wrong name}
-          unless $SELECT_ARGS{$name};
-    }
-    
     # Arguments
     my $table = delete $args{table};
     my $tables = ref $table eq 'ARRAY' ? $table
@@ -854,11 +843,18 @@ sub select {
       unless ref $join eq 'ARRAY';
     my $relation = delete $args{relation};
     my $param = delete $args{param} || {};
+    my $query_return = $args{query};
+
+    # Check arguments
+    foreach my $name (keys %args) {
+        croak qq{Argument "$name" is wrong name}
+          unless $SELECT_ARGS{$name};
+    }
     
     # Add relation tables(DEPRECATED!);
     $self->_add_relation_table($tables, $relation);
     
-    # SQL stack
+    # Select statement
     my @sql;
     push @sql, 'select';
     
@@ -866,17 +862,16 @@ sub select {
     if ($columns) {
         $columns = [$columns] if ! ref $columns;
         foreach my $column (@$columns) {
-            unshift @$tables, @{$self->_tables($column)};
+            unshift @$tables, @{$self->_search_tables($column)};
             push @sql, ($column, ',');
         }
         pop @sql if $sql[-1] eq ',';
     }
-    
-    # "*" is default
     else { push @sql, '*' }
     
     # Table
     push @sql, 'from';
+    my $q = $self->reserved_word_quote;
     if ($relation) {
         my $found = {};
         foreach my $table (@$tables) {
@@ -889,34 +884,32 @@ sub select {
         push @sql, "$q$main_table$q";
     }
     pop @sql if ($sql[-1] || '') eq ',';
-    
-    # Main table
     croak "Not found table name" unless $tables->[-1];
 
-    # Add table names in param
-    unshift @$tables, @{$self->_tables(join(' ', keys %$param) || '')};
+    # Add tables in parameter
+    unshift @$tables, @{$self->_search_tables(join(' ', keys %$param) || '')};
     
     # Where
-    my $w = $self->_where_to_obj($where);
-    $param = keys %$param ? $self->merge_param($param, $w->param)
-                         : $w->param;
+    $where = $self->_where_to_obj($where);
+    $param = keys %$param ? $self->merge_param($param, $where->param)
+                          : $where->param;
     
     # String where
-    my $swhere = "$w";
+    my $where_clause = $where->to_string;
     
     # Add table names in where clause
-    unshift @$tables, @{$self->_tables($swhere)};
+    unshift @$tables, @{$self->_search_tables($where_clause)};
     
     # Push join
     $self->_push_join(\@sql, $join, $tables);
     
     # Add where clause
-    push @sql, $swhere;
+    push @sql, $where_clause;
     
     # Relation(DEPRECATED!);
-    $self->_push_relation(\@sql, $tables, $relation, $swhere eq '' ? 1 : 0);
+    $self->_push_relation(\@sql, $tables, $relation, $where_clause eq '' ? 1 : 0);
     
-    # Append statement
+    # Append
     push @sql, $append if $append;
     
     # SQL
@@ -924,12 +917,12 @@ sub select {
     
     # Create query
     my $query = $self->create_query($sql);
-    return $query if $args{query};
+    return $query if $query_return;
     
     # Execute query
     my $result = $self->execute(
         $query,
-        param  => $param, 
+        param => $param, 
         table => $tables,
         %args
     );
@@ -941,44 +934,35 @@ our %SELECT_AT_ARGS = (%SELECT_ARGS, where => 1, primary_key => 1);
 
 sub select_at {
     my ($self, %args) = @_;
+
+    # Arguments
+    my $primary_keys = delete $args{primary_key};
+    $primary_keys = [$primary_keys] unless ref $primary_keys;
+    my $where = delete $args{where};
+    my $param = delete $args{param};
     
-    # Check argument names
+    # Check arguments
     foreach my $name (keys %args) {
         croak qq{Argument "$name" is wrong name}
           unless $SELECT_AT_ARGS{$name};
     }
     
-    # Primary key
-    my $primary_keys = delete $args{primary_key};
-    $primary_keys = [$primary_keys] unless ref $primary_keys;
-    
     # Table
     croak qq{"table" option must be specified} unless $args{table};
     my $table = ref $args{table} ? $args{table}->[-1] : $args{table};
     
-    # Where clause
-    my $where = {};
-    if (exists $args{where}) {
-        my $where_columns = delete $args{where};
-        
+    # Where
+    my $where_param = {};
+    if ($where) {
         croak qq{"where" must be constant value or array reference}
-          unless !ref $where_columns || ref $where_columns eq 'ARRAY';
-        
-        $where_columns = [$where_columns] unless ref $where_columns;
-        
+          unless !ref $where || ref $where eq 'ARRAY';
+        $where = [$where] unless ref $where;
         for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $where->{$table . '.' . $primary_keys->[$i]} = $where_columns->[$i];
+           $where_param->{$table . '.' . $primary_keys->[$i]} = $where->[$i];
         }
     }
     
-    if (exists $args{param}) {
-        my $param = delete $args{param};
-        for(my $i = 0; $i < @$primary_keys; $i ++) {
-             delete $param->{$primary_keys->[$i]};
-        }
-    }
-    
-    return $self->select(where => $where, %args);
+    return $self->select(where => $where_param, %args);
 }
 
 sub setup_model {
@@ -1319,7 +1303,7 @@ sub _remove_duplicate_table {
     return [keys %tables, $main_table ? $main_table : ()];
 }
 
-sub _tables {
+sub _search_tables {
     my ($self, $source) = @_;
     
     my $tables = [];

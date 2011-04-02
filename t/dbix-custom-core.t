@@ -85,4 +85,4 @@ is($dbi->filters->{b}->(), 2);
 
 test 'invalid attribute name';
 eval {$dbi = DBIx::Custom->new(a => 1) };
-like ($@, qr/"a" is invalid attribute name/);
+like ($@, qr/name/);
