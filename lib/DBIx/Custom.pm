@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1670';
+our $VERSION = '0.1671';
 
 use 5.008001;
 use strict;
@@ -67,7 +67,7 @@ sub AUTOLOAD {
     # Method name
     my ($package, $mname) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
 
-    # Method
+    # Call method
     $self->{_methods} ||= {};
     if (my $method = $self->{_methods}->{$mname}) {
         return $self->$method(@_)
@@ -89,16 +89,16 @@ sub apply_filter {
     $self->{filter}{in} ||= {};
     $self->{filter}{end} ||= {};
     
-    # Create filters
+    # Usage
     my $usage = "Usage: \$dbi->apply_filter(" .
                 "TABLE, COLUMN1, {in => INFILTER1, out => OUTFILTER1, end => ENDFILTER1}, " .
                 "COLUMN2, {in => INFILTER2, out => OUTFILTER2, end => ENDFILTER2}, ...)";
-
+    
+    # Apply filter
     for (my $i = 0; $i < @cinfos; $i += 2) {
         
         # Column
         my $column = $cinfos[$i];
-        
         if (ref $column eq 'ARRAY') {
             foreach my $c (@$column) {
                 push @cinfos, $c, $cinfos[$i + 1];
@@ -106,7 +106,7 @@ sub apply_filter {
             next;
         }
         
-        # Filter info
+        # Filter infomation
         my $finfo = $cinfos[$i + 1] || {};
         croak "$usage (table: $table)" unless  ref $finfo eq 'HASH';
         foreach my $ftype (keys %$finfo) {
@@ -114,23 +114,27 @@ sub apply_filter {
                              || $ftype eq 'end'; 
         }
         
+        # Set filters
         foreach my $way (qw/in out end/) {
+        
+            # Filter
             my $filter = $finfo->{$way};
             
-            # State
+            # Filter state
             my $state = !exists $finfo->{$way} ? 'not_exists'
                       : !defined $filter        ? 'not_defined'
                       : ref $filter eq 'CODE'   ? 'code'
                       : 'name';
             
+            # Filter is not exists
             next if $state eq 'not_exists';
             
-            # Check filter
+            # Check filter name
             croak qq{Filter "$filter" is not registered}
               if  $state eq 'name'
                && ! exists $self->filters->{$filter};
             
-            # Filter
+            # Set filter
             my $f = $state eq 'not_defined' ? undef
                   : $state eq 'code'        ? $filter
                   : $self->filters->{$filter};
@@ -146,11 +150,12 @@ sub apply_filter {
 sub column {
     my ($self, $table, $columns) = @_;
     
-    $columns ||= [];
-    
+    # Reserved word quote
     my $q = $self->reserved_word_quote;
     
+    # Column clause
     my @column;
+    $columns ||= [];
     push @column, "$q$table$q.$q$_$q as $q${table}${q}__$q$_$q" for @$columns;
     
     return join (', ', @column);
@@ -159,12 +164,13 @@ sub column {
 sub connect {
     my $self = ref $_[0] ? shift : shift->new(@_);;
     
+    # Connect and get database handle
     my $dbh = $self->_connect;
     
-    # Database handle
+    # Set database handle
     $self->dbh($dbh);
     
-    # Process ID
+    # Set process ID
     $self->pid($$);
     
     return $self;
@@ -176,8 +182,10 @@ sub create_query {
     # Cache
     my $cache = $self->cache;
     
-    # Create query
+    # Query
     my $query;
+    
+    # Get cached query
     if ($cache) {
         
         # Get query
@@ -190,28 +198,27 @@ sub create_query {
         }
     }
     
+    # Create query
     unless ($query) {
 
-        # Create SQL object
-        my $builder = $self->query_builder;
-        
         # Create query
+        my $builder = $self->query_builder;
         $query = $builder->build_query($source);
 
-        # Bind
-        my $columns = $query->columns;
+        # Remove reserved word quote
         if (my $q = $self->reserved_word_quote) {
-            foreach my $column (@$columns) {
-                $column =~ s/$q//g;
-            }
+            $_ =~ s/$q//g for @{$query->columns}
         }
 
-        # Cache query
-        $self->cache_method->($self, $source,
-                             {sql     => $query->sql, 
-                              columns => $query->columns,
-                              tables  => $query->tables})
-          if $cache;
+        # Save query to cache
+        $self->cache_method->(
+            $self, $source,
+            {
+                sql     => $query->sql, 
+                columns => $query->columns,
+                tables  => $query->tables
+            }
+        ) if $cache;
     }
     
     # Prepare statement handle
@@ -230,18 +237,24 @@ sub create_query {
 
 sub dbh {
     my $self = shift;
-
+    
+    # Set
     if (@_) {
         $self->{dbh} = $_[0];
         return $self;
     }
+    
+    # Get
     else {
         my $pid = $$;
+        
+        # Get database handle
         if ($self->pid eq $pid) {
             return $self->{dbh};
         }
+        
+        # Create new database handle in child process
         else {
-            # Create new connection in child process
             croak "Process is forked in transaction"
               unless $self->{dbh}->{AutoCommit};
             $self->pid($pid);
@@ -257,12 +270,9 @@ our %DELETE_ARGS
 sub delete {
     my ($self, %args) = @_;
 
-    # Quote for reserved word
-    my $q = $self->reserved_word_quote;
-    
-    # Check argument names
+    # Check arguments
     foreach my $name (keys %args) {
-        croak qq{Argument "$name" is invalid name}
+        croak qq{Argument "$name" is wrong name}
           unless $DELETE_ARGS{$name};
     }
     
@@ -272,39 +282,34 @@ sub delete {
     my $where            = delete $args{where} || {};
     my $append           = delete $args{append};
     my $allow_delete_all = delete $args{allow_delete_all};
+    my $query_return     = delete $args{query};
 
     # Where
-    my $w = $self->_where($where);
-    $where = $w->param;
+    $where = $self->_where_to_obj($where);
     
-    # String where
-    my $swhere = "$w";
-    
+    # Where clause
+    my $where_clause = $where->to_string;
     croak qq{"where" must be specified}
-      if $swhere eq '' && !$allow_delete_all;
+      if $where_clause eq '' && !$allow_delete_all;
 
-    # SQL stack
+    # Delete statement
     my @sql;
-
-    # Delete
-    push @sql, "delete from $q$table$q $swhere";
+    my $q = $self->reserved_word_quote;
+    push @sql, "delete from $q$table$q $where_clause";
     push @sql, $append if $append;
-    
     my $sql = join(' ', @sql);
     
     # Create query
     my $query = $self->create_query($sql);
-    return $query if $args{query};
+    return $query if $query_return;
     
     # Execute query
-    my $ret_val = $self->execute(
+    return $self->execute(
         $query,
-        param  => $where,
+        param => $where->param,
         table => $table,
         %args
     );
-    
-    return $ret_val;
 }
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
@@ -314,56 +319,45 @@ our %DELETE_AT_ARGS = (%DELETE_ARGS, where => 1, primary_key => 1);
 sub delete_at {
     my ($self, %args) = @_;
     
-    # Check argument names
+    # Arguments
+    my $primary_keys = delete $args{primary_key};
+    $primary_keys = [$primary_keys] unless ref $primary_keys;
+    my $where = delete $args{where};
+    
+    # Check arguments
     foreach my $name (keys %args) {
-        croak qq{Argument "$name" is invalid name}
+        croak qq{Argument "$name" is wrong name}
           unless $DELETE_AT_ARGS{$name};
     }
     
-    # Primary key
-    my $primary_keys = delete $args{primary_key};
-    $primary_keys = [$primary_keys] unless ref $primary_keys;
-    
-    # Where clause
-    my $where = {};
-    if (exists $args{where}) {
-        my $where_columns = delete $args{where};
-        $where_columns = [$where_columns] unless ref $where_columns;
-
+    # Where to hash
+    my $param = {};
+    if ($where) {
+        $where = [$where] unless ref $where;
         croak qq{"where" must be constant value or array reference}
-          unless !ref $where_columns || ref $where_columns eq 'ARRAY';
-        
+          unless ref $where eq 'ARRAY';
         for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $where->{$primary_keys->[$i]} = $where_columns->[$i];
+           $param->{$primary_keys->[$i]} = $where->[$i];
         }
     }
     
-    if (exists $args{param}) {
-        my $param = delete $args{param};
-        
-        for(my $i = 0; $i < @$primary_keys; $i ++) {
-            delete $param->{$primary_keys->[$i]};
-        }
-    }
-    
-    return $self->delete(where => $where, %args);
+    return $self->delete(where => $param, %args);
 }
 
 sub DESTROY { }
 
-our %EXECUTE_ARGS = map { $_ => 1 } @COMMON_ARGS, 'param';
-
 sub create_model {
     my $self = shift;
     
+    # Arguments
     my $args = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $args->{dbi} = $self;
-    
     my $model_class = delete $args->{model_class} || 'DBIx::Custom::Model';
     my $model_name  = delete $args->{name};
     my $model_table = delete $args->{table};
     $model_name ||= $model_table;
     
+    # Create model
     my $model = $model_class->new($args);
     $model->name($model_name) unless $model->name;
     $model->table($model_table) unless $model->table;
@@ -373,7 +367,7 @@ sub create_model {
       unless ref $model->filter eq 'ARRAY';
     $self->apply_filter($model->table, @{$model->filter});
     
-    # Table - Model
+    # Associate table with model
     croak "Table name is duplicated"
       if exists $self->{_model_from}->{$model->table};
     $self->{_model_from}->{$model->table} = $model->name;
@@ -407,44 +401,44 @@ sub each_column {
     }
 }
 
-sub execute{
+our %EXECUTE_ARGS = map { $_ => 1 } @COMMON_ARGS, 'param';
+
+sub _remove_duplicate_table {
+    my ($self, $tables, $main_table) = @_;
+    
+    my %tables = map {defined $_ ? ($_ => 1) : ()} @$tables;
+    delete $tables{$main_table} if $main_table;
+    
+    return [keys %tables, $main_table ? $main_table : ()];
+}
+
+sub execute {
     my ($self, $query, %args)  = @_;
     
-    # Quote for reserved word
-    my $q = $self->reserved_word_quote;
+    # Arguments
+    my $params = delete $args{param} || {};
+    my $tables = delete $args{table} || [];
+    $tables = [$tables] unless ref $tables eq 'ARRAY';
     
     # Check argument names
     foreach my $name (keys %args) {
-        croak qq{Argument "$name" is invalid name}
+        croak qq{Argument "$name" is wrong name}
           unless $EXECUTE_ARGS{$name};
     }
     
-    my $params = $args{param} || {};
+    # Create query
+    $query = $self->create_query($query) unless ref $query;
     
-    # First argument is the soruce of SQL
-    $query = $self->create_query($query)
-      unless ref $query;
-    
-    # Applied filter
-    my $filter = {};
-    
-    my $tables = $query->tables;
-    if ($q) {
-        foreach my $table (@$tables) {
-            $table =~ s/$q//g;
-        }
-    }
-    my $arg_tables = $args{table} || [];
-    $arg_tables = [$arg_tables]
-      unless ref $arg_tables eq 'ARRAY';
-    push @$tables, @$arg_tables;
-
-    # Organize tables
+    # Tables
+    unshift @$tables, @{$query->tables};
     my %table_set = map {defined $_ ? ($_ => 1) : ()} @$tables;
     my $main_table = pop @$tables;
-    delete $table_set{$main_table} if $main_table;
-    foreach my $table (keys %table_set) {
-        push @$tables, $table;
+    $tables = $self->_remove_duplicate_table($tables, $main_table);
+    if (my $q = $self->reserved_word_quote) {
+        $_ =~ s/$q//g for @$tables;
+    }
+
+    foreach my $table (@$tables) {
         
         if (my $dist = $self->{_table_alias}->{$table}) {
             $self->{filter} ||= {};
@@ -468,10 +462,9 @@ sub execute{
             }
         }
     }
-    
-    $tables = [keys %table_set];
-    push @$tables, $main_table if $main_table;
-    
+
+    # Filters
+    my $filter = {};
     foreach my $table (@$tables) {
         next unless $table;
         $filter = {
@@ -557,12 +550,12 @@ our %INSERT_ARGS = map { $_ => 1 } @COMMON_ARGS, qw/param append/;
 sub insert {
     my ($self, %args) = @_;
     
-    # Quote for reserved word
+    # Reserved word quote
     my $q = $self->reserved_word_quote;
 
     # Check argument names
     foreach my $name (keys %args) {
-        croak qq{Argument "$name" is invalid name}
+        croak qq{Argument "$name" is wrong name}
           unless $INSERT_ARGS{$name};
     }
     
@@ -615,7 +608,7 @@ sub insert_at {
     
     # Check argument names
     foreach my $name (keys %args) {
-        croak qq{Argument "$name" is invalid name}
+        croak qq{Argument "$name" is wrong name}
           unless $INSERT_AT_ARGS{$name};
     }
     
@@ -865,12 +858,12 @@ our %SELECT_ARGS
 sub select {
     my ($self, %args) = @_;
 
-    # Quote for reserved word
+    # Reserved word quote
     my $q = $self->reserved_word_quote;
     
     # Check argument names
     foreach my $name (keys %args) {
-        croak qq{Argument "$name" is invalid name}
+        croak qq{Argument "$name" is wrong name}
           unless $SELECT_ARGS{$name};
     }
     
@@ -930,7 +923,7 @@ sub select {
     unshift @$tables, @{$self->_tables(join(' ', keys %$param) || '')};
     
     # Where
-    my $w = $self->_where($where);
+    my $w = $self->_where_to_obj($where);
     $param = keys %$param ? $self->merge_param($param, $w->param)
                          : $w->param;
     
@@ -977,7 +970,7 @@ sub select_at {
     
     # Check argument names
     foreach my $name (keys %args) {
-        croak qq{Argument "$name" is invalid name}
+        croak qq{Argument "$name" is wrong name}
           unless $SELECT_AT_ARGS{$name};
     }
     
@@ -1035,12 +1028,12 @@ our %UPDATE_ARGS
 sub update {
     my ($self, %args) = @_;
 
-    # Quote for reserved word
+    # Reserved word quote
     my $q = $self->reserved_word_quote;
     
     # Check argument names
     foreach my $name (keys %args) {
-        croak qq{Argument "$name" is invalid name}
+        croak qq{Argument "$name" is wrong name}
           unless $UPDATE_ARGS{$name};
     }
     
@@ -1067,7 +1060,7 @@ sub update {
     my $update_clause = '{update_param ' . join(' ', @columns) . '}';
 
     # Where
-    my $w = $self->_where($where);
+    my $w = $self->_where_to_obj($where);
     $where = $w->param;
     
     # String where
@@ -1124,7 +1117,7 @@ sub update_at {
     
     # Check argument names
     foreach my $name (keys %args) {
-        croak qq{Argument "$name" is invalid name}
+        croak qq{Argument "$name" is wrong name}
           unless $UPDATE_AT_ARGS{$name};
     }
     
@@ -1360,7 +1353,7 @@ sub _push_join {
     }
 }
 
-sub _where {
+sub _where_to_obj {
     my ($self, $where) = @_;
     
     my $w;
@@ -1684,7 +1677,7 @@ Query builder, default to L<DBIx::Custom::QueryBuilder> object.
      my reserved_word_quote = $dbi->reserved_word_quote;
      $dbi                   = $dbi->reserved_word_quote('"');
 
-Quote for reserved word, default to empty string.
+Reserved word quote, default to empty string.
 
 =head2 C<result_class>
 

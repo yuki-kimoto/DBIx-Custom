@@ -599,7 +599,7 @@ $dbi->execute($CREATE_TABLE->{0});
 }
 
 eval{$dbi->execute('select * from table1', no_exists => 1)};
-like($@, qr/invalid/, "invald SQL");
+like($@, qr/name/, "invald SQL");
 
 $query = $dbi->create_query('select * from table1 where {= key1}');
 $dbi->dbh->disconnect;
