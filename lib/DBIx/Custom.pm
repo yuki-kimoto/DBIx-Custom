@@ -403,15 +403,6 @@ sub each_column {
 
 our %EXECUTE_ARGS = map { $_ => 1 } @COMMON_ARGS, 'param';
 
-sub _remove_duplicate_table {
-    my ($self, $tables, $main_table) = @_;
-    
-    my %tables = map {defined $_ ? ($_ => 1) : ()} @$tables;
-    delete $tables{$main_table} if $main_table;
-    
-    return [keys %tables, $main_table ? $main_table : ()];
-}
-
 sub execute {
     my ($self, $query, %args)  = @_;
     
@@ -437,28 +428,30 @@ sub execute {
     if (my $q = $self->reserved_word_quote) {
         $_ =~ s/$q//g for @$tables;
     }
-
+    
+    # Table alias
     foreach my $table (@$tables) {
         
-        if (my $dist = $self->{_table_alias}->{$table}) {
-            $self->{filter} ||= {};
-            
-            unless ($self->{filter}{out}{$table}) {
-                $self->{filter}{out} ||= {};
-                $self->{filter}{in}  ||= {};
-                $self->{filter}{end} ||= {};
+        # No need
+        next unless my $alias = $self->{_table_alias}->{$table};
+        $self->{filter} ||= {};
+        next if $self->{filter}{out}{$table};
+        
+        # Filter
+        $self->{filter}{out} ||= {};
+        $self->{filter}{in}  ||= {};
+        $self->{filter}{end} ||= {};
+        
+        # Create alias filter
+        foreach my $type (qw/out in end/) {
+            my @filter_names = keys %{$self->{filter}{$type}{$alias} || {}};
+            foreach my $filter_name (@filter_names) {
+                my $filter_name_alias = $filter_name;
+                $filter_name_alias =~ s/^$alias\./$table\./;
+                $filter_name_alias =~ s/^${alias}__/${table}__/; 
                 
-                foreach my $type (qw/out in end/) {
-                    
-                    foreach my $filter_name (keys %{$self->{filter}{$type}{$dist} || {}}) {
-                        my $filter_name_alias = $filter_name;
-                        $filter_name_alias =~ s/^$dist\./$table\./;
-                        $filter_name_alias =~ s/^${dist}__/${table}__/; 
-                        
-                        $self->{filter}{$type}{$table}{$filter_name_alias}
-                          = $self->{filter}{$type}{$dist}{$filter_name}
-                    }
-                }
+                $self->{filter}{$type}{$table}{$filter_name_alias}
+                  = $self->{filter}{$type}{$alias}{$filter_name}
             }
         }
     }
@@ -1294,24 +1287,6 @@ sub _need_tables {
     }
 }
 
-sub _tables {
-    my ($self, $source) = @_;
-    
-    my $tables = [];
-    
-    my $safety_character = $self->safety_character;
-    my $q = $self->reserved_word_quote;
-    my $q_re = quotemeta($q);
-    
-    my $table_re = $q ? qr/\b$q_re?([$safety_character]+)$q_re?\./
-                      : qr/\b([$safety_character]+)\./;
-    while ($source =~ /$table_re/g) {
-        push @$tables, $1;
-    }
-    
-    return $tables;
-}
-
 sub _push_join {
     my ($self, $sql, $join, $join_tables) = @_;
     
@@ -1351,6 +1326,34 @@ sub _push_join {
     foreach my $need_table (@need_tables) {
         push @$sql, $tree->{$need_table}{join};
     }
+}
+
+sub _remove_duplicate_table {
+    my ($self, $tables, $main_table) = @_;
+    
+    # Remove duplicate table
+    my %tables = map {defined $_ ? ($_ => 1) : ()} @$tables;
+    delete $tables{$main_table} if $main_table;
+    
+    return [keys %tables, $main_table ? $main_table : ()];
+}
+
+sub _tables {
+    my ($self, $source) = @_;
+    
+    my $tables = [];
+    
+    my $safety_character = $self->safety_character;
+    my $q = $self->reserved_word_quote;
+    my $q_re = quotemeta($q);
+    
+    my $table_re = $q ? qr/\b$q_re?([$safety_character]+)$q_re?\./
+                      : qr/\b([$safety_character]+)\./;
+    while ($source =~ /$table_re/g) {
+        push @$tables, $1;
+    }
+    
+    return $tables;
 }
 
 sub _where_to_obj {
