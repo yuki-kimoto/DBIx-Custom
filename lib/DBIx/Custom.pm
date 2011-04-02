@@ -19,6 +19,8 @@ use DBIx::Custom::Tag;
 use DBIx::Custom::Util;
 use Encode qw/encode_utf8 decode_utf8/;
 
+use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
+
 our @COMMON_ARGS = qw/table query filter type/;
 
 __PACKAGE__->attr(
@@ -494,6 +496,9 @@ sub execute {
         $affected = $sth->execute;
     };
     $self->_croak($@, qq{. Following SQL is executed. "$query->{sql}"}) if $@;
+    
+    # Output SQL for debug
+    warn $query->sql . "\n" if DEBUG;
     
     # Select statement
     if ($sth->{NUM_OF_FIELDS}) {
@@ -2755,6 +2760,13 @@ Insert parameter tag.
 Updata parameter tag.
 
     {update_param NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?
+
+=head1 ENVIRONMENT VARIABLE
+
+=head2 C<DBIX_CUSTOM_DEBUG>
+
+If environment variable C<DBIX_CUSTOM_DEBUG> is set to true,
+executed SQL is printed to STDERR.
 
 =head1 STABILITY
 
