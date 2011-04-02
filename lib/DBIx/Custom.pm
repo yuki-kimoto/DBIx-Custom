@@ -968,10 +968,10 @@ sub select_at {
 sub setup_model {
     my $self = shift;
     
+    # Setup model
     $self->each_column(
         sub {
             my ($self, $table, $column, $column_info) = @_;
-            
             if (my $model = $self->models->{$table}) {
                 push @{$model->columns}, $column;
             }
@@ -986,15 +986,6 @@ our %UPDATE_ARGS
 sub update {
     my ($self, %args) = @_;
 
-    # Reserved word quote
-    my $q = $self->reserved_word_quote;
-    
-    # Check argument names
-    foreach my $name (keys %args) {
-        croak qq{Argument "$name" is wrong name}
-          unless $UPDATE_ARGS{$name};
-    }
-    
     # Arguments
     my $table = delete $args{table} || '';
     croak qq{"table" option must be specified} unless $table;
@@ -1003,9 +994,16 @@ sub update {
     my $append           = delete $args{append} || '';
     my $allow_update_all = delete $args{allow_update_all};
     
+    # Check argument names
+    foreach my $name (keys %args) {
+        croak qq{Argument "$name" is wrong name}
+          unless $UPDATE_ARGS{$name};
+    }
+    
     # Columns
     my @columns;
     my $safety = $self->safety_character;
+    my $q = $self->reserved_word_quote;
     foreach my $column (keys %$param) {
         croak qq{"$column" is not safety column name}
           unless $column =~ /^[$safety\.]+$/;
@@ -1018,35 +1016,18 @@ sub update {
     my $update_clause = '{update_param ' . join(' ', @columns) . '}';
 
     # Where
-    my $w = $self->_where_to_obj($where);
-    $where = $w->param;
-    
-    # String where
-    my $swhere = "$w";
-    
+    $where = $self->_where_to_obj($where);
+    my $where_clause = $where->to_string;
     croak qq{"where" must be specified}
-      if "$swhere" eq '' && !$allow_update_all;
+      if "$where_clause" eq '' && !$allow_update_all;
     
-    # SQL stack
+    # Update statement
     my @sql;
-    
-    # Update
-    push @sql, "update $q$table$q $update_clause $swhere";
+    push @sql, "update $q$table$q $update_clause $where_clause";
     push @sql, $append if $append;
     
-    # Rearrange parameters
-    foreach my $wkey (keys %$where) {
-        
-        if (exists $param->{$wkey}) {
-            $param->{$wkey} = [$param->{$wkey}]
-              unless ref $param->{$wkey} eq 'ARRAY';
-            
-            push @{$param->{$wkey}}, $where->{$wkey};
-        }
-        else {
-            $param->{$wkey} = $where->{$wkey};
-        }
-    }
+    # Merge parameters
+    $param = $self->merge_param($param, $where->param);
     
     # SQL
     my $sql = join(' ', @sql);
