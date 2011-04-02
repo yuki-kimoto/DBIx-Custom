@@ -540,20 +540,21 @@ our %INSERT_ARGS = map { $_ => 1 } @COMMON_ARGS, qw/param append/;
 sub insert {
     my ($self, %args) = @_;
     
-    # Reserved word quote
-    my $q = $self->reserved_word_quote;
-
-    # Check argument names
-    foreach my $name (keys %args) {
-        croak qq{Argument "$name" is wrong name}
-          unless $INSERT_ARGS{$name};
-    }
-    
     # Arguments
     my $table  = delete $args{table};
     croak qq{"table" option must be specified} unless $table;
     my $param  = delete $args{param} || {};
     my $append = delete $args{append} || '';
+    my $query_return  = delete $args{query};
+
+    # Check arguments
+    foreach my $name (keys %args) {
+        croak qq{Argument "$name" is wrong name}
+          unless $INSERT_ARGS{$name};
+    }
+
+    # Reserved word quote
+    my $q = $self->reserved_word_quote;
     
     # Columns
     my @columns;
@@ -566,70 +567,53 @@ sub insert {
         push @columns, $column;
     }
     
-    # SQL stack
+    # Insert statement
     my @sql;
-    
-    # Insert
     push @sql, "insert into $q$table$q {insert_param ". join(' ', @columns) . '}';
     push @sql, $append if $append;
-    
-    # SQL
     my $sql = join (' ', @sql);
     
     # Create query
     my $query = $self->create_query($sql);
-    return $query if $args{query};
+    return $query if $query_return;
     
     # Execute query
-    my $ret_val = $self->execute(
+    return $self->execute(
         $query,
-        param  => $param,
+        param => $param,
         table => $table,
         %args
     );
-    
-    return $ret_val;
 }
 
 our %INSERT_AT_ARGS = (%INSERT_ARGS, where => 1, primary_key => 1);
 
 sub insert_at {
     my ($self, %args) = @_;
+
+    # Arguments
+    my $primary_keys = delete $args{primary_key};
+    $primary_keys = [$primary_keys] unless ref $primary_keys;
+    my $where = delete $args{where};
+    my $param = delete $args{param};
     
-    # Check argument names
+    # Check arguments
     foreach my $name (keys %args) {
         croak qq{Argument "$name" is wrong name}
           unless $INSERT_AT_ARGS{$name};
     }
     
-    # Primary key
-    my $primary_keys = delete $args{primary_key};
-    $primary_keys = [$primary_keys] unless ref $primary_keys;
-    
-    # Where clause
-    my $where = {};
-    my $param = {};
-    
-    if (exists $args{where}) {
-        my $where_columns = delete $args{where};
-        $where_columns = [$where_columns] unless ref $where_columns;
-
+    # Where
+    my $where_param = {};
+    if ($where) {
+        $where = [$where] unless ref $where;
         croak qq{"where" must be constant value or array reference}
-          unless !ref $where_columns || ref $where_columns eq 'ARRAY';
-        
+          unless !ref $where || ref $where eq 'ARRAY';
         for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $where->{$primary_keys->[$i]} = $where_columns->[$i];
+           $where_param->{$primary_keys->[$i]} = $where->[$i];
         }
     }
-    
-    if (exists $args{param}) {
-        $param = delete $args{param};
-        for(my $i = 0; $i < @$primary_keys; $i ++) {
-             delete $param->{$primary_keys->[$i]};
-        }
-    }
-    
-    $param = {%$param, %$where};
+    $param = $self->merge_param($where_param, $param);
     
     return $self->insert(param => $param, %args);
 }
