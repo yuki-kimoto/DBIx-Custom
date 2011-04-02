@@ -330,18 +330,11 @@ sub delete_at {
           unless $DELETE_AT_ARGS{$name};
     }
     
-    # Where to hash
-    my $param = {};
-    if ($where) {
-        $where = [$where] unless ref $where;
-        croak qq{"where" must be constant value or array reference}
-          unless ref $where eq 'ARRAY';
-        for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $param->{$primary_keys->[$i]} = $where->[$i];
-        }
-    }
+    # Create where parameter
+    my $where_param = $self->_create_where_param($where, $primary_keys);
+
     
-    return $self->delete(where => $param, %args);
+    return $self->delete(where => $where_param, %args);
 }
 
 sub DESTROY { }
@@ -603,16 +596,8 @@ sub insert_at {
           unless $INSERT_AT_ARGS{$name};
     }
     
-    # Where
-    my $where_param = {};
-    if ($where) {
-        $where = [$where] unless ref $where;
-        croak qq{"where" must be constant value or array reference}
-          unless !ref $where || ref $where eq 'ARRAY';
-        for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $where_param->{$primary_keys->[$i]} = $where->[$i];
-        }
-    }
+    # Create where parameter
+    my $where_param = $self->_create_where_param($where, $primary_keys);
     $param = $self->merge_param($where_param, $param);
     
     return $self->insert(param => $param, %args);
@@ -951,16 +936,8 @@ sub select_at {
     croak qq{"table" option must be specified} unless $args{table};
     my $table = ref $args{table} ? $args{table}->[-1] : $args{table};
     
-    # Where
-    my $where_param = {};
-    if ($where) {
-        croak qq{"where" must be constant value or array reference}
-          unless !ref $where || ref $where eq 'ARRAY';
-        $where = [$where] unless ref $where;
-        for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $where_param->{$table . '.' . $primary_keys->[$i]} = $where->[$i];
-        }
-    }
+    # Create where parameter
+    my $where_param = $self->_create_where_param($where, $primary_keys);
     
     return $self->select(where => $where_param, %args);
 }
@@ -1054,71 +1031,66 @@ our %UPDATE_AT_ARGS = (%UPDATE_ARGS, where => 1, primary_key => 1);
 sub update_at {
     my ($self, %args) = @_;
     
-    # Check argument names
+    # Arguments
+    my $primary_keys = delete $args{primary_key};
+    $primary_keys = [$primary_keys] unless ref $primary_keys;
+    my $where = delete $args{where};
+    
+
+    # Check arguments
     foreach my $name (keys %args) {
         croak qq{Argument "$name" is wrong name}
           unless $UPDATE_AT_ARGS{$name};
     }
     
-    # Primary key
-    my $primary_keys = delete $args{primary_key};
-    $primary_keys = [$primary_keys] unless ref $primary_keys;
+    # Create where parameter
+    my $where_param = $self->_create_where_param($where, $primary_keys);
     
-    # Where clause
-    my $where = {};
-    my $param = {};
-    
-    if (exists $args{where}) {
-        my $where_columns = delete $args{where};
-        $where_columns = [$where_columns] unless ref $where_columns;
+    return $self->update(where => $where_param, %args);
+}
 
+sub _create_where_param {
+    my ($self, $where, $primary_keys) = @_;
+    
+    # Create where parameter
+    my $where_param = {};
+    if ($where) {
+        $where = [$where] unless ref $where;
         croak qq{"where" must be constant value or array reference}
-          unless !ref $where_columns || ref $where_columns eq 'ARRAY';
-        
+          unless !ref $where || ref $where eq 'ARRAY';
         for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $where->{$primary_keys->[$i]} = $where_columns->[$i];
+           $where_param->{$primary_keys->[$i]} = $where->[$i];
         }
     }
     
-    if (exists $args{param}) {
-        $param = delete $args{param};
-        for(my $i = 0; $i < @$primary_keys; $i ++) {
-            delete $param->{$primary_keys->[$i]};
-        }
-    }
-    
-    return $self->update(where => $where, param => $param, %args);
+    return $where_param;
 }
 
 sub update_param_tag {
     my ($self, $param, $opt) = @_;
     
-    # Insert parameter tag
+    # Create update parameter tag
     my @params;
-    
     my $safety = $self->safety_character;
     my $q = $self->reserved_word_quote;
-    
     foreach my $column (keys %$param) {
         croak qq{"$column" is not safety column name}
           unless $column =~ /^[$safety\.]+$/;
-        
-        my $c = "$q$column$q";
-        $c =~ s/\./$q.$q/;
-        
-        push @params, "$c = {? $c}";
+        my $column = "$q$column$q";
+        $column =~ s/\./$q.$q/;
+        push @params, "$column = {? $column}";
     }
+    my $tag;
+    $tag .= 'set ' unless $opt->{no_set};
+    $tag .= join(', ', @params);
     
-    my $clause;
-    $clause .= 'set ' unless $opt->{no_set};
-    $clause .= join(', ', @params);
-    
-    return $clause;
+    return $tag;
 }
 
 sub where {
     my $self = shift;
-
+    
+    # Create where
     return DBIx::Custom::Where->new(
         query_builder => $self->query_builder,
         safety_character => $self->safety_character,
@@ -1130,10 +1102,8 @@ sub where {
 sub _create_bind_values {
     my ($self, $params, $columns, $filter, $type) = @_;
     
-    # bind values
+    # Create bind values
     my $bind = [];
-    
-    # Build bind values
     my $count = {};
     my $not_exists = {};
     foreach my $column (@$columns) {
@@ -1204,6 +1174,8 @@ sub _connect {
 
 sub _croak {
     my ($self, $error, $append) = @_;
+    
+    # Append
     $append ||= "";
     
     # Verbose
@@ -1216,7 +1188,6 @@ sub _croak {
         my $at_pos = rindex($error, ' at ');
         $error = substr($error, 0, $at_pos);
         $error =~ s/\s+$//;
-        
         croak "$error$append";
     }
 }
@@ -1224,8 +1195,8 @@ sub _croak {
 sub _need_tables {
     my ($self, $tree, $need_tables, $tables) = @_;
     
+    # Get needed tables
     foreach my $table (@$tables) {
-        
         if ($tree->{$table}) {
             $need_tables->{$table} = 1;
             $self->_need_tables($tree, $need_tables, [$tree->{$table}{parent}])
@@ -1236,26 +1207,24 @@ sub _need_tables {
 sub _push_join {
     my ($self, $sql, $join, $join_tables) = @_;
     
+    # No join
     return unless @$join;
     
-    my $q = $self->reserved_word_quote;
-    
+    # Push join clause
     my $tree = {};
-    
+    my $q = $self->reserved_word_quote;
     for (my $i = 0; $i < @$join; $i++) {
         
+        # Search table in join clause
         my $join_clause = $join->[$i];
         my $q_re = quotemeta($q);
         my $join_re = $q ? qr/\s$q_re?([^\.\s$q_re]+?)$q_re?\..+?\s$q_re?([^\.\s$q_re]+?)$q_re?\..+?$/
                          : qr/\s([^\.\s]+?)\..+?\s([^\.\s]+?)\..+?$/;
         if ($join_clause =~ $join_re) {
-            
             my $table1 = $1;
             my $table2 = $2;
-            
             croak qq{right side table of "$join_clause" must be uniq}
               if exists $tree->{$table2};
-            
             $tree->{$table2}
               = {position => $i, parent => $table1, join => $join_clause};
         }
@@ -1264,11 +1233,12 @@ sub _push_join {
         }
     }
     
+    # Search need tables
     my $need_tables = {};
     $self->_need_tables($tree, $need_tables, $join_tables);
-    
     my @need_tables = sort { $tree->{$a}{position} <=> $tree->{$b}{position} } keys %$need_tables;
-
+    
+    # Add join clause
     foreach my $need_table (@need_tables) {
         push @$sql, $tree->{$need_table}{join};
     }
@@ -1287,12 +1257,11 @@ sub _remove_duplicate_table {
 sub _search_tables {
     my ($self, $source) = @_;
     
+    # Search tables
     my $tables = [];
-    
     my $safety_character = $self->safety_character;
     my $q = $self->reserved_word_quote;
     my $q_re = quotemeta($q);
-    
     my $table_re = $q ? qr/\b$q_re?([$safety_character]+)$q_re?\./
                       : qr/\b([$safety_character]+)\./;
     while ($source =~ /$table_re/g) {
@@ -1305,7 +1274,9 @@ sub _search_tables {
 sub _where_to_obj {
     my ($self, $where) = @_;
     
-    my $w;
+    my $obj;
+    
+    # Hash
     if (ref $where eq 'HASH') {
         my $clause = ['and'];
         my $q = $self->reserved_word_quote;
@@ -1314,27 +1285,31 @@ sub _where_to_obj {
             $column =~ s/\./$q.$q/;
             push @$clause, "{= $column}" for keys %$where;
         }
-        
-        $w = $self->where(clause => $clause, param => $where);
+        $obj = $self->where(clause => $clause, param => $where);
     }
+    
+    # DBIx::Custom::Where object
     elsif (ref $where eq 'DBIx::Custom::Where') {
-        $w = $where;
+        $obj = $where;
     }
+    
+    # Array(DEPRECATED!)
     elsif (ref $where eq 'ARRAY') {
         warn "\$dbi->select(where => [CLAUSE, PARAMETER]) is DEPRECATED." .
              "use \$dbi->select(where => \$dbi->where(clause => " .
              "CLAUSE, param => PARAMETER));";
-        $w = $self->where(
+        $obj = $self->where(
             clause => $where->[0],
             param  => $where->[1]
         );
     }
     
+    # Check where argument
     croak qq{"where" must be hash reference or DBIx::Custom::Where object} .
           qq{or array reference, which contains where clause and paramter}
-      unless ref $w eq 'DBIx::Custom::Where';
+      unless ref $obj eq 'DBIx::Custom::Where';
     
-    return $w;
+    return $obj;
 }
 
 # DEPRECATED!
