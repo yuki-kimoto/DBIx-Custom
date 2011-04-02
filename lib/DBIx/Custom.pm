@@ -407,9 +407,13 @@ sub execute {
     my ($self, $query, %args)  = @_;
     
     # Arguments
-    my $params = delete $args{param} || {};
+    my $param  = delete $args{param} || {};
     my $tables = delete $args{table} || [];
     $tables = [$tables] unless ref $tables eq 'ARRAY';
+    my $filter = delete $args{filter};
+    $filter = DBIx::Custom::Util::array_to_hash($filter);
+    my $type = delete $args{type};
+    $type = DBIx::Custom::Util::array_to_hash($type);
     
     # Check argument names
     foreach my $name (keys %args) {
@@ -419,10 +423,10 @@ sub execute {
     
     # Create query
     $query = $self->create_query($query) unless ref $query;
+    $filter ||= $query->filter;
     
     # Tables
     unshift @$tables, @{$query->tables};
-    my %table_set = map {defined $_ ? ($_ => 1) : ()} @$tables;
     my $main_table = pop @$tables;
     $tables = $self->_remove_duplicate_table($tables, $main_table);
     if (my $q = $self->reserved_word_quote) {
@@ -449,78 +453,69 @@ sub execute {
                 my $filter_name_alias = $filter_name;
                 $filter_name_alias =~ s/^$alias\./$table\./;
                 $filter_name_alias =~ s/^${alias}__/${table}__/; 
-                
                 $self->{filter}{$type}{$table}{$filter_name_alias}
                   = $self->{filter}{$type}{$alias}{$filter_name}
             }
         }
     }
-
-    # Filters
-    my $filter = {};
+    
+    # Applied filter
+    my $applied_filter = {};
     foreach my $table (@$tables) {
-        next unless $table;
-        $filter = {
-            %$filter,
+        $applied_filter = {
+            %$applied_filter,
             %{$self->{filter}{out}->{$table} || {}}
         }
     }
+    $filter = {%$applied_filter, %$filter};
     
-    # Filter argument
-    my $f = DBIx::Custom::Util::array_to_hash($args{filter})
-         || $query->filter || {};
-    foreach my $column (keys %$f) {
-        my $fname = $f->{$column};
-        if (!defined $fname) {
-            $f->{$column} = undef;
+    # Replace filter name to code
+    foreach my $column (keys %$filter) {
+        my $name = $filter->{$column};
+        if (!defined $name) {
+            $filter->{$column} = undef;
         }
-        elsif (ref $fname ne 'CODE') {
-          croak qq{Filter "$fname" is not registered"}
-            unless exists $self->filters->{$fname};
-          
-          $f->{$column} = $self->filters->{$fname};
+        elsif (ref $name ne 'CODE') {
+          croak qq{Filter "$name" is not registered"}
+            unless exists $self->filters->{$name};
+          $filter->{$column} = $self->filters->{$name};
         }
     }
-    $filter = {%$filter, %$f};
     
-    # Type
-    my $type = DBIx::Custom::Util::array_to_hash($args{type});
-    
-    # Bind
-    my $bind = $self->_bind($params, $query->columns, $filter, $type);
+    # Create bind values
+    my $bind = $self->_create_bind_values(
+        $param,
+        $query->columns,
+        $filter,
+        $type
+    );
     
     # Execute
     my $sth = $query->sth;
     my $affected;
     eval {
         for (my $i = 0; $i < @$bind; $i++) {
-            if (my $type = $bind->[$i]->{type}) {
-                $sth->bind_param($i + 1, $bind->[$i]->{value}, $type);
-            }
-            else {
-                $sth->bind_param($i + 1, $bind->[$i]->{value});
-            }
+            my $type = $bind->[$i]->{type};
+            $sth->bind_param($i + 1, $bind->[$i]->{value}, $type ? $type : ());
         }
         $affected = $sth->execute;
     };
     $self->_croak($@, qq{. Following SQL is executed. "$query->{sql}"}) if $@;
     
-    # Return resultset if select statement is executed
+    # Select statement
     if ($sth->{NUM_OF_FIELDS}) {
         
-        # Result in and end filter
-        my $in_filter  = {};
-        my $end_filter = {};
+        # Filter
+        my $filter = {};
+        $filter->{in}  = {};
+        $filter->{end} = {};
         foreach my $table (@$tables) {
-            next unless $table;
-            $in_filter = {
-                %$in_filter,
-                %{$self->{filter}{in}{$table} || {}}
-            };
-            $end_filter = {
-                %$end_filter,
-                %{$self->{filter}{end}{$table} || {}}
-            };
+            foreach my $way (qw/in end/) {
+                $filter->{$way} = {
+                    %{$filter->{$way}},
+                    %{$self->{filter}{$way}{$table} || {}}
+                };
+            }
         }
         
         # Result
@@ -529,13 +524,15 @@ sub execute {
             filters        => $self->filters,
             filter_check   => $self->filter_check,
             default_filter => $self->{default_in_filter},
-            filter         => $in_filter || {},
-            end_filter     => $end_filter || {}
+            filter         => $filter->{in} || {},
+            end_filter     => $filter->{end} || {}
         );
 
         return $result;
     }
-    return $affected;
+    
+    # Not select statement
+    else { return $affected }
 }
 
 our %INSERT_ARGS = map { $_ => 1 } @COMMON_ARGS, qw/param append/;
@@ -1181,7 +1178,7 @@ sub where {
     );
 }
 
-sub _bind {
+sub _create_bind_values {
     my ($self, $params, $columns, $filter, $type) = @_;
     
     # bind values
