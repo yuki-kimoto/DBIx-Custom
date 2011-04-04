@@ -1,4 +1,6 @@
 0.1672
+    - removed EXPERIMENTAL Prefork server safe implementation, my implementation is very buggy.
+    - added EXPERIMETNAL connector() attribute.
     - change retern value to array refrence of EXPERIMENTAL replace()
 0,1671
     - added environment variable DBIX_CUSTOM_DEBUG

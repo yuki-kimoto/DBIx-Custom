@@ -97,12 +97,16 @@ is_deeply($rows, [{key1 => 1, key2 => 2}]);
 $dbi->delete_all(table => 'table1');
 
 test 'fork';
+use DBIx::Connector;
 {
-    $dbi = DBIx::Custom->connect(
-        data_source => "dbi:mysql:database=$DATABASE",
-        user => $USER,
-        password => $PASSWORD
+    my $connector = DBIx::Connector->new(
+        "dbi:mysql:database=$DATABASE",
+        $USER,
+        $PASSWORD,
+        DBIx::Custom->new->default_dbi_option
     );
+    
+    $dbi = DBIx::Custom->new(connector => $connector);
     $dbi->delete_all(table => 'table1');
     $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
     die "Can't fork" unless defined (my $pid = fork);
@@ -119,23 +123,3 @@ test 'fork';
     }
 }
 
-test 'fork in transaction';
-{
-    $dbi = DBIx::Custom->connect(
-        data_source => "dbi:mysql:database=$DATABASE",
-        user => $USER,
-        password => $PASSWORD
-    );
-    
-    $dbi->begin_work;
-    die "Can't fork" unless defined (my $pid = fork);
-    
-    if ($pid) {
-        # Parent
-    }
-    else {
-        # Child
-        eval {$dbi->select(table => 'table1') };
-        die "Not OK" unless $@ =~ /transaction/;
-    }
-}

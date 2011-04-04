@@ -36,7 +36,7 @@ sub AUTOLOAD {
     elsif (my $dbi_method = $self->dbi->can($mname)) {
         $self->dbi->$dbi_method(@_);
     }
-    elsif (my $dbh_method = $self->dbi->dbh->can($mname)) {
+    elsif ($self->{dbh} && (my $dbh_method = $self->dbh->can($mname))) {
         $self->dbi->dbh->$dbh_method(@_);
     }
     else {

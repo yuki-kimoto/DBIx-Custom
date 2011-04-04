@@ -24,7 +24,7 @@ use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 our @COMMON_ARGS = qw/table query filter type/;
 
 __PACKAGE__->attr(
-    [qw/data_source password pid user/],
+    [qw/connector data_source password pid user/],
     cache => 0,
     cache_method => sub {
         sub {
@@ -74,7 +74,7 @@ sub AUTOLOAD {
     if (my $method = $self->{_methods}->{$mname}) {
         return $self->$method(@_)
     }
-    elsif (my $dbh_method = $self->dbh->can($mname)) {
+    elsif ($self->{dbh} && (my $dbh_method = $self->dbh->can($mname))) {
         $self->dbh->$dbh_method(@_);
     }
     else {
@@ -166,11 +166,8 @@ sub column {
 sub connect {
     my $self = ref $_[0] ? shift : shift->new(@_);;
     
-    # Connect and get database handle
-    my $dbh = $self->_connect;
-    
-    # Set database handle
-    $self->dbh($dbh);
+    # Connect
+    $self->dbh;
     
     # Set process ID
     $self->pid($$);
@@ -240,30 +237,15 @@ sub create_query {
 sub dbh {
     my $self = shift;
     
-    # Set
-    if (@_) {
-        $self->{dbh} = $_[0];
-        return $self;
+    # From Connction manager
+    if (my $connector = $self->connector) {
+        croak "connector must have dbh() method"
+          unless ref $connector && $connector->can('dbh');
+          
+        return $connector->dbh;
     }
-    
-    # Get
-    else {
-        my $pid = $$;
-        
-        # Get database handle
-        if ($self->pid eq $pid) {
-            return $self->{dbh};
-        }
-        
-        # Create new database handle in child process
-        else {
-            croak "Process is forked in transaction"
-              unless $self->{dbh}->{AutoCommit};
-            $self->pid($pid);
-            $self->{dbh}->{InactiveDestroy} = 1;
-            return $self->{dbh} = $self->_connect;
-        }
-    }
+
+    return $self->{dbh} ||= $self->_connect;
 }
 
 our %DELETE_ARGS
@@ -1541,6 +1523,26 @@ L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
 
 =head1 ATTRIBUTES
 
+=head2 C<connector> EXPERIMENTAL
+
+    my $connector = $dbi->connector;
+    $dbi          = $dbi->connector(DBIx::Connector->new(...));
+
+Connection manager object. if connector is set, you can get C<dbh()>
+from connection manager. conection manager object must have dbh() mehtod.
+
+This is L<DBIx::Connector> example. Please pass
+C<default_dbi_option> to L<DBIx::Connector>.
+
+    my $connector = DBIx::Connector->new(
+        "dbi:mysql:database=$DATABASE",
+        $USER,
+        $PASSWORD,
+        DBIx::Custom->new->default_dbi_option
+    );
+    
+    my $dbi = DBIx::Custom->new(connector => $connector);
+
 =head2 C<data_source>
 
     my $data_source = $dbi->data_source;
@@ -1732,11 +1734,9 @@ instead of other methods, such as C<insert>, C<update>.
 =head2 C<dbh>
 
     my $dbh = $dbi->dbh;
-    $dbi    = $dbi->dbh($dbh);
 
-Get and set database handle of L<DBI>.
-
-If process is spawn by forking, new connection is created automatically.
+Get L<DBI> database handle. if C<connector> is set, you can get
+database handle from C<connector>.
 
 =head2 C<each_column>
 
