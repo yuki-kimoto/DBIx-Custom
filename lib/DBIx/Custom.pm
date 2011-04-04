@@ -811,7 +811,7 @@ sub replace {
     }
     croak qq{Can't replace "$search" with "$replace"} unless $is_replaced;
     
-    return @replace_join;
+    return \@replace_join;
 }
 
 our %SELECT_ARGS
