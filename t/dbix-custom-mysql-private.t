@@ -2,6 +2,8 @@ use Test::More;
 use strict;
 use warnings;
 
+use DBIx::Connector;
+
 # user password database
 our ($USER, $PASSWORD, $DATABASE) = connect_info();
 
@@ -33,11 +35,6 @@ my $rows;
 my $result;
 
 # Constant varialbes for test
-my $CREATE_TABLE = {
-    0 => 'create table table1 (key1 char(255), key2 char(255));'
-};
-
-
 use DBIx::Custom::MySQL;
 
 test 'connect';
@@ -96,8 +93,58 @@ $rows = $dbi->select(
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 $dbi->delete_all(table => 'table1');
 
+test 'dbh';
+{
+    my $connector = DBIx::Connector->new(
+        "dbi:mysql:database=$DATABASE",
+        $USER,
+        $PASSWORD,
+        DBIx::Custom->new->default_dbi_option
+    );
+
+    my $dbi = DBIx::Custom->connect(connector => $connector);
+    $dbi->delete_all(table => 'table1');
+    $dbi->do('insert into table1 (key1, key2) values (1, 2)');
+    is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
+    
+    $dbi = DBIx::Custom->new;
+    $dbi->dbh('a');
+    is($dbi->{dbh}, 'a');
+}
+
+test 'transaction';
+test 'dbh';
+{
+    my $connector = DBIx::Connector->new(
+        "dbi:mysql:database=$DATABASE",
+        $USER,
+        $PASSWORD,
+        DBIx::Custom->new->default_dbi_option
+    );
+
+    my $dbi = DBIx::Custom->connect(connector => $connector);
+    $dbi->delete_all(table => 'table1');
+    
+    $dbi->connector->txn(sub {
+        $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+        $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+    });
+    is_deeply($dbi->select(table => 'table1')->fetch_hash_all,
+              [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+    $dbi->delete_all(table => 'table1');
+    eval {
+        $dbi->connector->txn(sub {
+            $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+            die "Error";
+            $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+        });
+    };
+    is_deeply($dbi->select(table => 'table1')->fetch_hash_all,
+              []);
+}
+
 test 'fork';
-use DBIx::Connector;
 {
     my $connector = DBIx::Connector->new(
         "dbi:mysql:database=$DATABASE",
@@ -106,7 +153,7 @@ use DBIx::Connector;
         DBIx::Custom->new->default_dbi_option
     );
     
-    $dbi = DBIx::Custom->new(connector => $connector);
+    my $dbi = DBIx::Custom->new(connector => $connector);
     $dbi->delete_all(table => 'table1');
     $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
     die "Can't fork" unless defined (my $pid = fork);

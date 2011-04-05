@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1671';
+our $VERSION = '0.1673';
 
 use 5.008001;
 use strict;
@@ -237,15 +237,25 @@ sub create_query {
 sub dbh {
     my $self = shift;
     
-    # From Connction manager
-    if (my $connector = $self->connector) {
-        croak "connector must have dbh() method"
-          unless ref $connector && $connector->can('dbh');
-          
-        return $connector->dbh;
+    # Set
+    if (@_) {
+        $self->{dbh} = $_[0];
+        
+        return $self;
     }
-
-    return $self->{dbh} ||= $self->_connect;
+    
+    # Get
+    else {
+        # From Connction manager
+        if (my $connector = $self->connector) {
+            croak "connector must have dbh() method"
+              unless ref $connector && $connector->can('dbh');
+              
+            return $self->{dbh} = $connector->dbh;
+        }
+        
+        return $self->{dbh} ||= $self->_connect;
+    }
 }
 
 our %DELETE_ARGS

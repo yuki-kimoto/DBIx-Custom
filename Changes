@@ -1,3 +1,5 @@
+0.1673
+    - fixed dbh() method bug.
 0.1672
     - removed EXPERIMENTAL Prefork server safe implementation, my implementation is very buggy.
     - added EXPERIMETNAL connector() attribute.
