@@ -2,14 +2,14 @@ use Test::More;
 use strict;
 use warnings;
 
-use DBIx::Connector;
-
 # user password database
 our ($USER, $PASSWORD, $DATABASE) = connect_info();
 
 plan skip_all => 'private MySQL test' unless $USER;
 
 plan 'no_plan';
+
+require DBIx::Connector;
 
 # Function for test name
 sub test { print "# $_[0]\n" }

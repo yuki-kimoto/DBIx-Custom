@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1673';
+our $VERSION = '0.1675';
 
 use 5.008001;
 use strict;
@@ -786,26 +786,6 @@ sub register_filter {
 
 sub register_tag { shift->query_builder->register_tag(@_) }
 
-sub replace {
-    my ($self, $join, $search, $replace) = @_;
-    
-    # Replace
-    my @replace_join;
-    my $is_replaced;
-    foreach my $j (@$join) {
-        if ($search eq $j) {
-            push @replace_join, $replace;
-            $is_replaced = 1;
-        }
-        else {
-            push @replace_join, $j;
-        }
-    }
-    croak qq{Can't replace "$search" with "$replace"} unless $is_replaced;
-    
-    return \@replace_join;
-}
-
 our %SELECT_ARGS
   = map { $_ => 1 } @COMMON_ARGS, qw/column where append relation join param/;
 
@@ -1533,7 +1513,7 @@ L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
 
 =head1 ATTRIBUTES
 
-=head2 C<connector> EXPERIMENTAL
+=head2 C<connector>
 
     my $connector = $dbi->connector;
     $dbi          = $dbi->connector(DBIx::Connector->new(...));
@@ -1592,7 +1572,7 @@ the value is used to check if the process is in transaction.
 
 Filters, registered by C<register_filter()>.
 
-=head2 C<models> EXPERIMENTAL
+=head2 C<models>
 
     my $models = $dbi->models;
     $dbi       = $dbi->models(\%models);
@@ -1613,7 +1593,7 @@ Password, used when C<connect()> is executed.
 
 Query builder, default to L<DBIx::Custom::QueryBuilder> object.
 
-=head2 C<reserved_word_quote> EXPERIMENTAL
+=head2 C<reserved_word_quote>
 
      my reserved_word_quote = $dbi->reserved_word_quote;
      $dbi                   = $dbi->reserved_word_quote('"');
@@ -1648,7 +1628,7 @@ L<DBIx::Custom> inherits all methods from L<Object::Simple>
 and use all methods of L<DBI>
 and implements the following new ones.
 
-=head2 C<apply_filter> EXPERIMENTAL
+=head2 C<apply_filter>
 
     $dbi->apply_filter(
         'book',
@@ -1901,7 +1881,7 @@ filter name registerd by C<register_filter()>.
 
 These filters are added to the C<out> filters, set by C<apply_filter()>.
 
-=head2 C<column> EXPERIMENTAL
+=head2 C<column>
 
     my $column = $self->column(book => ['author', 'title']);
 
@@ -2108,7 +2088,7 @@ Create insert parameter tag.
 
     (title, author) values ({? title}, {? author});
 
-=head2 C<include_model> EXPERIMENTAL
+=head2 C<include_model>
 
     $dbi->include_model('MyModel');
 
@@ -2156,7 +2136,7 @@ You can get model object by C<model()>.
 
 See L<DBIx::Custom::Model> to know model features.
 
-=head2 C<merge_param> EXPERIMENTAL
+=head2 C<merge_param>
 
     my $param = $dbi->merge_param({key1 => 1}, {key1 => 1, key2 => 2});
 
@@ -2166,7 +2146,7 @@ $param:
 
     {key1 => [1, 1], key2 => 2}
 
-=head2 C<method> EXPERIMENTAL
+=head2 C<method>
 
     $dbi->method(
         update_or_insert => sub {
@@ -2186,7 +2166,7 @@ Register method. These method is called directly from L<DBIx::Custom> object.
     $dbi->update_or_insert;
     $dbi->find_or_create;
 
-=head2 C<model> EXPERIMENTAL
+=head2 C<model>
 
     $dbi->model('book')->method(
         insert => sub { ... },
@@ -2197,7 +2177,7 @@ Register method. These method is called directly from L<DBIx::Custom> object.
 
 Set and get a L<DBIx::Custom::Model> object,
 
-=head2 C<mycolumn> EXPERIMENTAL
+=head2 C<mycolumn>
 
     my $column = $self->mycolumn(book => ['author', 'title']);
 
@@ -2277,21 +2257,6 @@ Column names is
 
     ['title', 'author']
 
-=head2 C<replace> EXPERIMENTAL
-    
-    my $join = [
-        'left outer join table2 on table1.key1 = table2.key1',
-        'left outer join table3 on table2.key3 = table3.key3'
-    ];
-    $join = $dbi->replace(
-        $join,
-        'left outer join table2 on table1.key1 = table2.key1',
-        'left outer join (select * from table2 where {= table2.key1}) ' . 
-          'as table2 on table1.key1 = table2.key1'
-    );
-
-Replace join clauses if match the expression.
-
 =head2 C<select>
 
     my $result = $dbi->select(
@@ -2350,7 +2315,7 @@ or array refrence, which contains where clause and paramter.
         ]
     );
     
-=item C<join> EXPERIMENTAL
+=item C<join>
 
 Join clause used in need. This is array reference.
 
@@ -2445,7 +2410,7 @@ You can check SQL.
 
     my $sql = $query->sql;
 
-=item C<type> EXPERIMENTAL
+=item C<type>
 
 Specify database data type.
 
@@ -2668,7 +2633,7 @@ Create update parameter tag.
     set title = {? title}, author = {? author}
 
 You can create tag without 'set '
-by C<no_set> option. This option is EXPERIMENTAL.
+by C<no_set> option.
 
     my $update_param_tag = $dbi->update_param_tag(
         {title => 'a', age => 2}
@@ -2686,7 +2651,7 @@ by C<no_set> option. This option is EXPERIMENTAL.
 
 Create a new L<DBIx::Custom::Where> object.
 
-=head2 C<setup_model> EXPERIMENTAL
+=head2 C<setup_model>
 
     $dbi->setup_model;
 

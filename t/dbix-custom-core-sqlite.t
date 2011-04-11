@@ -2108,36 +2108,3 @@ $rows = $dbi->select(
 )->fetch_hash_all;
 is_deeply($rows, [{table1_key1 => 2, key2 => 3, key3 => 5}]);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->reserved_word_quote('"');
-$dbi->execute($CREATE_TABLE->{0});
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
-$dbi->execute($CREATE_TABLE->{2});
-$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 4});
-$dbi->insert(table => 'table2', param => {key1 => 2, key3 => 5});
-$join = ['inner join table2 on "table1"."key1" = "table2"."key1"'];
-$join = $dbi->replace(
-    $join,
-    'inner join table2 on "table1"."key1" = "table2"."key1"',
-    'inner join (select * from table2 where {= table2.key3}) as table2'
-);
-
-$rows = $dbi->select(
-    table => 'table1',
-    column => 'table1.key1 as table1_key1, key2, key3',
-    where   => {'table1.key2' => 3},
-    join  => ['inner join table2 on "table1"."key1" = "table2"."key1"'],
-    param => {'table2.key3' => 5}
-)->fetch_hash_all;
-is_deeply($rows, [{table1_key1 => 2, key2 => 3, key3 => 5}]);
-
-$join = ['inner join table2 on "table1"."key1" = "table2"."key1"'];
-eval {
-    $join = $dbi->replace(
-        $join,
-        'pppp inner join table2 on "table1"."key1" = "table2"."key1"',
-        'inner join (select * from table2 where {= table2.key3}) as table2'
-    );
-};
-like($@, qr/replace/);

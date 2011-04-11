@@ -1,3 +1,11 @@
+0.1675
+    - removed DEPRECATED DBIx::Custom::MySQL and DBIx::Custom::SQLite
+      these implementations remine in https://github.com/yuki-kimoto/DBIx-Custom/wiki
+      for some users.
+    - removed EXPERIMENTAL replace().
+    - removed EXPERIMENTAL mark from many methods.
+0.1674
+    - fixed test bug
 0.1673
     - fixed dbh() method bug.
 0.1672

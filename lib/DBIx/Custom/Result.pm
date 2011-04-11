@@ -372,7 +372,7 @@ Statement handle of L<DBI>.
 L<DBIx::Custom::Result> inherits all methods from L<Object::Simple>
 and implements the following new ones.
 
-=head2 C<end_filter> EXPERIMENTAL
+=head2 C<end_filter>
 
     $result = $result->end_filter(title  => 'to_something',
                                      author => 'to_something');
@@ -444,19 +444,19 @@ Filters.
 These each filters override the filters applied by C<apply_filter> of
 L<DBIx::Custom>.
 
-=head2 C<remove_end_filter> EXPERIMENTAL
+=head2 C<remove_end_filter>
 
     $result->remove_end_filter;
 
 Remove end filter.
 
-=head2 C<remove_filter> EXPERIMENTAL
+=head2 C<remove_filter>
 
     $result->remove_filter;
 
 Remove filter. End filter is not removed.
 
-=head2 C<stash> EXPERIMENTAL
+=head2 C<stash>
 
     my $stash = $result->stash;
     my $foo = $result->stash->{foo};

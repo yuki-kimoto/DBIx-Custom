@@ -120,7 +120,7 @@ sub new {
 
 =head1 NAME
 
-DBIx::Custom::Model - Model EXPERIMENTAL
+DBIx::Custom::Model - Model
 
 =head1 SYNOPSIS
 
@@ -246,7 +246,7 @@ you don't have to specify C<table> option.
 Same as C<insert_at()> of L<DBIx::Custom> except that
 you don't have to specify C<table> and C<primary_key> option.
 
-=head2 C<method> EXPERIMENTAL
+=head2 C<method>
 
     $model->method(
         update_or_insert => sub {
