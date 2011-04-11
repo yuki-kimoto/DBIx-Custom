@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1675';
+our $VERSION = '0.1676';
 
 use 5.008001;
 use strict;

@@ -1,3 +1,5 @@
+0.1676
+    - fixed test bug
 0.1675
     - removed DEPRECATED DBIx::Custom::MySQL and DBIx::Custom::SQLite
       these implementations remine in https://github.com/yuki-kimoto/DBIx-Custom/wiki
