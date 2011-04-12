@@ -807,19 +807,13 @@ C<execute()>においてもC<filter>を指定することができます。
 C<execute>ではC<apply_filter()>で適用されたフィルタ
 は有効ではないということに注意してください。
 C<apply_filter()>で適用されたフィルタを有効にするには、
-C<table>タグを利用します。
+C<table>オプションを利用します。
 
-    my $sql = "select * from {table book} where {= author} and {like title};"
+    $dbi->execute($sql, table => ['author', 'book']);
+
+後ろで適用したフィルタのほうが優先順位が高くなります。
 
 =head3 タグ一覧
-
-=head4 C<table>
-
-    {table NAME} -> NAME
-
-これはSQLの中でテーブル名を指定する場合に利用します。
-テーブル名を指定することによって、C<apply_filter()>
-によるフィルタリングが有効になります。
 
 =head4 C<?>
 

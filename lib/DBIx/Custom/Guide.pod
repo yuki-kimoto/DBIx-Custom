@@ -794,21 +794,13 @@ You can specify C<filter()> at C<execute()>.
 
 Note that at C<execute()> the filter applied by C<apply_filter()>
 don't has effective to columns.
-You have to use C<table> tag in SQL
+You have to use C<table> option
 
-    my $sql = "select * from {table book} where {= author} and {like title};"
+    $dbi->execute($sql, table => ['author', 'book']);
 
 =head3 Tag list
 
 The following tag is available.
-
-=head4 C<table>
-
-    {table NAME} -> NAME
-
-This is used to specify table name in SQL.
-If you specify table name, Filtering by 
-C<apply_filter()> is effective.
 
 =head4 C<?>
 

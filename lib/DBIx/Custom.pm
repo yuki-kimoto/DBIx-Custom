@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1676';
+our $VERSION = '0.1677';
 
 use 5.008001;
 use strict;
@@ -1239,8 +1239,8 @@ sub _search_tables {
     my $safety_character = $self->safety_character;
     my $q = $self->reserved_word_quote;
     my $q_re = quotemeta($q);
-    my $table_re = $q ? qr/\b$q_re?([$safety_character]+)$q_re?\./
-                      : qr/\b([$safety_character]+)\./;
+    my $table_re = $q ? qr/(?:^|[^$safety_character])$q_re?([$safety_character]+)$q_re?\./
+                      : qr/(?:^|[^$safety_character])([$safety_character]+)\./;
     while ($source =~ /$table_re/g) {
         push @$tables, $1;
     }
@@ -1768,6 +1768,20 @@ See also L<Tags/Tags>.
 The following opitons are currently available.
 
 =over 4
+
+=item C<table>
+
+Table names for filtering.
+
+    $dbi->execute(table => ['author', 'book']);
+
+C<execute()> is unlike C<insert()>, C<update()>, C<delete()>, C<select(),
+Filtering is off because we don't know what filter is applied.
+
+
+
+
+
 
 =item C<filter>
 
@@ -2661,14 +2675,6 @@ C<columns> of model object is automatically set, parsing database information.
 =head1 Tags
 
 The following tags is available.
-
-=head2 C<table>
-
-Table tag
-
-    {table TABLE}    ->    TABLE
-
-This is used to tell C<execute()> what table is needed .
 
 =head2 C<?>
 
