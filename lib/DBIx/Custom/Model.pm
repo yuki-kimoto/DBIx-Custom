@@ -40,7 +40,8 @@ sub AUTOLOAD {
         $self->dbi->dbh->$dbh_method(@_);
     }
     else {
-        croak qq/Can't locate object method "$mname" via "$package"/
+        croak qq{Can't locate object method "$mname" via "$package"}
+            . qq{ (DBIx::Custom::Model::AUTOLOAD) }
     }
 }
 
@@ -110,6 +111,7 @@ sub new {
     my @attrs = keys %$self;
     foreach my $attr (@attrs) {
         croak qq{"$attr" is invalid attribute name}
+            . qq{ (DBIx::Custom::Model::new) }
           unless $self->can($attr);
     }
     

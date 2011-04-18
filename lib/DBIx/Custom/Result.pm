@@ -36,6 +36,7 @@ sub filter {
               && ref $fname ne 'CODE') 
             {
               croak qq{Filter "$fname" is not registered"}
+                  . qq{ (DBIx::Custom::Result::filter)}
                 unless exists $self->filters->{$fname};
               
               $filter->{$column} = $self->filters->{$fname};
@@ -73,6 +74,7 @@ sub end_filter {
               && ref $fname ne 'CODE') 
             {
               croak qq{Filter "$fname" is not registered"}
+                  . qq{ (DBIx::Custom::Result::end_filter)}
                 unless exists $self->filters->{$fname};
               
               $end_filter->{$column} = $self->filters->{$fname};
@@ -213,7 +215,7 @@ sub fetch_hash_multi {
     my ($self, $count) = @_;
     
     # Row count not specified
-    croak 'Row count must be specified'
+    croak 'Row count must be specified (DBIx::Custom::Result::fetch_hash_multi)'
       unless $count;
     
     # Fetch multi rows
@@ -232,7 +234,7 @@ sub fetch_multi {
     my ($self, $count) = @_;
     
     # Row count not specifed
-    croak 'Row count must be specified'
+    croak 'Row count must be specified (DBIx::Custom::Result::fetch_multi)'
       unless $count;
     
     # Fetch multi rows

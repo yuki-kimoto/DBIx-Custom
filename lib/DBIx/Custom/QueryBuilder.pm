@@ -78,10 +78,12 @@ sub _build_query {
             
             # Tag is not registered
             croak qq{Tag "$tag_name" in "{a }" is not registered}
+                . qq{ (DBIx::Custom::QueryBuilder::build_query)}
               unless $tag;
             
             # Tag not sub reference
             croak qq{Tag "$tag_name" must be sub reference}
+                . qq{ (DBIx::Custom::QueryBuilder::build_query)}
               unless ref $tag eq 'CODE';
             
             # Execute tag
@@ -89,6 +91,7 @@ sub _build_query {
             
             # Check tag return value
             croak qq{Tag "$tag_name" must return [STRING, ARRAY_REFERENCE]}
+                . qq{ (DBIx::Custom::QueryBuilder::build_query)}
               unless ref $r eq 'ARRAY' && defined $r->[0] && ref $r->[1] eq 'ARRAY';
             
             # Part of SQL statement and colum names
@@ -106,6 +109,7 @@ sub _build_query {
     my $placeholder_count = $self->_placeholder_count($sql);
     my $column_count      = @$all_columns;
     croak qq{Placeholder count in "$sql" must be same as column count $column_count}
+        . qq{ (DBIx::Custom::QueryBuilder::build_query)}
       unless $placeholder_count eq @$all_columns;
     
     # Add semicolon
@@ -187,8 +191,9 @@ sub _parse {
                 
                 # Unexpected
                 else {
-                    croak qq/Parsing error. unexpected "}". / .
-                          qq/pos $pos of "$original"/;
+                    croak qq{Parsing error. unexpected "\}". }
+                        . qq{pos $pos of "$original"}
+                        . qq{ (DBIx::Custom::QueryBuilder::build_query)};
                 }
             }
             
@@ -210,8 +215,9 @@ sub _parse {
                 
                 # Unexpected
                 else {
-                    croak qq/Parsing error. unexpected "{". / .
-                          qq/pos $pos of "$original"/;
+                    croak qq{Parsing error. unexpected "\{". }
+                        . qq{pos $pos of "$original"}
+                        . qq{ (DBIx::Custom::QueryBuilder::build_query)};
                 }
             }
             
@@ -253,6 +259,7 @@ sub _parse {
     
     # Tag not finished
     croak qq{Tag not finished. "$original"}
+        . qq{ (DBIx::Custom::QueryBuilder::build_query)}
       if $state eq 'tag';
     
     # Add rest text

@@ -44,6 +44,7 @@ sub filter {
               && ref $fname ne 'CODE') 
             {
               croak qq{Filter "$fname" is not registered"}
+                  . qq{ (DBIx::Custom::Query::filter) }
                 unless exists $self->filters->{$fname};
               
               $filter->{$column} = $self->filters->{$fname};

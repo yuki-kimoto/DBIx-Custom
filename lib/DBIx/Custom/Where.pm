@@ -19,6 +19,20 @@ __PACKAGE__->attr(
     reserved_word_quote => ''
 );
 
+sub new {
+    my $self = shift->SUPER::new(@_);
+    
+    # Check attribute names
+    my @attrs = keys %$self;
+    foreach my $attr (@attrs) {
+        croak qq{"$attr" is invalid attribute name}
+            . qq{ (DBIx::Custom::Where::new) }
+          unless $self->can($attr);
+    }
+    
+    return $self;
+}
+
 sub to_string {
     my $self = shift;
     
@@ -49,7 +63,7 @@ sub _parse {
         
         # Operation
         my $op = $clause->[0] || '';
-        croak qq{"$op" is invalid operation}
+        croak qq{"$op" is invalid operation (DBIx::Custom::Where::to_string)}
           unless $VALID_OPERATIONS{$op};
         
         # Parse internal clause
@@ -81,7 +95,8 @@ sub _parse {
             return $pushed;
         }
         elsif (@$columns != 1) {
-            croak qq{Each tag contains one column name: tag "$clause"}
+            croak qq{Each tag contains one column name: tag "$clause" }
+                  . "(DBIx::Custom::Where::to_string)"
         }
 
         my $column = $columns->[0];
@@ -90,7 +105,7 @@ sub _parse {
         }
         
         my $safety = $self->safety_character;
-        croak qq{"$column" is not safety column name}
+        croak qq{"$column" is not safety column name (DBIx::Custom::Where::to_string)}
           unless $column =~ /^[$safety\.]+$/;
         
         # Column count up
@@ -115,8 +130,10 @@ sub _parse {
             push @$where, $clause;
             $pushed = 1;
         }
-        else { croak "Parameter must be hash reference or undfined value" }
-        
+        else {
+            croak "Parameter must be hash reference or undfined value "
+                . "(DBIx::Custom::Where::to_string)"
+        }
         return $pushed;
     }
 }

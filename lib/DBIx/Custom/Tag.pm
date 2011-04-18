@@ -17,6 +17,7 @@ sub in {
     
     # Check arguments
     croak qq{Column name and count of values must be specified in tag "{in }"}
+        . qq{ (DBIx::Custom::Tag::in) }
       unless $column && $count && $count =~ /^\d+$/;
 
     # Part of statement
@@ -60,6 +61,7 @@ sub placeholder {
     
     # Check arguments
     croak qq{Column name must be specified in tag "{? }"}
+        . qq{ (DBIx::Custom::Tag::placeholder)}
       unless $column;
     
     return ['?', [$column]];
@@ -81,6 +83,7 @@ sub _basic {
     
     # Check arguments
     croak qq{Column name must be specified in tag "{$name }"}
+        . qq{ (DBIx::Custom::Tag::_basic) }
       unless $column;
     
     return ["$column $name ?", [$column]];
