@@ -1328,7 +1328,7 @@ $dbi->method({one => sub { 1 }});
 is($dbi->one, 1);
 
 eval{DBIx::Custom->connect()};
-like($@, qr/connect/);
+like($@, qr/dbh/);
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});

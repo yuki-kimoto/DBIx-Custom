@@ -1055,29 +1055,6 @@ sub update_at {
     return $self->update(where => $where_param, %args);
 }
 
-sub _create_where_param {
-    my ($self, $where, $primary_keys) = @_;
-    
-    # Create where parameter
-    my $where_param = {};
-    if ($where) {
-        $where = [$where] unless ref $where;
-        croak qq{"where" must be constant value or array reference}
-            . " (" . (caller 1)[3] . ")"
-          unless !ref $where || ref $where eq 'ARRAY';
-        
-        croak qq{"where" must contain values same count as primary key}
-            . " (" . (caller 1)[3] . ")"
-          unless @$primary_keys eq @$where;
-        
-        for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $where_param->{$primary_keys->[$i]} = $where->[$i];
-        }
-    }
-    
-    return $where_param;
-}
-
 sub update_param_tag {
     my ($self, $param, $opt) = @_;
     
@@ -1087,6 +1064,7 @@ sub update_param_tag {
     my $q = $self->reserved_word_quote;
     foreach my $column (keys %$param) {
         croak qq{"$column" is not safety column name}
+            . qq{ (DBIx::Custom::update_param_tag) }
           unless $column =~ /^[$safety\.]+$/;
         my $column = "$q$column$q";
         $column =~ s/\./$q.$q/;
@@ -1156,12 +1134,35 @@ sub _create_bind_values {
     return $bind;
 }
 
+sub _create_where_param {
+    my ($self, $where, $primary_keys) = @_;
+    
+    # Create where parameter
+    my $where_param = {};
+    if ($where) {
+        $where = [$where] unless ref $where;
+        croak qq{"where" must be constant value or array reference}
+            . " (" . (caller 1)[3] . ")"
+          unless !ref $where || ref $where eq 'ARRAY';
+        
+        croak qq{"where" must contain values same count as primary key}
+            . " (" . (caller 1)[3] . ")"
+          unless @$primary_keys eq @$where;
+        
+        for(my $i = 0; $i < @$primary_keys; $i ++) {
+           $where_param->{$primary_keys->[$i]} = $where->[$i];
+        }
+    }
+    
+    return $where_param;
+}
+
 sub _connect {
     my $self = shift;
     
     # Attributes
     my $data_source = $self->data_source;
-    croak qq{"data_source" must be specified to connect()"}
+    croak qq{"data_source" must be specified (DBIx::Custom::dbh)"}
       unless $data_source;
     my $user        = $self->user;
     my $password    = $self->password;
@@ -1179,7 +1180,7 @@ sub _connect {
     )};
     
     # Connect error
-    croak $@ if $@;
+    croak "$@ (DBIx::Custom::dbh)" if $@;
     
     return $dbh;
 }
@@ -1235,13 +1236,15 @@ sub _push_join {
         if ($join_clause =~ $join_re) {
             my $table1 = $1;
             my $table2 = $2;
-            croak qq{right side table of "$join_clause" must be uniq}
+            croak qq{right side table of "$join_clause" must be unique}
+                . qq{ (DBIx::Custom::select)}
               if exists $tree->{$table2};
             $tree->{$table2}
               = {position => $i, parent => $table1, join => $join_clause};
         }
         else {
-            croak qq{join "$join_clause" must be two table name};
+            croak qq{join "$join_clause" must be two table name}
+                . qq{ (DBIx::Custom::select)};
         }
     }
     
@@ -1317,8 +1320,9 @@ sub _where_to_obj {
     }
     
     # Check where argument
-    croak qq{"where" must be hash reference or DBIx::Custom::Where object} .
-          qq{or array reference, which contains where clause and paramter}
+    croak qq{"where" must be hash reference or DBIx::Custom::Where object}
+        . qq{or array reference, which contains where clause and paramter}
+        . " (" . (caller(1))[3] . ")"
       unless ref $obj eq 'DBIx::Custom::Where';
     
     return $obj;
