@@ -8,7 +8,6 @@ sub array_to_hash {
     
     return $array if ref $array eq 'HASH';
     return unless $array;
-    return $array if ref $array eq 'HASH';
     
     my $hash = {};
     

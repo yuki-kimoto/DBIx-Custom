@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1677';
+our $VERSION = '0.1678';
 
 use 5.008001;
 use strict;
@@ -350,9 +350,10 @@ sub create_model {
     $model->table($model_table) unless $model->table;
     
     # Apply filter
-    croak "$model_class filter must be array reference"
-      unless ref $model->filter eq 'ARRAY';
-    $self->apply_filter($model->table, @{$model->filter});
+    my $filter = ref $model->filter eq 'HASH'
+               ? [%{$model->filter}]
+               : $model->filter;
+    $self->apply_filter($model->table, @$filter);
     
     # Associate table with model
     croak "Table name is duplicated"
@@ -1693,13 +1694,13 @@ and C<PrintError> option is false by default.
         join => [
             'inner join company on book.comparny_id = company.id'
         ],
-        filter => [
+        filter => {
             publish_date => {
                 out => 'tp_to_date',
                 in => 'date_to_tp',
                 end => 'tp_to_displaydate'
             }
-        ]
+        }
     );
 
 Create L<DBIx::Custom::Model> object and initialize model.
@@ -1792,13 +1793,13 @@ filter name registerd by C<register_filter()>.
     # Basic
     $dbi->execute(
         $sql,
-        filter => [
+        filter => {
             title  => sub { uc $_[0] }
             author => sub { uc $_[0] }
-        ]
+        }
     );
     
-    # At once
+    # At once (use array reference)
     $dbi->execute(
         $sql,
         filter => [
@@ -1809,10 +1810,10 @@ filter name registerd by C<register_filter()>.
     # Filter name
     $dbi->execute(
         $sql,
-        filter => [
+        filter => {
             title  => 'upper_case',
             author => 'upper_case'
-        ]
+        }
     );
 
 These filters are added to the C<out> filters, set by C<apply_filter()>.
@@ -1872,13 +1873,13 @@ filter name registerd by C<register_filter()>.
 
     # Basic
     $dbi->delete(
-        filter => [
+        filter => {
             title  => sub { uc $_[0] }
             author => sub { uc $_[0] }
-        ]
+        }
     );
     
-    # At once
+    # At once (use array reference)
     $dbi->delete(
         filter => [
             [qw/title author/]  => sub { uc $_[0] }
@@ -1887,10 +1888,10 @@ filter name registerd by C<register_filter()>.
     
     # Filter name
     $dbi->delete(
-        filter => [
+        filter => {
             title  => 'upper_case',
             author => 'upper_case'
-        ]
+        }
     );
 
 These filters are added to the C<out> filters, set by C<apply_filter()>.
@@ -2010,13 +2011,13 @@ filter name registerd by C<register_filter()>.
 
     # Basic
     $dbi->insert(
-        filter => [
+        filter => {
             title  => sub { uc $_[0] }
             author => sub { uc $_[0] }
-        ]
+        }
     );
     
-    # At once
+    # At once (use array reference)
     $dbi->insert(
         filter => [
             [qw/title author/]  => sub { uc $_[0] }
@@ -2025,10 +2026,10 @@ filter name registerd by C<register_filter()>.
     
     # Filter name
     $dbi->insert(
-        filter => [
+        filter => {
             title  => 'upper_case',
             author => 'upper_case'
-        ]
+        }
     );
 
 These filters are added to the C<out> filters, set by C<apply_filter()>.
@@ -2390,13 +2391,13 @@ filter name registerd by C<register_filter()>.
 
     # Basic
     $dbi->select(
-        filter => [
+        filter => {
             title  => sub { uc $_[0] }
             author => sub { uc $_[0] }
-        ]
+        }
     );
     
-    # At once
+    # At once (use array reference)
     $dbi->select(
         filter => [
             [qw/title author/]  => sub { uc $_[0] }
@@ -2405,10 +2406,10 @@ filter name registerd by C<register_filter()>.
     
     # Filter name
     $dbi->select(
-        filter => [
+        filter => {
             title  => 'upper_case',
             author => 'upper_case'
-        ]
+        }
     );
 
 These filters are added to the C<out> filters, set by C<apply_filter()>.
@@ -2547,13 +2548,13 @@ filter name registerd by C<register_filter()>.
 
     # Basic
     $dbi->update(
-        filter => [
+        filter => {
             title  => sub { uc $_[0] }
             author => sub { uc $_[0] }
-        ]
+        }
     );
     
-    # At once
+    # At once (use array reference)
     $dbi->update(
         filter => [
             [qw/title author/]  => sub { uc $_[0] }
@@ -2562,10 +2563,10 @@ filter name registerd by C<register_filter()>.
     
     # Filter name
     $dbi->update(
-        filter => [
+        filter => {
             title  => 'upper_case',
             author => 'upper_case'
-        ]
+        }
     );
 
 These filters are added to the C<out> filters, set by C<apply_filter()>.
