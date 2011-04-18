@@ -70,11 +70,20 @@ sub _parse {
     
     # String
     else {
+        # Pushed
+        my $pushed;
         
         # Column
         my $columns = $self->query_builder->build_query($clause)->columns;
-        croak qq{Each tag contains one column name: tag "$clause"}
-          unless @$columns == 1;
+        if (@$columns == 0) {
+            push @$where, $clause;
+            $pushed = 1;
+            return $pushed;
+        }
+        elsif (@$columns != 1) {
+            croak qq{Each tag contains one column name: tag "$clause"}
+        }
+
         my $column = $columns->[0];
         if (my $q = $self->reserved_word_quote) {
             $column =~ s/$q//g;
@@ -89,7 +98,6 @@ sub _parse {
         
         # Push
         my $param = $self->param;
-        my $pushed;
         if (ref $param eq 'HASH') {
             if (exists $param->{$column}) {
                 if (ref $param->{$column} eq 'ARRAY') {

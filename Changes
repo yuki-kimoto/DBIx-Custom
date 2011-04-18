@@ -1,5 +1,6 @@
 0.1678
     - DBIx::Custom::Model filter attribute can receive hash reference
+    - DBIx::Custom::Where clause attribute can receive clause without column name.
 0.1677
     - improved table search in column and join clause
     - DEPRECATED table tag. use table option.
