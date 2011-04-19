@@ -2431,6 +2431,14 @@ Append statement to last of SQL. This is string.
 
     $dbi->select(append => 'order by title');
 
+=item C<wrap> EXPERIMENTAL
+
+Wrap statement. This is array reference.
+
+    $dbi->select(wrap => ['select * from (', ') as t where ROWNUM < 10']);
+
+This option is for Oracle and SQL Server paging process.
+
 =item C<filter>
 
 Filter, executed before data is send to database. This is array reference.
