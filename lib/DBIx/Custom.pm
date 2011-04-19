@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1678';
+our $VERSION = '0.1679';
 
 use 5.008001;
 use strict;
@@ -811,7 +811,8 @@ sub register_filter {
 sub register_tag { shift->query_builder->register_tag(@_) }
 
 our %SELECT_ARGS
-  = map { $_ => 1 } @COMMON_ARGS, qw/column where append relation join param/;
+  = map { $_ => 1 } @COMMON_ARGS,
+                    qw/column where append relation join param wrap/;
 
 sub select {
     my ($self, %args) = @_;
@@ -831,6 +832,7 @@ sub select {
     my $relation = delete $args{relation};
     my $param = delete $args{param} || {};
     my $query_return = $args{query};
+    my $wrap = delete $args{wrap};
 
     # Check arguments
     foreach my $name (keys %args) {
@@ -899,6 +901,14 @@ sub select {
     
     # Append
     push @sql, $append if $append;
+    
+    # Wrap
+    if ($wrap) {
+        croak "wrap option must be array refrence (DBIx::Custom::select)"
+          unless ref $wrap eq 'ARRAY';
+        unshift @sql, $wrap->[0];
+        push @sql, $wrap->[1];
+    }
     
     # SQL
     my $sql = join (' ', @sql);
