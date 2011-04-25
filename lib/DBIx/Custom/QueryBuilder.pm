@@ -7,6 +7,7 @@ use base 'Object::Simple';
 
 use Carp 'croak';
 use DBIx::Custom::Query;
+use DBIx::Custom::Util '_subname';
 
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
@@ -77,21 +78,19 @@ sub _build_query {
                              || $self->tags->{$tag_name};
             
             # Tag is not registered
-            croak qq{Tag "$tag_name" in "{a }" is not registered}
-                . qq{ (DBIx::Custom::QueryBuilder::build_query)}
+            croak qq{Tag "$tag_name" in "{a }" is not registered } . _subname
               unless $tag;
             
             # Tag not sub reference
-            croak qq{Tag "$tag_name" must be sub reference}
-                . qq{ (DBIx::Custom::QueryBuilder::build_query)}
+            croak qq{Tag "$tag_name" must be sub reference } . _subname
               unless ref $tag eq 'CODE';
             
             # Execute tag
             my $r = $tag->(@$tag_args);
             
             # Check tag return value
-            croak qq{Tag "$tag_name" must return [STRING, ARRAY_REFERENCE]}
-                . qq{ (DBIx::Custom::QueryBuilder::build_query)}
+            croak qq{Tag "$tag_name" must return [STRING, ARRAY_REFERENCE] }
+                . _subname
               unless ref $r eq 'ARRAY' && defined $r->[0] && ref $r->[1] eq 'ARRAY';
             
             # Part of SQL statement and colum names
@@ -109,7 +108,7 @@ sub _build_query {
     my $placeholder_count = $self->_placeholder_count($sql);
     my $column_count      = @$all_columns;
     croak qq{Placeholder count in "$sql" must be same as column count $column_count}
-        . qq{ (DBIx::Custom::QueryBuilder::build_query)}
+        . _subname
       unless $placeholder_count eq @$all_columns;
     
     # Add semicolon
@@ -192,8 +191,7 @@ sub _parse {
                 # Unexpected
                 else {
                     croak qq{Parsing error. unexpected "\}". }
-                        . qq{pos $pos of "$original"}
-                        . qq{ (DBIx::Custom::QueryBuilder::build_query)};
+                        . qq{pos $pos of "$original" } . _subname
                 }
             }
             
@@ -216,8 +214,7 @@ sub _parse {
                 # Unexpected
                 else {
                     croak qq{Parsing error. unexpected "\{". }
-                        . qq{pos $pos of "$original"}
-                        . qq{ (DBIx::Custom::QueryBuilder::build_query)};
+                        . qq{pos $pos of "$original" } . _subname
                 }
             }
             
@@ -258,8 +255,7 @@ sub _parse {
     }
     
     # Tag not finished
-    croak qq{Tag not finished. "$original"}
-        . qq{ (DBIx::Custom::QueryBuilder::build_query)}
+    croak qq{Tag not finished. "$original" } . _subname
       if $state eq 'tag';
     
     # Add rest text

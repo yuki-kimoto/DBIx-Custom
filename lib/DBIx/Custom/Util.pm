@@ -3,7 +3,11 @@ package DBIx::Custom::Util;
 use strict;
 use warnings;
 
-sub array_to_hash {
+use base 'Exporter';
+
+our @EXPORT_OK = qw/_array_to_hash _subname/;
+
+sub _array_to_hash {
     my $array = shift;
     
     return $array if ref $array eq 'HASH';
@@ -26,6 +30,8 @@ sub array_to_hash {
     }
     return $hash;
 }
+
+sub _subname { '(' . (caller 1)[3] . ')' }
 
 1;
 

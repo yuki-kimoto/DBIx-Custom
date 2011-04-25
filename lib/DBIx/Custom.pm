@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1679';
+our $VERSION = '0.1680';
 
 use 5.008001;
 use strict;
@@ -16,7 +16,7 @@ use DBIx::Custom::QueryBuilder;
 use DBIx::Custom::Where;
 use DBIx::Custom::Model;
 use DBIx::Custom::Tag;
-use DBIx::Custom::Util;
+use DBIx::Custom::Util qw/_array_to_hash _subname/;
 use Encode qw/encode_utf8 decode_utf8/;
 
 use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
@@ -78,8 +78,8 @@ sub AUTOLOAD {
         $self->dbh->$dbh_method(@_);
     }
     else {
-        croak qq{Can't locate object method "$mname" via "$package"}
-            . qq{ (DBIx::Custom::AUTOLOAD)}
+        croak qq{Can't locate object method "$mname" via "$package" }
+            . _subname;
     }
 }
 
@@ -111,10 +111,10 @@ sub apply_filter {
         
         # Filter infomation
         my $finfo = $cinfos[$i + 1] || {};
-        croak "$usage (table: $table) (DBIx::Custom::apply_filter)"
+        croak "$usage (table: $table) " . _subname
           unless  ref $finfo eq 'HASH';
         foreach my $ftype (keys %$finfo) {
-            croak "$usage (table: $table) (DBIx::Custom::apply_filter)"
+            croak "$usage (table: $table) " . _subname
               unless $ftype eq 'in' || $ftype eq 'out' || $ftype eq 'end'; 
         }
         
@@ -134,8 +134,7 @@ sub apply_filter {
             next if $state eq 'not_exists';
             
             # Check filter name
-            croak qq{Filter "$filter" is not registered}
-                . qq{ (DBIx::Custom::apply_filter)}
+            croak qq{Filter "$filter" is not registered } . _subname
               if  $state eq 'name'
                && ! exists $self->filters->{$filter};
             
@@ -229,7 +228,7 @@ sub create_query {
     
     if ($@) {
         $self->_croak($@, qq{. Following SQL is executed.\n}
-                        . qq{$query->{sql}\n(DBIx::Custom::create_query)});
+                        . qq{$query->{sql}\n} . _subname);
     }
     
     # Set statement handle
@@ -255,8 +254,7 @@ sub dbh {
     else {
         # From Connction manager
         if (my $connector = $self->connector) {
-            croak "connector must have dbh() method"
-                . " (DBIx::Custom::dbh)"
+            croak "connector must have dbh() method " . _subname
               unless ref $connector && $connector->can('dbh');
               
             return $self->{dbh} = $connector->dbh;
@@ -274,14 +272,13 @@ sub delete {
 
     # Check arguments
     foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option}
-            . qq{ (DBIx::Custom::delete)}
+        croak qq{"$name" is wrong option } . _subname
           unless $DELETE_ARGS{$name};
     }
     
     # Arguments
     my $table = $args{table} || '';
-    croak qq{"table" option must be specified. (DBIx::Custom::delete)}
+    croak qq{"table" option must be specified. } . _subname
       unless $table;
     my $where            = delete $args{where} || {};
     my $append           = delete $args{append};
@@ -293,7 +290,7 @@ sub delete {
     
     # Where clause
     my $where_clause = $where->to_string;
-    croak qq{"where" must be specified (DBIx::Custom::delete)}
+    croak qq{"where" must be specified } . _subname
       if $where_clause eq '' && !$allow_delete_all;
 
     # Delete statement
@@ -330,7 +327,7 @@ sub delete_at {
     
     # Check arguments
     foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option (DBIx::Custom::delete_at)}
+        croak qq{"$name" is wrong option } . _subname
           unless $DELETE_AT_ARGS{$name};
     }
     
@@ -365,8 +362,7 @@ sub create_model {
     $self->apply_filter($model->table, @$filter);
     
     # Associate table with model
-    croak "Table name is duplicated"
-        . " (DBIx::Custom::create_model)"
+    croak "Table name is duplicated " . _subname
       if exists $self->{_model_from}->{$model->table};
     $self->{_model_from}->{$model->table} = $model->name;
 
@@ -409,13 +405,13 @@ sub execute {
     my $tables = delete $args{table} || [];
     $tables = [$tables] unless ref $tables eq 'ARRAY';
     my $filter = delete $args{filter};
-    $filter = DBIx::Custom::Util::array_to_hash($filter);
+    $filter = _array_to_hash($filter);
     my $type = delete $args{type};
-    $type = DBIx::Custom::Util::array_to_hash($type);
+    $type = _array_to_hash($type);
     
     # Check argument names
     foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option (DBIx::Custom::execute)}
+        croak qq{"$name" is wrong option } . _subname
           unless $EXECUTE_ARGS{$name};
     }
     
@@ -474,8 +470,7 @@ sub execute {
             $filter->{$column} = undef;
         }
         elsif (ref $name ne 'CODE') {
-          croak qq{Filter "$name" is not registered"}
-              . qq{ (DBIx::Custom::execute}
+          croak qq{Filter "$name" is not registered" } . _subname
             unless exists $self->filters->{$name};
           $filter->{$column} = $self->filters->{$name};
         }
@@ -502,7 +497,7 @@ sub execute {
     
     if ($@) {
         $self->_croak($@, qq{. Following SQL is executed.\n}
-                        . qq{$query->{sql}\n});
+                        . qq{$query->{sql}\n} . _subname);
     }
     
     # Output SQL for debug
@@ -548,7 +543,7 @@ sub insert {
     
     # Arguments
     my $table  = delete $args{table};
-    croak qq{"table" option must be specified (DBIx::Custom::insert)}
+    croak qq{"table" option must be specified } . _subname
       unless $table;
     my $param  = delete $args{param} || {};
     my $append = delete $args{append} || '';
@@ -556,7 +551,7 @@ sub insert {
 
     # Check arguments
     foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option (DBIx::Custom::insert)}
+        croak qq{"$name" is wrong option } . _subname
           unless $INSERT_ARGS{$name};
     }
 
@@ -567,8 +562,7 @@ sub insert {
     my @columns;
     my $safety = $self->safety_character;
     foreach my $column (keys %$param) {
-        croak qq{"$column" is not safety column name}
-            . qq{ (DBIx::Custom::insert)}
+        croak qq{"$column" is not safety column name } . _subname
           unless $column =~ /^[$safety\.]+$/;
           $column = "$q$column$q";
           $column =~ s/\./$q.$q/;
@@ -607,7 +601,7 @@ sub insert_at {
     
     # Check arguments
     foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option (DBIx::Custom::insert_at)}
+        croak qq{"$name" is wrong option } . _subname
           unless $INSERT_AT_ARGS{$name};
     }
     
@@ -627,8 +621,7 @@ sub insert_param_tag {
     my @columns;
     my @placeholders;
     foreach my $column (keys %$param) {
-        croak qq{"$column" is not safety column name}
-            . qq{ (DBIx::Custom::insert_param_tag) }
+        croak qq{"$column" is not safety column name } . _subname
           unless $column =~ /^[$safety\.]+$/;
         $column = "$q$column$q";
         $column =~ s/\./$q.$q/;
@@ -650,20 +643,18 @@ sub include_model {
     unless ($model_infos) {
 
         # Load name space module
-        croak qq{"$name_space" is invalid class name}
-            . qq{ (DBIx::Custom::include_model)}
+        croak qq{"$name_space" is invalid class name } . _subname
           if $name_space =~ /[^\w:]/;
         eval "use $name_space";
-        croak qq{Name space module "$name_space.pm" is needed. $@}
-            . qq{ (DBIx::Custom::include_model)}
+        croak qq{Name space module "$name_space.pm" is needed. $@ }
+            . _subname
           if $@;
         
         # Search model modules
         my $path = $INC{"$name_space.pm"};
         $path =~ s/\.pm$//;
         opendir my $dh, $path
-          or croak qq{Can't open directory "$path": $!}
-                 . qq{ (DBIx::Custom::include_model)};
+          or croak qq{Can't open directory "$path": $! } . _subname
         $model_infos = [];
         while (my $module = readdir $dh) {
             push @$model_infos, $module
@@ -689,12 +680,11 @@ sub include_model {
         }
         else { $model_class = $model_name = $model_table = $model_info }
         my $mclass = "${name_space}::$model_class";
-        croak qq{"$mclass" is invalid class name}
-            . qq{ (DBIx::Custom::inculde_model)}
+        croak qq{"$mclass" is invalid class name } . _subname
           if $mclass =~ /[^\w:]/;
         unless ($mclass->can('isa')) {
             eval "use $mclass";
-            croak "$@ (DBIx::Custom::include_model)" if $@;
+            croak "$@ " . _subname if $@;
         }
         
         # Create model
@@ -749,7 +739,7 @@ sub model {
     }
     
     # Check model existance
-    croak qq{Model "$name" is not included (DBIx::Custom::model)}
+    croak qq{Model "$name" is not included } . _subname
       unless $self->models->{$name};
     
     # Get model
@@ -774,7 +764,7 @@ sub new {
     # Check attributes
     my @attrs = keys %$self;
     foreach my $attr (@attrs) {
-        croak qq{"$attr" is wrong name (DBIx::Custom::new)}
+        croak qq{"$attr" is wrong name } . _subname
           unless $self->can($attr);
     }
     
@@ -826,8 +816,7 @@ sub select {
     my $where     = delete $args{where} || {};
     my $append    = delete $args{append};
     my $join      = delete $args{join} || [];
-    croak qq{"join" must be array reference}
-        . qq{ (DBIx::Custom::select)}
+    croak qq{"join" must be array reference } . _subname
       unless ref $join eq 'ARRAY';
     my $relation = delete $args{relation};
     my $param = delete $args{param} || {};
@@ -836,7 +825,7 @@ sub select {
 
     # Check arguments
     foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option (DBIx::Custom::select)}
+        croak qq{"$name" is wrong option } . _subname
           unless $SELECT_ARGS{$name};
     }
     
@@ -873,19 +862,25 @@ sub select {
         push @sql, "$q$main_table$q";
     }
     pop @sql if ($sql[-1] || '') eq ',';
-    croak "Not found table name (DBIx::Custom::select)"
+    croak "Not found table name " . _subname
       unless $tables->[-1];
 
     # Add tables in parameter
     unshift @$tables, @{$self->_search_tables(join(' ', keys %$param) || '')};
     
     # Where
-    $where = $self->_where_to_obj($where);
-    $param = keys %$param ? $self->merge_param($param, $where->param)
-                          : $where->param;
-    
-    # String where
-    my $where_clause = $where->to_string;
+    my $where_clause;
+    if (ref $where) {
+        $where = $self->_where_to_obj($where);
+        $param = keys %$param ? $self->merge_param($param, $where->param)
+                              : $where->param;
+        
+        # String where
+        $where_clause = $where->to_string;
+    }
+    else {
+        $where_clause = $where;
+    }
     
     # Add table names in where clause
     unshift @$tables, @{$self->_search_tables($where_clause)};
@@ -904,7 +899,7 @@ sub select {
     
     # Wrap
     if ($wrap) {
-        croak "wrap option must be array refrence (DBIx::Custom::select)"
+        croak "wrap option must be array refrence " . _subname
           unless ref $wrap eq 'ARRAY';
         unshift @sql, $wrap->[0];
         push @sql, $wrap->[1];
@@ -941,12 +936,12 @@ sub select_at {
     
     # Check arguments
     foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option (DBIx::Custom::select_at)}
+        croak qq{"$name" is wrong option } . _subname
           unless $SELECT_AT_ARGS{$name};
     }
     
     # Table
-    croak qq{"table" option must be specified (DBIx::Custom::select_at)}
+    croak qq{"table" option must be specified } . _subname
       unless $args{table};
     my $table = ref $args{table} ? $args{table}->[-1] : $args{table};
     
@@ -979,7 +974,7 @@ sub update {
 
     # Arguments
     my $table = delete $args{table} || '';
-    croak qq{"table" option must be specified (DBIx::Custom::update)}
+    croak qq{"table" option must be specified } . _subname
       unless $table;
     my $param            = delete $args{param} || {};
     my $where            = delete $args{where} || {};
@@ -988,7 +983,7 @@ sub update {
     
     # Check argument names
     foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option (DBIx::Custom::update)}
+        croak qq{"$name" is wrong option } . _subname
           unless $UPDATE_ARGS{$name};
     }
     
@@ -997,8 +992,7 @@ sub update {
     my $safety = $self->safety_character;
     my $q = $self->reserved_word_quote;
     foreach my $column (keys %$param) {
-        croak qq{"$column" is not safety column name}
-            . qq{ (DBIx::Custom::update)}
+        croak qq{"$column" is not safety column name } . _subname
           unless $column =~ /^[$safety\.]+$/;
           $column = "$q$column$q";
           $column =~ s/\./$q.$q/;
@@ -1011,7 +1005,7 @@ sub update {
     # Where
     $where = $self->_where_to_obj($where);
     my $where_clause = $where->to_string;
-    croak qq{"where" must be specified (DBIx::Custom::update)}
+    croak qq{"where" must be specified } . _subname
       if "$where_clause" eq '' && !$allow_update_all;
     
     # Update statement
@@ -1055,7 +1049,7 @@ sub update_at {
 
     # Check arguments
     foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option (DBIx::Custom::update_at)}
+        croak qq{"$name" is wrong option } . _subname
           unless $UPDATE_AT_ARGS{$name};
     }
     
@@ -1073,8 +1067,7 @@ sub update_param_tag {
     my $safety = $self->safety_character;
     my $q = $self->reserved_word_quote;
     foreach my $column (keys %$param) {
-        croak qq{"$column" is not safety column name}
-            . qq{ (DBIx::Custom::update_param_tag) }
+        croak qq{"$column" is not safety column name } . _subname
           unless $column =~ /^[$safety\.]+$/;
         my $column = "$q$column$q";
         $column =~ s/\./$q.$q/;
@@ -1172,7 +1165,7 @@ sub _connect {
     
     # Attributes
     my $data_source = $self->data_source;
-    croak qq{"data_source" must be specified (DBIx::Custom::dbh)"}
+    croak qq{"data_source" must be specified } . _subname
       unless $data_source;
     my $user        = $self->user;
     my $password    = $self->password;
@@ -1190,7 +1183,7 @@ sub _connect {
     )};
     
     # Connect error
-    croak "$@ (DBIx::Custom::dbh)" if $@;
+    croak "$@ " . _subname if $@;
     
     return $dbh;
 }
@@ -1246,15 +1239,14 @@ sub _push_join {
         if ($join_clause =~ $join_re) {
             my $table1 = $1;
             my $table2 = $2;
-            croak qq{right side table of "$join_clause" must be unique}
-                . qq{ (DBIx::Custom::select)}
+            croak qq{right side table of "$join_clause" must be unique }
+                . _subname
               if exists $tree->{$table2};
             $tree->{$table2}
               = {position => $i, parent => $table1, join => $join_clause};
         }
         else {
-            croak qq{join "$join_clause" must be two table name}
-                . qq{ (DBIx::Custom::select)};
+            croak qq{join "$join_clause" must be two table name } . _subname
         }
     }
     
@@ -1332,7 +1324,7 @@ sub _where_to_obj {
     # Check where argument
     croak qq{"where" must be hash reference or DBIx::Custom::Where object}
         . qq{or array reference, which contains where clause and paramter}
-        . " (" . (caller(1))[3] . ")"
+        . _subname
       unless ref $obj eq 'DBIx::Custom::Where';
     
     return $obj;

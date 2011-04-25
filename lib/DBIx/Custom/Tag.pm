@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Carp 'croak';
+use DBIx::Custom::Util '_subname';
 
 # Carp trust relationship
 push @DBIx::Custom::QueryBuilder::CARP_NOT, __PACKAGE__;
@@ -16,8 +17,8 @@ sub in {
     my ($column, $count) = @_;
     
     # Check arguments
-    croak qq{Column name and count of values must be specified in tag "{in }"}
-        . qq{ (DBIx::Custom::Tag::in) }
+    croak qq{Column name and count of values must be specified in tag "{in }" }
+        . _subname
       unless $column && $count && $count =~ /^\d+$/;
 
     # Part of statement
@@ -60,8 +61,7 @@ sub placeholder {
     my $column = shift;
     
     # Check arguments
-    croak qq{Column name must be specified in tag "{? }"}
-        . qq{ (DBIx::Custom::Tag::placeholder)}
+    croak qq{Column name must be specified in tag "{? }" } . _subname
       unless $column;
     
     return ['?', [$column]];
@@ -82,8 +82,7 @@ sub _basic {
     my ($name, $column) = @_;
     
     # Check arguments
-    croak qq{Column name must be specified in tag "{$name }"}
-        . qq{ (DBIx::Custom::Tag::_basic) }
+    croak qq{Column name must be specified in tag "{$name }" } . _subname
       unless $column;
     
     return ["$column $name ?", [$column]];

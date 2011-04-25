@@ -6,6 +6,7 @@ use warnings;
 use base 'Object::Simple';
 
 use Carp 'croak';
+use DBIx::Custom::Util '_subname';
 
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
@@ -40,8 +41,8 @@ sub AUTOLOAD {
         $self->dbi->dbh->$dbh_method(@_);
     }
     else {
-        croak qq{Can't locate object method "$mname" via "$package"}
-            . qq{ (DBIx::Custom::Model::AUTOLOAD) }
+        croak qq{Can't locate object method "$mname" via "$package" }
+            . _subname;
     }
 }
 
@@ -110,8 +111,7 @@ sub new {
     # Check attribute names
     my @attrs = keys %$self;
     foreach my $attr (@attrs) {
-        croak qq{"$attr" is invalid attribute name}
-            . qq{ (DBIx::Custom::Model::new) }
+        croak qq{"$attr" is invalid attribute name } . _subname
           unless $self->can($attr);
     }
     
@@ -169,6 +169,15 @@ Join clause, this is used as C<select()>'s C<join> option.
 
 Table name, this is used as C<select()> C<table> option.
 Generally, this is automatically set from class name.
+
+=head2 C<table_alias> EXPERIMENTAL
+
+    my $table_alias = $model->table_alias;
+    $model = $model->table_alias(user1 => 'user', user2 => 'user');
+
+Table alias. If you define table alias,
+same filter as the table is avaliable
+, and can write $dbi->column('user1') to get all columns.
 
 =head2 C<primary_key>
 

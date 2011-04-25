@@ -6,6 +6,7 @@ use warnings;
 use base 'Object::Simple';
 
 use Carp 'croak';
+use DBIx::Custom::Util '_subname';
 
 __PACKAGE__->attr([qw/columns sql sth filters tables/]);
 
@@ -43,8 +44,7 @@ sub filter {
               && defined $fname
               && ref $fname ne 'CODE') 
             {
-              croak qq{Filter "$fname" is not registered"}
-                  . qq{ (DBIx::Custom::Query::filter) }
+              croak qq{Filter "$fname" is not registered" } . _subname
                 unless exists $self->filters->{$fname};
               
               $filter->{$column} = $self->filters->{$fname};

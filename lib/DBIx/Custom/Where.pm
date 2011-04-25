@@ -8,6 +8,7 @@ use base 'Object::Simple';
 use overload 'bool' => sub {1}, fallback => 1;
 use overload '""' => sub { shift->to_string }, fallback => 1;
 
+use DBIx::Custom::Util '_subname';
 use Carp 'croak';
 
 # Carp trust relationship
@@ -25,8 +26,7 @@ sub new {
     # Check attribute names
     my @attrs = keys %$self;
     foreach my $attr (@attrs) {
-        croak qq{"$attr" is invalid attribute name}
-            . qq{ (DBIx::Custom::Where::new) }
+        croak qq{"$attr" is invalid attribute name (} . _subname . ")"
           unless $self->can($attr);
     }
     
@@ -63,7 +63,7 @@ sub _parse {
         
         # Operation
         my $op = $clause->[0] || '';
-        croak qq{"$op" is invalid operation (DBIx::Custom::Where::to_string)}
+        croak qq{"$op" is invalid operation (} . _subname . ")"
           unless $VALID_OPERATIONS{$op};
         
         # Parse internal clause
@@ -95,8 +95,8 @@ sub _parse {
             return $pushed;
         }
         elsif (@$columns != 1) {
-            croak qq{Each tag contains one column name: tag "$clause" }
-                  . "(DBIx::Custom::Where::to_string)"
+            croak qq{Each tag contains one column name: tag "$clause" (}
+                  . _subname . ")";
         }
 
         my $column = $columns->[0];
@@ -105,7 +105,7 @@ sub _parse {
         }
         
         my $safety = $self->safety_character;
-        croak qq{"$column" is not safety column name (DBIx::Custom::Where::to_string)}
+        croak qq{"$column" is not safety column name (} . _subname . ")"
           unless $column =~ /^[$safety\.]+$/;
         
         # Column count up
@@ -131,8 +131,8 @@ sub _parse {
             $pushed = 1;
         }
         else {
-            croak "Parameter must be hash reference or undfined value "
-                . "(DBIx::Custom::Where::to_string)"
+            croak "Parameter must be hash reference or undfined value ("
+                . _subname . ")"
         }
         return $pushed;
     }

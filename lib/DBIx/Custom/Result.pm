@@ -6,7 +6,7 @@ use warnings;
 use base 'Object::Simple';
 
 use Carp 'croak';
-use DBIx::Custom::Util;
+use DBIx::Custom::Util qw/_array_to_hash _subname/;
 
 __PACKAGE__->attr(
     [qw/filters sth/],
@@ -23,7 +23,7 @@ sub filter {
             $filter = $_[0];
         }
         else {
-            $filter = DBIx::Custom::Util::array_to_hash(
+            $filter = _array_to_hash(
                 @_ > 1 ? [@_] : $_[0]
             );
         }
@@ -35,8 +35,7 @@ sub filter {
               && defined $fname
               && ref $fname ne 'CODE') 
             {
-              croak qq{Filter "$fname" is not registered"}
-                  . qq{ (DBIx::Custom::Result::filter)}
+              croak qq{Filter "$fname" is not registered" } . _subname
                 unless exists $self->filters->{$fname};
               
               $filter->{$column} = $self->filters->{$fname};
@@ -61,7 +60,7 @@ sub end_filter {
             $end_filter = $_[0];
         }
         else {
-            $end_filter = DBIx::Custom::Util::array_to_hash(
+            $end_filter = _array_to_hash(
                 @_ > 1 ? [@_] : $_[0]
             );
         }
@@ -73,8 +72,7 @@ sub end_filter {
               && defined $fname
               && ref $fname ne 'CODE') 
             {
-              croak qq{Filter "$fname" is not registered"}
-                  . qq{ (DBIx::Custom::Result::end_filter)}
+              croak qq{Filter "$fname" is not registered" } . _subname
                 unless exists $self->filters->{$fname};
               
               $end_filter->{$column} = $self->filters->{$fname};
@@ -215,7 +213,7 @@ sub fetch_hash_multi {
     my ($self, $count) = @_;
     
     # Row count not specified
-    croak 'Row count must be specified (DBIx::Custom::Result::fetch_hash_multi)'
+    croak 'Row count must be specified ' . _subname
       unless $count;
     
     # Fetch multi rows
@@ -234,7 +232,7 @@ sub fetch_multi {
     my ($self, $count) = @_;
     
     # Row count not specifed
-    croak 'Row count must be specified (DBIx::Custom::Result::fetch_multi)'
+    croak 'Row count must be specified ' . _subname
       unless $count;
     
     # Fetch multi rows
