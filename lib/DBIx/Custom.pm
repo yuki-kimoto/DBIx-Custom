@@ -265,7 +265,7 @@ sub dbh {
 }
 
 our %DELETE_ARGS
-  = map { $_ => 1 } @COMMON_ARGS, qw/where append allow_delete_all param/;
+  = map { $_ => 1 } @COMMON_ARGS, qw/where append allow_delete_all where_param/;
 
 sub delete {
     my ($self, %args) = @_;
@@ -284,14 +284,15 @@ sub delete {
     my $append           = delete $args{append};
     my $allow_delete_all = delete $args{allow_delete_all};
     my $query_return     = delete $args{query};
-    my $param            = delete $args{param} || {};
+    my $where_param      = delete $args{where_param} || {};
 
     # Where
     my $where_clause = '';
     if (ref $where) {
         $where = $self->_where_to_obj($where);
-        $param = keys %$param ? $self->merge_param($param, $where->param)
-                              : $where->param;
+        $where_param = keys %$where_param
+                     ? $self->merge_param($where_param, $where->param)
+                     : $where->param;
         
         # String where
         $where_clause = $where->to_string;
@@ -314,7 +315,7 @@ sub delete {
     # Execute query
     return $self->execute(
         $query,
-        param => $param,
+        param => $where_param,
         table => $table,
         %args
     );
@@ -809,7 +810,7 @@ sub register_tag { shift->query_builder->register_tag(@_) }
 
 our %SELECT_ARGS
   = map { $_ => 1 } @COMMON_ARGS,
-                    qw/column where append relation join param wrap/;
+                    qw/column where append relation join param where_param wrap/;
 
 sub select {
     my ($self, %args) = @_;
@@ -826,7 +827,10 @@ sub select {
     croak qq{"join" must be array reference } . _subname
       unless ref $join eq 'ARRAY';
     my $relation = delete $args{relation};
-    my $param = delete $args{param} || {};
+    my $param = delete $args{param} || {}; # DEPRECATED!
+    warn "DEPRECATED select() param option. this is renamed to where_param"
+      if keys %$param;
+    my $where_param = delete $args{where_param} || $param || {};
     my $query_return = $args{query};
     my $wrap = delete $args{wrap};
 
@@ -873,14 +877,16 @@ sub select {
       unless $tables->[-1];
 
     # Add tables in parameter
-    unshift @$tables, @{$self->_search_tables(join(' ', keys %$param) || '')};
+    unshift @$tables,
+            @{$self->_search_tables(join(' ', keys %$where_param) || '')};
     
     # Where
     my $where_clause = '';
     if (ref $where) {
         $where = $self->_where_to_obj($where);
-        $param = keys %$param ? $self->merge_param($param, $where->param)
-                              : $where->param;
+        $where_param = keys %$where_param
+                     ? $self->merge_param($where_param, $where->param)
+                     : $where->param;
         
         # String where
         $where_clause = $where->to_string;
@@ -920,7 +926,7 @@ sub select {
     # Execute query
     my $result = $self->execute(
         $query,
-        param => $param, 
+        param => $where_param, 
         table => $tables,
         %args
     );
@@ -972,7 +978,7 @@ sub setup_model {
 }
 
 our %UPDATE_ARGS
-  = map { $_ => 1 } @COMMON_ARGS, qw/param where append allow_update_all/;
+  = map { $_ => 1 } @COMMON_ARGS, qw/param where append allow_update_all where_param/;
 
 sub update {
     my ($self, %args) = @_;
@@ -983,6 +989,7 @@ sub update {
       unless $table;
     my $param            = delete $args{param} || {};
     my $where            = delete $args{where} || {};
+    my $where_param      = delete $args{where_param} || {};
     my $append           = delete $args{append} || '';
     my $allow_update_all = delete $args{allow_update_all};
     
@@ -1011,8 +1018,9 @@ sub update {
     my $where_clause = '';
     if (ref $where) {
         $where = $self->_where_to_obj($where);
-        $param = keys %$param ? $self->merge_param($param, $where->param)
-                              : $where->param;
+        $where_param = keys %$where_param
+                     ? $self->merge_param($where_param, $where->param)
+                     : $where->param;
         
         # String where
         $where_clause = $where->to_string;
@@ -1020,6 +1028,9 @@ sub update {
     elsif ($where) { $where_clause = "where $where" }
     croak qq{"where" must be specified } . _subname
       if "$where_clause" eq '' && !$allow_update_all;
+    
+    # Merge param
+    $param = $self->merge_param($param, $where_param) if keys %$where_param;
     
     # Update statement
     my @sql;
@@ -2584,14 +2595,12 @@ or array refrence.
     );
     $dbi->update(where => $where);
     
-    # Array refrendce (where clause and parameter)
-    $dbi->update(where =>
-        [
-            ['and', '{= author}', '{like title}'],
-            {author => 'Ken', title => '%Perl%'}
-        ]
+    # String
+    $dbi->update(
+        where => ['{= id}', {id => 2}]
+        param => {title => 'Perl', id => 2}
     );
-
+    
 =item C<append>
 
 Append statement to last of SQL. This is string.
