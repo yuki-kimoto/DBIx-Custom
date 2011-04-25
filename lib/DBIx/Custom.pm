@@ -1912,12 +1912,10 @@ or array refrence, which contains where clause and paramter.
     );
     $dbi->delete(where => $where);
 
-    # Array refrendce (where clause and parameter)
-    $dbi->delete(where =>
-        [
-            ['and', '{= author}', '{like title}'],
-            {author => 'Ken', title => '%Perl%'}
-        ]
+    # String(with where_param option)
+    $dbi->delete(
+        where => '{like title}',
+        where_param => {title => '%Perl%'}
     );
     
 =item C<append>
@@ -2383,12 +2381,10 @@ or array refrence, which contains where clause and paramter.
     );
     $dbi->select(where => $where);
 
-    # Array refrendce (where clause and parameter)
-    $dbi->select(where =>
-        [
-            ['and', '{= author}', '{like title}'],
-            {author => 'Ken', title => '%Perl%'}
-        ]
+    # String(with where_param option)
+    $dbi->select(
+        where => '{like title}',
+        where_param => {title => '%Perl%'}
     );
     
 =item C<join>
@@ -2595,10 +2591,11 @@ or array refrence.
     );
     $dbi->update(where => $where);
     
-    # String
+    # String(with where_param option)
     $dbi->update(
-        where => ['{= id}', {id => 2}]
-        param => {title => 'Perl', id => 2}
+        param => {title => 'Perl'},
+        where => '{= id}',
+        where_param => {id => 2}
     );
     
 =item C<append>
