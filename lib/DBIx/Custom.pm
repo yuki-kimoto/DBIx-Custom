@@ -265,7 +265,7 @@ sub dbh {
 }
 
 our %DELETE_ARGS
-  = map { $_ => 1 } @COMMON_ARGS, qw/where append allow_delete_all/;
+  = map { $_ => 1 } @COMMON_ARGS, qw/where append allow_delete_all param/;
 
 sub delete {
     my ($self, %args) = @_;
@@ -284,12 +284,19 @@ sub delete {
     my $append           = delete $args{append};
     my $allow_delete_all = delete $args{allow_delete_all};
     my $query_return     = delete $args{query};
+    my $param            = delete $args{param} || {};
 
     # Where
-    $where = $self->_where_to_obj($where);
-    
-    # Where clause
-    my $where_clause = $where->to_string;
+    my $where_clause = '';
+    if (ref $where) {
+        $where = $self->_where_to_obj($where);
+        $param = keys %$param ? $self->merge_param($param, $where->param)
+                              : $where->param;
+        
+        # String where
+        $where_clause = $where->to_string;
+    }
+    elsif ($where) { $where_clause = "where $where" }
     croak qq{"where" must be specified } . _subname
       if $where_clause eq '' && !$allow_delete_all;
 
@@ -307,7 +314,7 @@ sub delete {
     # Execute query
     return $self->execute(
         $query,
-        param => $where->param,
+        param => $param,
         table => $table,
         %args
     );
@@ -869,7 +876,7 @@ sub select {
     unshift @$tables, @{$self->_search_tables(join(' ', keys %$param) || '')};
     
     # Where
-    my $where_clause;
+    my $where_clause = '';
     if (ref $where) {
         $where = $self->_where_to_obj($where);
         $param = keys %$param ? $self->merge_param($param, $where->param)
@@ -878,9 +885,7 @@ sub select {
         # String where
         $where_clause = $where->to_string;
     }
-    else {
-        $where_clause = $where;
-    }
+    elsif ($where) { $where_clause = "where $where" }
     
     # Add table names in where clause
     unshift @$tables, @{$self->_search_tables($where_clause)};
@@ -1003,8 +1008,16 @@ sub update {
     my $update_clause = '{update_param ' . join(' ', @columns) . '}';
 
     # Where
-    $where = $self->_where_to_obj($where);
-    my $where_clause = $where->to_string;
+    my $where_clause = '';
+    if (ref $where) {
+        $where = $self->_where_to_obj($where);
+        $param = keys %$param ? $self->merge_param($param, $where->param)
+                              : $where->param;
+        
+        # String where
+        $where_clause = $where->to_string;
+    }
+    elsif ($where) { $where_clause = "where $where" }
     croak qq{"where" must be specified } . _subname
       if "$where_clause" eq '' && !$allow_update_all;
     
@@ -1012,9 +1025,6 @@ sub update {
     my @sql;
     push @sql, "update $q$table$q $update_clause $where_clause";
     push @sql, $append if $append;
-    
-    # Merge parameters
-    $param = $self->merge_param($param, $where->param);
     
     # SQL
     my $sql = join(' ', @sql);

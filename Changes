@@ -1,3 +1,5 @@
+0.1680
+    - select, update, and delete where option can receive string where clause
 0.1679
     - added EXPERIMENTAL select() wrap option to support Oracle ROWNUM
 0.1678

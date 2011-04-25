@@ -87,7 +87,7 @@ eval{$builder->build_query('{? }')};
 like($@, qr/\QColumn name must be specified in tag "{? }"/, "? not arguments");
 
 eval{$builder->build_query("{a }")};
-like($@, qr/\QTag "a" in "{a }" is not registered/, "tag not exist");
+like($@, qr/\QTag "a" is not registered/, "tag not exist");
 
 $builder->register_tag({
     q => 'string'

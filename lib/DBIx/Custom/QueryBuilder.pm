@@ -78,7 +78,7 @@ sub _build_query {
                              || $self->tags->{$tag_name};
             
             # Tag is not registered
-            croak qq{Tag "$tag_name" in "{a }" is not registered } . _subname
+            croak qq{Tag "$tag_name" is not registered } . _subname
               unless $tag;
             
             # Tag not sub reference
