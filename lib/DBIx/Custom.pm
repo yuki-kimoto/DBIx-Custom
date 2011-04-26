@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1680';
+our $VERSION = '0.1681';
 
 use 5.008001;
 use strict;
@@ -149,6 +149,26 @@ sub apply_filter {
     }
     
     return $self;
+}
+
+
+sub assign_tag {
+    my ($self, $param) = @_;
+    
+    # Create set tag
+    my @params;
+    my $safety = $self->safety_character;
+    my $q = $self->reserved_word_quote;
+    foreach my $column (keys %$param) {
+        croak qq{"$column" is not safety column name } . _subname
+          unless $column =~ /^[$safety\.]+$/;
+        my $column = "$q$column$q";
+        $column =~ s/\./$q.$q/;
+        push @params, "$column = {? $column}";
+    }
+    my $tag = join(', ', @params);
+    
+    return $tag;
 }
 
 sub column {
@@ -1084,20 +1104,9 @@ sub update_param_tag {
     my ($self, $param, $opt) = @_;
     
     # Create update parameter tag
-    my @params;
-    my $safety = $self->safety_character;
-    my $q = $self->reserved_word_quote;
-    foreach my $column (keys %$param) {
-        croak qq{"$column" is not safety column name } . _subname
-          unless $column =~ /^[$safety\.]+$/;
-        my $column = "$q$column$q";
-        $column =~ s/\./$q.$q/;
-        push @params, "$column = {? $column}";
-    }
-    my $tag;
-    $tag .= 'set ' unless $opt->{no_set};
-    $tag .= join(', ', @params);
-    
+    my $tag = $self->assign_tag($param);
+    $tag = "set $tag" unless $opt->{no_set};
+
     return $tag;
 }
 
@@ -1731,6 +1740,16 @@ You can set multiple filters at once.
             end => 'tp_to_displaydate'
         }
     );
+
+=head2 C<assign_tag> EXPERIMENTAL
+
+    my $assign_tag = $dbi->assign_tag({title => 'a', age => 2});
+
+Create assign tag.
+
+    title = {? title}, author = {? author}
+
+This is equal to C<update_param_tag> exept that set is not added.
 
 =head2 C<connect>
 

@@ -1,3 +1,5 @@
+0.1681
+    - added EXPERIMENTAL assign_tag() method
 0.1680
     - DEPRECATED select() param option, this is renamed to where_param
     - added select(), update(), and delete() where_param option
