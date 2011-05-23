@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1681';
+our $VERSION = '0.1682';
 
 use 5.008001;
 use strict;
@@ -730,21 +730,24 @@ sub merge_param {
     my ($self, @params) = @_;
     
     # Merge parameters
-    my $param = {};
-    foreach my $p (@params) {
-        foreach my $column (keys %$p) {
-            if (exists $param->{$column}) {
-                $param->{$column} = [$param->{$column}]
-                  unless ref $param->{$column} eq 'ARRAY';
-                push @{$param->{$column}}, $p->{$column};
+    my $merge = {};
+    foreach my $param (@params) {
+        foreach my $column (keys %$param) {
+            my $param_is_array = ref $param->{$column} eq 'ARRAY' ? 1 : 0;
+            
+            if (exists $merge->{$column}) {
+                $merge->{$column} = [$merge->{$column}]
+                  unless ref $merge->{$column} eq 'ARRAY';
+                push @{$merge->{$column}},
+                  ref $param->{$column} ? @{$param->{$column}} : $param->{$column};
             }
             else {
-                $param->{$column} = $p->{$column};
+                $merge->{$column} = $param->{$column};
             }
         }
     }
     
-    return $param;
+    return $merge;
 }
 
 sub method {

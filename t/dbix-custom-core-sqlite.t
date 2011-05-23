@@ -2132,6 +2132,14 @@ test 'merge_param';
     is_deeply($param, {key1 => [1, 1, 1], key2 => [2, 2], key3 => 3});
 }
 
+{
+    my $dbi = DBIx::Custom->new;
+    my $param1 = {key1 => [1, 2], key2 => 1, key3 => [1, 2]};
+    my $param2 = {key1 => [3, 4], key2 => [2, 3], key3 => 3};
+    my $param = $dbi->merge_param($param1, $param2);
+    is_deeply($param, {key1 => [1, 2, 3, 4], key2 => [1, 2, 3], key3 => [1, 2, 3]});
+}
+
 test 'select() param option';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
