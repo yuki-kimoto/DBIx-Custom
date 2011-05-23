@@ -1,4 +1,5 @@
 0.1682
+    - improved debug message
     - fixed merge_param bug
 0.1681
     - added EXPERIMENTAL assign_tag() method
