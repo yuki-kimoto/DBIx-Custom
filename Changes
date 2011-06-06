@@ -1,3 +1,5 @@
+0.1683
+    - data_source is DEPRECATED! It is renamed to dsn
 0.1682
     - improved debug message
     - fixed merge_param bug

@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1682';
+our $VERSION = '0.1683';
 
 use 5.008001;
 use strict;
@@ -25,7 +25,7 @@ use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 our @COMMON_ARGS = qw/table query filter type/;
 
 __PACKAGE__->attr(
-    [qw/connector data_source password pid user/],
+    [qw/connector dsn password user/],
     cache => 0,
     cache_method => sub {
         sub {
@@ -191,9 +191,6 @@ sub connect {
     
     # Connect
     $self->dbh;
-    
-    # Set process ID
-    $self->pid($$);
     
     return $self;
 }
@@ -1209,16 +1206,16 @@ sub _connect {
     my $self = shift;
     
     # Attributes
-    my $data_source = $self->data_source;
-    croak qq{"data_source" must be specified } . _subname
-      unless $data_source;
+    my $dsn = $self->data_source || $self->dsn;
+    croak qq{"dsn" must be specified } . _subname
+      unless $dsn;
     my $user        = $self->user;
     my $password    = $self->password;
     my $dbi_option = {%{$self->dbi_options}, %{$self->dbi_option}};
     
     # Connect
     my $dbh = eval {DBI->connect(
-        $data_source,
+        $dsn,
         $user,
         $password,
         {
@@ -1376,6 +1373,9 @@ sub _where_to_obj {
 }
 
 # DEPRECATED!
+__PACKAGE__->attr('data_source');
+
+# DEPRECATED!
 __PACKAGE__->attr(
     dbi_options => sub { {} },
     filter_check  => 1
@@ -1492,7 +1492,7 @@ DBIx::Custom - Useful database access, respecting SQL!
     
     # Connect
     my $dbi = DBIx::Custom->connect(
-        data_source => "dbi:mysql:database=dbname",
+        dsn => "dbi:mysql:database=dbname",
         user => 'ken',
         password => '!LFKD%$&',
         dbi_option => {mysql_enable_utf8 => 1}
@@ -1619,12 +1619,14 @@ C<default_dbi_option> to L<DBIx::Connector>.
     
     my $dbi = DBIx::Custom->new(connector => $connector);
 
-=head2 C<data_source>
+=head2 C<dsn>
 
-    my $data_source = $dbi->data_source;
-    $dbi            = $dbi->data_source("DBI:mysql:database=dbname");
+    my $dsn = $dbi->dsn;
+    $dbi    = $dbi->dsn("DBI:mysql:database=dbname");
 
-Data source, used when C<connect()> is executed.
+Data source name, used when C<connect()> is executed.
+
+C<data_source> is DEPRECATED! It is renamed to C<dsn>.
 
 =head2 C<dbi_option>
 
@@ -1769,7 +1771,7 @@ This is equal to C<update_param_tag> exept that set is not added.
 =head2 C<connect>
 
     my $dbi = DBIx::Custom->connect(
-        data_source => "dbi:mysql:database=dbname",
+        dsn => "dbi:mysql:database=dbname",
         user => 'ken',
         password => '!LFKD%$&',
         dbi_option => {mysql_enable_utf8 => 1}
@@ -2297,7 +2299,7 @@ Create column clause for myself. The follwoing column clause is created.
 =head2 C<new>
 
     my $dbi = DBIx::Custom->new(
-        data_source => "dbi:mysql:database=dbname",
+        dsn => "dbi:mysql:database=dbname",
         user => 'ken',
         password => '!LFKD%$&',
         dbi_option => {mysql_enable_utf8 => 1}

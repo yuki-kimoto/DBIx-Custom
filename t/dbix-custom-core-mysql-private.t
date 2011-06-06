@@ -15,7 +15,7 @@ use Scalar::Util 'blessed';
     my $dbi = DBIx::Custom->connect(
         user => $USER,
         password => $PASSWORD,
-        data_source => "dbi:mysql:dbname=$DATABASE"
+        dsn => "dbi:mysql:dbname=$DATABASE"
     );
     $dbi->connect;
     
@@ -29,7 +29,7 @@ use Scalar::Util 'blessed';
     my $dbi = DBIx::Custom->connect(
         user => $USER,
         password => $PASSWORD,
-        data_source => "dbi:mysql:dbname=$DATABASE",
+        dsn => "dbi:mysql:dbname=$DATABASE",
         dbi_options => {AutoCommit => 0, mysql_enable_utf8 => 1}
     );
     $dbi->connect;

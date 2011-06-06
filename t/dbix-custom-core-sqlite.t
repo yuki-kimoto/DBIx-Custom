@@ -42,7 +42,7 @@ my $DROP_TABLE = {
 };
 
 my $NEW_ARGS = {
-    0 => {data_source => 'dbi:SQLite:dbname=:memory:'}
+    0 => {dsn => 'dbi:SQLite:dbname=:memory:'}
 };
 
 # Variables
@@ -205,7 +205,7 @@ is_deeply($rows, [{key1 => 1, key2 => 1, key3 => 1, key4 => 1, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "basic");
 
 test 'Error case';
-eval {DBIx::Custom->connect(data_source => 'dbi:SQLit')};
+eval {DBIx::Custom->connect(dsn => 'dbi:SQLit')};
 ok($@, "connect error");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -1371,10 +1371,10 @@ $result->default_filter('one');
 is($result->default_filter->(), 1);
 
 test 'dbi_option';
-$dbi = DBIx::Custom->connect(data_source => 'dbi:SQLite:dbname=:memory:',
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:',
                              dbi_option => {PrintError => 1});
 ok($dbi->dbh->{PrintError});
-$dbi = DBIx::Custom->connect(data_source => 'dbi:SQLite:dbname=:memory:',
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:',
                              dbi_options => {PrintError => 1});
 ok($dbi->dbh->{PrintError});
 
@@ -1990,6 +1990,26 @@ is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}],
         return $self;
     }
 }
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$sql = <<"EOS";
+left outer join (
+  select * from table1 as t1
+  where t1.key2 = (
+    select max(t2.key2) from table1 as t2
+    where t1.key1 = t2.key1
+  )
+) as latest_table1 on table1.key1 = latest_table1.key1
+EOS
+$join = [$sql];
+$rows = $dbi->select(
+    table => 'table1',
+    column => 'latest_table1.key1 as latest_table1__key1',
+    join  => $join
+)->fetch_hash_all;
+is_deeply($rows, [{latest_table1__key1 => 1}]);
 
 test 'mycolumn';
 $dbi = MyDBI8->connect($NEW_ARGS->{0});

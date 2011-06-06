@@ -162,13 +162,13 @@ use C<connect()> to connect to database.
 Return value is L<DBIx::Custom> object.
 
     my $dbi = DBIx::Custom->connect(
-        data_source => "dbi:mysql:database=bookstore",
+        dsn => "dbi:mysql:database=bookstore",
         user => 'ken',
         password => '!LFKD%$&',
         dbi_options => {mysql_enable_utf8 => 1}
     );
 
-C<data_source> must be one corresponding to the database system.
+C<dsn> must be one corresponding to the database system.
 The following ones are data source example.
 
 B<MySQL>
@@ -1018,7 +1018,7 @@ You can pass L<DBIx::Custom::Where> object to C<where> of C<select()>.
     $where->param({title => 'Perl'});
     my $result = $dbi->select(table => 'book', where => $where);
 
-You can also pass it to C<where> of C<update()>、C<delete()>
+You can also pass it to C<where> of C<update()>AC<delete()>
 
 =head3 With C<execute()>
 
@@ -1093,7 +1093,7 @@ without C<table> option.
 
 Model is L<DBIx::Custom::Model>.
 
-If you need table name、you can get it by C<table()>.
+If you need table nameAyou can get it by C<table()>.
 
     my $table = $model->table;
 
@@ -1186,7 +1186,7 @@ Valude of C<table> and C<columns> is used.
 
     my $column_clause = $model->mycolumn;
 
-If C<table> is 'book'、C<column> is ['id', 'name'],
+If C<table> is 'book'AC<column> is ['id', 'name'],
 the following clause is created.
 
     book.id as id, book.name as name
@@ -1197,7 +1197,7 @@ You can create column clause from columns of other table.
 
     my $column_clause = $model->column('company');
 
-If C<table> is 'company'、C<column> is ['id', 'name'],
+If C<table> is 'company'AC<column> is ['id', 'name'],
 the following clause is created.
 
     company.id as company__id, company.name as company__name
@@ -1209,7 +1209,7 @@ Valude of C<table> and C<columns> is used.
 
     my $column_clause = $model->column_clause;
 
-If C<table> is 'book'、C<column> is ['id', 'name'],
+If C<table> is 'book'AC<column> is ['id', 'name'],
 the following clause is created.
 
     book.id as id, book.name as name

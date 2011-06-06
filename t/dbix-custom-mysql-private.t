@@ -51,15 +51,15 @@ my $result;
         my $self = ref $proto ? $proto : $proto->new(@_);
         
         # Data source
-        if (!$self->data_source) {
+        if (!$self->dsn) {
             my $database = $self->database;
             my $host     = $self->host;
             my $port     = $self->port;
-            my $data_source = "dbi:mysql:";
-            $data_source .= "database=$database;" if $database;
-            $data_source .= "host=$host;"         if $host;
-            $data_source .= "port=$port;"         if $port;
-            $self->data_source($data_source);
+            my $dsn = "dbi:mysql:";
+            $dsn .= "database=$database;" if $database;
+            $dsn .= "host=$host;"         if $host;
+            $dsn .= "port=$port;"         if $port;
+            $self->dsn($dsn);
         }
         
         return $self->SUPER::connect;
@@ -72,7 +72,7 @@ test 'connect';
 $dbi = DBIx::Custom::MySQL->new(user => $USER, password => $PASSWORD,
                     database => $DATABASE, host => 'localhost', port => '10000');
 $dbi->connect;
-like($dbi->data_source, qr/dbi:mysql:database=.*;host=localhost;port=10000;/, "created data source");
+like($dbi->dsn, qr/dbi:mysql:database=.*;host=localhost;port=10000;/, "created data source");
 is(ref $dbi->dbh, 'DBI::db');
 
 test 'attributes';
@@ -84,7 +84,7 @@ is($dbi->port, 'b', "port");
 
 test 'limit';
 $dbi = DBIx::Custom->connect(
-    data_source => "dbi:mysql:database=$DATABASE",
+    dsn => "dbi:mysql:database=$DATABASE",
     user => $USER,
     password => $PASSWORD
 );

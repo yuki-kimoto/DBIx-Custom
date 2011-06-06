@@ -170,13 +170,13 @@ L<DBIx::Custom>を読み込みます。
 戻り値はL<DBIx::Custom>オブジェクトです。
 
     my $dbi = DBIx::Custom->connect(
-        data_source => "dbi:mysql:database=bookstore",
+        dsn => "dbi:mysql:database=bookstore",
         user => 'ken',
         password => '!LFKD%$&',
         dbi_options => {mysql_enable_utf8 => 1}
     );
 
-C<data_source>はデータベースシステムに応じたものである必要があります。
+C<dsn>はデータベースシステムに応じたものである必要があります。
 以下はデータソースのサンプルです。
 
 B<MySQL>
