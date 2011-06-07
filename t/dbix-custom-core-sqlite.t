@@ -2057,10 +2057,20 @@ $result = $model->select_at(
 );
 is_deeply($result->fetch_hash_first,
           {key1 => 1, key2 => 2, table2__key1 => 1, table2__key3 => 3});
+
 $result = $model->select_at(
     column => [
         $model->mycolumn(['key1']),
         $model->column(table2 => ['key1'])
+    ]
+);
+is_deeply($result->fetch_hash_first,
+          {key1 => 1, table2__key1 => 1});
+
+$result = $model->select_at(
+    column => [
+        $model->mycolumn(['key1']),
+        {table2 => ['key1']}
     ]
 );
 is_deeply($result->fetch_hash_first,

@@ -869,8 +869,9 @@ sub select {
     
     # Column clause
     if ($columns) {
-        $columns = [$columns] if ! ref $columns;
+        $columns = [$columns] unless ref $columns eq 'ARRAY';
         foreach my $column (@$columns) {
+            $column = $self->column(%$column) if ref $column eq 'HASH';
             unshift @$tables, @{$self->_search_tables($column)};
             push @sql, ($column, ',');
         }
