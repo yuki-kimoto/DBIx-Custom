@@ -559,7 +559,6 @@ sub execute {
         my $result = $self->result_class->new(
             sth            => $sth,
             filters        => $self->filters,
-            filter_check   => $self->filter_check,
             default_filter => $self->{default_in_filter},
             filter         => $filter->{in} || {},
             end_filter     => $filter->{end} || {}
@@ -826,8 +825,6 @@ sub register_filter {
     return $self;
 }
 
-sub register_tag { shift->query_builder->register_tag(@_) }
-
 our %SELECT_ARGS
   = map { $_ => 1 } @COMMON_ARGS,
                     qw/column where append relation join param where_param wrap/;
@@ -847,8 +844,10 @@ sub select {
     croak qq{"join" must be array reference } . _subname
       unless ref $join eq 'ARRAY';
     my $relation = delete $args{relation};
+    warn "select() relation option is DEPRECATED! use join option instead"
+      if $relation;
     my $param = delete $args{param} || {}; # DEPRECATED!
-    warn "DEPRECATED select() param option. this is renamed to where_param"
+    warn "select() param option is DEPRECATED! use where_param option instead"
       if keys %$param;
     my $where_param = delete $args{where_param} || $param || {};
     my $query_return = $args{query};
@@ -1184,12 +1183,16 @@ sub _connect {
     my $self = shift;
     
     # Attributes
-    my $dsn = $self->data_source || $self->dsn;
+    my $dsn = $self->data_source;
+    warn "data_source is DEPRECATED! use dsn instead\n";
+    $dsn ||= $self->dsn;
     croak qq{"dsn" must be specified } . _subname
       unless $dsn;
     my $user        = $self->user;
     my $password    = $self->password;
     my $dbi_option = {%{$self->dbi_options}, %{$self->dbi_option}};
+    warn "dbi_options is DEPRECATED! use dbi_option instead\n"
+      if keys %{$self->dbi_options};
     
     # Connect
     my $dbh = eval {DBI->connect(
@@ -1334,7 +1337,7 @@ sub _where_to_obj {
     elsif (ref $where eq 'ARRAY') {
         warn "\$dbi->select(where => [CLAUSE, PARAMETER]) is DEPRECATED." .
              "use \$dbi->select(where => \$dbi->where(clause => " .
-             "CLAUSE, param => PARAMETER));";
+             "CLAUSE, where_param => PARAMETER));";
         $obj = $self->where(
             clause => $where->[0],
             param  => $where->[1]
@@ -1351,6 +1354,12 @@ sub _where_to_obj {
 }
 
 # DEPRECATED!
+sub register_tag {
+    warn "register_tag is DEPRECATED!";
+    shift->query_builder->register_tag(@_)
+}
+
+# DEPRECATED!
 __PACKAGE__->attr('data_source');
 
 # DEPRECATED!
@@ -1362,6 +1371,8 @@ __PACKAGE__->attr(
 # DEPRECATED!
 sub default_bind_filter {
     my $self = shift;
+    
+    warn "default_bind_filter is DEPRECATED! use apply_filter instead\n";
     
     if (@_) {
         my $fname = $_[0];
@@ -1384,6 +1395,8 @@ sub default_bind_filter {
 # DEPRECATED!
 sub default_fetch_filter {
     my $self = shift;
+
+    warn "default_fetch_filter is DEPRECATED! use apply_filter instead\n";
     
     if (@_) {
         my $fname = $_[0];
@@ -1413,6 +1426,7 @@ sub insert_param_tag {
 
 # DEPRECATED!
 sub register_tag_processor {
+    warn "register_tag_processor is DEPRECATED!";
     return shift->query_builder->register_tag_processor(@_);
 }
 

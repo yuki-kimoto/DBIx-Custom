@@ -98,6 +98,8 @@ __PACKAGE__->attr('tags' => sub { {} });
 sub register_tag {
     my $self = shift;
     
+    warn "register_tag is DEPRECATED!";
+    
     # Merge tag
     my $tags = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $self->tags({%{$self->tags}, %$tags});
