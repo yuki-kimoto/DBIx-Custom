@@ -162,7 +162,7 @@ use C<connect()> to connect to database.
 Return value is L<DBIx::Custom> object.
 
     my $dbi = DBIx::Custom->connect(
-        dsn => "dbi:mysql:database=bookstore",
+        dsn => "dbi:mysql:database=bookshop",
         user => 'ken',
         password => '!LFKD%$&',
         dbi_options => {mysql_enable_utf8 => 1}

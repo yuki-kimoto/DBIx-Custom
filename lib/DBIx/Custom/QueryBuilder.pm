@@ -13,21 +13,88 @@ use DBIx::Custom::Util '_subname';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 push @DBIx::Custom::Where::CARP_NOT, __PACKAGE__;
 
-# Attributes
-__PACKAGE__->attr('tags' => sub { {} });
+# Parameter regex
+our $PARAM_RE = qr/(^|[^\.\w]):([\.\w]+)([^\.\w]|$)/sm;
 
 sub build_query {
-    my ($self, $source)  = @_;
+    my ($self, $source) = @_;
     
-    # Parse
-    my $tree = $self->_parse($source);
+    my $query;
     
-    # Build query
-    my $query = $self->_build_query($tree);
+    # Parse tag. tag is DEPRECATED!
+    if ($source =~ /\{/ && $source =~ /\}/) {
+        $query = $self->_parse_tag($source);
+        my $tag_count = delete $query->{tag_count};
+        warn qq/Tag system such as {? name} is DEPRECATED! This will be removed after 2017/ .
+             qq/use parameter system :name instead/
+          if $tag_count;
+        my $query2 = $self->_parse_parameter($query->sql);
+        $query->sql($query2->sql);
+        for (my $i =0; $i < @{$query->columns}; $i++) {
+            my $column = $query->columns->[$i];
+            if ($column eq 'RESERVED_PARAMETER') {
+                my $column2 = shift @{$query2->columns};
+                croak ":name syntax is wrong"
+                  unless defined $column2;
+                $query->columns->[$i] = $column2;
+            }
+        }
+    }
+    
+    # Parse parameter
+    else {
+        $query = $self->_parse_parameter($source);
+    }
+    
+    my $sql = $query->sql;
+    $sql .= ';' unless $source =~ /;$/;
+    $query->sql($sql);
+
+    # Check placeholder count
+    croak qq{Placeholder count in "$sql" must be same as column count}
+        . _subname
+      unless $self->_placeholder_count($sql) eq @{$query->columns};
+        
+    return $query;
+}
+
+sub _placeholder_count {
+    my ($self, $sql) = @_;
+    
+    # Count
+    $sql ||= '';
+    my $count = 0;
+    my $pos   = -1;
+    while (($pos = index($sql, '?', $pos + 1)) != -1) {
+        $count++;
+    }
+    return $count;
+}
+
+sub _parse_parameter {
+    my ($self, $source) = @_;
+    
+    # Get and replace parameters
+    my $sql = $source || '';
+    my $columns = [];
+    while ($source =~ /$PARAM_RE/g) {
+        push @$columns, $2;
+    }
+    $sql =~ s/$PARAM_RE/$1?$3/g;
+
+    # Create query
+    my $query = DBIx::Custom::Query->new(
+        sql => $sql,
+        columns => $columns
+    );
     
     return $query;
 }
 
+# DEPRECATED!
+__PACKAGE__->attr('tags' => sub { {} });
+
+# DEPRECATED!
 sub register_tag {
     my $self = shift;
     
@@ -38,95 +105,10 @@ sub register_tag {
     return $self;
 }
 
-sub _build_query {
-    my ($self, $tree) = @_;
-    
-    # SQL
-    my $sql = '';
-    
-    # All Columns
-    my $all_columns = [];
-    
-    # Tables
-    my $tables = [];
-    
-    # Build SQL 
-    foreach my $node (@$tree) {
-        
-        # Text
-        if ($node->{type} eq 'text') { $sql .= $node->{value} }
-        
-        # Tag
-        else {
-            
-            # Tag name
-            my $tag_name = $node->{tag_name};
-            
-            # Tag arguments
-            my $tag_args = $node->{tag_args};
-            
-            # Table
-            if ($tag_name eq 'table') {
-                my $table = $tag_args->[0];
-                push @$tables, $table;
-                $sql .= $table;
-                next;
-            }
-
-            # Get tag
-            my $tag = $self->tag_processors->{$tag_name}
-                             || $self->tags->{$tag_name};
-            
-            # Tag is not registered
-            croak qq{Tag "$tag_name" is not registered } . _subname
-              unless $tag;
-            
-            # Tag not sub reference
-            croak qq{Tag "$tag_name" must be sub reference } . _subname
-              unless ref $tag eq 'CODE';
-            
-            # Execute tag
-            my $r = $tag->(@$tag_args);
-            
-            # Check tag return value
-            croak qq{Tag "$tag_name" must return [STRING, ARRAY_REFERENCE] }
-                . _subname
-              unless ref $r eq 'ARRAY' && defined $r->[0] && ref $r->[1] eq 'ARRAY';
-            
-            # Part of SQL statement and colum names
-            my ($part, $columns) = @$r;
-            
-            # Add columns
-            push @$all_columns, @$columns;
-            
-            # Join part tag to SQL
-            $sql .= $part;
-        }
-    }
-
-    # Check placeholder count
-    my $placeholder_count = $self->_placeholder_count($sql);
-    my $column_count      = @$all_columns;
-    croak qq{Placeholder count in "$sql" must be same as column count $column_count}
-        . _subname
-      unless $placeholder_count eq @$all_columns;
-    
-    # Add semicolon
-    $sql .= ';' unless $sql =~ /;$/;
-    
-    # Query
-    my $query = DBIx::Custom::Query->new(
-        sql => $sql,
-        columns => $all_columns,
-        tables => $tables
-    );
-    
-    return $query;
-}
-
-sub _parse {
+# DEPRECATED!
+sub _parse_tag {
     my ($self, $source) = @_;
-    
+
     # Source
     $source ||= '';
 
@@ -147,10 +129,16 @@ sub _parse {
     
     # Parse
     my $original = $source;
+    my $tag_count = 0;
     while (defined(my $c = substr($source, $pos, 1))) {
         
         # Last
         last unless length $c;
+        
+        # Parameter
+        if ($c eq ':' && (substr($source, $pos + 1, 1) || '') =~ /\w/) {
+            push @tree, {type => 'param'};;
+        }
         
         # State is text
         if ($state eq 'text') {
@@ -240,6 +228,9 @@ sub _parse {
                     
                     # Clear
                     $value = '';
+                    
+                    # Countup
+                    $tag_count++;
                 }
             }
             
@@ -258,24 +249,90 @@ sub _parse {
     croak qq{Tag not finished. "$original" } . _subname
       if $state eq 'tag';
     
+    # Not contains tag
+    return DBIx::Custom::Query->new(sql => $source, tag_count => $tag_count)
+      if $tag_count == 0;
+    
     # Add rest text
     push @tree, {type => 'text', value => $value}
       if $value;
+        
+    # SQL
+    my $sql = '';
     
-    return \@tree;
-}
+    # All Columns
+    my $all_columns = [];
+    
+    # Tables
+    my $tables = [];
+    
+    # Build SQL 
+    foreach my $node (@tree) {
+        
+        # Text
+        if ($node->{type} eq 'text') { $sql .= $node->{value} }
+        
+        # Parameter
+        elsif ($node->{type} eq 'param') {
+            push @$all_columns, 'RESERVED_PARAMETER';
+        }
+        # Tag
+        else {
+            
+            # Tag name
+            my $tag_name = $node->{tag_name};
+            
+            # Tag arguments
+            my $tag_args = $node->{tag_args};
+            
+            # Table
+            if ($tag_name eq 'table') {
+                my $table = $tag_args->[0];
+                push @$tables, $table;
+                $sql .= $table;
+                next;
+            }
 
-sub _placeholder_count {
-    my ($self, $expand) = @_;
-    
-    # Count
-    $expand ||= '';
-    my $count = 0;
-    my $pos   = -1;
-    while (($pos = index($expand, '?', $pos + 1)) != -1) {
-        $count++;
+            # Get tag
+            my $tag = $self->tag_processors->{$tag_name}
+                             || $self->tags->{$tag_name};
+            
+            # Tag is not registered
+            croak qq{Tag "$tag_name" is not registered } . _subname
+              unless $tag;
+            
+            # Tag not sub reference
+            croak qq{Tag "$tag_name" must be sub reference } . _subname
+              unless ref $tag eq 'CODE';
+            
+            # Execute tag
+            my $r = $tag->(@$tag_args);
+            
+            # Check tag return value
+            croak qq{Tag "$tag_name" must return [STRING, ARRAY_REFERENCE] }
+                . _subname
+              unless ref $r eq 'ARRAY' && defined $r->[0] && ref $r->[1] eq 'ARRAY';
+            
+            # Part of SQL statement and colum names
+            my ($part, $columns) = @$r;
+            
+            # Add columns
+            push @$all_columns, @$columns;
+            
+            # Join part tag to SQL
+            $sql .= $part;
+        }
     }
-    return $count;
+
+    # Query
+    my $query = DBIx::Custom::Query->new(
+        sql => $sql,
+        columns => $all_columns,
+        tables => $tables,
+        tag_count => $tag_count
+    );
+    
+    return $query;
 }
 
 # DEPRECATED!
@@ -284,6 +341,8 @@ __PACKAGE__->attr('tag_processors' => sub { {} });
 # DEPRECATED!
 sub register_tag_processor {
     my $self = shift;
+    
+    warn "register_tag_processor is DEPRECATED! use register_tag instead";
     
     # Merge tag
     my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
@@ -302,17 +361,8 @@ DBIx::Custom::QueryBuilder - Query builder
     
     my $builder = DBIx::Custom::QueryBuilder->new;
     my $query = $builder->build_query(
-        "select from table {= k1} && {<> k2} || {like k3}"
+        "select from table title = :title and author = :author"
     );
-
-=head1 ATTRIBUTES
-
-=head2 C<tags>
-
-    my $tags = $builder->tags;
-    $builder = $builder->tags(\%tags);
-
-Tags.
 
 =head1 METHODS
 
@@ -324,43 +374,5 @@ and implements the following new ones.
     my $query = $builder->build_query($source);
 
 Create a new L<DBIx::Custom::Query> object from SQL source.
-SQL source contains tags, such as {= title}, {like author}.
 
-C<{> and C<}> is reserved. If you use these charactors,
-you must escape them using '\'. Note that '\' is
-already perl escaped charactor, so you must write '\\'. 
-
-    'select * from books \\{ something statement \\}'
-
-B<Example:>
-
-SQL source
-
-      "select * from table where {= title} && {like author} || {<= price}"
-
-Query
-
-    {
-        sql     => "select * from table where title = ? && author like ? price <= ?;"
-        columns => ['title', 'author', 'price']
-    }
-
-=head2 C<register_tag>
-
-    $builder->register_tag(\%tags);
-    $builder->register_tag(%tags);
-
-Register tag.
-
-B<Example:>
-
-    $builder->register_tag(
-        '?' => sub {
-            my $column = shift;
-            
-            return ['?', [$column]];
-        }
-    );
-
-See also L<DBIx::Custom::Tag> to know tag.
-
+=cut

@@ -2,6 +2,8 @@ use Test::More;
 use strict;
 use warnings;
 
+$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
+
 # user password database
 our ($USER, $PASSWORD, $DATABASE) = connect_info();
 

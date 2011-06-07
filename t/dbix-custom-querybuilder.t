@@ -8,6 +8,8 @@ use DBIx::Custom;
 # Function for test name
 sub test{ print "# $_[0]\n" }
 
+$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
+
 # Variable for test
 my $datas;
 my $builder;
@@ -57,7 +59,7 @@ for (my $i = 0; $i < @$datas; $i++) {
     my $builder = DBIx::Custom->new->query_builder;
     my $query = $builder->build_query($data->{source});
     is($query->{sql}, $data->{sql_expected}, "$data->{name} : sql");
-    is_deeply($query->{columns}, $data->{columns_expected}, "$data->{name} : columns");
+    is_deeply($query->columns, $data->{columns_expected}, "$data->{name} : columns");
 }
 
 
@@ -123,7 +125,7 @@ $builder->register_tag(
     }
 );
 eval{$builder->build_query("{a}")};
-like($@, qr/\QPlaceholder count in "? ? ?" must be same as column count 1/, "placeholder count is invalid");
+like($@, qr/\QPlaceholder count/, "placeholder count is invalid");
 
 
 test 'Default tag Error case';
@@ -166,4 +168,4 @@ $source = "a {= {}";
 eval{$builder->build_query($source)};
 like($@, qr/unexpected "{"/, "error : 2");
 
-
+=cut

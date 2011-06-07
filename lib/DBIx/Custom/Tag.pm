@@ -1,3 +1,4 @@
+# DEPRECATED!
 package DBIx::Custom::Tag;
 
 use strict;
@@ -92,4 +93,7 @@ sub _basic {
 
 =head1 NAME
 
-DBIx::Custom::Tag - Tag processor
+DBIx::Custom::Tag - DEPRECATED!
+
+=cut
+

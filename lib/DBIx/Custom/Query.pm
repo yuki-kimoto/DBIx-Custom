@@ -8,7 +8,12 @@ use base 'Object::Simple';
 use Carp 'croak';
 use DBIx::Custom::Util '_subname';
 
-__PACKAGE__->attr([qw/columns sql sth filters tables/]);
+__PACKAGE__->attr(
+    [qw/sth filters/],
+    sql => '',
+    tables => sub { [] },
+    columns => sub { [] }
+);
 
 sub filter {
     my $self = shift;

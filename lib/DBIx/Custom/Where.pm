@@ -36,6 +36,14 @@ sub new {
 sub to_string {
     my $self = shift;
     
+    # Check if column name is safety character;
+    my $safety = $self->safety_character;
+    if (ref $self->param eq 'HASH') {
+        foreach my $column (keys %{$self->param}) {
+            croak qq{"$column" is not safety column name (} . _subname . ")"
+              unless $column =~ /^[$safety\.]+$/;
+        }
+    }
     # Clause
     my $clause = $self->clause;
     $clause = ['and', $clause] unless ref $clause eq 'ARRAY';
@@ -95,7 +103,7 @@ sub _parse {
             return $pushed;
         }
         elsif (@$columns != 1) {
-            croak qq{Each tag contains one column name: tag "$clause" (}
+            croak qq{Each part contains one column name: "$clause" (}
                   . _subname . ")";
         }
 
@@ -181,3 +189,4 @@ If all parameter names is exists.
 
 Convert where clause to string correspoinding to param name.
 
+=cut
