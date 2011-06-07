@@ -13,6 +13,8 @@ __PACKAGE__->attr(
     stash => sub { {} }
 );
 
+*all = \&fetch_hash_all;
+
 sub filter {
     my $self = shift;
     
@@ -246,6 +248,8 @@ sub fetch_multi {
     return unless @$rows;
     return $rows;
 }
+
+*one = \&fetch_hash_first;
 
 sub remove_end_filter {
     my $self = shift;

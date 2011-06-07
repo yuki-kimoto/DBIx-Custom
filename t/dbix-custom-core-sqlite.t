@@ -566,7 +566,7 @@ $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1');
 $result->filter({key1 => 'three_times'});
-$row = $result->fetch_hash_first;
+$row = $result->one;
 is_deeply($row, {key1 => 3, key2 => 4}, "default_fetch_filter and filter");
 
 test 'filters';
@@ -586,7 +586,7 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
 $dbi->dbh->commit;
 $result = $dbi->select(table => 'table1');
-is_deeply(scalar $result->fetch_hash_all, [{key1 => 1, key2 => 2}, {key1 => 2, key2 => 3}],
+is_deeply(scalar $result->all, [{key1 => 1, key2 => 2}, {key1 => 2, key2 => 3}],
           "commit");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
