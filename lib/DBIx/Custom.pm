@@ -2369,16 +2369,31 @@ Table name.
 
 Column clause. This is array reference or constant value.
 
-    # Hash refernce
+    # Array reference
     $dbi->select(column => ['author', 'title']);
     
     # Constant value
     $dbi->select(column => 'author');
-
-Default is '*' unless C<column> is specified.
+    
+Default is '*' if C<column> is not specified.
 
     # Default
     $dbi->select(column => '*');
+
+You can specify hash reference.
+
+    # Hash reference
+    $dbi->select(column => [
+        {book => [qw/author title/]},
+        {person => [qw/name age/]}
+    ]);
+    
+This is expanded to the following one by C<column> method automatically.
+
+    book.author as book__author,
+    book.title as book__title,
+    person.name as person__name,
+    person.age as person__age
 
 =item C<where>
 

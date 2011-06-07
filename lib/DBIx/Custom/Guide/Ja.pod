@@ -24,12 +24,12 @@ L<DBIx::Custom>の主な目的は、SQLを尊重しつつ、L<DBI>だけでは
 活用することができます。
 
 L<DBIx::Custom>の仕組みを少しだけ説明しておきます。
-L<DBIx::Custom>では、タグと呼ばれるものを
+L<DBIx::Custom>では、パラメーターと呼ばれるものを
 SQLの中に埋め込むことができます。
 
-    select * from book where {= title} and {=author};
+    select * from book where title = :title and author = :author;
 
-{}で囲まれた部分がタグです。このSQLは実際に実行されるときには
+:titleや:authorがパラメーターです。このSQLは実際に実行されるときには
 次のようにプレースホルダに展開されます。
 
     select * from book where title = ? and author = ?;
@@ -113,7 +113,7 @@ L<DBIx::Custom>はさらに簡単で便利な方法を用意しています。
     
     # 検索条件
     $where->clause(
-        ['and', '{= title}', {'= author'}]
+        ['and', 'title = :title', 'author = :author']
     );
     
     # 必要な列を自動的に選択するための設定
@@ -391,10 +391,10 @@ SQLを実行するにはC<execute()>を使用します。
 
     $dbi->execute("select * from book;");
 
-タグを処理してSQLを実行します。
+パラメーターを処理してSQLを実行します。
 
     $dbi->execute(
-        "select * from book {= title} and {= author};"
+        "select * from book title = :title and author = :author;"
         param => {title => 'Perl', author => 'Ken'}
     );
 
@@ -404,7 +404,7 @@ SQLを実行するにはC<execute()>を使用します。
 
 プレースホルダにtitleとauthorの値が埋め込まれます。
 
-タグについてはL<5. タグ/"5. タグ">を見てください。
+パラメーターについてはL<5. パラメーター/"5. パラメーター">を見てください。
 
 またC<execute()>のSQLの末尾にはセミコロンを置く必要はありません。
 
@@ -759,37 +759,23 @@ each_columnはコールバックを受け取ります。コールバックの引
 L<DBIx::Custom>オブジェクト、テーブル名、列名、列の情報です。
 列の型名の情報をもとに自動的に、フィルタを適用しています。
 
-=head2 5. タグ
+=head2 5. パラメーター
 
-=head3 タグの基本
+=head3 パラメーターの基本
 
-SQLの中にタグを埋め込むことができます。
+SQLの中にパラメーターを埋め込むことができます。
 
-    select * from book where {= title} and {like author};
+    select * from book where title = :title and author like :author;
 
-{= title}と{like author}の部分がタグです。タグは次のような形式
-を持ちます。
-
-    {タグ名 引数1 引数2 ...}
+:titleと:authorの部分がパラメーターです。
     
-タグはC<{>で始まり、C<}>で終わります。最初のC<{>とタグ名の間
-には空白を挿入しないよう注意してください。
-
-C<{>とC<}>は予約語になっています。
-もし利用したい場合は\でエスケープを行う必要があります。
-
-    select from book \\{ ... \\}
-
-C<\>自体がPerlのエスケープ文字ですので、
-C<\>は二つ必要になります。
-
-タグはSQLが実行される前に展開されます。
+パラメーターはSQLが実行される前に展開されます。
 
     select * from book where title = ? and author like ?;
 
-タグを含むSQLを実行するにはC<execute()>を使用します。
+パラメーターを含むSQLを実行するにはC<execute()>を使用します。
 
-    my $sql = "select * from book where {= author} and {like title};"
+    my $sql = "select * from book where author = :author and title like :title;"
     $dbi->execute($sql, param => {title => 'Perl', author => '%Ken%'});
 
 C<param>オプションを使って、プレースホルダに埋め込みたい値を
@@ -809,117 +795,17 @@ C<table>オプションを利用します。
 
 後ろで適用したフィルタのほうが優先順位が高くなります。
 
-=head3 タグ一覧
-
-=head4 C<?>
-
-    {? NAME}    ->   ?
-
-=head4 C<=>
-
-    {= NAME}    ->   NAME = ?
-
-=head4 C<E<lt>E<gt>>
-
-    {<> NAME}   ->   NAME <> ?
-
-=head4 C<E<lt>>
-
-    {< NAME}    ->   NAME < ?
-
-=head4 C<E<gt>>
-
-    {> NAME}    ->   NAME > ?
-
-=head4 C<E<gt>=>
-
-    {>= NAME}   ->   NAME >= ?
-
-=head4 C<E<lt>=>
-
-    {<= NAME}   ->   NAME <= ?
-
-=head4 C<like>
-
-    {like NAME}   ->   NAME like ?
-
-=head4 C<in>
-
-    {in NAME COUNT}   ->   NAME in [?, ?, ..]
-
-=head4 C<insert_param>
-
-    {insert_param NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
-
-=head4 C<update_param>
-
-    {update_param NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?
-
 =head3 同名の列の扱い
 
-同名の列を含むタグがある場合でも大丈夫です。
+同名の列を含むパラメーターがある場合でも大丈夫です。
 二つの日付で比較しなければならない場合を
 考えて見ましょう。
 
-    my $sql = "select * from table where {> date} and {< date};";
+    my $sql = "select * from table where date > :date and date < :date;";
 
 このような場合はパラメータの値を配列のリファレンスで指定します。
 
     my $dbi->execute($sql, param => {date => ['2010-10-01', '2012-02-10']});
-
-=head3 タグの登録 C<register_tag()>
-
-独自のタグを登録することができます。
-タグを追加するにはC<register_tag()>を使用します。
-
-    $dbi->register_tag(
-        '=' => sub {
-            my $column = shift;
-            
-            return ["$column = ?", [$column]];
-        }
-    );
-
-ここではデフォルトのC<=>タグがどのように実装されているかを示しています。
-タグの形式は次のようになっています。
-
-    {タグ名 引数1 引数2 ...}
-
-C<=>タグの場合は
-
-    {= title}
-
-という形式ですから、サブルーチンにはtitleというひとつの列名がわたってきます。
-
-サブルーチンの戻り値には次の形式の配列のリファレンスを返す必要があります。
-
-    [
-        展開後の文字列,
-        [プレースホルダに埋め込みに利用する列名1, 列名2, ...]
-    ]
-
-一つ目の要素は展開後の文字列です。この例では
-
-    'title = ?'
-
-を返す必要があります。
-
-二つ目の要素はプレースホルダに埋め込みに利用する列名を含む配列の
-リファレンスです。今回の例では
-
-    ['title']
-
-を返す必要があります。複数のプレースホルダを含む場合は、この部分が
-複数になります。
-
-上記を合わせると
-
-    ['title = ?', ['title']]
-    
-を返す必要があるということです。
-
-タグの実装の他のサンプルはL<DBIx::Custom::Tag>のソースコード
-をご覧になってみてください。
 
 =head2 6. Where句の動的な生成
 
@@ -930,15 +816,15 @@ C<=>タグの場合は
 
 titleの値だけで検索したい場合
 
-    where {= title}
+    where title = :title
 
 authorの値だけで検索したい場合
 
-    where {= author}
+    where author = :author
 
 titleとauthorの両方の値で検索したい場合
 
-    where {= title} and {=author}
+    where title = :title and author = :author
 
 L<DBIx::Custom>では動的なWhere句の生成をサポートしています。
 まずC<where()>でL<DBIx::Custom::Where>オブジェクトを生成します。
@@ -948,25 +834,25 @@ L<DBIx::Custom>では動的なWhere句の生成をサポートしています。
 次にC<clause()>を使用してwhere句を記述します。
 
     $where->clause(
-        ['and', '{= title'}, '{= author}']
+        ['and', 'title = :title', 'author = :author']
     );
 
 clauseの指定方法は次のようになります。
 
-    ['or' あるいは 'and', タグ1, タグ2, タグ3]
+    ['or' あるいは 'and', パラメーター1, パラメーター2, パラメーター3]
 
 第一引数にはorあるいはandを指定します。第二引数以降には
-検索条件をタグを使って記述します。
+検索条件をパラメーターを使って記述します。
 
 C<clause>の指定は入れ子にすることもでき、さらに複雑な条件
 を記述することもできます。
 
     ['and', 
-      '{= title}', 
-      ['or', '{= author}', '{like date}']
+      'title = :title', 
+      ['or', 'author = :author', 'date like :date']
     ]
 
-これは "{=title} and ( {=author} or {like date} )" 意味しています。
+これは "title = :title and ( author = :author or date like :date )" 意味しています。
 
 C<clause>を設定した後にC<param>にパラメータを指定します。
     
@@ -981,7 +867,7 @@ where句を生成することができます。
 
 パラメータはtitleだけですので、次のようなwhere句が生成されます。
 
-    where {= title}
+    where title = :title
 
 またL<DBIx::Custom>は文字列の評価をオーバーロードして、C<to_string()>
 を呼び出すようにしていますので、次のようにしてwhere句を生成することも
@@ -993,7 +879,7 @@ where句を生成することができます。
 
 =head3 同一の列名を含む場合
 
-タグの中に同一の名前を持つものが存在した場合でも動的に
+パラメーターの中に同一の名前を持つものが存在した場合でも動的に
 where句を作成することができます。
 
 たとえば、パラメータとして開始日付と終了日付を受け取ったことを
@@ -1005,10 +891,10 @@ where句を作成することができます。
 
     my $p = {date => ['2010-11-15', '2011-11-21']};
 
-同名の列を含むタグに順番に埋め込むことができます。
+同名の列を含むパラメーターに順番に埋め込むことができます。
 
     $where->clause(
-        ['and', '{> date}', '{< date}']
+        ['and', 'date > :date', 'date < :date']
     );
     $where->param($p);
 

@@ -376,6 +376,12 @@ Statement handle of L<DBI>.
 L<DBIx::Custom::Result> inherits all methods from L<Object::Simple>
 and implements the following new ones.
 
+=head2 C<all>
+
+    my $rows = $result->all;
+
+This is alias for C<fetch_hash_all>.
+
 =head2 C<end_filter>
 
     $result = $result->end_filter(title  => 'to_something',
@@ -447,6 +453,12 @@ Row count must be specified.
 Filters.
 These each filters override the filters applied by C<apply_filter> of
 L<DBIx::Custom>.
+
+=head2 C<one>
+
+    my $row = $result->one;
+
+This is alias for C<fetch_hash_first>.
 
 =head2 C<remove_end_filter>
 

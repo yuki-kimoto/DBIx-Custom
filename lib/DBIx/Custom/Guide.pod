@@ -22,11 +22,11 @@ and make easy difficult works if you use only L<DBI>.
 If you already learn SQL, it is easy to use L<DBIx::Custom>.
 
 I explain L<DBIx::Custom> a little in this section.
-In L<DBIx::Custom>, you embbed tag in SQL.
+In L<DBIx::Custom>, you embbed parameter in SQL.
 
-    select * from book where {= title} and {=author};
+    select * from book where title = :title and author = :author;
 
-The part arround {} is tag.
+The part :title is parameter.
 This SQL is converted to the one which contains place holder.
 
     select * from book where title = ? and author = ?;
@@ -107,7 +107,7 @@ L<DBIx::Custom> prepare the way to make it easy.
     
     # Search condition
     $where->clause(
-        ['and', '{= title}', {'= author'}]
+        ['and', 'title = :title', 'author = :author']
     );
     
     # Setting to automatically select needed column
@@ -385,10 +385,10 @@ use C<execute()> to execute SQL
 
     $dbi->execute("select * from book;");
 
-Process tag and execute SQL.
+Process parameter and execute SQL.
 
     $dbi->execute(
-        "select * from book {= title} and {= author};"
+        "select * from book title = :title and author = :author;"
         param => {title => 'Perl', author => 'Ken'}
     );
 
@@ -398,7 +398,7 @@ Following SQL is executed.
 
 Values of title and author is embbdeded into placeholder.
 
-See L<5. Tag/"5. Tag"> about tag.
+See L<5. Parameter/"5. Parameter"> about parameter.
 
 You don't have to wirte last semicolon in C<execute()>. 
 
@@ -749,35 +749,23 @@ C<each_column()> receive callback.
 callback arguments are L<DBIx::Custom> object, table name, column name, column information.
 Filter is applied automatically by column type.
 
-=head2 5. Tag
+=head2 5. Parameter
 
-=head3 Basic of Tag
+=head3 Basic of Parameter
 
-You can embedd tag into SQL.
+You can embedd parameter into SQL.
 
-    select * from book where {= title} and {like author};
+    select * from book where title = :title and author like :author;
 
-{= title} and {like author} are tag. Tag has the folloring format.
+:title and :author is parameter
 
-    {TAG_NAME ARG1 ARG2 ...}
-
-Tag start C<{> and end C<}>. 
-Don't insert space between C<{}> and tag name.
-
-C<{> and C<}> are reserved word.
-If you want to use these, escape it by '\';
-
-    select from book \\{ ... \\}
-
-\ is perl's escape character, you need two \.
-
-Tag is expanded before executing SQL.
+Parameter is converted to place holder.
 
     select * from book where title = ? and author like ?;
 
-use C<execute()> to execute SQL which contains tag
+use C<execute()> to execute SQL.
 
-    my $sql = "select * from book where {= author} and {like title};"
+    my $sql = "select * from book where title = :title and author like :author;"
     $dbi->execute($sql, param => {title => 'Perl', author => '%Ken%'});
 
 You can specify values embedded into place holder as hash reference using
@@ -794,112 +782,16 @@ You have to use C<table> option
 
     $dbi->execute($sql, table => ['author', 'book']);
 
-=head3 Tag list
-
-The following tag is available.
-
-=head4 C<?>
-
-    {? NAME}    ->   ?
-
-=head4 C<=>
-
-    {= NAME}    ->   NAME = ?
-
-=head4 C<E<lt>E<gt>>
-
-    {<> NAME}   ->   NAME <> ?
-
-=head4 C<E<lt>>
-
-    {< NAME}    ->   NAME < ?
-
-=head4 C<E<gt>>
-
-    {> NAME}    ->   NAME > ?
-
-=head4 C<E<gt>=>
-
-    {>= NAME}   ->   NAME >= ?
-
-=head4 C<E<lt>=>
-
-    {<= NAME}   ->   NAME <= ?
-
-=head4 C<like>
-
-    {like NAME}   ->   NAME like ?
-
-=head4 C<in>
-
-    {in NAME COUNT}   ->   NAME in [?, ?, ..]
-
-=head4 C<insert_param>
-
-    {insert_param NAME1 NAME2}   ->   (NAME1, NAME2) values (?, ?)
-
-=head4 C<update_param>
-
-    {update_param NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?
-
 =head3 Manipulate same name's columns
 
 It is ok if there are same name's columns.
 Let's think two date comparison.
 
-    my $sql = "select * from table where {> date} and {< date};";
+    my $sql = "select * from table where date > :date and date < :date;";
 
 In this case, You specify paramter values as array reference.
 
     my $dbi->execute($sql, param => {date => ['2010-10-01', '2012-02-10']});
-
-=head3 Register Tag : C<register_tag()>
-
-You can register custom tag.
-use C<register_tag()> to register tag.
-
-    $dbi->register_tag(
-        '=' => sub {
-            my $column = shift;
-            
-            return ["$column = ?", [$column]];
-        }
-    );
-
-This is implementation of C<=> tag.
-Tag format is the following one.
-
-    {TAG_NAME ARG1 ARG2 ...}
-
-In case C<=> tag. Format is
-
-    {= title}
-
-So subroutine receive one argument "title".
-You have to return array reference in the following format.
-
-    [
-        String after expanding,
-        [COLUMN1(This is used for place holder), COLUMN2 , ...]
-    ]
-
-First element is expanded stirng. In this example,
-
-    'title = ?'
-
-Secount element is array reference which is used to embedd value to
-place holder. In this example,
-
-    ['title']
-
-If there are more than one placeholders,
-This elements is multipul.
-
-You return the following array reference.
-
-    ['title = ?', ['title']]
-
-See source of L<DBIx::Custom::Tag> to see many implementation.
 
 =head2 6. Dinamically create where clause
 
@@ -910,15 +802,15 @@ Let's think the following three cases.
 
 Case1: Search only C<title>
 
-    where {= title}
+    where title = :title
 
 Case2: Search only C<author>
 
-    where {= author}
+    where author = :author
 
 Case3: Search C<title> and C<author>
 
-    where {= title} and {=author}
+    where title = :title and author = :author
 
 L<DBIx::Custom> support dinamic where clause creating.
 At first, create L<DBIx::Custom::Where> object by C<where()>.
@@ -928,24 +820,24 @@ At first, create L<DBIx::Custom::Where> object by C<where()>.
 Set clause by C<clause()>
 
     $where->clause(
-        ['and', '{= title'}, '{= author}']
+        ['and', 'title = :title, 'author = :author']
     );
 
 C<clause> is the following format.
 
-    ['or' or 'and', TAG1, TAG2, TAG3]
+    ['or' or 'and', PART1, PART1, PART1]
 
 First argument is 'or' or 'and'.
-Later than first argument are tag names.
+Later than first argument are part which contains parameter.
 
 You can write more complex format.
 
     ['and', 
-      '{= title}', 
-      ['or', '{= author}', '{like date}']
+      'title = :title', 
+      ['or', 'author = :author', 'date like :date']
     ]
 
-This mean "{=title} and ( {=author} or {like date} )".
+This mean "title = :title and ( author = :author or date like :date )".
 
 After setting C<clause>, set C<param>.
     
@@ -960,7 +852,7 @@ which contain only parameter name.
 
 Parameter name is only title, the following where clause is created.
 
-    where {= title}
+    where title = :title
 
 You can also create where clause by stringification.
 
@@ -970,7 +862,7 @@ This is useful to embbed it into SQL.
 
 =head3 In case where clause contains same name columns
 
-Even if same name tags exists, you can create where clause.
+Even if same name parameters exists, you can create where clause.
 Let's think that there are starting date and ending date.
 
     my $param = {start_date => '2010-11-15', end_date => '2011-11-21'};
@@ -979,10 +871,10 @@ In this case, you set parameter value as array reference.
 
     my $p = {date => ['2010-11-15', '2011-11-21']};
 
-You can embbed these values into same name tags.
+You can embbed these values into same name parameters.
 
     $where->clause(
-        ['and', '{> date}', '{< date}']
+        ['and', 'date > :date', 'date < :date']
     );
     $where->param($p);
 
@@ -1014,7 +906,7 @@ This logic is a little difficut. See the following ones.
 You can pass L<DBIx::Custom::Where> object to C<where> of C<select()>.
     
     my $where = $dbi->where;
-    $where->clause(['and', '{= title}', '{= author}']);
+    $where->clause(['and', 'title = :title', 'author = :author']);
     $where->param({title => 'Perl'});
     my $result = $dbi->select(table => 'book', where => $where);
 
@@ -1025,15 +917,15 @@ You can also pass it to C<where> of C<update()>AC<delete()>
 L<DBIx::Custom::Where> object is embedded into SQL.
 
     my $where = $dbi->where;
-    $where->clause(['and', '{= title}', '{= author}']);
+    $where->clause(['and', 'title = :title', 'author = :author']);
     $where->param({title => 'Perl'});
 
     my $sql = <<"EOS";
-    select * from {table book};
+    select * from book;
     $where
     EOS
 
-    $dbi->execute($sql, param => $param);
+    $dbi->execute($sql, param => $param, table => 'book');
 
 =head2 7. Model
 
