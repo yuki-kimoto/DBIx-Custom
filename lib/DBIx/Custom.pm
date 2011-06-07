@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1683';
+our $VERSION = '0.1684';
 
 use 5.008001;
 use strict;
@@ -2637,7 +2637,7 @@ or array refrence.
     # String(with where_param option)
     $dbi->update(
         param => {title => 'Perl'},
-        where => '{= id}',
+        where => 'id = :id'',
         where_param => {id => 2}
     );
     

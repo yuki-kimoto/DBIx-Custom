@@ -1,6 +1,7 @@
 use Test::More 'no_plan';
 use strict;
 use warnings;
+$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 
 use DBIx::Custom;
 use DBIx::Custom::QueryBuilder;
