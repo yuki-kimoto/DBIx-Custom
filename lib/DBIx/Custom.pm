@@ -829,7 +829,13 @@ sub select {
     my $where_param = delete $args{where_param} || $param || {};
     my $query_return = $args{query};
     my $wrap = delete $args{wrap};
-
+    my $id = delete $args{id};
+    my $primary_key = delete $args{primary_key};
+    croak "update method primary_key option " .
+          "must be specified when id is specified " . _subname
+      if defined $id && !defined $primary_key;
+    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
+    
     # Check arguments
     foreach my $name (keys %args) {
         croak qq{"$name" is wrong option } . _subname
@@ -879,6 +885,7 @@ sub select {
     
     # Where
     my $where_clause = '';
+    $where = $self->_create_param_from_id($id, $primary_key) if $id;
     if (ref $where) {
         $where = $self->_where_to_obj($where);
         $where_param = keys %$where_param
@@ -929,34 +936,6 @@ sub select {
     );
     
     return $result;
-}
-
-our %SELECT_AT_ARGS = (%SELECT_ARGS, where => 1, primary_key => 1);
-
-sub select_at {
-    my ($self, %args) = @_;
-
-    # Arguments
-    my $primary_keys = delete $args{primary_key};
-    $primary_keys = [$primary_keys] unless ref $primary_keys;
-    my $where = delete $args{where};
-    my $param = delete $args{param};
-    
-    # Check arguments
-    foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option } . _subname
-          unless $SELECT_AT_ARGS{$name};
-    }
-    
-    # Table
-    croak qq{"table" option must be specified } . _subname
-      unless $args{table};
-    my $table = ref $args{table} ? $args{table}->[-1] : $args{table};
-    
-    # Create where parameter
-    my $where_param = $self->_create_param_from_id($where, $primary_keys);
-    
-    return $self->select(where => $where_param, %args);
 }
 
 sub setup_model {
@@ -1314,6 +1293,34 @@ sub _where_to_obj {
       unless ref $obj eq 'DBIx::Custom::Where';
     
     return $obj;
+}
+
+# DEPRECATED!
+our %SELECT_AT_ARGS = (%SELECT_ARGS, where => 1, primary_key => 1);
+sub select_at {
+    my ($self, %args) = @_;
+
+    # Arguments
+    my $primary_keys = delete $args{primary_key};
+    $primary_keys = [$primary_keys] unless ref $primary_keys;
+    my $where = delete $args{where};
+    my $param = delete $args{param};
+    
+    # Check arguments
+    foreach my $name (keys %args) {
+        croak qq{"$name" is wrong option } . _subname
+          unless $SELECT_AT_ARGS{$name};
+    }
+    
+    # Table
+    croak qq{"table" option must be specified } . _subname
+      unless $args{table};
+    my $table = ref $args{table} ? $args{table}->[-1] : $args{table};
+    
+    # Create where parameter
+    my $where_param = $self->_create_param_from_id($where, $primary_keys);
+    
+    return $self->select(where => $where_param, %args);
 }
 
 # DEPRECATED!

@@ -2466,4 +2466,54 @@ $dbi->insert(table => 'table3', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1_3')->delete(id => [1, 2]);
 is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
 
+
+test 'select and id option';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$result = $dbi->select(
+    table => 'table1',
+    primary_key => ['key1', 'key2'],
+    id => [1, 2]
+);
+$row = $result->one;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 3);
+
+$dbi->delete_all(table => 'table1');
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$result = $dbi->select(
+    table => 'table1',
+    primary_key => 'key1',
+    id => 1,
+);
+$row = $result->one;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 3);
+
+$dbi->delete_all(table => 'table1');
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$result = $dbi->select(
+    table => 'table1',
+    primary_key => ['key1', 'key2'],
+    id => [1, 2]
+);
+$row = $result->one;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 3);
+
+
+test 'model select_at';
+$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$result = $dbi->model('table1')->select(id => [1, 2]);
+$row = $result->one;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 3);
+
 =cut
