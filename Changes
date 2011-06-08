@@ -1,4 +1,5 @@
 0.1686
+    - added EXPERIMENTAL col method.
     - set reserved_word_quote automatically from driver name
 0.1685
     - insert_at, update_at, delete_at, select_at is DEPRECATED!

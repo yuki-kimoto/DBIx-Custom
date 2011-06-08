@@ -171,6 +171,20 @@ sub assign_param {
     return $tag;
 }
 
+sub col {
+    my ($self, $table, $columns) = @_;
+    
+    # Reserved word quote
+    my $q = $self->reserved_word_quote;
+    
+    # Column clause
+    my @column;
+    $columns ||= [];
+    push @column, "$q$table$q.$q$_$q as $q${table}.$_$q" for @$columns;
+    
+    return join (', ', @column);
+}
+
 sub column {
     my ($self, $table, $columns) = @_;
     

@@ -1457,6 +1457,12 @@ $result = $dbi->select(
 );
 is($result->fetch_first->[0], 'B');
 
+$result = $dbi->select(
+    table => 'company', relation => {'company.location_id' => 'location.id'},
+    column => ['location.name as "location.name"']
+);
+is($result->fetch_first->[0], 'B');
+
 test 'Model class';
 use MyDBI1;
 $dbi = MyDBI1->connect($NEW_ARGS->{0});
@@ -2515,5 +2521,27 @@ $row = $result->one;
 is($row->{key1}, 1);
 is($row->{key2}, 2);
 is($row->{key3}, 3);
+
+test 'col';
+$dbi = MyDBI7->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->execute($CREATE_TABLE->{2});
+$dbi->setup_model;
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
+$model = $dbi->model('table1');
+$result = $model->select(
+    column => [$model->col('table2')],
+    where => {'table1.key1' => 1}
+);
+is_deeply($result->one,
+          {'table2.key1' => 1, 'table2.key3' => 3});
+
+$result = $model->select(
+    column => [$model->col('table2' => [qw/key1 key3/])],
+    where => {'table1.key1' => 1}
+);
+is_deeply($result->one,
+          {'table2.key1' => 1, 'table2.key3' => 3});
 
 =cut
