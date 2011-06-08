@@ -873,11 +873,21 @@ sub select {
     my @sql;
     push @sql, 'select';
     
+    # Reserved word quote
+    my $q = $self->reserved_word_quote;
+    
     # Column clause
     if ($columns) {
         $columns = [$columns] unless ref $columns eq 'ARRAY';
         foreach my $column (@$columns) {
-            $column = $self->col(%$column) if ref $column eq 'HASH';
+            if (ref $column eq 'HASH') {
+                $column = $self->col(%$column) if ref $column eq 'HASH';
+            }
+            elsif (ref $column eq 'ARRAY') {
+                croak "Format must be [COLUMN, as => ALIAS] " . _subname
+                  unless @$column == 3 && $column->[1] eq 'as';
+                $column = join(' ', $column->[0], 'as', $q . $column->[2] . $q);
+            }
             unshift @$tables, @{$self->_search_tables($column)};
             push @sql, ($column, ',');
         }
@@ -887,7 +897,6 @@ sub select {
     
     # Table
     push @sql, 'from';
-    my $q = $self->reserved_word_quote;
     if ($relation) {
         my $found = {};
         foreach my $table (@$tables) {
@@ -1635,8 +1644,7 @@ L<DBIx::Custom> is L<DBI> wrapper module.
 There are many basic methods to execute various queries.
 C<insert()>, C<update()>, C<update_all()>,C<delete()>,
 C<delete_all()>, C<select()>,
-C<insert_at()>, C<update_at()>, 
-C<delete_at()>, C<select_at()>, C<execute()>
+C<execute()>
 
 =item *
 
@@ -2388,13 +2396,23 @@ You can specify hash reference. This is EXPERIMENTAL.
         {book => [qw/author title/]},
         {person => [qw/name age/]}
     ]);
-    
-This is expanded to the following one by C<column> method automatically.
 
-    book.author as book__author,
-    book.title as book__title,
-    person.name as person__name,
-    person.age as person__age
+This is expanded to the following one by C<col> method automatically.
+
+    book.author as "book.author",
+    book.title as "book.title",
+    person.name as "person.name",
+    person.age as "person.age"
+
+You can specify array reference in array refernce.
+
+    $dbi->select(column => [
+        ['date(book.register_datetime)', as => 'book.register_date']
+    ]);
+
+These is joined and quoted.
+
+    date(book.register_datetime) as "book.register_date"
 
 =item C<where>
 

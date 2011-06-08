@@ -2125,6 +2125,24 @@ $result = $model->select_at(
 is_deeply($result->one,
           {key1 => 1, 'table2.key1' => 1});
 
+$result = $model->select_at(
+    column => [
+        $model->mycolumn(['key1']),
+        ['table2.key1', as => 'table2.key1']
+    ]
+);
+is_deeply($result->one,
+          {key1 => 1, 'table2.key1' => 1});
+
+eval{
+    $result = $model->select_at(
+        column => [
+            ['table2.key1', asaaaa => 'table2.key1']
+        ]
+    );
+};
+like($@, qr/COLUMN/);
+
 test 'dbi method from model';
 {
     package MyDBI9;

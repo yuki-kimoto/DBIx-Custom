@@ -1,4 +1,6 @@
 0.1686
+    - select() column option can receive array reference in array.
+      This is EXPERIMENTAL
     - select() EXPERIMETNAL column option hash format
       return table.column, not table__column
     - added EXPERIMENTAL col method.
