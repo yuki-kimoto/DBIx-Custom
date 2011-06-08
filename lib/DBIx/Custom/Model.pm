@@ -232,8 +232,8 @@ and implements the following new ones.
 
 =head2 C<column> EXPERIMETNAL
 
-    my $column = $self->column(book => ['author', 'title']);
-    my $column = $self->column('book');
+    my $column = $model->column(book => ['author', 'title']);
+    my $column = $model->column('book');
 
 Create column clause. The follwoing column clause is created.
 
@@ -244,8 +244,8 @@ If column names is omitted, C<columns> attribute of the model is used.
 
 =head2 C<col> EXPERIMETNAL
 
-    my $column = $self->col(book => ['author', 'title']);
-    my $column = $self->col('book');
+    my $column = $model->col(book => ['author', 'title']);
+    my $column = $model->col('book');
 
 Create column clause. The follwoing column clause is created.
 
@@ -268,26 +268,12 @@ you don't have to specify C<table> option.
 Same as C<delete_all()> of L<DBIx::Custom> except that
 you don't have to specify C<table> option.
 
-=head2 C<delete_at>
-
-    $table->delete_at(...);
-    
-Same as C<delete()> of L<DBIx::Custom> except that
-you don't have to specify C<table> and C<primary_key> option.
-
 =head2 C<insert>
 
     $table->insert(...);
     
 Same as C<insert()> of L<DBIx::Custom> except that
 you don't have to specify C<table> option.
-
-=head2 C<insert>
-
-    $table->insert_at(...);
-    
-Same as C<insert_at()> of L<DBIx::Custom> except that
-you don't have to specify C<table> and C<primary_key> option.
 
 =head2 C<method>
 
@@ -335,13 +321,6 @@ Create a L<DBIx::Custom::Table> object.
 Same as C<select()> of L<DBIx::Custom> except that
 you don't have to specify C<table> option.
 
-=head2 C<select_at>
-
-    $table->select_at(...);
-    
-Same as C<select_at()> of L<DBIx::Custom> except that
-you don't have to specify C<table> and C<primary_key> option.
-
 =head2 C<update>
 
     $table->update(...);
@@ -356,9 +335,30 @@ you don't have to specify C<table> option.
 Same as C<update_all()> of L<DBIx::Custom> except that
 you don't have to specify table name.
 
-=head2 C<update_at>
+=head2 C<update_at> DEPRECATED!
 
     $table->update_at(...);
     
 Same as C<update_at()> of L<DBIx::Custom> except that
+you don't have to specify C<table> and C<primary_key> option.
+
+=head2 C<select_at> DEPRECATED!
+
+    $table->select_at(...);
+    
+Same as C<select_at()> of L<DBIx::Custom> except that
+you don't have to specify C<table> and C<primary_key> option.
+
+=head2 C<insert_at> DEPRECATED!
+
+    $table->insert_at(...);
+    
+Same as C<insert_at()> of L<DBIx::Custom> except that
+you don't have to specify C<table> and C<primary_key> option.
+
+=head2 C<delete_at> DEPRECATED!
+
+    $table->delete_at(...);
+    
+Same as C<delete()> of L<DBIx::Custom> except that
 you don't have to specify C<table> and C<primary_key> option.

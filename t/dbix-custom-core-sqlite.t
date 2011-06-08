@@ -2116,7 +2116,6 @@ $result = $model->select_at(
 );
 is_deeply($result->one,
           {key1 => 1, table2__key1 => 1});
-
 $result = $model->select_at(
     column => [
         $model->mycolumn(['key1']),
@@ -2124,7 +2123,7 @@ $result = $model->select_at(
     ]
 );
 is_deeply($result->one,
-          {key1 => 1, table2__key1 => 1});
+          {key1 => 1, 'table2.key1' => 1});
 
 test 'dbi method from model';
 {

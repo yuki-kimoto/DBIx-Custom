@@ -1,4 +1,6 @@
 0.1686
+    - select() EXPERIMETNAL column option hash format
+      return table.column, not table__column
     - added EXPERIMENTAL col method.
     - set reserved_word_quote automatically from driver name
 0.1685

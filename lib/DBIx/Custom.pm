@@ -877,7 +877,7 @@ sub select {
     if ($columns) {
         $columns = [$columns] unless ref $columns eq 'ARRAY';
         foreach my $column (@$columns) {
-            $column = $self->column(%$column) if ref $column eq 'HASH';
+            $column = $self->col(%$column) if ref $column eq 'HASH';
             unshift @$tables, @{$self->_search_tables($column)};
             push @sql, ($column, ',');
         }
@@ -1838,6 +1838,24 @@ Create assign tag.
     title = :title, author = :author
 
 This is equal to C<update_param> exept that set is not added.
+
+=head2 C<col> EXPERIMETNAL
+
+    my $column = $model->col(book => ['author', 'title']);
+
+Create column clause. The follwoing column clause is created.
+
+    book.author as "book.author",
+    book.title as "book.title"
+
+=head2 C<column> EXPERIMETNAL
+
+    my $column = $dbi->column(book => ['author', 'title']);
+
+Create column clause. The follwoing column clause is created.
+
+    book.author as book__author,
+    book.title as book__title
 
 =head2 C<connect>
 
