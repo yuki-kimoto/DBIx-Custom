@@ -1,12 +1,15 @@
+0.1686
+    - 
 0.1685
     - insert_at, update_at, delete_at, select_at is DEPRECATED!
       use insert, update, delete, select method and id option.
-    - insert, insert_at, update, update_at can receive odd number arguments,      first one is parameter.
+    - insert, insert_at, update, update_at can receive odd number arguments,
+      first one is parameter.
 0.1684
     - added DBIx::Custom::Result all method, this is alias for fetch_hash_all
     - added DBIx::Custom::Result one method, this is alias for fetch_hash_first
     - DBIx::Custom::Result fetch_hash_first can recieve argument
-    - select() column option can receive hash reference
+    - select() column option can receive hash reference. This is EXPERIMENTAL
     - update_param_tag is DEPRECATED! use update_param instead.
     - insert_param_tag is DEPRECATED! use insert_param instead.
     - assing_param_tag is DEPRECATED! use assign_param instead.

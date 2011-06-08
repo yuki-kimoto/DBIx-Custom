@@ -28,6 +28,7 @@ $dbi = DBIx::Custom->new(
     result_class => 'g',
     query_builder => $query_builder,
 );
+delete $dbi->{tags};
 is_deeply($dbi,{user => 'a', password => 'b', dsn => 'c', 
                 filters => {f => 3}, default_bind_filter => 'f',
                 default_fetch_filter => 'g', result_class => 'g',

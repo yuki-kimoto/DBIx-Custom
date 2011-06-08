@@ -773,7 +773,7 @@ sub new {
     }
     
     # Register tag
-    $self->register_tag(
+    $self->query_builder->{tags} = {
         '?'     => \&DBIx::Custom::Tag::placeholder,
         '='     => \&DBIx::Custom::Tag::equal,
         '<>'    => \&DBIx::Custom::Tag::not_equal,
@@ -785,7 +785,7 @@ sub new {
         'in'    => \&DBIx::Custom::Tag::in,
         'insert_param' => \&DBIx::Custom::Tag::insert_param,
         'update_param' => \&DBIx::Custom::Tag::update_param
-    );
+    };
     
     return $self;
 }
@@ -2339,9 +2339,9 @@ Default is '*' if C<column> is not specified.
     # Default
     $dbi->select(column => '*');
 
-You can specify hash reference.
+You can specify hash reference. This is EXPERIMENTAL.
 
-    # Hash reference
+    # Hash reference EXPERIMENTAL
     $dbi->select(column => [
         {book => [qw/author title/]},
         {person => [qw/name age/]}
