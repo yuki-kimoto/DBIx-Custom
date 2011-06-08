@@ -1,5 +1,5 @@
 0.1686
-    - 
+    - set reserved_word_quote automatically from driver name
 0.1685
     - insert_at, update_at, delete_at, select_at is DEPRECATED!
       use insert, update, delete, select method and id option.

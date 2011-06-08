@@ -6,7 +6,7 @@ use utf8;
 use Encode qw/encode_utf8 decode_utf8/;
 use Data::Dumper;
 
-#$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
+$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 
 BEGIN {
     eval { require DBD::SQLite; 1 }
@@ -110,7 +110,6 @@ test 'Insert query return value';
 $dbi->execute($DROP_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $source = "insert into table1 {insert_param key1 key2}";
-$DB::single = 1;
 $query = $dbi->create_query($source);
 $ret_val = $dbi->execute($query, param => {key1 => 1, key2 => 2});
 ok($ret_val);

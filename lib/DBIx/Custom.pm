@@ -180,7 +180,7 @@ sub column {
     # Column clause
     my @column;
     $columns ||= [];
-    push @column, "$q$table$q.$q$_$q as $q${table}${q}__$q$_$q" for @$columns;
+    push @column, "$q$table$q.$q$_$q as $q${table}__$_$q" for @$columns;
     
     return join (', ', @column);
 }
@@ -274,10 +274,20 @@ sub dbh {
             croak "connector must have dbh() method " . _subname
               unless ref $connector && $connector->can('dbh');
               
-            return $self->{dbh} = $connector->dbh;
+            $self->{dbh} = $connector->dbh;
         }
         
-        return $self->{dbh} ||= $self->_connect;
+        # Connect
+        $self->{dbh} ||= $self->_connect;
+        
+        # Quote
+        unless ($self->reserved_word_quote) {
+            my $driver = $self->{dbh}->{Driver}->{Name};
+            my $quote = $driver eq 'mysql' ? '`' : '"';
+            $self->reserved_word_quote($quote);
+        }
+
+        return $self->{dbh};
     }
 }
 
@@ -772,7 +782,7 @@ sub new {
           unless $self->can($attr);
     }
     
-    # Register tag
+    # DEPRECATED!
     $self->query_builder->{tags} = {
         '?'     => \&DBIx::Custom::Tag::placeholder,
         '='     => \&DBIx::Custom::Tag::equal,
