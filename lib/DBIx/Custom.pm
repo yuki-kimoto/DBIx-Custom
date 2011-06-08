@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1684';
+our $VERSION = '0.1685';
 
 use 5.008001;
 use strict;
@@ -574,13 +574,17 @@ sub execute {
 our %INSERT_ARGS = map { $_ => 1 } @COMMON_ARGS, qw/param append/;
 
 sub insert {
-    my ($self, %args) = @_;
+    my $self = shift;
     
     # Arguments
+    my $param;
+    $param = shift if @_ % 2;
+    my %args = @_;
     my $table  = delete $args{table};
     croak qq{"table" option must be specified } . _subname
       unless $table;
-    my $param  = delete $args{param} || {};
+    my $p = delete $args{param} || {};
+    $param  ||= $p;
     my $append = delete $args{append} || '';
     my $query_return  = delete $args{query};
 
@@ -615,13 +619,17 @@ sub insert {
 our %INSERT_AT_ARGS = (%INSERT_ARGS, where => 1, primary_key => 1);
 
 sub insert_at {
-    my ($self, %args) = @_;
+    my $self = shift;
 
     # Arguments
+    my $param;
+    $param = shift if @_ % 2;
+    my %args = @_;
     my $primary_keys = delete $args{primary_key};
     $primary_keys = [$primary_keys] unless ref $primary_keys;
     my $where = delete $args{where};
-    my $param = delete $args{param};
+    my $p = delete $args{param} || {};
+    $param  ||= $p;
     
     # Check arguments
     foreach my $name (keys %args) {
@@ -1001,13 +1009,17 @@ our %UPDATE_ARGS
   = map { $_ => 1 } @COMMON_ARGS, qw/param where append allow_update_all where_param/;
 
 sub update {
-    my ($self, %args) = @_;
+    my $self = shift;
 
     # Arguments
+    my $param;
+    $param = shift if @_ % 2;
+    my %args = @_;
     my $table = delete $args{table} || '';
     croak qq{"table" option must be specified } . _subname
       unless $table;
-    my $param            = delete $args{param} || {};
+    my $p = delete $args{param} || {};
+    $param  ||= $p;
     my $where            = delete $args{where} || {};
     my $where_param      = delete $args{where_param} || {};
     my $append           = delete $args{append} || '';
@@ -1069,14 +1081,18 @@ sub update_all { shift->update(allow_update_all => 1, @_) };
 our %UPDATE_AT_ARGS = (%UPDATE_ARGS, where => 1, primary_key => 1);
 
 sub update_at {
-    my ($self, %args) = @_;
+    my $self = shift;
     
     # Arguments
+    my $param;
+    $param = shift if @_ % 2;
+    my %args = @_;
     my $primary_keys = delete $args{primary_key};
     $primary_keys = [$primary_keys] unless ref $primary_keys;
     my $where = delete $args{where};
+    my $p = delete $args{param} || {};
+    $param  ||= $p;
     
-
     # Check arguments
     foreach my $name (keys %args) {
         croak qq{"$name" is wrong option } . _subname
@@ -1086,7 +1102,7 @@ sub update_at {
     # Create where parameter
     my $where_param = $self->_create_where_param($where, $primary_keys);
     
-    return $self->update(where => $where_param, %args);
+    return $self->update(where => $where_param, param => $param, %args);
 }
 
 sub update_param {
@@ -2062,27 +2078,31 @@ Place holder is set to 5.
 =head2 C<insert>
 
     $dbi->insert(
-        table  => 'book', 
-        param  => {title => 'Perl', author => 'Ken'}
+        param  => {title => 'Perl', author => 'Ken'},
+        table  => 'book'
     );
-
+    
 Insert statement.
 
 The following opitons are currently available.
 
 =over 4
 
-=item C<table>
-
-Table name.
-
-    $dbi->insert(table => 'book');
-
 =item C<param>
 
 Insert data. This is hash reference.
 
     $dbi->insert(param => {title => 'Perl'});
+
+If arguments is odd numbers, first argument is received as C<param>.
+
+    $dbi->insert({title => 'Perl', author => 'Ken'}, table => 'book');
+
+=item C<table>
+
+Table name.
+
+    $dbi->insert(table => 'book');
 
 =item C<append>
 
@@ -2607,17 +2627,25 @@ The following opitons are currently available.
 
 =over 4
 
-=item C<table>
-
-Table name.
-
-    $dbi->update(table => 'book');
-
 =item C<param>
 
 Update data. This is hash reference.
 
     $dbi->update(param => {title => 'Perl'});
+
+If arguments is odd numbers, first argument is received as C<param>.
+
+    $dbi->update(
+        {title => 'Perl'},
+        table => 'book',
+        where => {author => 'Ken'}
+    );
+
+=item C<table>
+
+Table name.
+
+    $dbi->update(table => 'book');
 
 =item C<where>
 
