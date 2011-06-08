@@ -589,8 +589,9 @@ sub insert {
     my $query_return  = delete $args{query};
     my $id = delete $args{id};
     my $primary_key = delete $args{primary_key};
-    croak "primary_key must be specified when id is specified"
-        if defined $id && !defined $primary_key;
+    croak "select method primary_key option " .
+          "must be specified when id is specified " . _subname
+      if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
 
     # Check arguments

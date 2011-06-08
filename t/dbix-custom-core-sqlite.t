@@ -740,7 +740,7 @@ $result = $dbi->execute($SELECT_SOURCES->{0});
 $row   = $result->fetch_hash_first;
 is_deeply($row, {key1 => 2, key2 => 6}, "insert");
 $result = $dbi->select(table => 'table1');
-$row   = $result->fetch_hash_first;
+$row   = $result->one;
 is_deeply($row, {key1 => 6, key2 => 12}, "insert");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -755,7 +755,7 @@ $dbi->apply_filter(
 ); 
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$row   = $result->fetch_hash_first;
+$row   = $result->one;
 is_deeply($row, {key1 => 1, key2 => 6}, "insert");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -767,7 +767,7 @@ $dbi->apply_filter(
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, filter => {key1 => undef});
 $dbi->update(table => 'table1', param => {key1 => 2}, where => {key2 => 2});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$row   = $result->fetch_hash_first;
+$row   = $result->one;
 is_deeply($row, {key1 => 4, key2 => 2}, "update");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -932,13 +932,13 @@ test 'connect super';
 $dbi = MyDBI->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
 
 $dbi = MyDBI->new($NEW_ARGS->{0});
 $dbi->connect;
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
 
 {
     package MyDBI2;
@@ -955,7 +955,7 @@ is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
 $dbi = MyDBI->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
 
 test 'end_filter';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -989,7 +989,7 @@ $dbi->register_filter(five_times => sub { $_[0] * 5 });
 $result = $dbi->select(table => 'table1');
 $result->filter(key1 => sub { $_[0] * 2 }, key2 => sub { $_[0] * 4 });
 $result->end_filter({key1 => sub { $_[0] * 3 }, key2 => 'five_times' });
-$row = $result->fetch_hash_first;
+$row = $result->one;
 is_deeply($row, {key1 => 6, key2 => 40});
 
 $dbi->register_filter(five_times => sub { $_[0] * 5 });
@@ -999,7 +999,7 @@ $dbi->apply_filter('table1',
 );
 $result = $dbi->select(table => 'table1');
 $result->filter(key1 => sub { $_[0] * 2 }, key2 => sub { $_[0] * 4 });
-$row = $result->fetch_hash_first;
+$row = $result->one;
 is_deeply($row, {key1 => 6, key2 => 40}, 'apply_filter');
 
 $dbi->register_filter(five_times => sub { $_[0] * 5 });
@@ -1011,7 +1011,7 @@ $result = $dbi->select(table => 'table1');
 $result->filter(key1 => sub { $_[0] * 2 }, key2 => sub { $_[0] * 4 });
 $result->filter(key1 => undef);
 $result->end_filter(key1 => undef);
-$row = $result->fetch_hash_first;
+$row = $result->one;
 is_deeply($row, {key1 => 1, key2 => 40}, 'apply_filter overwrite');
 
 test 'remove_end_filter and remove_filter';
@@ -1032,7 +1032,7 @@ $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1', where => {});
-$row = $result->fetch_hash_first;
+$row = $result->one;
 is_deeply($row, {key1 => 1, key2 => 2});
 
 test 'select query option';
@@ -1385,7 +1385,7 @@ $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2},
              filter => {key1 => 'twice'});
-$row = $dbi->select(table => 'table1')->fetch_hash_first;
+$row = $dbi->select(table => 'table1')->one;
 is_deeply($row, {key1 => 2, key2 => 2});
 eval {$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2},
              filter => {key1 => 'no'}) };
@@ -1613,9 +1613,9 @@ $dbi->insert_at(
     where => [1, 2],
     param => {key3 => 3}
 );
-is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key2}, 2);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key3}, 3);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key3}, 3);
 
 $dbi->delete_all(table => 'table1');
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
@@ -1626,9 +1626,9 @@ $dbi->insert_at(
     param => {key2 => 2, key3 => 3}
 );
 
-is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key2}, 2);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key3}, 3);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key3}, 3);
 
 eval {
     $dbi->insert_at(
@@ -1648,9 +1648,9 @@ $dbi->insert_at(
     table => 'table1',
     where => [1, 2],
 );
-is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key2}, 2);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key3}, 3);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key3}, 3);
 
 test 'update_at';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -1662,9 +1662,9 @@ $dbi->update_at(
     where => [1, 2],
     param => {key3 => 4}
 );
-is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key2}, 2);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key3}, 4);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key3}, 4);
 
 $dbi->delete_all(table => 'table1');
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
@@ -1674,9 +1674,9 @@ $dbi->update_at(
     where => 1,
     param => {key3 => 4}
 );
-is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key2}, 2);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key3}, 4);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key3}, 4);
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});
@@ -1687,9 +1687,9 @@ $dbi->update_at(
     primary_key => ['key1', 'key2'],
     where => [1, 2]
 );
-is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key2}, 2);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key3}, 4);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key3}, 4);
 
 test 'select_at';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -1700,7 +1700,7 @@ $result = $dbi->select_at(
     primary_key => ['key1', 'key2'],
     where => [1, 2]
 );
-$row = $result->fetch_hash_first;
+$row = $result->one;
 is($row->{key1}, 1);
 is($row->{key2}, 2);
 is($row->{key3}, 3);
@@ -1712,7 +1712,7 @@ $result = $dbi->select_at(
     primary_key => 'key1',
     where => 1,
 );
-$row = $result->fetch_hash_first;
+$row = $result->one;
 is($row->{key1}, 1);
 is($row->{key2}, 2);
 is($row->{key3}, 3);
@@ -1724,7 +1724,7 @@ $result = $dbi->select_at(
     primary_key => ['key1', 'key2'],
     where => [1, 2]
 );
-$row = $result->fetch_hash_first;
+$row = $result->one;
 is($row->{key1}, 1);
 is($row->{key2}, 2);
 is($row->{key3}, 3);
@@ -1808,7 +1808,7 @@ $dbi->model('table1')->insert_at(
     param => {key3 => 3}
 );
 $result = $dbi->model('table1')->select;
-$row = $result->fetch_hash_first;
+$row = $result->one;
 is($row->{key1}, 1);
 is($row->{key2}, 2);
 is($row->{key3}, 3);
@@ -1822,7 +1822,7 @@ $dbi->model('table1')->update_at(
     param => {key3 => 4}
 );
 $result = $dbi->model('table1')->select;
-$row = $result->fetch_hash_first;
+$row = $result->one;
 is($row->{key1}, 1);
 is($row->{key2}, 2);
 is($row->{key3}, 4);
@@ -1832,7 +1832,7 @@ $dbi = MyDBI6->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $result = $dbi->model('table1')->select_at(where => [1, 2]);
-$row = $result->fetch_hash_first;
+$row = $result->one;
 is($row->{key1}, 1);
 is($row->{key2}, 2);
 is($row->{key3}, 3);
@@ -1864,7 +1864,7 @@ $result = $model->select(
     column => [$model->mycolumn, $model->column('table2')],
     where => {'table1.key1' => 1}
 );
-is_deeply($result->fetch_hash_first,
+is_deeply($result->one,
           {key1 => 1, key2 => 2, 'table2__key1' => 1, 'table2__key3' => 3});
 
 test 'update_param';
@@ -1957,8 +1957,8 @@ $sql = <<"EOS";
 insert into table1 $insert_param
 EOS
 $dbi->execute($sql, param => $param, table => 'table1');
-is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->reserved_word_quote('"');
@@ -1969,8 +1969,8 @@ $sql = <<"EOS";
 insert into table1 $insert_param
 EOS
 $dbi->execute($sql, param => $param, table => 'table1');
-is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
-is($dbi->select(table => 'table1')->fetch_hash_first->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
 
 eval { $dbi->insert_param({";" => 1}) };
 like($@, qr/not safety/);
@@ -2099,7 +2099,7 @@ $result = $model->select_at(
         $model->column('table2')
     ]
 );
-is_deeply($result->fetch_hash_first,
+is_deeply($result->one,
           {key1 => 1, key2 => 2, table2__key1 => 1, table2__key3 => 3});
 
 $result = $model->select_at(
@@ -2108,7 +2108,7 @@ $result = $model->select_at(
         $model->column(table2 => ['key1'])
     ]
 );
-is_deeply($result->fetch_hash_first,
+is_deeply($result->one,
           {key1 => 1, table2__key1 => 1});
 
 $result = $model->select_at(
@@ -2117,7 +2117,7 @@ $result = $model->select_at(
         {table2 => ['key1']}
     ]
 );
-is_deeply($result->fetch_hash_first,
+is_deeply($result->one,
           {key1 => 1, table2__key1 => 1});
 
 test 'dbi method from model';
@@ -2154,7 +2154,7 @@ $result = $model->select(
     ],
     where => {'table2_alias.key3' => 2}
 );
-is_deeply($result->fetch_hash_first, 
+is_deeply($result->one, 
           {table2_alias__key1 => 1, table2_alias__key3 => 48});
 
 test 'type() option';
@@ -2168,18 +2168,18 @@ my $binary = pack("I3", 1, 2, 3);
 $dbi->execute('create table table1(key1, key2)');
 $dbi->insert(table => 'table1', param => {key1 => $binary, key2 => 'あ'}, type => [key1 => DBI::SQL_BLOB]);
 $result = $dbi->select(table => 'table1');
-$row   = $result->fetch_hash_first;
+$row   = $result->one;
 is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
 $result = $dbi->execute('select length(key1) as key1_length from table1');
-$row = $result->fetch_hash_first;
+$row = $result->one;
 is($row->{key1_length}, length $binary);
 
 $dbi->insert(table => 'table1', param => {key1 => $binary, key2 => 'あ'}, type => [['key1'] => DBI::SQL_BLOB]);
 $result = $dbi->select(table => 'table1');
-$row   = $result->fetch_hash_first;
+$row   = $result->one;
 is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
 $result = $dbi->execute('select length(key1) as key1_length from table1');
-$row = $result->fetch_hash_first;
+$row = $result->one;
 is($row->{key1_length}, length $binary);
 
 test 'create_model';
@@ -2211,9 +2211,9 @@ $result = $model->select(
     column => [$model->mycolumn, $model->column('table2')],
     where => {'table1.key1' => 1}
 );
-is_deeply($result->fetch_hash_first,
+is_deeply($result->one,
           {key1 => 1, key2 => 2, 'table2__key1' => 1, 'table2__key3' => 3});
-is_deeply($model2->select->fetch_hash_first, {key1 => 1, key3 => 3});
+is_deeply($model2->select->one, {key1 => 1, key3 => 3});
 
 test 'model method';
 test 'create_model';
@@ -2224,7 +2224,7 @@ $model = $dbi->create_model(
     table => 'table2'
 );
 $model->method(foo => sub { shift->select(@_) });
-is_deeply($model->foo->fetch_hash_first, {key1 => 1, key3 => 3});
+is_deeply($model->foo->one, {key1 => 1, key3 => 3});
 
 test 'merge_param';
 {
@@ -2360,5 +2360,19 @@ $dbi->insert(
 is($dbi->select(table => 'table1')->one->{key1}, 1);
 is($dbi->select(table => 'table1')->one->{key2}, 2);
 is($dbi->select(table => 'table1')->one->{key3}, 3);
+
+test 'model insert id and primary_key option';
+$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->model('table1')->insert(
+    id => [1, 2],
+    param => {key3 => 3}
+);
+$result = $dbi->model('table1')->select;
+$row = $result->one;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 3);
+
 
 =cut

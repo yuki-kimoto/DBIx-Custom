@@ -53,8 +53,11 @@ foreach my $method (@methods) {
     my $code = sub {
         my $self = shift;
         
-        my @args = (table => $self->table, type => $self->type);
-        push @args, (primary_key => $self->primary_key) if $method =~ /_at$/;
+        my @args = (
+            table => $self->table,
+            type => $self->type,
+            primary_key => $self->primary_key
+        );
         push @args, (join => $self->join) if $method =~ /^select/;
         
         $self->dbi->$method(@args, @_);
