@@ -357,7 +357,7 @@ sub delete_at {
     }
     
     # Create where parameter
-    my $where_param = $self->_create_where_param($where, $primary_keys);
+    my $where_param = $self->_create_param_from_id($where, $primary_keys);
     
     return $self->delete(where => $where_param, %args);
 }
@@ -589,7 +589,7 @@ sub insert {
     my $query_return  = delete $args{query};
     my $id = delete $args{id};
     my $primary_key = delete $args{primary_key};
-    croak "select method primary_key option " .
+    croak "insert method primary_key option " .
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
@@ -602,7 +602,7 @@ sub insert {
 
     # Merge parameter
     if ($id) {
-        my $id_param = $self->_create_where_param($id, $primary_key);
+        my $id_param = $self->_create_param_from_id($id, $primary_key);
         $param = $self->merge_param($id_param, $param);
     }
 
@@ -969,7 +969,7 @@ sub select_at {
     my $table = ref $args{table} ? $args{table}->[-1] : $args{table};
     
     # Create where parameter
-    my $where_param = $self->_create_where_param($where, $primary_keys);
+    my $where_param = $self->_create_param_from_id($where, $primary_keys);
     
     return $self->select(where => $where_param, %args);
 }
@@ -1008,6 +1008,12 @@ sub update {
     my $where_param      = delete $args{where_param} || {};
     my $append           = delete $args{append} || '';
     my $allow_update_all = delete $args{allow_update_all};
+    my $id = delete $args{id};
+    my $primary_key = delete $args{primary_key};
+    croak "update method primary_key option " .
+          "must be specified when id is specified " . _subname
+      if defined $id && !defined $primary_key;
+    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     
     # Check argument names
     foreach my $name (keys %args) {
@@ -1061,33 +1067,6 @@ sub update {
 }
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
-
-our %UPDATE_AT_ARGS = (%UPDATE_ARGS, where => 1, primary_key => 1);
-
-sub update_at {
-    my $self = shift;
-    
-    # Arguments
-    my $param;
-    $param = shift if @_ % 2;
-    my %args = @_;
-    my $primary_keys = delete $args{primary_key};
-    $primary_keys = [$primary_keys] unless ref $primary_keys;
-    my $where = delete $args{where};
-    my $p = delete $args{param} || {};
-    $param  ||= $p;
-    
-    # Check arguments
-    foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option } . _subname
-          unless $UPDATE_AT_ARGS{$name};
-    }
-    
-    # Create where parameter
-    my $where_param = $self->_create_where_param($where, $primary_keys);
-    
-    return $self->update(where => $where_param, param => $param, %args);
-}
 
 sub update_param {
     my ($self, $param, $opt) = @_;
@@ -1156,27 +1135,25 @@ sub _create_bind_values {
     return $bind;
 }
 
-sub _create_where_param {
-    my ($self, $where, $primary_keys) = @_;
+sub _create_param_from_id {
+    my ($self, $id, $primary_keys) = @_;
     
-    # Create where parameter
-    my $where_param = {};
-    if ($where) {
-        $where = [$where] unless ref $where;
-        croak qq{"where" must be constant value or array reference}
+    # Create parameter
+    my $param = {};
+    if ($id) {
+        $id = [$id] unless ref $id;
+        croak qq{"id" must be constant value or array reference}
             . " (" . (caller 1)[3] . ")"
-          unless !ref $where || ref $where eq 'ARRAY';
-        
-        croak qq{"where" must contain values same count as primary key}
+          unless !ref $id || ref $id eq 'ARRAY';
+        croak qq{"id" must contain values same count as primary key}
             . " (" . (caller 1)[3] . ")"
-          unless @$primary_keys eq @$where;
-        
+          unless @$primary_keys eq @$id;
         for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $where_param->{$primary_keys->[$i]} = $where->[$i];
+           $param->{$primary_keys->[$i]} = $id->[$i];
         }
     }
     
-    return $where_param;
+    return $param;
 }
 
 sub _connect {
@@ -1354,6 +1331,35 @@ sub _where_to_obj {
 }
 
 # DEPRECATED!
+our %UPDATE_AT_ARGS = (%UPDATE_ARGS, where => 1, primary_key => 1);
+sub update_at {
+    my $self = shift;
+
+    warn "update_at is DEPRECATED! use update and id option instead";
+    
+    # Arguments
+    my $param;
+    $param = shift if @_ % 2;
+    my %args = @_;
+    my $primary_keys = delete $args{primary_key};
+    $primary_keys = [$primary_keys] unless ref $primary_keys;
+    my $where = delete $args{where};
+    my $p = delete $args{param} || {};
+    $param  ||= $p;
+    
+    # Check arguments
+    foreach my $name (keys %args) {
+        croak qq{"$name" is wrong option } . _subname
+          unless $UPDATE_AT_ARGS{$name};
+    }
+    
+    # Create where parameter
+    my $where_param = $self->_create_param_from_id($where, $primary_keys);
+    
+    return $self->update(where => $where_param, param => $param, %args);
+}
+
+# DEPRECATED!
 our %INSERT_AT_ARGS = (%INSERT_ARGS, where => 1, primary_key => 1);
 sub insert_at {
     my $self = shift;
@@ -1377,7 +1383,7 @@ sub insert_at {
     }
     
     # Create where parameter
-    my $where_param = $self->_create_where_param($where, $primary_key);
+    my $where_param = $self->_create_param_from_id($where, $primary_key);
     $param = $self->merge_param($where_param, $param);
     
     return $self->insert(param => $param, %args);

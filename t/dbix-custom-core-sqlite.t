@@ -2323,6 +2323,7 @@ $dbi->update(
 $rows = $dbi->select(table => 'table1')->fetch_hash_all;
 is_deeply($rows, [{key1 => 5, key2 => 2}]);
 
+
 test 'insert id and primary_key option';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});
@@ -2360,6 +2361,7 @@ $dbi->insert(
 is($dbi->select(table => 'table1')->one->{key1}, 1);
 is($dbi->select(table => 'table1')->one->{key2}, 2);
 is($dbi->select(table => 'table1')->one->{key3}, 3);
+
 
 test 'model insert id and primary_key option';
 $dbi = MyDBI6->connect($NEW_ARGS->{0});
