@@ -1020,11 +1020,12 @@ sub update {
         croak qq{"$name" is wrong option } . _subname
           unless $UPDATE_ARGS{$name};
     }
-        
+
     # Update clause
     my $update_clause = $self->update_param($param);
 
     # Where
+    $where = $self->_create_param_from_id($id, $primary_key) if $id;
     my $where_clause = '';
     if (ref $where) {
         $where = $self->_where_to_obj($where);
