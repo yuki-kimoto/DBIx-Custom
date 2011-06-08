@@ -302,8 +302,15 @@ sub delete {
     my $allow_delete_all = delete $args{allow_delete_all};
     my $query_return     = delete $args{query};
     my $where_param      = delete $args{where_param} || {};
-
+    my $id = delete $args{id};
+    my $primary_key = delete $args{primary_key};
+    croak "update method primary_key option " .
+          "must be specified when id is specified " . _subname
+      if defined $id && !defined $primary_key;
+    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
+    
     # Where
+    $where = $self->_create_param_from_id($id, $primary_key) if $id;
     my $where_clause = '';
     if (ref $where) {
         $where = $self->_where_to_obj($where);
@@ -339,28 +346,6 @@ sub delete {
 }
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
-
-our %DELETE_AT_ARGS = (%DELETE_ARGS, where => 1, primary_key => 1);
-
-sub delete_at {
-    my ($self, %args) = @_;
-    
-    # Arguments
-    my $primary_keys = delete $args{primary_key};
-    $primary_keys = [$primary_keys] unless ref $primary_keys;
-    my $where = delete $args{where};
-    
-    # Check arguments
-    foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option } . _subname
-          unless $DELETE_AT_ARGS{$name};
-    }
-    
-    # Create where parameter
-    my $where_param = $self->_create_param_from_id($where, $primary_keys);
-    
-    return $self->delete(where => $where_param, %args);
-}
 
 sub DESTROY { }
 
@@ -1329,6 +1314,28 @@ sub _where_to_obj {
       unless ref $obj eq 'DBIx::Custom::Where';
     
     return $obj;
+}
+
+# DEPRECATED!
+our %DELETE_AT_ARGS = (%DELETE_ARGS, where => 1, primary_key => 1);
+sub delete_at {
+    my ($self, %args) = @_;
+    
+    # Arguments
+    my $primary_keys = delete $args{primary_key};
+    $primary_keys = [$primary_keys] unless ref $primary_keys;
+    my $where = delete $args{where};
+    
+    # Check arguments
+    foreach my $name (keys %args) {
+        croak qq{"$name" is wrong option } . _subname
+          unless $DELETE_AT_ARGS{$name};
+    }
+    
+    # Create where parameter
+    my $where_param = $self->_create_param_from_id($where, $primary_keys);
+    
+    return $self->delete(where => $where_param, %args);
 }
 
 # DEPRECATED!
