@@ -2323,4 +2323,42 @@ $dbi->update(
 $rows = $dbi->select(table => 'table1')->fetch_hash_all;
 is_deeply($rows, [{key1 => 5, key2 => 2}]);
 
+test 'insert id and primary_key option';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->insert(
+    primary_key => ['key1', 'key2'], 
+    table => 'table1',
+    id => [1, 2],
+    param => {key3 => 3}
+);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key3}, 3);
+
+$dbi->delete_all(table => 'table1');
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->insert(
+    primary_key => 'key1', 
+    table => 'table1',
+    id => 1,
+    param => {key2 => 2, key3 => 3}
+);
+
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key3}, 3);
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->insert(
+    {key3 => 3},
+    primary_key => ['key1', 'key2'], 
+    table => 'table1',
+    id => [1, 2],
+);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key3}, 3);
+
 =cut

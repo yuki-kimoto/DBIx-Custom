@@ -22,7 +22,7 @@ use Encode qw/encode encode_utf8 decode_utf8/;
 use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 
-our @COMMON_ARGS = qw/table query filter type/;
+our @COMMON_ARGS = qw/table query filter type id primary_key/;
 
 __PACKAGE__->attr(
     [qw/connector dsn password user/],
@@ -571,7 +571,7 @@ sub execute {
     else { return $affected }
 }
 
-our %INSERT_ARGS = map { $_ => 1 } @COMMON_ARGS, qw/param append/;
+our %INSERT_ARGS = map { $_ => 1 } @COMMON_ARGS, qw/param/;
 
 sub insert {
     my $self = shift;
@@ -587,11 +587,22 @@ sub insert {
     $param  ||= $p;
     my $append = delete $args{append} || '';
     my $query_return  = delete $args{query};
+    my $id = delete $args{id};
+    my $primary_key = delete $args{primary_key};
+    croak "primary_key must be specified when id is specified"
+        if defined $id && !defined $primary_key;
+    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
 
     # Check arguments
     foreach my $name (keys %args) {
         croak qq{"$name" is wrong option } . _subname
           unless $INSERT_ARGS{$name};
+    }
+
+    # Merge parameter
+    if ($id) {
+        my $id_param = $self->_create_where_param($id, $primary_key);
+        $param = $self->merge_param($id_param, $param);
     }
 
     # Reserved word quote
@@ -614,34 +625,6 @@ sub insert {
         table => $table,
         %args
     );
-}
-
-our %INSERT_AT_ARGS = (%INSERT_ARGS, where => 1, primary_key => 1);
-
-sub insert_at {
-    my $self = shift;
-
-    # Arguments
-    my $param;
-    $param = shift if @_ % 2;
-    my %args = @_;
-    my $primary_keys = delete $args{primary_key};
-    $primary_keys = [$primary_keys] unless ref $primary_keys;
-    my $where = delete $args{where};
-    my $p = delete $args{param} || {};
-    $param  ||= $p;
-    
-    # Check arguments
-    foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option } . _subname
-          unless $INSERT_AT_ARGS{$name};
-    }
-    
-    # Create where parameter
-    my $where_param = $self->_create_where_param($where, $primary_keys);
-    $param = $self->merge_param($where_param, $param);
-    
-    return $self->insert(param => $param, %args);
 }
 
 sub insert_param {
@@ -835,7 +818,7 @@ sub register_filter {
 
 our %SELECT_ARGS
   = map { $_ => 1 } @COMMON_ARGS,
-                    qw/column where append relation join param where_param wrap/;
+                    qw/column where relation join param where_param wrap/;
 
 sub select {
     my ($self, %args) = @_;
@@ -1006,7 +989,7 @@ sub setup_model {
 }
 
 our %UPDATE_ARGS
-  = map { $_ => 1 } @COMMON_ARGS, qw/param where append allow_update_all where_param/;
+  = map { $_ => 1 } @COMMON_ARGS, qw/param where allow_update_all where_param/;
 
 sub update {
     my $self = shift;
@@ -1367,6 +1350,36 @@ sub _where_to_obj {
       unless ref $obj eq 'DBIx::Custom::Where';
     
     return $obj;
+}
+
+# DEPRECATED!
+our %INSERT_AT_ARGS = (%INSERT_ARGS, where => 1, primary_key => 1);
+sub insert_at {
+    my $self = shift;
+    
+    warn "insert_at is DEPRECATED! use insert and id option instead";
+    
+    # Arguments
+    my $param;
+    $param = shift if @_ % 2;
+    my %args = @_;
+    my $primary_key = delete $args{primary_key};
+    $primary_key = [$primary_key] unless ref $primary_key;
+    my $where = delete $args{where};
+    my $p = delete $args{param} || {};
+    $param  ||= $p;
+    
+    # Check arguments
+    foreach my $name (keys %args) {
+        croak qq{"$name" is wrong option } . _subname
+          unless $INSERT_AT_ARGS{$name};
+    }
+    
+    # Create where parameter
+    my $where_param = $self->_create_where_param($where, $primary_key);
+    $param = $self->merge_param($where_param, $param);
+    
+    return $self->insert(param => $param, %args);
 }
 
 # DEPRECATED!
