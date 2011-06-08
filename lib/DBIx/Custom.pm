@@ -1300,6 +1300,8 @@ our %SELECT_AT_ARGS = (%SELECT_ARGS, where => 1, primary_key => 1);
 sub select_at {
     my ($self, %args) = @_;
 
+    warn "select_at is DEPRECATED! use update and id option instead";
+
     # Arguments
     my $primary_keys = delete $args{primary_key};
     $primary_keys = [$primary_keys] unless ref $primary_keys;
@@ -1327,6 +1329,8 @@ sub select_at {
 our %DELETE_AT_ARGS = (%DELETE_ARGS, where => 1, primary_key => 1);
 sub delete_at {
     my ($self, %args) = @_;
+
+    warn "delete_at is DEPRECATED! use update and id option instead";
     
     # Arguments
     my $primary_keys = delete $args{primary_key};
@@ -2034,15 +2038,6 @@ filter name registerd by C<register_filter()>.
 
 These filters are added to the C<out> filters, set by C<apply_filter()>.
 
-=head2 C<column>
-
-    my $column = $self->column(book => ['author', 'title']);
-
-Create column clause. The follwoing column clause is created.
-
-    book.author as book__author,
-    book.title as book__title
-
 =item C<query>
 
 Get L<DBIx::Custom::Query> object instead of executing SQL.
@@ -2054,6 +2049,30 @@ You can check SQL.
 
     my $sql = $query->sql;
 
+=item C<id>
+
+Delete using primary_key.
+
+    $dbi->delete(
+        primary_key => 'id',
+        id => 4,
+    );
+
+    $dbi->delete(
+        primary_key => ['id1', 'id2'],
+        id => [4, 5],
+    );
+
+The above is same as the followin ones.
+
+    $dbi->delete(where => {id => 4});
+
+    $dbi->delete(where => {id1 => 4, id2 => 5});
+
+=item C<primary_key>
+
+See C<id> option.
+
 =back
 
 =head2 C<delete_all>
@@ -2062,53 +2081,6 @@ You can check SQL.
 
 Delete statement to delete all rows.
 Options is same as C<delete()>.
-
-=head2 C<delete_at()>
-
-Delete statement, using primary key.
-
-    $dbi->delete_at(
-        table => 'book',
-        primary_key => 'id',
-        where => '5'
-    );
-
-This method is same as C<delete()> exept that
-C<primary_key> is specified and C<where> is constant value or array refrence.
-all option of C<delete()> is available.
-
-=over 4
-
-=item C<primary_key>
-
-Primary key. This is constant value or array reference.
-    
-    # Constant value
-    $dbi->delete(primary_key => 'id');
-
-    # Array reference
-    $dbi->delete(primary_key => ['id1', 'id2' ]);
-
-This is used to create where clause.
-
-=item C<where>
-
-Where clause, created from primary key information.
-This is constant value or array reference.
-
-    # Constant value
-    $dbi->delete(where => 5);
-
-    # Array reference
-    $dbi->delete(where => [3, 5]);
-
-In first examle, the following SQL is created.
-
-    delete from book where id = ?;
-
-Place holder is set to 5.
-
-=back
 
 =head2 C<insert>
 
@@ -2189,53 +2161,7 @@ You can check SQL.
 
 =back
 
-=head2 C<insert_at()>
-
-Insert statement, using primary key.
-
-    $dbi->insert_at(
-        table => 'book',
-        primary_key => 'id',
-        where => '5',
-        param => {title => 'Perl'}
-    );
-
-This method is same as C<insert()> exept that
-C<primary_key> is specified and C<where> is constant value or array refrence.
-all option of C<insert()> is available.
-
 =over 4
-
-=item C<primary_key>
-
-Primary key. This is constant value or array reference.
-    
-    # Constant value
-    $dbi->insert(primary_key => 'id');
-
-    # Array reference
-    $dbi->insert(primary_key => ['id1', 'id2' ]);
-
-This is used to create parts of insert data.
-
-=item C<where>
-
-Parts of Insert data, create from primary key information.
-This is constant value or array reference.
-
-    # Constant value
-    $dbi->insert(where => 5);
-
-    # Array reference
-    $dbi->insert(where => [3, 5]);
-
-In first examle, the following SQL is created.
-
-    insert into book (id, title) values (?, ?);
-
-Place holders are set to 5 and 'Perl'.
-
-=back
 
 =head2 C<insert_param>
 
@@ -2378,42 +2304,6 @@ This is used by C<clause> of L<DBIx::Custom::Where> .
     
 Register filters, used by C<filter> option of many methods.
 
-=head2 C<register_tag> DEPRECATED!
-
-    $dbi->register_tag(
-        update => sub {
-            my @columns = @_;
-            
-            # Update parameters
-            my $s = 'set ';
-            $s .= "$_ = ?, " for @columns;
-            $s =~ s/, $//;
-            
-            return [$s, \@columns];
-        }
-    );
-
-Register tag, used by C<execute()>.
-
-See also L<Tags/Tags> about tag registered by default.
-
-Tag parser receive arguments specified in tag.
-In the following tag, 'title' and 'author' is parser arguments
-
-    {update_param title author} 
-
-Tag parser must return array refrence,
-first element is the result statement, 
-second element is column names corresponding to place holders.
-
-In this example, result statement is 
-
-    set title = ?, author = ?
-
-Column names is
-
-    ['title', 'author']
-
 =head2 C<select>
 
     my $result = $dbi->select(
@@ -2537,6 +2427,30 @@ you can pass parameter by C<param> option.
 Append statement to last of SQL. This is string.
 
     $dbi->select(append => 'order by title');
+    
+=item C<id>
+
+Select using primary_key.
+
+    $dbi->select(
+        primary_key => 'id',
+        id => 4,
+    );
+
+    $dbi->select(
+        primary_key => ['id1', 'id2'],
+        id => [4, 5]
+    );
+
+The above is same as the followin ones.
+
+    $dbi->insert(where => {id => 4});
+
+    $dbi->insert(where => {id1 => 4, id2 => 5});
+
+=item C<primary_key>
+
+See C<id> option.
 
 =item C<wrap> EXPERIMENTAL
 
@@ -2601,53 +2515,6 @@ This is used to bind paramter by C<bind_param()> of statment handle.
 
 =back
 
-=head2 C<select_at()>
-
-Select statement, using primary key.
-
-    $dbi->select_at(
-        table => 'book',
-        primary_key => 'id',
-        where => '5'
-    );
-
-This method is same as C<select()> exept that
-C<primary_key> is specified and C<where> is constant value or array refrence.
-all option of C<select()> is available.
-
-=over 4
-
-=item C<primary_key>
-
-Primary key. This is constant value or array reference.
-    
-    # Constant value
-    $dbi->select(primary_key => 'id');
-
-    # Array reference
-    $dbi->select(primary_key => ['id1', 'id2' ]);
-
-This is used to create where clause.
-
-=item C<where>
-
-Where clause, created from primary key information.
-This is constant value or array reference.
-
-    # Constant value
-    $dbi->select(where => 5);
-
-    # Array reference
-    $dbi->select(where => [3, 5]);
-
-In first examle, the following SQL is created.
-
-    select * from book where id = ?
-
-Place holder is set to 5.
-
-=back
-
 =head2 C<update>
 
     $dbi->update(
@@ -2700,7 +2567,7 @@ or array refrence.
     # String(with where_param option)
     $dbi->update(
         param => {title => 'Perl'},
-        where => 'id = :id'',
+        where => 'id = :id',
         where_param => {id => 2}
     );
     
@@ -2752,6 +2619,62 @@ You can check SQL.
 
     my $sql = $query->sql;
 
+Insert using primary_key.
+
+    $dbi->insert(
+        primary_key => 'id',
+        id => 4,
+        param => {title => 'Perl', author => 'Ken'}
+    );
+
+    $dbi->insert(
+        primary_key => ['id1', 'id2'],
+        id => [4, 5],
+        param => {title => 'Perl', author => 'Ken'}
+    );
+
+The above is same as the followin ones.
+
+    $dbi->insert(
+        param => {id => 4, title => 'Perl', author => 'Ken'}
+    );
+
+    $dbi->insert(
+        param => {id1 => 4, id2 => 5, title => 'Perl', author => 'Ken'}
+    );
+
+=item C<id>
+
+update using primary_key.
+
+    $dbi->update(
+        primary_key => 'id',
+        id => 4,
+        param => {title => 'Perl', author => 'Ken'}
+    );
+
+    $dbi->update(
+        primary_key => ['id1', 'id2'],
+        id => [4, 5],
+        param => {title => 'Perl', author => 'Ken'}
+    );
+
+The above is same as the followin ones.
+
+    $dbi->update(
+        where => {id => 4}
+        param => {title => 'Perl', author => 'Ken'}
+    );
+
+    $dbi->update(
+        where => {id1 => 4, id2 => 5},
+        param => {title => 'Perl', author => 'Ken'}
+    );
+
+=item C<primary_key>
+
+See C<id> option.
+
 =back
 
 =head2 C<update_all>
@@ -2760,54 +2683,6 @@ You can check SQL.
 
 Update statement to update all rows.
 Options is same as C<update()>.
-
-=head2 C<update_at()>
-
-Update statement, using primary key.
-
-    $dbi->update_at(
-        table => 'book',
-        primary_key => 'id',
-        where => '5',
-        param => {title => 'Perl'}
-    );
-
-This method is same as C<update()> exept that
-C<primary_key> is specified and C<where> is constant value or array refrence.
-all option of C<update()> is available.
-
-=over 4
-
-=item C<primary_key>
-
-Primary key. This is constant value or array reference.
-    
-    # Constant value
-    $dbi->update(primary_key => 'id');
-
-    # Array reference
-    $dbi->update(primary_key => ['id1', 'id2' ]);
-
-This is used to create where clause.
-
-=item C<where>
-
-Where clause, created from primary key information.
-This is constant value or array reference.
-
-    # Constant value
-    $dbi->update(where => 5);
-
-    # Array reference
-    $dbi->update(where => [3, 5]);
-
-In first examle, the following SQL is created.
-
-    update book set title = ? where id = ?
-
-Place holders are set to 'Perl' and 5.
-
-=back
 
 =head2 C<update_param>
 
@@ -2834,6 +2709,85 @@ Create a new L<DBIx::Custom::Where> object.
 
 Setup all model objects.
 C<columns> of model object is automatically set, parsing database information.
+
+=head2 C<update_at()> DEPRECATED!
+
+Update statement, using primary key.
+
+    $dbi->update_at(
+        table => 'book',
+        primary_key => 'id',
+        where => '5',
+        param => {title => 'Perl'}
+    );
+
+This method is same as C<update()> exept that
+C<primary_key> is specified and C<where> is constant value or array refrence.
+all option of C<update()> is available.
+
+=head2 C<delete_at()> DEPRECATED!
+
+Delete statement, using primary key.
+
+    $dbi->delete_at(
+        table => 'book',
+        primary_key => 'id',
+        where => '5'
+    );
+
+This method is same as C<delete()> exept that
+C<primary_key> is specified and C<where> is constant value or array refrence.
+all option of C<delete()> is available.
+
+=head2 C<select_at()> DEPRECATED!
+
+Select statement, using primary key.
+
+    $dbi->select_at(
+        table => 'book',
+        primary_key => 'id',
+        where => '5'
+    );
+
+This method is same as C<select()> exept that
+C<primary_key> is specified and C<where> is constant value or array refrence.
+all option of C<select()> is available.
+
+=head2 C<register_tag> DEPRECATED!
+
+    $dbi->register_tag(
+        update => sub {
+            my @columns = @_;
+            
+            # Update parameters
+            my $s = 'set ';
+            $s .= "$_ = ?, " for @columns;
+            $s =~ s/, $//;
+            
+            return [$s, \@columns];
+        }
+    );
+
+Register tag, used by C<execute()>.
+
+See also L<Tags/Tags> about tag registered by default.
+
+Tag parser receive arguments specified in tag.
+In the following tag, 'title' and 'author' is parser arguments
+
+    {update_param title author} 
+
+Tag parser must return array refrence,
+first element is the result statement, 
+second element is column names corresponding to place holders.
+
+In this example, result statement is 
+
+    set title = ?, author = ?
+
+Column names is
+
+    ['title', 'author']
 
 =head1 Parameter
 
@@ -2920,6 +2874,21 @@ Insert parameter tag.
 Updata parameter tag.
 
     {update_param NAME1 NAME2}   ->   set NAME1 = ?, NAME2 = ?
+
+=head2 C<insert_at()> DEPRECATED!
+
+Insert statement, using primary key.
+
+    $dbi->insert_at(
+        table => 'book',
+        primary_key => 'id',
+        where => '5',
+        param => {title => 'Perl'}
+    );
+
+This method is same as C<insert()> exept that
+C<primary_key> is specified and C<where> is constant value or array refrence.
+all option of C<insert()> is available.
 
 =head1 ENVIRONMENT VARIABLE
 
