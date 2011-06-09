@@ -163,6 +163,12 @@ $result = $dbi->execute($query, param => {key1 => 1, key2 => 3, key3 => 4, key4 
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "basic tag1");
 
+$source = "select * from table1 where {= key1} and {<> key2} and {< key3} and {> key4} and {>= key5};";
+$query = $dbi->create_query($source);
+$result = $dbi->execute($query, {key1 => 1, key2 => 3, key3 => 4, key4 => 3, key5 => 5});
+$rows = $result->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "basic tag1");
+
 $source = "select * from table1 where {<= key1} and {like key2};";
 $query = $dbi->create_query($source);
 $result = $dbi->execute($query, param => {key1 => 1, key2 => '%2%'});

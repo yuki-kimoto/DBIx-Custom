@@ -427,10 +427,15 @@ sub each_column {
 our %EXECUTE_ARGS = map { $_ => 1 } @COMMON_ARGS, 'param';
 
 sub execute {
-    my ($self, $query, %args)  = @_;
+    my $self = shift;
+    my $query = shift;
+    my $param;
+    $param = shift if @_ % 2;
+    my %args = @_;
     
     # Arguments
-    my $param  = delete $args{param} || {};
+    my $p = delete $args{param} || {};
+    $param ||= $p;
     my $tables = delete $args{table} || [];
     $tables = [$tables] unless ref $tables eq 'ARRAY';
     my $filter = delete $args{filter};
@@ -1977,7 +1982,7 @@ column name and column information.
 
     my $result = $dbi->execute(
         "select * from book where title = :title and author like :author",
-        param => {title => 'Perl', author => '%Ken%'}
+        {title => 'Perl', author => '%Ken%'}
     );
 
 Execute SQL, containing tags.
