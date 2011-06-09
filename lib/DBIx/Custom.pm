@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1685';
+our $VERSION = '0.1687';
 
 use 5.008001;
 use strict;
@@ -566,11 +566,12 @@ sub execute {
         
         # Result
         my $result = $self->result_class->new(
-            sth            => $sth,
-            filters        => $self->filters,
+            sth => $sth,
+            filters => $self->filters,
             default_filter => $self->{default_in_filter},
-            filter         => $filter->{in} || {},
-            end_filter     => $filter->{end} || {}
+            filter => $filter->{in} || {},
+            end_filter => $filter->{end} || {},
+            type_rule => $self->type_rule,
         );
 
         return $result;
@@ -984,6 +985,19 @@ sub setup_model {
         }
     );
     return $self;
+}
+
+sub type_rule {
+    my $self = shift;
+    
+    if (@_) {
+        my $type_rule = _array_to_hash([@_]);
+        $self->{type_rule} = $type_rule;
+        
+        return $self;
+    }
+    
+    return $self->{type_rule} || {};
 }
 
 our %UPDATE_ARGS

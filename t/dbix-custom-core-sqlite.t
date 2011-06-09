@@ -2561,4 +2561,20 @@ $result = $model->select(
 is_deeply($result->one,
           {'table2.key1' => 1, 'table2.key3' => 3});
 
+
+test 'type_rule from';
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+$dbi->type_rule(
+    Date => {
+        from => sub { uc $_[0] }
+    }
+);
+$dbi->execute("create table table1 (key1 Date, key2 datetime)");
+$dbi->insert({key1 => 'a'}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+is($result->fetch_first->[0], 'A');
+
+$result = $dbi->select(table => 'table1');
+is($result->one->{key1}, 'A');
+
 =cut
