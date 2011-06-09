@@ -9,7 +9,7 @@ use Carp 'croak';
 use DBIx::Custom::Util qw/_array_to_hash _subname/;
 
 __PACKAGE__->attr(
-    [qw/filters sth type_rule/],
+    [qw/filters sth type_rule type_rule_off/],
     stash => sub { {} }
 );
 
@@ -111,7 +111,7 @@ sub fetch {
     
     for (my $i = 0; $i < @$columns; $i++) {
         
-        if ($type_rule->{$types->[$i]} &&
+        if (!$self->type_rule_off && $type_rule->{$types->[$i]} &&
             (my $rule = $type_rule->{$types->[$i]}->{from}))
         {
             $row[$i] = $rule->($row[$i]);
@@ -181,7 +181,7 @@ sub fetch_hash {
     for (my $i = 0; $i < @$columns; $i++) {
         
         # Type rule
-        if ($type_rule->{$types->[$i]} &&
+        if (!$self->type_rule_off && $type_rule->{$types->[$i]} &&
             (my $rule = $type_rule->{$types->[$i]}->{from}))
         {
             $row->[$i] = $rule->($row->[$i]);
@@ -388,6 +388,13 @@ Resistered filters.
     $result = $result->sth($sth);
 
 Statement handle of L<DBI>.
+
+=head2 C<type_rule_off> EXPERIMENTAL
+
+    my $type_rule_off = $result->type_rule_off;
+    $result = $result->type_rule_off(1);
+
+Turn type rule off.
 
 =head1 METHODS
 

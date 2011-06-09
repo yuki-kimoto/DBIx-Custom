@@ -1,5 +1,6 @@
 0.1687
     - added EXPERIMENTAL type_rule method
+    - added EXPERIMENTAL execute() type_rule_off option
 0.1686
     - select() column option can receive array reference in array.
       This is EXPERIMENTAL

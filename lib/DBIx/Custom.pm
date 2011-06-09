@@ -22,7 +22,7 @@ use Encode qw/encode encode_utf8 decode_utf8/;
 use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 
-our @COMMON_ARGS = qw/table query filter type id primary_key/;
+our @COMMON_ARGS = qw/table query filter type id primary_key type_rule_off/;
 
 __PACKAGE__->attr(
     [qw/connector dsn password user/],
@@ -442,6 +442,7 @@ sub execute {
     $filter = _array_to_hash($filter);
     my $type = delete $args{type};
     $type = _array_to_hash($type);
+    my $type_rule_off = delete $args{type_rule_off};
     
     # Check argument names
     foreach my $name (keys %args) {
@@ -489,21 +490,23 @@ sub execute {
 
     # Type rule
     my $applied_filter = {};
-    foreach my $name (keys %$param) {
-        my $table;
-        my $column;
-        if ($name =~ /(?:(.+)\.)?(.+)/) {
-            $table = $1;
-            $column = $2;
-        }
-        $table ||= $main_table;
-        
-        my $into = $self->{_into} || {};
-        if (defined $table && $into->{$table} &&
-            (my $rule = $into->{$table}->{$column}))
-        {
-            $applied_filter->{$column} = $rule;
-            $applied_filter->{"$table.$column"} = $rule;
+    unless ($type_rule_off) {
+        foreach my $name (keys %$param) {
+            my $table;
+            my $column;
+            if ($name =~ /(?:(.+)\.)?(.+)/) {
+                $table = $1;
+                $column = $2;
+            }
+            $table ||= $main_table;
+            
+            my $into = $self->{_into} || {};
+            if (defined $table && $into->{$table} &&
+                (my $rule = $into->{$table}->{$column}))
+            {
+                $applied_filter->{$column} = $rule;
+                $applied_filter->{"$table.$column"} = $rule;
+            }
         }
     }
     
@@ -591,6 +594,7 @@ sub execute {
             filter => $filter->{in} || {},
             end_filter => $filter->{end} || {},
             type_rule => $self->type_rule,
+            type_rule_off => $type_rule_off
         );
 
         return $result;
@@ -2050,6 +2054,28 @@ filter name registerd by C<register_filter()>.
     );
 
 These filters are added to the C<out> filters, set by C<apply_filter()>.
+C<filter> option is also available
+by C<insert()>, C<update()>, C<delete()>, C<select()>
+
+=item C<type>
+
+Specify database data type.
+
+    type => [image => DBI::SQL_BLOB]
+    type => [[qw/image audio/] => DBI::SQL_BLOB]
+
+This is used to bind paramter by C<bind_param()> of statment handle.
+
+    $sth->bind_param($pos, $value, DBI::SQL_BLOB);
+
+C<type> option is also available
+by C<insert()>, C<update()>, C<delete()>, C<select()>.
+
+=item C<type_rule_off> EXPERIMENTAL
+
+    type_rule_off => 1
+
+Trun type rule off.
 
 =back
 
@@ -2098,34 +2124,7 @@ Append statement to last of SQL. This is string.
 
 =item C<filter>
 
-Filter, executed before data is send to database. This is array reference.
-Filter value is code reference or
-filter name registerd by C<register_filter()>.
-
-    # Basic
-    $dbi->delete(
-        filter => {
-            title  => sub { uc $_[0] }
-            author => sub { uc $_[0] }
-        }
-    );
-    
-    # At once (use array reference)
-    $dbi->delete(
-        filter => [
-            [qw/title author/]  => sub { uc $_[0] }
-        ]
-    );
-    
-    # Filter name
-    $dbi->delete(
-        filter => {
-            title  => 'upper_case',
-            author => 'upper_case'
-        }
-    );
-
-These filters are added to the C<out> filters, set by C<apply_filter()>.
+Same as C<execute> method's C<filter> option.
 
 =item C<query>
 
@@ -2161,6 +2160,14 @@ The above is same as the followin ones.
 =item C<primary_key>
 
 See C<id> option.
+
+=item C<type>
+
+Same as C<execute> method's C<type> option.
+
+=item C<type_rule_off> EXPERIMENTAL
+
+Same as C<execute> method's C<type_rule_off> option.
 
 =back
 
@@ -2208,34 +2215,7 @@ Append statement to last of SQL. This is string.
 
 =item C<filter>
 
-Filter, executed before data is send to database. This is array reference.
-Filter value is code reference or
-filter name registerd by C<register_filter()>.
-
-    # Basic
-    $dbi->insert(
-        filter => {
-            title  => sub { uc $_[0] }
-            author => sub { uc $_[0] }
-        }
-    );
-    
-    # At once (use array reference)
-    $dbi->insert(
-        filter => [
-            [qw/title author/]  => sub { uc $_[0] }
-        ]
-    );
-    
-    # Filter name
-    $dbi->insert(
-        filter => {
-            title  => 'upper_case',
-            author => 'upper_case'
-        }
-    );
-
-These filters are added to the C<out> filters, set by C<apply_filter()>.
+Same as C<execute> method's C<filter> option.
 
 =item C<query>
 
@@ -2247,6 +2227,44 @@ This is true or false value.
 You can check SQL.
 
     my $sql = $query->sql;
+
+=item C<id>
+
+Insert using primary_key.
+
+    $dbi->insert(
+        primary_key => 'id',
+        id => 4,
+        param => {title => 'Perl', author => 'Ken'}
+    );
+
+    $dbi->insert(
+        primary_key => ['id1', 'id2'],
+        id => [4, 5],
+        param => {title => 'Perl', author => 'Ken'}
+    );
+
+The above is same as the followin ones.
+
+    $dbi->insert(
+        param => {id => 4, title => 'Perl', author => 'Ken'}
+    );
+
+    $dbi->insert(
+        param => {id1 => 4, id2 => 5, title => 'Perl', author => 'Ken'}
+    );
+
+=item C<primary_key>
+
+See C<id> description.
+
+=item C<type>
+
+Same as C<execute> method's C<type> option.
+
+=item C<type_rule_off> EXPERIMENTAL
+
+Turn type rule off.
 
 =back
 
@@ -2576,34 +2594,7 @@ This option is for Oracle and SQL Server paging process.
 
 =item C<filter>
 
-Filter, executed before data is send to database. This is array reference.
-Filter value is code reference or
-filter name registerd by C<register_filter()>.
-
-    # Basic
-    $dbi->select(
-        filter => {
-            title  => sub { uc $_[0] }
-            author => sub { uc $_[0] }
-        }
-    );
-    
-    # At once (use array reference)
-    $dbi->select(
-        filter => [
-            [qw/title author/]  => sub { uc $_[0] }
-        ]
-    );
-    
-    # Filter name
-    $dbi->select(
-        filter => {
-            title  => 'upper_case',
-            author => 'upper_case'
-        }
-    );
-
-These filters are added to the C<out> filters, set by C<apply_filter()>.
+Same as C<execute> method's C<filter> option.
 
 =item C<query>
 
@@ -2618,14 +2609,11 @@ You can check SQL.
 
 =item C<type>
 
-Specify database data type.
+Same as C<execute> method's C<type> option.
 
-    $dbi->select(type => [image => DBI::SQL_BLOB]);
-    $dbi->select(type => [[qw/image audio/] => DBI::SQL_BLOB]);
+=item C<type_rule_off> EXPERIMENTAL
 
-This is used to bind paramter by C<bind_param()> of statment handle.
-
-    $sth->bind_param($pos, $value, DBI::SQL_BLOB);
+Same as C<execute> method's C<type_rule_off> option.
 
 =back
 
@@ -2693,34 +2681,7 @@ Append statement to last of SQL. This is string.
 
 =item C<filter>
 
-Filter, executed before data is send to database. This is array reference.
-Filter value is code reference or
-filter name registerd by C<register_filter()>.
-
-    # Basic
-    $dbi->update(
-        filter => {
-            title  => sub { uc $_[0] }
-            author => sub { uc $_[0] }
-        }
-    );
-    
-    # At once (use array reference)
-    $dbi->update(
-        filter => [
-            [qw/title author/]  => sub { uc $_[0] }
-        ]
-    );
-    
-    # Filter name
-    $dbi->update(
-        filter => {
-            title  => 'upper_case',
-            author => 'upper_case'
-        }
-    );
-
-These filters are added to the C<out> filters, set by C<apply_filter()>.
+Same as C<execute> method's C<filter> option.
 
 =item C<query>
 
@@ -2732,30 +2693,6 @@ This is true or false value.
 You can check SQL.
 
     my $sql = $query->sql;
-
-Insert using primary_key.
-
-    $dbi->insert(
-        primary_key => 'id',
-        id => 4,
-        param => {title => 'Perl', author => 'Ken'}
-    );
-
-    $dbi->insert(
-        primary_key => ['id1', 'id2'],
-        id => [4, 5],
-        param => {title => 'Perl', author => 'Ken'}
-    );
-
-The above is same as the followin ones.
-
-    $dbi->insert(
-        param => {id => 4, title => 'Perl', author => 'Ken'}
-    );
-
-    $dbi->insert(
-        param => {id1 => 4, id2 => 5, title => 'Perl', author => 'Ken'}
-    );
 
 =item C<id>
 
@@ -2788,6 +2725,14 @@ The above is same as the followin ones.
 =item C<primary_key>
 
 See C<id> option.
+
+=item C<type>
+
+Same as C<execute> method's C<type> option.
+
+=item C<type_rule_off> EXPERIMENTAL
+
+Turn type rule off.
 
 =back
 

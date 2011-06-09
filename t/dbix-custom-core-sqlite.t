@@ -2636,4 +2636,30 @@ $row = $result->one;
 is($row->{key1}, 'A');
 is($row->{key2}, 'B');
 
+
+test 'type_rule_off';
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+$dbi->execute("create table table1 (key1 Date, key2 datetime)");
+$dbi->type_rule(
+    Date => {
+        from => sub { $_[0] * 2 },
+        into => sub { $_[0] * 3 },
+    }
+);
+$dbi->insert({key1 => 2}, table => 'table1', type_rule_off => 1);
+$result = $dbi->select(table => 'table1', type_rule_off => 1);
+is($result->fetch->[0], 2);
+
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+$dbi->execute("create table table1 (key1 Date, key2 datetime)");
+$dbi->type_rule(
+    Date => {
+        from => sub { $_[0] * 2 },
+        into => sub { $_[0] * 3 },
+    }
+);
+$dbi->insert({key1 => 2}, table => 'table1', type_rule_off => 1);
+$result = $dbi->select(table => 'table1', type_rule_off => 1);
+is($result->one->{key1}, 2);
+
 =cut
