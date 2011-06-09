@@ -324,7 +324,6 @@ sub delete {
     my $where            = delete $args{where} || {};
     my $append           = delete $args{append};
     my $allow_delete_all = delete $args{allow_delete_all};
-    my $query_return     = delete $args{query};
     my $where_param      = delete $args{where_param} || {};
     my $id = delete $args{id};
     my $primary_key = delete $args{primary_key};
@@ -356,13 +355,9 @@ sub delete {
     push @sql, $append if $append;
     my $sql = join(' ', @sql);
     
-    # Create query
-    my $query = $self->create_query($sql);
-    return $query if $query_return;
-    
     # Execute query
     return $self->execute(
-        $query,
+        $sql,
         param => $where_param,
         table => $table,
         %args
@@ -443,6 +438,7 @@ sub execute {
     my $type = delete $args{type};
     $type = _array_to_hash($type);
     my $type_rule_off = delete $args{type_rule_off};
+    my $query_return = delete $args{query};
     
     # Check argument names
     foreach my $name (keys %args) {
@@ -452,6 +448,7 @@ sub execute {
     
     # Create query
     $query = $self->create_query($query) unless ref $query;
+    return $query if $query_return;
     $filter ||= $query->filter;
     
     # Tables
@@ -619,7 +616,6 @@ sub insert {
     my $p = delete $args{param} || {};
     $param  ||= $p;
     my $append = delete $args{append} || '';
-    my $query_return  = delete $args{query};
     my $id = delete $args{id};
     my $primary_key = delete $args{primary_key};
     croak "insert method primary_key option " .
@@ -648,13 +644,9 @@ sub insert {
     push @sql, $append if $append;
     my $sql = join (' ', @sql);
     
-    # Create query
-    my $query = $self->create_query($sql);
-    return $query if $query_return;
-    
     # Execute query
     return $self->execute(
-        $query,
+        $sql,
         param => $param,
         table => $table,
         %args
@@ -875,7 +867,6 @@ sub select {
     warn "select() param option is DEPRECATED! use where_param option instead"
       if keys %$param;
     my $where_param = delete $args{where_param} || $param || {};
-    my $query_return = $args{query};
     my $wrap = delete $args{wrap};
     my $id = delete $args{id};
     my $primary_key = delete $args{primary_key};
@@ -980,13 +971,9 @@ sub select {
     # SQL
     my $sql = join (' ', @sql);
     
-    # Create query
-    my $query = $self->create_query($sql);
-    return $query if $query_return;
-    
     # Execute query
     my $result = $self->execute(
-        $query,
+        $sql,
         param => $where_param, 
         table => $tables,
         %args
@@ -1097,13 +1084,9 @@ sub update {
     # SQL
     my $sql = join(' ', @sql);
     
-    # Create query
-    my $query = $self->create_query($sql);
-    return $query if $args{query};
-    
     # Execute query
     my $ret_val = $self->execute(
-        $query,
+        $sql,
         param  => $param, 
         table => $table,
         %args
@@ -2180,38 +2163,17 @@ Options is same as C<delete()>.
 
 =head2 C<insert>
 
-    $dbi->insert(
-        param  => {title => 'Perl', author => 'Ken'},
-        table  => 'book'
-    );
-    
-Insert statement.
+    $dbi->insert({title => 'Perl', author => 'Ken'}, table  => 'book');
 
-The following opitons are currently available.
+Execute insert statement.
+
+The following opitons are available.
 
 =over 4
 
-=item C<param>
-
-Insert data. This is hash reference.
-
-    $dbi->insert(param => {title => 'Perl'});
-
-If arguments is odd numbers, first argument is received as C<param>.
-
-    $dbi->insert({title => 'Perl', author => 'Ken'}, table => 'book');
-
-=item C<table>
-
-Table name.
-
-    $dbi->insert(table => 'book');
-
 =item C<append>
 
-Append statement to last of SQL. This is string.
-
-    $dbi->insert(append => 'order by title');
+Same as C<select> method's C<append> option.
 
 =item C<filter>
 
@@ -2257,6 +2219,23 @@ The above is same as the followin ones.
 =item C<primary_key>
 
 See C<id> description.
+
+=item C<table>
+
+Table name.
+
+    $dbi->insert(table => 'book');
+
+=item C<param>
+
+    param => {title => 'Perl', author => 'Ken'}
+
+Insert data.
+
+If C<insert> method's arguments is odd numbers,
+first argument is received as C<param>.
+
+    $dbi->insert({title => 'Perl', author => 'Ken'}, table => 'book');
 
 =item C<type>
 
