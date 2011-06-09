@@ -486,9 +486,28 @@ sub execute {
             }
         }
     }
+
+    # Type rule
+    my $applied_filter = {};
+    foreach my $name (keys %$param) {
+        my $table;
+        my $column;
+        if ($name =~ /(?:(.+)\.)?(.+)/) {
+            $table = $1;
+            $column = $2;
+        }
+        $table ||= $main_table;
+        
+        my $into = $self->{_into} || {};
+        if (defined $table && $into->{$table} &&
+            (my $rule = $into->{$table}->{$column}))
+        {
+            $applied_filter->{$column} = $rule;
+            $applied_filter->{"$table.$column"} = $rule;
+        }
+    }
     
     # Applied filter
-    my $applied_filter = {};
     foreach my $table (@$tables) {
         $applied_filter = {
             %$applied_filter,
@@ -993,6 +1012,17 @@ sub type_rule {
     if (@_) {
         my $type_rule = _array_to_hash([@_]);
         $self->{type_rule} = $type_rule;
+        $self->{_into} ||= {};
+        $self->each_column(sub {
+            my ($dbi, $table, $column, $column_info) = @_;
+            
+            my $type = $column_info->{TYPE_NAME};
+            if ($type_rule->{$type} &&
+                (my $rule = $type_rule->{$type}->{into}))
+            {
+                $self->{_into}{$table}{$column} = $rule;
+            }
+        });
         
         return $self;
     }
@@ -1984,13 +2014,8 @@ Table names for filtering.
 
     $dbi->execute(table => ['author', 'book']);
 
-C<execute()> is unlike C<insert()>, C<update()>, C<delete()>, C<select(),
+C<execute()> is unlike C<insert()>, C<update()>, C<delete()>, C<select()>,
 Filtering is off because we don't know what filter is applied.
-
-
-
-
-
 
 =item C<filter>
 
@@ -2367,6 +2392,21 @@ This is used by C<clause> of L<DBIx::Custom::Where> .
     );
     
 Register filters, used by C<filter> option of many methods.
+
+=head2 C<type_rule> EXPERIMENTAL
+
+    $dbi->type_rule(
+        DATE => {
+            from => sub { ... },
+            into => sub { ... }
+        },
+        DATETIME => {
+            from => sub { ... }
+            into => sub { ... }
+        }
+    );
+
+Filter based on type.
 
 =head2 C<select>
 
