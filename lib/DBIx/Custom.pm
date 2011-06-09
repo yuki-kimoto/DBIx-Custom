@@ -2040,6 +2040,12 @@ These filters are added to the C<out> filters, set by C<apply_filter()>.
 C<filter> option is also available
 by C<insert()>, C<update()>, C<delete()>, C<select()>
 
+=item C<query>
+
+    query => 1
+
+C<execute> method return L<DBIx::Custom::Query> object, not executing SQL.
+
 =item C<type>
 
 Specify database data type.
@@ -2066,79 +2072,49 @@ Trun type rule off.
 
     $dbi->delete(table => 'book', where => {title => 'Perl'});
 
-Delete statement.
+Execute delete statement.
 
-The following opitons are currently available.
+The following opitons are available.
 
 =over 4
 
-=item C<table>
-
-Table name.
-
-    $dbi->delete(table => 'book');
-
-=item C<where>
-
-Where clause. This is hash reference or L<DBIx::Custom::Where> object
-or array refrence, which contains where clause and paramter.
-    
-    # Hash reference
-    $dbi->delete(where => {title => 'Perl'});
-    
-    # DBIx::Custom::Where object
-    my $where = $dbi->where(
-        clause => ['and', 'author = :author', 'title like :title'],
-        param  => {author => 'Ken', title => '%Perl%'}
-    );
-    $dbi->delete(where => $where);
-
-    # String(with where_param option)
-    $dbi->delete(
-        where => 'title like :title',
-        where_param => {title => '%Perl%'}
-    );
-    
 =item C<append>
 
-Append statement to last of SQL. This is string.
-
-    $dbi->delete(append => 'order by title');
+Same as C<select> method's C<append> option.
 
 =item C<filter>
 
 Same as C<execute> method's C<filter> option.
 
-=item C<query>
-
-Get L<DBIx::Custom::Query> object instead of executing SQL.
-This is true or false value.
-
-    my $query = $dbi->delete(query => 1);
-
-You can check SQL.
-
-    my $sql = $query->sql;
-
 =item C<id>
 
-Delete using primary_key.
+    id => 4
+    id => [4, 5]
+
+ID corresponding to C<primary_key>.
+You can delete rows by C<id> and C<primary_key>.
 
     $dbi->delete(
-        primary_key => 'id',
-        id => 4,
-    );
-
-    $dbi->delete(
-        primary_key => ['id1', 'id2'],
+        parimary_key => ['id1', 'id2'],
         id => [4, 5],
+        table => 'book',
     );
 
-The above is same as the followin ones.
+The above is same as the followin one.
 
-    $dbi->delete(where => {id => 4});
+    $dbi->delete(where => {id1 => 4, id2 => 5}, table => 'book');
 
-    $dbi->delete(where => {id1 => 4, id2 => 5});
+=item C<query>
+
+Same as C<execute> method's C<query> option.
+
+=item C<table>
+
+    table => 'book'
+
+=item C<where>
+
+Same as C<select> method's C<where> option.
 
 =item C<primary_key>
 
@@ -2158,7 +2134,7 @@ Same as C<execute> method's C<type_rule_off> option.
 
     $dbi->delete_all(table => $table);
 
-Delete statement to delete all rows.
+Execute delete statement for all rows.
 Options is same as C<delete()>.
 
 =head2 C<insert>
@@ -2179,52 +2155,34 @@ Same as C<select> method's C<append> option.
 
 Same as C<execute> method's C<filter> option.
 
-=item C<query>
-
-Get L<DBIx::Custom::Query> object instead of executing SQL.
-This is true or false value.
-
-    my $query = $dbi->insert(query => 1);
-
-You can check SQL.
-
-    my $sql = $query->sql;
-
 =item C<id>
 
-Insert using primary_key.
+    id => 4
+    id => [4, 5]
+
+ID corresponding to C<primary_key>.
+You can insert a row by C<id> and C<primary_key>.
 
     $dbi->insert(
-        primary_key => 'id',
-        id => 4,
-        param => {title => 'Perl', author => 'Ken'}
-    );
-
-    $dbi->insert(
-        primary_key => ['id1', 'id2'],
+        {title => 'Perl', author => 'Ken'}
+        parimary_key => ['id1', 'id2'],
         id => [4, 5],
-        param => {title => 'Perl', author => 'Ken'}
+        table => 'book'
     );
 
-The above is same as the followin ones.
+The above is same as the followin one.
 
     $dbi->insert(
-        param => {id => 4, title => 'Perl', author => 'Ken'}
-    );
-
-    $dbi->insert(
-        param => {id1 => 4, id2 => 5, title => 'Perl', author => 'Ken'}
+        {id1 => 4, id2 => 5, title => 'Perl', author => 'Ken'},
+        table => 'book'
     );
 
 =item C<primary_key>
 
-See C<id> description.
+    primary_key => 'id'
+    primary_key => ['id1', 'id2']
 
-=item C<table>
-
-Table name.
-
-    $dbi->insert(table => 'book');
+Primary key. This is used by C<id> option.
 
 =item C<param>
 
@@ -2237,13 +2195,23 @@ first argument is received as C<param>.
 
     $dbi->insert({title => 'Perl', author => 'Ken'}, table => 'book');
 
+=item C<query>
+
+Same as C<execute> method's C<query> option.
+
+=item C<table>
+
+    table => 'book'
+
+Table name.
+
 =item C<type>
 
 Same as C<execute> method's C<type> option.
 
 =item C<type_rule_off> EXPERIMENTAL
 
-Turn type rule off.
+Same as C<execute> method's C<type_rule_off> option.
 
 =back
 
@@ -2413,92 +2381,99 @@ Filter based on type.
         where  => {author => 'Ken'},
     );
     
-Select statement.
+Execute select statement.
 
-The following opitons are currently available.
+The following opitons are available.
 
 =over 4
 
-=item C<table>
+=item C<append>
 
-Table name.
+    append => 'order by title'
 
-    $dbi->select(table => 'book');
-
+Append statement to last of SQL.
+    
 =item C<column>
-
-Column clause. This is array reference or constant value.
-
-    # Array reference
-    $dbi->select(column => ['author', 'title']);
     
-    # Constant value
-    $dbi->select(column => 'author');
+    column => 'author'
+    column => ['author', 'title']
+
+Column clause.
     
-Default is '*' if C<column> is not specified.
+if C<column> is not specified, '*' is set.
 
-    # Default
-    $dbi->select(column => '*');
+    column => '*'
 
-You can specify hash reference. This is EXPERIMENTAL.
+You can specify hash reference in array reference. This is EXPERIMENTAL.
 
-    # Hash reference EXPERIMENTAL
-    $dbi->select(column => [
+    column => [
         {book => [qw/author title/]},
         {person => [qw/name age/]}
-    ]);
+    ]
 
-This is expanded to the following one by C<col> method automatically.
+This is expanded to the following one by using C<col> method.
 
     book.author as "book.author",
     book.title as "book.title",
     person.name as "person.name",
     person.age as "person.age"
 
-You can specify array reference in array refernce.
+You can specify array reference in array reference.
 
-    $dbi->select(column => [
+    column => [
         ['date(book.register_datetime)', as => 'book.register_date']
-    ]);
+    ];
 
-These is joined and quoted.
+Alias is quoted and joined.
 
     date(book.register_datetime) as "book.register_date"
 
-=item C<where>
+=item C<filter>
 
-Where clause. This is hash reference or L<DBIx::Custom::Where> object,
-or array refrence, which contains where clause and paramter.
-    
-    # Hash reference
-    $dbi->select(where => {author => 'Ken', 'title' => 'Perl'});
-    
-    # DBIx::Custom::Where object
-    my $where = $dbi->where(
-        clause => ['and', 'author = :author', 'title like :title'],
-        param  => {author => 'Ken', title => '%Perl%'}
-    );
-    $dbi->select(where => $where);
+Same as C<execute> method's C<filter> option.
 
-    # String(with where_param option)
+=item C<id>
+
+    id => 4
+    id => [4, 5]
+
+ID corresponding to C<primary_key>.
+You can select rows by C<id> and C<primary_key>.
+
     $dbi->select(
-        where => 'title like :title',
-        where_param => {title => '%Perl%'}
+        parimary_key => ['id1', 'id2'],
+        id => [4, 5],
+        table => 'book'
+    );
+
+The above is same as the followin one.
+
+    $dbi->select(
+        where => {id1 => 4, id2 => 5},
+        table => 'book'
     );
     
+=item C<param> EXPERIMETNAL
+
+    param => {'table2.key3' => 5}
+
+Parameter shown before where clause.
+    
+For example, if you want to contain tag in join clause, 
+you can pass parameter by C<param> option.
+
+    join  => ['inner join (select * from table2 where table2.key3 = :table2.key3)' . 
+              ' as table2 on table1.key1 = table2.key1']
+
 =item C<join>
 
-Join clause used in need. This is array reference.
-
-    $dbi->select(join =>
-        [
-            'left outer join company on book.company_id = company_id',
-            'left outer join location on company.location_id = location.id'
-        ]
-    );
-
-If column cluase or where clause contain table name like "company.name",
-needed join clause is used automatically.
+    join => [
+        'left outer join company on book.company_id = company_id',
+        'left outer join location on company.location_id = location.id'
+    ]
+        
+Join clause. If column cluase or where clause contain table name like "company.name",
+join clausees needed when SQL is created is used automatically.
 
     $dbi->select(
         table => 'book',
@@ -2510,59 +2485,56 @@ needed join clause is used automatically.
         ]
     );
 
-In above select, the following SQL is created.
+In above select, column and where clause contain "company" table,
+the following SQL is created
 
     select company.location_id as company__location_id
     from book
       left outer join company on book.company_id = company.id
     where company.name = Orange
 
-=item C<param> EXPERIMETNAL
-
-Parameter shown before where clause.
-    
-    $dbi->select(
-        table => 'table1',
-        column => 'table1.key1 as table1_key1, key2, key3',
-        where   => {'table1.key2' => 3},
-        join  => ['inner join (select * from table2 where table2.key3 = :table2.key3)' . 
-                  ' as table2 on table1.key1 = table2.key1'],
-        param => {'table2.key3' => 5}
-    );
-
-For example, if you want to contain tag in join clause, 
-you can pass parameter by C<param> option.
-
-=item C<append>
-
-Append statement to last of SQL. This is string.
-
-    $dbi->select(append => 'order by title');
-    
-=item C<id>
-
-Select using primary_key.
-
-    $dbi->select(
-        primary_key => 'id',
-        id => 4,
-    );
-
-    $dbi->select(
-        primary_key => ['id1', 'id2'],
-        id => [4, 5]
-    );
-
-The above is same as the followin ones.
-
-    $dbi->insert(where => {id => 4});
-
-    $dbi->insert(where => {id1 => 4, id2 => 5});
-
 =item C<primary_key>
 
-See C<id> option.
+    primary_key => 'id'
+    primary_key => ['id1', 'id2']
 
+Primary key. This is used by C<id> option.
+
+=item C<query>
+
+Same as C<execute> method's C<query> option.
+
+=item C<type>
+
+Same as C<execute> method's C<type> option.
+
+=item C<table>
+
+    table => 'book'
+
+Table name.
+
+=item C<type_rule_off> EXPERIMENTAL
+
+Same as C<execute> method's C<type_rule_off> option.
+
+=item C<where>
+    
+    # Hash refrence
+    where => {author => 'Ken', 'title' => 'Perl'}
+    
+    # DBIx::Custom::Where object
+    where => $dbi->where(
+        clause => ['and', 'author = :author', 'title like :title'],
+        param  => {author => 'Ken', title => '%Perl%'}
+    );
+
+    # String(with where_param option)
+    where => 'title like :title',
+    where_param => {title => '%Perl%'}
+
+Where clause.
+    
 =item C<wrap> EXPERIMENTAL
 
 Wrap statement. This is array reference.
@@ -2571,139 +2543,79 @@ Wrap statement. This is array reference.
 
 This option is for Oracle and SQL Server paging process.
 
-=item C<filter>
-
-Same as C<execute> method's C<filter> option.
-
-=item C<query>
-
-Get L<DBIx::Custom::Query> object instead of executing SQL.
-This is true or false value.
-
-    my $query = $dbi->select(query => 1);
-
-You can check SQL.
-
-    my $sql = $query->sql;
-
-=item C<type>
-
-Same as C<execute> method's C<type> option.
-
-=item C<type_rule_off> EXPERIMENTAL
-
-Same as C<execute> method's C<type_rule_off> option.
-
 =back
 
 =head2 C<update>
 
-    $dbi->update(
-        table  => 'book',
-        param  => {title => 'Perl'},
-        where  => {id => 4}
-    );
+    $dbi->update({title => 'Perl'}, table  => 'book', where  => {id => 4});
 
-Update statement.
+Execute update statement.
 
-The following opitons are currently available.
+The following opitons are available.
 
 =over 4
 
-=item C<param>
-
-Update data. This is hash reference.
-
-    $dbi->update(param => {title => 'Perl'});
-
-If arguments is odd numbers, first argument is received as C<param>.
-
-    $dbi->update(
-        {title => 'Perl'},
-        table => 'book',
-        where => {author => 'Ken'}
-    );
-
-=item C<table>
-
-Table name.
-
-    $dbi->update(table => 'book');
-
-=item C<where>
-
-Where clause. This is hash reference or L<DBIx::Custom::Where> object
-or array refrence.
-    
-    # Hash reference
-    $dbi->update(where => {author => 'Ken', 'title' => 'Perl'});
-    
-    # DBIx::Custom::Where object
-    my $where = $dbi->where(
-        clause => ['and', 'author = :author', 'title like :title'],
-        param  => {author => 'Ken', title => '%Perl%'}
-    );
-    $dbi->update(where => $where);
-    
-    # String(with where_param option)
-    $dbi->update(
-        param => {title => 'Perl'},
-        where => 'id = :id',
-        where_param => {id => 2}
-    );
-    
 =item C<append>
 
-Append statement to last of SQL. This is string.
-
-    $dbi->update(append => 'order by title');
+Same as C<select> method's C<append> option.
 
 =item C<filter>
 
 Same as C<execute> method's C<filter> option.
 
-=item C<query>
-
-Get L<DBIx::Custom::Query> object instead of executing SQL.
-This is true or false value.
-
-    my $query = $dbi->update(query => 1);
-
-You can check SQL.
-
-    my $sql = $query->sql;
-
 =item C<id>
 
-update using primary_key.
+    id => 4
+    id => [4, 5]
+
+ID corresponding to C<primary_key>.
+You can update rows by C<id> and C<primary_key>.
 
     $dbi->update(
-        primary_key => 'id',
-        id => 4,
-        param => {title => 'Perl', author => 'Ken'}
-    );
-
-    $dbi->update(
-        primary_key => ['id1', 'id2'],
+        {title => 'Perl', author => 'Ken'}
+        parimary_key => ['id1', 'id2'],
         id => [4, 5],
-        param => {title => 'Perl', author => 'Ken'}
+        table => 'book'
     );
 
-The above is same as the followin ones.
+The above is same as the followin one.
 
     $dbi->update(
-        where => {id => 4}
-        param => {title => 'Perl', author => 'Ken'}
-    );
-
-    $dbi->update(
+        {title => 'Perl', author => 'Ken'}
         where => {id1 => 4, id2 => 5},
-        param => {title => 'Perl', author => 'Ken'}
+        table => 'book'
     );
+
+=item C<param>
+
+    param => {title => 'Perl'}
+
+Update data.
+
+If C<update> method's arguments is odd numbers, first argument is received as C<param>.
+
+    $dbi->update({title => 'Perl'}, table => 'book', where => {id => 2});
 
 =item C<primary_key>
 
-See C<id> option.
+    primary_key => 'id'
+    primary_key => ['id1', 'id2']
+
+Primary key. This is used by C<id> option.
+
+=item C<query>
+
+Same as C<execute> method's C<query> option.
+
+=item C<table>
+
+    table => 'book'
+
+Table name.
+
+=item C<where>
+
+Same as C<select> method's C<where> option.
 
 =item C<type>
 
@@ -2719,7 +2631,7 @@ Turn type rule off.
 
     $dbi->update_all(table => 'book', param => {title => 'Perl'});
 
-Update statement to update all rows.
+Execute update statement for all rows.
 Options is same as C<update()>.
 
 =head2 C<update_param>
