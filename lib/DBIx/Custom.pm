@@ -1877,7 +1877,7 @@ You can set multiple filters at once.
 
     my $assign_param = $dbi->assign_param({title => 'a', age => 2});
 
-Create assign tag.
+Create assign parameter.
 
     title = :title, author = :author
 
@@ -1985,71 +1985,57 @@ column name and column information.
         {title => 'Perl', author => '%Ken%'}
     );
 
-Execute SQL, containing tags.
-Return value is L<DBIx::Custom::Result> in select statement, or
-the count of affected rows in insert, update, delete statement.
+Execute SQL. SQL can contain parameter such as :author.
+Return value is L<DBIx::Custom::Result> when select statement is executed,
+or the count of affected rows in insert, update, delete statement is executed.
 
-Tag is turned into the statement containing place holder
-before SQL is executed.
+Parameter is replaced by placeholder C<?>.
 
     select * from where title = ? and author like ?;
 
-See also L<Tags/Tags>.
-
-The following opitons are currently available.
+The following opitons are available.
 
 =over 4
 
-=item C<table>
-
-Table names for filtering.
-
-    $dbi->execute(table => ['author', 'book']);
-
-C<execute()> is unlike C<insert()>, C<update()>, C<delete()>, C<select()>,
-Filtering is off because we don't know what filter is applied.
-
 =item C<filter>
+    
+    filter => {
+        title  => sub { uc $_[0] }
+        author => sub { uc $_[0] }
+    }
 
-Filter, executed before data is send to database. This is array reference.
+    # Filter name
+    filter => {
+        title  => 'upper_case',
+        author => 'upper_case'
+    }
+        
+    # At once
+    filter => [
+        [qw/title author/]  => sub { uc $_[0] }
+    ]
+
+Filter, executed before data is saved into database.
 Filter value is code reference or
 filter name registerd by C<register_filter()>.
 
-    # Basic
-    $dbi->execute(
-        $sql,
-        filter => {
-            title  => sub { uc $_[0] }
-            author => sub { uc $_[0] }
-        }
-    );
-    
-    # At once (use array reference)
-    $dbi->execute(
-        $sql,
-        filter => [
-            [qw/title author/]  => sub { uc $_[0] }
-        ]
-    );
-    
-    # Filter name
-    $dbi->execute(
-        $sql,
-        filter => {
-            title  => 'upper_case',
-            author => 'upper_case'
-        }
-    );
-
 These filters are added to the C<out> filters, set by C<apply_filter()>.
-C<filter> option is also available
-by C<insert()>, C<update()>, C<delete()>, C<select()>
 
 =item C<query>
 
     query => 1
 
 C<execute> method return L<DBIx::Custom::Query> object, not executing SQL.
+
+=item C<table>
+    
+    table => 'author'
+    table => ['author', 'book']
+
+Table names for filtering.
+
+Filtering by C<apply_filter> is off in C<execute> method,
+because we don't know what filter is applied.
 
 =item C<type>
 
