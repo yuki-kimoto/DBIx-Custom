@@ -1002,6 +1002,20 @@ sub setup_model {
     return $self;
 }
 
+sub available_data_type {
+    my $self = shift;
+    
+    my $data_types = "Data Type (Type name)\n";
+    foreach my $i (-1000 .. 1000) {
+         my $type_info = $self->dbh->type_info($i);
+         my $data_type = $type_info->{DATA_TYPE};
+         my $type_name = $type_info->{TYPE_NAME};
+         $data_types .= "$data_type ($type_name)\n"
+           if defined $data_type;
+    }
+    return $data_types;
+}
+
 sub type_rule {
     my $self = shift;
     
@@ -1009,19 +1023,6 @@ sub type_rule {
         my $type_rule = _array_to_hash([@_]);
         $self->{type_rule} = $type_rule;
         $self->{_into} ||= {};
-
-        foreach my $i (-1000 .. 1000) {
-             my $type_info = $self->dbh->type_info($i);
-             my $data_type = $type_info->{DATA_TYPE};
-             my $type_name = $type_info->{TYPE_NAME};
-             foreach my $type (keys %$type_rule) {
-                 use Data::Dumper;
-                 if ($type_name && lc $type eq lc $type_name) {
-                     $type_rule->{$data_type} = $type_rule->{$type};
-                 }
-             }
-        }
-
         $self->each_column(sub {
             my ($dbi, $table, $column, $column_info) = @_;
             

@@ -141,13 +141,8 @@ $dbi->type_rule(
             $date =~ s/aaaaa//g;
             return $date;
         },
-        from => sub {
-            my $date = shift;
-            $date .= 'bbbbb';
-            return $date;
-        }
     },
-    'DATETIME' => {
+    DATETIME => {
         into => sub {
             my $date = shift;
             $date =~ s/ccccc//g;
@@ -155,7 +150,16 @@ $dbi->type_rule(
             
         },
     },
-    'TIMESTAMP' => {
+    # DATE
+    9 => {
+        from => sub {
+            my $date = shift;
+            $date .= 'bbbbb';
+            return $date;
+        }
+    },
+    # DATETIME or TIMPESTANM
+    11 => {
         from => sub {
             my $date = shift;
             $date .= 'ddddd';
