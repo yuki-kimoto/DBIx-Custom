@@ -2405,6 +2405,18 @@ is($row->{key1}, 1);
 is($row->{key2}, 2);
 is($row->{key3}, 3);
 
+$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->model('table1')->insert(
+    {key3 => 3},
+    id => [1, 2]
+);
+$result = $dbi->model('table1')->select;
+$row = $result->one;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 3);
+
 test 'update and id option';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});

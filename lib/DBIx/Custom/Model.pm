@@ -52,13 +52,14 @@ foreach my $method (@methods) {
 
     my $code = sub {
         my $self = shift;
-        
+
         my @args = (
             table => $self->table,
             type => $self->type,
             primary_key => $self->primary_key
         );
         push @args, (join => $self->join) if $method =~ /^select/;
+        unshift @args, shift if @_ % 2;
         
         $self->dbi->$method(@args, @_);
     };
