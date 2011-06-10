@@ -25,8 +25,8 @@ sub build_query {
     if ($source =~ /\{/ && $source =~ /\}/) {
         $query = $self->_parse_tag($source);
         my $tag_count = delete $query->{tag_count};
-        warn qq/Tag system such as {? name} is DEPRECATED! This will be removed after 2017/ .
-             qq/use parameter system :name instead/
+        warn qq/Tag system such as {? name} is DEPRECATED! / .
+             qq/use parameter system such as :name instead/
           if $tag_count;
         my $query2 = $self->_parse_parameter($query->sql);
         $query->sql($query2->sql);

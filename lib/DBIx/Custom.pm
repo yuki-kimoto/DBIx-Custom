@@ -1556,7 +1556,7 @@ sub register_tag_processor {
 
 # DEPRECATED!
 sub update_param_tag {
-    warn "update_param is DEPRECATED! " .
+    warn "update_param_tag is DEPRECATED! " .
          "use update_param instead";
     return shift->update_param(@_);
 }
