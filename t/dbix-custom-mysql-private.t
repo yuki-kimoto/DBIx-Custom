@@ -126,6 +126,58 @@ $rows = $dbi->select(
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 $dbi->delete_all(table => 'table1');
 
+
+test 'type_rule';
+$dbi = DBIx::Custom->connect(
+    dsn => "dbi:mysql:database=$DATABASE",
+    user => $USER,
+    password => $PASSWORD
+);
+eval{$dbi->execute("create table date_test (date DATE, datetime DATETIME)")};
+$dbi->type_rule(
+    DATE => {
+        into=> sub {
+            my $date = shift;
+            $date =~ s/aaaaa//g;
+            return $date;
+        },
+        from => sub {
+            my $date = shift;
+            $date .= 'bbbbb';
+            return $date;
+        }
+    },
+    'DATETIME' => {
+        into => sub {
+            my $date = shift;
+            $date =~ s/ccccc//g;
+            return $date;
+            
+        },
+    },
+    'TIMESTAMP' => {
+        from => sub {
+            my $date = shift;
+            $date .= 'ddddd';
+            return $date;
+        }
+    }
+);
+
+$dbi->insert(
+    {
+        date => 'aaaaa2010-aaaaa11-12aaaaa',
+        datetime => '2010-11ccccc-12 10:ccccc55:56'
+    },
+    table => 'date_test'
+);
+is_deeply(
+    $dbi->select(table => 'date_test')->fetch,
+    ['2010-11-12bbbbb', '2010-11-12 10:55:56ddddd']
+);
+
+$dbi->execute("drop table date_test");
+
 test 'dbh';
 {
     my $connector = DBIx::Connector->new(

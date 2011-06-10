@@ -1,6 +1,7 @@
 0.1688
     - fixed bug that model insert, update, delete select can't
       odd number arguments
+    - improved type_rule method
 0.1687
     - added EXPERIMENTAL type_rule method
     - added EXPERIMENTAL execute() type_rule_off option
