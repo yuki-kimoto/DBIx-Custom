@@ -377,6 +377,13 @@ Fetch row into hash.
 Filters when a row is fetched.
 This overwrites C<default_filter>.
 
+=head2 C<filter_off> EXPERIMENTAL
+
+    my $filter_off = $resutl->filter_off;
+    $result = $result->filter_off(1);
+
+Turn filter off.
+
 =head2 C<filters>
 
     my $filters = $result->filters;

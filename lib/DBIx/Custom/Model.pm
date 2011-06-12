@@ -195,7 +195,7 @@ Join clause, this is used as C<select()>'s C<join> option.
 Foreign key, this is used as C<primary_key> of C<insert_at>,C<update_at()>,
 C<delete_at()>,C<select_at()>.
 
-=head2 C<result_filter>
+=head2 C<result_filter> EXPERIMENTAL
 
     my $dbi = $model->result_filter
     $model  = $model->result_filter(

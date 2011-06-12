@@ -2,8 +2,9 @@
     - added EXPERIMENTAL available_data_type
     - simplified type_rule
     - changed type_rule arguments format
-    - added DBIx::Custom::Model result_filter attribute
-    - added DBIx::Custom::Result filter_off method
+    - added EXPERIMENTAL DBIx::Custom::Model result_filter attribute
+    - added EXPERIMETNAL DBIx::Custom::Result filter_off method
+    - EXPERIMENTAL type_rule can receive filter name
 0.1688
     - fixed bug that model insert, update, delete select can't
       odd number arguments
