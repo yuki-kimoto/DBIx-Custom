@@ -84,7 +84,9 @@ sub AUTOLOAD {
     }
 }
 
-sub apply_filter {
+sub apply_filter { shift->_apply_filter(@_) }
+
+sub _apply_filter {
     my ($self, $table, @cinfos) = @_;
 
     # Initialize filters
@@ -389,6 +391,13 @@ sub create_model {
                ? [%{$model->filter}]
                : $model->filter;
     $self->apply_filter($model->table, @$filter);
+    my $result_filter = ref $model->result_filter eq 'HASH'
+               ? [%{$model->result_filter}]
+               : $model->result_filter;
+    for (my $i = 1; $i < @$result_filter; $i += 2) {
+        $result_filter->[$i] = {in => $result_filter->[$i]};
+    }
+    $self->apply_filter($model->table, @$result_filter);
     
     # Associate table with model
     croak "Table name is duplicated " . _subname
@@ -579,6 +588,7 @@ sub execute {
         my $filter = {};
         $filter->{in}  = {};
         $filter->{end} = {};
+        push @$tables, $main_table if $main_table;
         foreach my $table (@$tables) {
             foreach my $way (qw/in end/) {
                 $filter->{$way} = {

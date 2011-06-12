@@ -16,6 +16,7 @@ __PACKAGE__->attr(
     table_alias => sub { {} },
     columns => sub { [] },
     filter => sub { [] },
+    result_filter => sub { [] },
     join => sub { [] },
     type => sub { [] },
     primary_key => sub { [] }
@@ -163,7 +164,10 @@ L<DBIx::Custom> object.
 =head2 C<filter>
 
     my $dbi = $model->filter
-    $model  = $model->filter({out => 'tp_to_date', in => 'date_to_tp'});
+    $model  = $model->filter(
+        title => {out => 'tp_to_date', in => 'date_to_tp'}
+        author => {out => ..., in => ...},
+    );
 
 This filter is applied when L<DBIx::Custom>'s C<include_model()> is called.
 
@@ -183,6 +187,24 @@ Model name.
     
 Join clause, this is used as C<select()>'s C<join> option.
 
+=head2 C<primary_key>
+
+    my $primary_key = $model->primary_key;
+    $model          = $model->primary_key(['id', 'number']);
+
+Foreign key, this is used as C<primary_key> of C<insert_at>,C<update_at()>,
+C<delete_at()>,C<select_at()>.
+
+=head2 C<result_filter>
+
+    my $dbi = $model->result_filter
+    $model  = $model->result_filter(
+        title => sub { ... },
+        author => sub { ... }
+    );
+
+This filter is applied when L<DBIx::Custom>'s C<include_model()> or C<create_model> is called.
+
 =head2 C<table>
 
     my $table = $model->table;
@@ -199,14 +221,6 @@ Generally, this is automatically set from class name.
 Table alias. If you define table alias,
 same filter as the table is avaliable
 , and can write $dbi->column('user1') to get all columns.
-
-=head2 C<primary_key>
-
-    my $primary_key = $model->primary_key;
-    $model          = $model->primary_key(['id', 'number']);
-
-Foreign key, this is used as C<primary_key> of C<insert_at>,C<update_at()>,
-C<delete_at()>,C<select_at()>.
 
 =head2 C<type>
 

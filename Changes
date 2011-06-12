@@ -1,7 +1,8 @@
 0.1689
     - added EXPERIMENTAL available_data_type
     - simplified type_rule
-    - changed type_rule arguments format.
+    - changed type_rule arguments format
+    - added DBIx::Custom result_filter attribute
 0.1688
     - fixed bug that model insert, update, delete select can't
       odd number arguments
