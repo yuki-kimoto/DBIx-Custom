@@ -1,3 +1,7 @@
+0.1689
+    - added EXPERIMENTAL available_data_type
+    - simplified type_rule
+    - changed type_rule arguments format.
 0.1688
     - fixed bug that model insert, update, delete select can't
       odd number arguments

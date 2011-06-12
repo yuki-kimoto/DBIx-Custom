@@ -135,35 +135,30 @@ $dbi = DBIx::Custom->connect(
 );
 eval{$dbi->execute("create table date_test (date DATE, datetime DATETIME)")};
 $dbi->type_rule(
-    DATE => {
-        into=> sub {
+    into => {
+        DATE=> sub {
             my $date = shift;
             $date =~ s/aaaaa//g;
             return $date;
         },
-    },
-    DATETIME => {
-        into => sub {
+        DATETIME => sub {
             my $date = shift;
             $date =~ s/ccccc//g;
             return $date;
-            
         },
     },
-    # DATE
-    9 => {
-        from => sub {
-            my $date = shift;
-            $date .= 'bbbbb';
-            return $date;
-        }
-    },
-    # DATETIME or TIMPESTANM
-    11 => {
-        from => sub {
-            my $date = shift;
-            $date .= 'ddddd';
-            return $date;
+    from => {
+        # DATE
+        9 => sub {
+                my $date = shift;
+                $date .= 'bbbbb';
+                return $date;
+        },
+        # DATETIME or TIMPESTANM
+        11 => sub {
+                my $date = shift;
+                $date .= 'ddddd';
+                return $date;
         }
     }
 );

@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1688';
+our $VERSION = '0.1689';
 
 use 5.008001;
 use strict;
@@ -1005,7 +1005,7 @@ sub setup_model {
 sub available_data_type {
     my $self = shift;
     
-    my $data_types = "Data Type (Type name)\n";
+    my $data_types = '';
     foreach my $i (-1000 .. 1000) {
          my $type_info = $self->dbh->type_info($i);
          my $data_type = $type_info->{DATA_TYPE};
@@ -1013,6 +1013,8 @@ sub available_data_type {
          $data_types .= "$data_type ($type_name)\n"
            if defined $data_type;
     }
+    return "Data Type maybe equal to Type Name" unless $data_types;
+    $data_types = "Data Type (Type name)\n" . $data_types;
     return $data_types;
 }
 
@@ -1020,15 +1022,17 @@ sub type_rule {
     my $self = shift;
     
     if (@_) {
-        my $type_rule = _array_to_hash([@_]);
+        my $type_rule = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+        $type_rule->{from} = _array_to_hash($type_rule->{from});
+        $type_rule->{into} = _array_to_hash($type_rule->{into});
         $self->{type_rule} = $type_rule;
         $self->{_into} ||= {};
         $self->each_column(sub {
             my ($dbi, $table, $column, $column_info) = @_;
             
             my $type = $column_info->{TYPE_NAME};
-            if ($type_rule->{$type} &&
-                (my $rule = $type_rule->{$type}->{into}))
+            if ($type_rule->{into} &&
+                (my $rule = $type_rule->{into}->{$type}))
             {
                 $self->{_into}{$table}{$column} = $rule;
             }
@@ -1845,6 +1849,12 @@ L<DBIx::Custom> inherits all methods from L<Object::Simple>
 and use all methods of L<DBI>
 and implements the following new ones.
 
+=head2 C<available_data_type> EXPERIMENTAL
+
+    print $dbi->available_data_type;
+
+Get available data type.
+
 =head2 C<apply_filter>
 
     $dbi->apply_filter(
@@ -2366,17 +2376,40 @@ Register filters, used by C<filter> option of many methods.
 =head2 C<type_rule> EXPERIMENTAL
 
     $dbi->type_rule(
-        DATE => {
-            from => sub { ... },
-            into => sub { ... }
+        into => {
+            DATE => sub { ... },
+            DATETIME => sub { ... }
         },
-        DATETIME => {
-            from => sub { ... }
-            into => sub { ... }
+        from => {
+            # DATE
+            9 => sub { ... },
+            
+            # DATETIME or TIMESTAMP
+            11 => sub { ... },
         }
     );
 
-Filter based on type.
+Filtering rule when data is send into and get from database.
+This has a little complex problem. 
+In C<into> you can specify type name as same as type name defined
+by create table, such as C<DATETIME> or C<DATE>.
+but in C<from> you can't specify type name defined by create table.
+You must specify data type, this is internal one.
+You get all data type by C<available_data_type>.
+
+    print $dbi->available_data_type;
+
+You can also specify multiple types
+
+    $dbi->type_rule(
+        into => [
+            [qw/DATE DATETIME/] => sub { ... },
+        ],
+        from => {
+            # DATE
+            [qw/9 11/] => sub { ... },
+        }
+    );
 
 =head2 C<select>
 

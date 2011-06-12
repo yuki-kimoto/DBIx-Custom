@@ -111,8 +111,8 @@ sub fetch {
     
     for (my $i = 0; $i < @$columns; $i++) {
         
-        if (!$self->type_rule_off && $type_rule->{$types->[$i]} &&
-            (my $rule = $type_rule->{$types->[$i]}->{from}))
+        if (!$self->type_rule_off && $type_rule->{from} &&
+            (my $rule = $type_rule->{from}->{$types->[$i]}))
         {
             $row[$i] = $rule->($row[$i]);
         }
@@ -181,8 +181,8 @@ sub fetch_hash {
     for (my $i = 0; $i < @$columns; $i++) {
         
         # Type rule
-        if (!$self->type_rule_off && $type_rule->{$types->[$i]} &&
-            (my $rule = $type_rule->{$types->[$i]}->{from}))
+        if (!$self->type_rule_off && $type_rule->{from} &&
+            (my $rule = $type_rule->{from}->{$types->[$i]}))
         {
             $row->[$i] = $rule->($row->[$i]);
         }
