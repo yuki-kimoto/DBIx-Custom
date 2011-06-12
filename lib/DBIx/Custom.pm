@@ -1042,9 +1042,19 @@ sub type_rule {
             
             my $type = $column_info->{TYPE_NAME};
             if ($type_rule->{into} &&
-                (my $rule = $type_rule->{into}->{$type}))
+                (my $filter = $type_rule->{into}->{$type}))
             {
-                $self->{_into}{$table}{$column} = $rule;
+                return unless exists $type_rule->{into}->{$type};
+                if  (defined $filter && ref $filter ne 'CODE') 
+                {
+                    my $fname = $filter;
+                    croak qq{Filter "$fname" is not registered" } . _subname
+                      unless exists $self->filters->{$fname};
+                    
+                    $filter = $self->filters->{$fname};
+                }
+
+                $self->{_into}{$table}{$column} = $filter;
             }
         });
         

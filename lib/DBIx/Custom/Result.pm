@@ -9,7 +9,7 @@ use Carp 'croak';
 use DBIx::Custom::Util qw/_array_to_hash _subname/;
 
 __PACKAGE__->attr(
-    [qw/filters sth type_rule type_rule_off/],
+    [qw/filters filter_off sth type_rule type_rule_off/],
     stash => sub { {} }
 );
 
@@ -125,8 +125,8 @@ sub fetch {
         my $ef = $end_filter->{$column};
         
         # Filtering
-        $row[$i] = $f->($row[$i]) if $f;
-        $row[$i] = $ef->($row[$i]) if $ef;
+        $row[$i] = $f->($row[$i]) if $f && !$self->filter_off;
+        $row[$i] = $ef->($row[$i]) if $ef && !$self->filter_off;
     }
 
     return \@row;
@@ -195,8 +195,10 @@ sub fetch_hash {
         my $ef = $end_filter->{$column};
         
         # Filtering
-        $row_hash->{$column} = $f ? $f->($row->[$i]) : $row->[$i];
-        $row_hash->{$column} = $ef->($row_hash->{$column}) if $ef;
+        $row_hash->{$column} = $f && !$self->filter_off ? $f->($row->[$i])
+                                                        : $row->[$i];
+        $row_hash->{$column} = $ef->($row_hash->{$column})
+          if $ef && !$self->filter_off;
     }
     
     return $row_hash;
