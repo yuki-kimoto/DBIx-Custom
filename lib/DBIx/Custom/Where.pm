@@ -1,9 +1,6 @@
 package DBIx::Custom::Where;
 
-use strict;
-use warnings;
-
-use base 'Object::Simple';
+use Object::Simple -base;
 
 use overload 'bool' => sub {1}, fallback => 1;
 use overload '""' => sub { shift->to_string }, fallback => 1;
@@ -14,11 +11,9 @@ use Carp 'croak';
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-__PACKAGE__->attr(
-    [qw/param query_builder safety_character/],
+has [qw/param query_builder safety_character/],
     clause => sub { [] },
-    reserved_word_quote => ''
-);
+    reserved_word_quote => '';
 
 sub new {
     my $self = shift->SUPER::new(@_);

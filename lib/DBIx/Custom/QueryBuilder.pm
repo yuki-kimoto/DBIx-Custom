@@ -1,9 +1,6 @@
 package DBIx::Custom::QueryBuilder;
 
-use strict;
-use warnings;
-
-use base 'Object::Simple';
+use Object::Simple -base;
 
 use Carp 'croak';
 use DBIx::Custom::Query;

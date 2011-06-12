@@ -1,9 +1,6 @@
 package MyModel1::book;
 
-use strict;
-use warnings;
-
-use base 'DBIx::Custom::Model';
+use DBIx::Custom::Model -base;
 
 sub insert {
     my ($self, $param) = @_;

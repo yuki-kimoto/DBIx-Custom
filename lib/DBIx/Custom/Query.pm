@@ -1,19 +1,14 @@
 package DBIx::Custom::Query;
 
-use strict;
-use warnings;
-
-use base 'Object::Simple';
+use Object::Simple -base;
 
 use Carp 'croak';
 use DBIx::Custom::Util '_subname';
 
-__PACKAGE__->attr(
-    [qw/sth filters/],
+has [qw/sth filters/],
     sql => '',
     tables => sub { [] },
-    columns => sub { [] }
-);
+    columns => sub { [] };
 
 sub filter {
     my $self = shift;

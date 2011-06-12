@@ -1,12 +1,9 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1689';
-
+our $VERSION = '0.1690';
 use 5.008001;
-use strict;
-use warnings;
 
-use base 'Object::Simple';
+use Object::Simple -base;
 
 use Carp 'croak';
 use DBI;
@@ -24,8 +21,7 @@ use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 
 our @COMMON_ARGS = qw/table query filter type id primary_key type_rule_off/;
 
-__PACKAGE__->attr(
-    [qw/connector dsn password user/],
+has [qw/connector dsn password user/],
     cache => 0,
     cache_method => sub {
         sub {
@@ -60,8 +56,7 @@ __PACKAGE__->attr(
     result_class  => 'DBIx::Custom::Result',
     reserved_word_quote => '',
     safety_character => '\w',
-    stash => sub { {} }
-);
+    stash => sub { {} };
 
 our $AUTOLOAD;
 sub AUTOLOAD {

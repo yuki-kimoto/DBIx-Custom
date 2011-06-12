@@ -4,297 +4,108 @@
 
 DBIx::Custom::Guide - DBIx::Custom Guide
 
-=head1 GUIDE
+=head1 FEATURES
 
-L<DBIx::Custom> is the class to make easy to execute SQL.
-This is L<DBI> wrapper class like L<DBIx::Class> or L<DBIx::Simple>.
-You can do thing more easy than L<DBIx::Class>, more flexible
-than L<DBIx::Simple>.
-
-L<DBIx::Custom> is not O/R mapper, O/R mapper is usefule, but
-you must learn many things. Created SQL is sometimes inefficient,
-and in many cases you create raw SQL because
-O/R mapper can't make complex SQL
-
-L<DBIx::Custom> is opposit of O/R mapper.
-The main purpose is that we respect SQL
-and make easy difficult works if you use only L<DBI>.
-If you already learn SQL, it is easy to use L<DBIx::Custom>.
-
-I explain L<DBIx::Custom> a little in this section.
-In L<DBIx::Custom>, you embbed parameter in SQL.
-
-    select * from book where title = :title and author = :author;
-
-The part :title is parameter.
-This SQL is converted to the one which contains place holder.
-
-    select * from book where title = ? and author = ?;
-
-Maybe you ask me that this conversion is meaningful.
-On the top of this, usuful features is implemented.
-See the following descriptions.
+L<DBIx::Custom> is the wrapper class of L<DBI> to execute SQL easily.
+This module have the following features.
 
 =over 4
 
-=item 1. Specify place holder binding value as hash refernce
+=item * Execute INSERT, UPDATE, DELETE, SELECT statement easily
 
-If you use L<DBI>, you must specify place holder binding value
-as array.
+=item * You can specify bind values by hash reference
 
-    $sth->execute(@bind);
+=item * Filtering by data type. and you can set filter to any column
 
-If you use L<DBIx::Custom>, you specify it as hash reference.
-    
-    my $param = {title => 'Perl', author => 'Ken'};
-    $dbi->execute($sql, $param);
+=item * Creating where clause flexibly
 
-=item 2. Filtering
-
-L<DBIx::Custom> provides filtering system.
-For example, You think that about date value you want to 
-manipulate it as date object like L<Time::Piece> in Perl,
-and want to convert it to database DATE format.
-and want to do reverse.
-
-You can use filtering system.
-
-At first, register filter.
-
-    $dbi->register_filter(
-        tp_to_date => sub {
-            ...
-        },
-        date_to_tp => sub {
-            ...
-        }
-    );
-
-next, apply this filter to each column.
-
-    $dbi->apply_filter('book',
-        'issue_date' => {out => 'tp_to_date', in => 'date_to_tp'}
-    );
-
-C<out> is perl-to-database way. C<in> is perl-from-database way.
-
-This filter is automatically enabled in many method.
-
-    $dbi->insert(table => 'book', param => {issue_date => $tp});
-
-
-=item 3. Selective search condition
-
-It is difficult to create selective where clause in L<DBI>.
-For example, If C<title> and C<author> is specified, we create 
-the following SQL.
-
-    select * from book where title = ? and author = ?;
-
-If only C<title> is specified, the following one
-
-    select * from book where title = ?;
-
-If only C<author> is specified, the following one,
-
-    select * from book where author = ?;
-
-This is hard work. Generally we use modules like L<SQL::Abstract>.
-L<DBIx::Custom> prepare the way to make it easy.
-
-    # Where object
-    my $where = $dbi->where;
-    
-    # Search condition
-    $where->clause(
-        ['and', 'title = :title', 'author = :author']
-    );
-    
-    # Setting to automatically select needed column
-    $where->param({title => 'Perl'});
-
-    # Embbed where clause to SQL
-    my $sql = "select * from book $where";
-
-You can create where clause which has selected search condition.
-You can write nesting of where clause and C<or> condition
-
-=item 4. Methods for insert, update, delete, select
-
-L<DBIx::Custom> provides methods for insert, update, delete, select
-There are C<insert()>, C<update()>, C<delete()>,C<select()>.
-
-    my $param = {title => 'Perl', author => 'Ken'};
-    $dbi->insert(table => 'book', param => $param);
-
-=item 5. Register method for table.
-
-You can register method for table.
-
-    $dbi->table('book')->method(
-        list => sub {
-            ...
-        },
-        something => sub {
-            ...
-        }
-    );
-
-use the mehtod.
-
-    $dbi->table('book')->list;
-
-Many O/R mapper must create class for table,
-but L<DBIx::Custom> make it easy.
+=imte * Support model
 
 =back
 
-L<DBIx::Custom> is very useful.
-See the following if you are interested in it.
+=head1 GUIDE
 
-=head2 1. Connect to database
-
-Load L<DBIx::Custom>.
+=head2 Connect To Database
 
     use DBIx::Custom;
-
-use C<connect()> to connect to database.
-Return value is L<DBIx::Custom> object.
-
     my $dbi = DBIx::Custom->connect(
         dsn => "dbi:mysql:database=bookshop",
         user => 'ken',
         password => '!LFKD%$&',
-        dbi_options => {mysql_enable_utf8 => 1}
+        dbi_option => {mysql_enable_utf8 => 1}
     );
 
-C<dsn> must be one corresponding to the database system.
-The following ones are data source example.
+You can connect to database by C<connect> method.
+C<dsn> is data source name, C<user> is user name, C<password> is password.
 
-B<MySQL>
+C<dbi_option> is L<DBI> option.
+By default, the following option is set.
+Fatal error throw exeption and commit mode is auto commit.
 
-    "dbi:mysql:database=$database"
-    "dbi:mysql:database=$database;host=$hostname;port=$port"
+    {
+        RaiseError  =>  1
+        PrintError  =>  0
+        AutoCommit  =>  1
+    }
 
-B<SQLite>
+=head2 Execute Query
 
-    "dbi:SQLite:dbname=$database"
-    "dbi:SQLite:dbname=:memory:"
+=head3 Insert Statement : C<insert>
 
-B<PostgreSQL>
+If you want to execute insert statement, use C<insert> method.
 
-    "dbi:Pg:dbname=$dbname"
+    $dbi->insert({title => 'Perl', author => 'Ken'}, table  => 'book');
 
-B<Oracle>
+First argument is insert row data, C<table>  is table name.
 
-    "dbi:Oracle:$dbname"
-    "dbi:Oracle:host=$host;sid=$sid"
+=head3 Update Statement : C<update>
 
-B<ODBC(Microsoft Access)>
+If you want to execute update stateimuse, use C<update> method.
 
-    "dbi:ODBC:driver=Microsoft Access Driver (*.mdb);dbq=hoge.mdb"
+    $dbi->update(
+        {title => 'Perl', author => 'Ken'},
+        table  => 'book', 
+        where  => {id => 5}
+    );
 
-B<ODBC(SQL Server)>
+First argument is update row data, C<table> is table name, C<where> is condition.
 
-   "dbi:ODBC:driver={SQL Server};Server=(local);database=test;Trusted_Connection=yes;AutoTranslate=No;"
+Note that you can't execute C<update> method without C<where>.
+If you want to update all rows, use update_all.
 
-If authentication is needed, you can specify C<user> and C<password>
+    $dbi->update_all({title => 'Perl', author => 'Ken'}, table  => 'book');
 
-L<DBIx::Custom> is wrapper class of L<DBI>.
-You can use all methods of L<DBI> from L<DBIx::Custom> object.
+=head3 Delete Statement : C<delete>
 
-    $dbi->do(...);
-    $dbi->begin_work;
+If you want to execute delete statement, use C<delete> method.
 
-use C<dhb()> to get database handle of L<DBI>
-
-    my $dbh = $dbi->dbh;
-
-By default, the following ones is set to database handle attributes.
-
-    RaiseError  ->  1
-    PrintError  ->  0
-    AutoCommit  ->  1
-
-If fatal error occuer, program terminate.
-If SQL is executed, commit is executed automatically.
-
-=head2 2. Methods for insert, update, delete, or insert
-
-There are following methods.
-
-=head3 C<insert()>
-
-use C<insert()> to insert row into database
-
-    $dbi->insert(table  => 'book',
-                 param  => {title => 'Perl', author => 'Ken'});
-
-C<table> is table name, C<param> is insert data.
-
-Following SQL is executed.
-
-    insert into (title, author) values (?, ?);
-
-=head3 C<update()>
-
-use C<update()> to update row in database.
-
-    $dbi->update(table  => 'book', 
-                 param  => {title => 'Perl', author => 'Ken'}, 
-                 where  => {id => 5});
-
-C<table> is table name, C<param> is update data, C<where> is condition.
-
-Following SQL is executed.
-
-    update book set title = ?, author = ?;
-
-You can't execute C<update()> without C<where> for safety.
-use C<update_all()> if you want to update all rows.
-
-    $dbi->update_all(table  => 'book', 
-                     param  => {title => 'Perl', author => 'Ken'});
-
-=head3 C<delete()>
-
-use C<delete()> to delete rows from database.
-
-    $dbi->delete(table  => 'book',
-                 where  => {author => 'Ken'});
+    $dbi->delete(table  => 'book', where  => {author => 'Ken'});
 
 C<table> is table name, C<where> is condition.
 
-Following SQL is executed.
-
-    delete from book where id = ?;
-
-You can't execute C<delete()> without C<where> for safety.
-use C<delete_all()> if you want to delete all rows.
+Note that you can't execute C<delete> method without C<where>.
+If you want to delete all rows, use C<delete_all> method.
 
     $dbi->delete_all(table  => 'book');
 
-=head3 C<select()>
+=head3 Select Statement : C<select>
 
-use C<select()> to select rows from database
+If you want to execute select statement, use C<select> method.
 
     my $result = $dbi->select(table => 'book');
 
-Following SQL is executed.
-
-    select * from book;
-
 Return value is L<DBIx::Custom::Result> object.
-use C<fetch()> to fetch row.
+You can fetch rows by C<fetch> method.
 
     while (my $row = $result->fetch) {
         my $title  = $row->[0];
         my $author = $row->[1];
     }
 
-See L<3. Fetch row/"3. Fetch row"> about L<DBIx::Custom::Result>.
+See also L<Fetch row/"Fetch row"> about L<DBIx::Custom::Result>.
 
-Continue more examples.
+You can specify column names by C<column> option
+and condition by C<where> option.
 
     my $result = $dbi->select(
         table  => 'book',
@@ -302,67 +113,19 @@ Continue more examples.
         where  => {author => 'Ken'}
     );
 
-C<column> is column names, C<where> is condition.
-
-Following SQL is executed.
-
-    select author, title from book where author = ?;
-
-Next example.
+You can specify join clause by C<join> option.
 
     my $result = $dbi->select(
         table  => 'book',
-        column => ['company.name as company__name']
+        column => ['company.name as company_name']
         where  => {'book.name' => 'Perl'},
         join   => ['left outer join company on book.company_id = company.id]
     );
 
-You can join table by C<join>.
+Note that join clause is joined only when C<where> or C<column> option contains table name,
+such as book.name.
 
-Following SQL is executed.
-
-    select company.name as company__name
-    from book
-      left outer join company on book.company_id = company.id
-    where book.name = ?;
-
-company_if of book and id of company is left outer joined.
-
-Note that only when C<where> or C<column> contain table name,
-C<join> is joined.
-if you specify the following option, C<join> is not joined
-because C<join> is not needed.
-
-    my $result = $dbi->select(
-        table  => 'book',
-        where  => {'name' => 'Perl'},
-        join   => ['left outer join company on book.company_id = company.id]
-    );
-
-Following SQL is executeed.
-
-    select * from book where book.name = ?;
-
-You can specify column names easily using C<mycolumn()> and C<column()>.
-
-    my $result = $dbi->select(
-        table  => 'book',
-        column => [
-            $dbi->mycolumn('book' => ['name']),
-            $dbi->column('company' => ['id', 'name'])
-        ],
-        join   => ['left outer join company on book.company_id = company.id]
-    );
-
-The following SQL is executed.
-
-    select book.name as name,
-      company.id as comapny__id,
-      company.name as company__name
-    from book
-      left outer join company on book.company_id = company.id
-
-Next example.
+You can append statement to the end of whole statement by C<append> option.
 
     my $result = $dbi->select(
         table  => 'book',
@@ -370,334 +133,104 @@ Next example.
         append => 'for update',
     );
 
-C<append> is string appending to end of SQL.
+=head3 C<execute>
 
-Following SQL is executed.
-
-    select * book where author = ? for update;
-
-C<appned> is also used at C<insert()>, C<update()>, C<update_all()>
-C<delete()>, C<delete_all()>, and C<select()>.
-
-=head3 C<execute()>
-
-use C<execute()> to execute SQL
+If you want to execute SQL, use C<execute> method.
 
     $dbi->execute("select * from book;");
 
-Process parameter and execute SQL.
+You can specify parameters.
 
     $dbi->execute(
         "select * from book title = :title and author = :author;"
-        param => {title => 'Perl', author => 'Ken'}
+        {title => 'Perl', author => 'Ken'}
     );
 
-Following SQL is executed.
+:title and :author is parameters, which is replaced to placeholers.
 
     select * from book title = ? and author = ?;
 
-Values of title and author is embbdeded into placeholder.
+See also L<Parameter/"Parameter"> about parameter.
 
-See L<5. Parameter/"5. Parameter"> about parameter.
+=head3 C<dbh>
 
-You don't have to wirte last semicolon in C<execute()>. 
+    my $dbh = $dbi->dbh;
 
-    $dbi->execute('select * from book');
+Get get database handle object of L<DBI>.
 
-=head2 3. Fetch row
+=head3 C<DBI> methods
 
-Return value of C<select()> is L<DBIx::Custom::Result> object.
-There are many methods to fetch row.
+    $dbi->do(...);
+    $dbi->begin_work;
 
-=head3 Fetch a row (array) : C<fetch()>
+You can call all methods of L<DBI> from L<DBIx::Custom> object.
 
-use C<fetch()> to fetch a row and assign it into array reference.
+=head2 Fetch Rows
+
+C<select> method return value is L<DBIx::Custom::Result> object.
+You can fetch a row or rows by various methods.
+
+=head3 Fetch a row (array) : C<fetch>
 
     my $row = $result->fetch;
 
-You can get all rows.
+C<fetch> method fetch a row and put it into array reference.
+You can continue to fetch 
 
     while (my $row = $result->fetch) {
         my $title  = $row->[0];
         my $author = $row->[1];
     }
 
-=head3 Fetch only first row (array) : C<fetch_first()>
-
-use C<fetch_first()> to fetch only first row.
+=head3 Fetch only first row (array) : C<fetch_first>
 
     my $row = $result->fetch_first;
 
-You can't fetch rest rows
-because statement handle C<finish()> is executed.
-
-=head3 Fetch rows (array) : C<fetch_multi()>
-
-use C<fetch_multi()> to fetch rows and assign it into
-array reference which has array references as element.
-
-    while (my $rows = $result->fetch_multi(2)) {
-        my $title0   = $rows->[0][0];
-        my $author0  = $rows->[0][1];
-        
-        my $title1   = $rows->[1][0];
-        my $author1  = $rows->[1][1];
-    }
-
-Specify row count as argument.
-
-You can get the following data.
-
-    [
-        ['Perl', 'Ken'],
-        ['Ruby', 'Mark']
-    ]
+C<fetch_first> fetch a only first row and finish statment handle,
+and put it into array refrence.
 
 =head3 Fetch all rows (array) : C<fetch_all>
 
-use C<fetch_all()> to fetch all rows and assign it into
-array reference which has array reference as element.
-
     my $rows = $result->fetch_all;
 
-You can get the following data.
+C<fetch_all> fetch all rows and put them into array of array reference.
 
-    [
-        ['Perl', 'Ken'],
-        ['Ruby', 'Mark']
-    ]
+=head3 Fetch a row (hash) : C<fetch_hash>
 
-=head3 Fetch a row (hash) : C<fetch_hash()>
+    my $row = $result->fetch_hash;
 
-use C<fetch_hash()> to fetch a row and assign it into hash reference.
+C<fetch_hash> fetch a row and put it into hash reference.
+You can fetch a row while row exists.
 
     while (my $row = $result->fetch_hash) {
         my $title  = $row->{title};
         my $author = $row->{author};
     }
 
-=head3 Fetch only first row (hash) : C<fetch_hash_first()>
-
-use C<fetch_hash_first()> to fetch only first row
-and assign it into hash reference.
+=head3 Fetch only a first row (hash) : C<fetch_hash_first>
 
     my $row = $result->fetch_hash_first;
 
-You can't fetch rest rows
-because statement handle C<finish()> is executed.
+C<fetch_hash_first> fetch only a first row and finish statement handle,
+and put them into hash refrence.
 
-=head3 Fetch rows (hash) : C<fetch_hash_multi()>
+C<one> is C<fetch_hash_first> synonym to save word typing.
 
-use C<fetch_hash_multi()> to fetch rows and
-assign it into array reference which has hash references as element.
+    my $row = $result->one;
 
-    while (my $rows = $result->fetch_hash_multi(5)) {
-        my $title0   = $rows->[0]{title};
-        my $author0  = $rows->[0]{author};
-        my $title1  = $rows->[1]{title};
-        my $author1 = $rows->[1]{author};
-    }
-
-Specify row count as argument.
-
-You can get the following data.
-
-    [
-        {title => 'Perl', author => 'Ken'},
-        {title => 'Ruby', author => 'Mark'}
-    ]
-
-=head3 Fetch all rows (hash) : C<fetch_hash_all()>
-
-use C<fetch_hash_all()> to fetch all rows and
-assign it into array reference which has hash 
-references as element.
+=head3 Fetch all rows (hash) : C<fetch_hash_all>
 
     my $rows = $result->fetch_hash_all;
 
-You can get the following data.
+C<fetch_hash_all> fetch all rows and put them into array of hash reference.
 
-    [
-        {title => 'Perl', author => 'Ken'},
-        {title => 'Ruby', author => 'Mark'}
-    ]
-
-=head3 Statement handle : C<sth()>
-
-use <sth()> to get statement handle.
+=head3 Statement Handle : C<sth>
 
     my $sth = $result->sth;
 
-=head2 4. Filtering
+If you want to get statment handle, use <sth> method.
 
-L<DBIx::Custom> provide value filtering. 
-For example, You maybe want to convert L<Time::Piece> object to
-database date format when register data into database.
-and convert database date fromat to L<Time::Piece> object
-when get data from database.
-
-=head3 Register filter : C<register_filter()>
-
-use C<register_filter()> to register filter.
-
-    $dbi->register_filter(
-        # Time::Piece object to DATE format
-        tp_to_date => sub {
-            my $date = shift;
-
-            return '0000-00-00' unless $tp;
-            return $tp->strftime('%Y-%m-%d');
-        },
-        
-        # DATE to Time::Piece object
-        date_to_tp => sub {
-            my $date = shift;
-
-            return if $date eq '0000-00-00';
-            return Time::Piece->strptime($date, '%Y-%m-%d');
-        },
-    );
-
-Registered filter is used by C<apply_filter()> or etc.
-
-=head3 Apply filter : C<apply_filter()>
-
-use C<apply_filter()> to apply registered filter.
-
-    $dbi->apply_filter('book',
-        issue_date => {out => 'tp_to_date', in => 'date_to_tp'},
-        first_issue_date => {out => 'tp_to_date', in => 'date_to_tp'}
-    );
-
-First argument is table name. Arguments after first argument are pairs of column
-name and fitering rule. C<out> of filtering rule is filter which is used when data
-is send to database. C<in> of filtering rule is filter which is used when data
-is got from database. 
-
-You can specify code reference as filter.
-
-    issue_date => {out => sub { ... }, in => sub { ... }}
-
-Applied filter become effective at insert()>, C<update()>, C<update_all()>,
-C<delete()>, C<delete_all()>, C<select()>.
-
-    my $tp = Time::Piece->strptime('2010/10/14', '%Y/%m/%d');
-    my $result = $dbi->select(table => 'book', where => {issue_date => $tp});
-
-When data is send to database, L<Time::Piece> object is converted
-to database date format "2010-10-14"
-
-When data is fetched, database date format is
-converted to L<Time::Piece> object.
-
-    my $row = $resutl->fetch_hash_first;
-    my $tp = $row->{issue_date};
-
-You can also use column name which contains table name.
-
-    $dbi->select(
-        table => 'book',
-        where => {'book.issue_date' => $tp}
-    );
-
-In fetching, Filter is effective if you use "TABLE__COLUMN" as column name.
-
-    my $result = $dbi->execute(
-       "select issue_date as book__issue_date from book");
-
-You can apply C<end> filter execute after C<in> filter.
-
-    $dbi->apply_filter('book',
-        issue_date => {out => 'tp_to_date', in => 'date_to_tp',
-                       end => 'tp_to_displaydate'},
-    );
-
-=head3 Individual filter C<filter>
-
-You can apply individual filter .
-This filter overwrite the filter by C<apply_filter()>
-
-use C<filter> option to apply individual filter
-when data is send to database.
-This option is used at C<insert()>, C<update()>,
-C<update_all()>, C<delete()>, C<delete_all()>, C<select()>,
-C<execute()>.
-
-C<insert()> example:
-
-    $dbi->insert(
-        table => 'book',
-        param => {issue_date => $tp, first_issue_date => $tp},
-        filter => {issue_date => 'tp_to_date', first_issue_date => 'tp_to_date'}
-    );
-
-C<execute()> example:
-
-my $sql = <<"EOS";
-select YEAR(issue_date) as issue_year
-from book
-where YEAR(issue_date) = {? issue_year}
-EOS
-   
-    my $result = $dbi->execute(
-        $sql,
-        param => {issue_year => '2010'},
-        filter => {issue_year => 'tp_to_year'}
-    );
-
-You can also apply indivisual filter when you fetch row.
-use C<DBIx::Custom::Result>'s C<filter()>.
-
-    $result->filter(issue_year => 'year_to_tp');
-
-You can remove filter by C<remove_filter()>
-
-    $result->remove_filter;
-
-=head3 End filtering : C<end_filter()>
-
-You can add filter at end.
-It is useful to create last output.
-use C<end_filter()> to add end filter.
-
-    $result->end_filter(issue_date => sub {
-        my $tp = shift;
-        
-        return '' unless $tp;
-        return $tp->strftime('%Y/%m/%d %h:%m:%s (%a)');
-    });
-
-In this example, L<Time::Piece> object is converted to readable format.
-
-You can remove end_filter by C<end_filter>
-
-    $result->remove_end_filter;
-
-=head3 Automate applying filter : C<each_column()>
-
-It is useful to apply filter automatically at date type columns.
-You can use C<each_column()> to process all column infos.
-
-    $dbi->each_column(
-        sub {
-            my ($self, $table, $column, $info) = @_;
-            
-            my $type = $info->{TYPE_NAME};
-            
-            my $filter = $type eq 'DATE'     ? {out => 'tp_to_date', in => 'date_to_tp'}
-                       : $type eq 'DATETIME' ? {out => 'tp_to_datetime', in => 'datetime_to_tp'}
-                                             : undef;
-            
-            $self->apply_filter($table, $column, $filter)
-              if $filter;
-        }
-    );
-
-C<each_column()> receive callback.
-callback arguments are L<DBIx::Custom> object, table name, column name, column information.
-Filter is applied automatically by column type.
-
-=head2 5. Parameter
+=head2 Parameter
 
 =head3 Basic of Parameter
 
@@ -711,20 +244,20 @@ Parameter is converted to place holder.
 
     select * from book where title = ? and author like ?;
 
-use C<execute()> to execute SQL.
+use C<execute> to execute SQL.
 
     my $sql = "select * from book where title = :title and author like :author;"
-    $dbi->execute($sql, param => {title => 'Perl', author => '%Ken%'});
+    $dbi->execute($sql, {title => 'Perl', author => '%Ken%'});
 
 You can specify values embedded into place holder as hash reference using
 C<param> option.
 
-You can specify C<filter()> at C<execute()>.
+You can specify C<filter> at C<execute>.
 
-    $dbi->execute($sql, param => {title => 'Perl', author => '%Ken%'}
+    $dbi->execute($sql, {title => 'Perl', author => '%Ken%'}
                   filter => {title => 'to_something');
 
-Note that at C<execute()> the filter applied by C<apply_filter()>
+Note that at C<execute> the filter applied by C<apply_filter>
 don't has effective to columns.
 You have to use C<table> option
 
@@ -737,13 +270,13 @@ Let's think two date comparison.
 
     my $sql = "select * from table where date > :date and date < :date;";
 
-In this case, You specify paramter values as array reference.
+In this case, You specify parameter values as array reference.
 
-    my $dbi->execute($sql, param => {date => ['2010-10-01', '2012-02-10']});
+    my $dbi->execute($sql, {date => ['2010-10-01', '2012-02-10']});
 
-=head2 6. Dinamically create where clause
+=head2 Create where clause
 
-=head3 Dinamically create where clause : where()
+=head3 Dinamically create where clause : where
 
 You want to search multiple conditions in many times.
 Let's think the following three cases.
@@ -761,11 +294,11 @@ Case3: Search C<title> and C<author>
     where title = :title and author = :author
 
 L<DBIx::Custom> support dinamic where clause creating.
-At first, create L<DBIx::Custom::Where> object by C<where()>.
+At first, create L<DBIx::Custom::Where> object by C<where>.
 
     my $where = $dbi->where;
 
-Set clause by C<clause()>
+Set clause by C<clause>
 
     $where->clause(
         ['and', 'title = :title, 'author = :author']
@@ -793,7 +326,7 @@ After setting C<clause>, set C<param>.
 
 In this example, parameter contains only title.
 
-If you execute C<string_to()>, you can get where clause
+If you execute C<string_to>, you can get where clause
 which contain only parameter name.
 
     my $where_clause = $where->to_string;
@@ -830,7 +363,7 @@ If starting date isn't exists, create the following parameter.
 
     my $p = {date => [$dbi->not_exists, '2011-11-21']};
 
-You can get DBIx::Custom::NotExists object by C<not_exists()>
+You can get DBIx::Custom::NotExists object by C<not_exists>
 This mean correnspondinf value isn't exists.
 
 If ending date isn't exists, create the following parameter.
@@ -849,18 +382,18 @@ This logic is a little difficut. See the following ones.
     push @date, $param->{end_date} if exists $param->{end_date};
     my $p = {date => \@date};
 
-=head3 With C<select()>
+=head3 With C<select>
 
-You can pass L<DBIx::Custom::Where> object to C<where> of C<select()>.
+You can pass L<DBIx::Custom::Where> object to C<where> of C<select>.
     
     my $where = $dbi->where;
     $where->clause(['and', 'title = :title', 'author = :author']);
     $where->param({title => 'Perl'});
     my $result = $dbi->select(table => 'book', where => $where);
 
-You can also pass it to C<where> of C<update()>AC<delete()>
+You can also pass it to C<where> of C<update>AC<delete>
 
-=head3 With C<execute()>
+=head3 With C<execute>
 
 L<DBIx::Custom::Where> object is embedded into SQL.
 
@@ -873,7 +406,53 @@ L<DBIx::Custom::Where> object is embedded into SQL.
     $where
     EOS
 
-    $dbi->execute($sql, param => $param, table => 'book');
+    $dbi->execute($sql, $param, table => 'book');
+
+=head2 Filtering
+
+=head3 Register filter : C<register_filter>
+
+If you want to register filter, use C<register_filter>.
+
+    $dbi->register_filter(
+        # Time::Piece object to DATE format
+        tp_to_date => sub {
+            my $date = shift;
+            return $tp->strftime('%Y-%m-%d');
+        },
+        
+        # DATE to Time::Piece object
+        date_to_tp => sub {
+            my $date = shift;
+            return Time::Piece->strptime($date, '%Y-%m-%d');
+        },
+    );
+
+=head3 Filter before sending data into database : C<filter> option
+
+If you filter sending data, use C<filter> option.
+
+    $dbi->execute(
+        'insert into book (date) values (:date)',
+        {date => $tp},
+        filter => {date => 'tp_to_date'}
+    );
+
+You can use C<filter> option in C<insert>, C<update>, C<delete>, C<select> method.
+
+    $dbi->insert(
+        {date => $tp},
+        table => 'book',
+        filter => {date => 'tp_to_date'}
+    );
+
+=head3 Filter after fetching data from database.
+
+If you filter fetch data, use L<DBIx::Custom::Result>'s C<filter> method.
+
+    my $result = $dbi->select(column => 'date', table => 'book');
+    $result->filter(date => 'date_to_tp');
+    my $row = $result->one;
 
 =head2 7. Model
 
@@ -883,18 +462,18 @@ you can define model extending L<DBIx::Custom::Model>
 to improve source code view.
 
 At first, you create basic model class extending <DBIx::Custom::Model>.
+Each L<DBIx::Custom> class inherit L<Object::Simple>.
+so you can inherit the following way.
 
     package MyModel;
-    
-    use base 'DBIx::Custom::Model';
+    use DBIx::Custom::Model -base;
 
 Next, you create each model classes.
 
 MyModel::book
 
     package MyModel::book;
-    
-    use base 'MyModel';
+    use MyModel -base;
     
     sub insert { ... }
     sub list { ... }
@@ -902,8 +481,7 @@ MyModel::book
 MyModel::company
 
     package MyModel::company;
-    
-    use base 'MyModel';
+    use MyModel -base;
     
     sub insert { ... }
     sub list { ... }
@@ -914,7 +492,7 @@ The follwoing modules location is needed.
     MyModel / book.pm
             / company.pm
 
-You can include these models by C<include_model()>
+You can include these models by C<include_model>
 
     $dbi->include_model('MyModel');
 
@@ -925,15 +503,15 @@ You can use model like this.
     my $result = $dbi->model('book')->list;
 
 In mode, You can use such as methods,
-C<insert()>, C<update()>, C<update_all()>,
-C<delete()>, C<delete_all()>, C<select()>
+C<insert>, C<update>, C<update_all>,
+C<delete>, C<delete_all>, C<select>
 without C<table> option.
 
-    $dbi->model('book')->insert(param => $param);
+    $dbi->model('book')->insert($param);
 
 Model is L<DBIx::Custom::Model>.
 
-If you need table nameAyou can get it by C<table()>.
+If you need table nameAyou can get it by C<table>.
 
     my $table = $model->table;
 
@@ -950,7 +528,7 @@ You can also call all methods of L<DBIx::Custom> and L<DBI>.
     $model->begin_work;
     $model->commit;
 
-If you want to get all models, you can get them by keys of C<models()>.
+If you want to get all models, you can get them by keys of C<models>.
 
     my @models = keys %{$self->models};
 
@@ -958,24 +536,24 @@ You can set primary key to model.
 
    $model->primary_key(['id', 'number_id']);
 
-Primary key is used by C<insert_at>, C<update_at()>, C<delete_at()>,
-C<select_at()>.
+Primary key is used by C<insert>, C<update>, C<delete>,
+and C<select> methods.
 
-by C<filter> you can define filters applied by C<apply_filter()>
+by C<filter> you can define filters applied by C<apply_filter>
 
     $model->filter({
         title  => {out => ..., in => ..., end => ...},
         author => {out => ..., in => ..., end => ...}
     });
 
-This filters is applied when C<include_model()> is called.
+This filters is applied when C<include_model> is called.
 
 You can set column names
 
     $model->columns(['id', 'number_id']);
 
-Column names is automarically set by C<setup_model()>.
-This method is needed to be call after C<include_model()>.
+Column names is automarically set by C<setup_model>.
+This method is needed to be call after C<include_model>.
 
     $dbi->setup_model;
 
@@ -983,7 +561,7 @@ You can set C<join>
 
     $model->join(['left outer join company on book.company_id = company.id']);
 
-This C<join> is used by C<select()>, C<select_at()>
+C<join> is used by C<select> method.
 
 =head2 Class name, Model name, Table name
 
@@ -1002,7 +580,7 @@ You can change model name.
     CLASS        MODEL         TABLE
     book         book_model    (MODEL) -> book_model
 
-Model name is the name used by L<model()> of L<DBIx::Custom>.
+Model name is the name used by L<model> of L<DBIx::Custom>.
 
     $dbi->model('book_model');
 
@@ -1019,9 +597,9 @@ Table name is the table really accessed.
 
     $dbi->model('book')->insert(...); # access to "book_table"
 
-=head2 Create column clause automatically : mycolumn(), column()
+=head2 Create column clause automatically : mycolumn, column
 
-To create column clause automatically, use C<mycolumn()>.
+To create column clause automatically, use C<mycolumn>.
 Valude of C<table> and C<columns> is used.
 
     my $column_clause = $model->mycolumn;
@@ -1042,9 +620,9 @@ the following clause is created.
 
     company.id as company__id, company.name as company__name
 
-=head2 Create column clause automatically : column_clause()
+=head2 Create column clause automatically : column_clause
 
-To create column clause automatically, use C<column_clause()>.
+To create column clause automatically, use C<column_clause>.
 Valude of C<table> and C<columns> is used.
 
     my $column_clause = $model->column_clause;
@@ -1069,8 +647,7 @@ If you add some column, use C<add> option.
 Model examples
 
     package MyDBI;
-    
-    use base 'DBIx::Custom';
+    use DBIx::Custom -base;
     
     sub connect {
         my $self = shift->SUPER::connect(@_);
@@ -1084,98 +661,19 @@ Model examples
     }
     
     package MyModel::book;
-    use base 'DBIx::Custom::Model';
+    use DBIx::Custom::Model -base;
     
-    __PACKAGE__->attr('primary_key' => sub { ['id'] };
+    has primary_key => sub { ['id'] };
     
     sub insert { ... }
     sub list { ... }
     
     package MyModel::company;
-    use base 'DBIx::Custom::Model';
+    use DBIx::Custom::Model -base;
 
-    __PACKAGE__->attr('primary_key' => sub { ['id'] };
+    has primary_key => sub { ['id'] };
     
     sub insert { ... }
     sub list { ... }
-
-=head2 8. Improve performance
-
-=head3 Create query
-
-If you can't get performance, create query by C<query> option.
-For example, many insert is needed.
-
-    my $params = [
-        {title => 'Perl', author => 'Ken'},
-        {title => 'Good day', author => 'Tom'}
-    ]
-    my $query = $dbi->insert(table => 'book', param => $params->[0], query => 1);
-
-Return value is L<DBIx::Custom::Query> object.
-This query is executed by C<execute()>.
-
-    foreach my $param (@$params) {
-        $dbi->execute($query, $param);
-    }
-
-Performance is improved because statement handle is reused
-C<query> option is used in C<insert()>, C<update()>, C<update_all()>,
-C<delete()>, C<delete_all()>.
-
-Note that parameters count is same as method for creating query and C<execute()>.
-
-You can create query from any SQL by C<create_query()>.
-
-    my $query = $dbi->create_query(
-        "insert into book {insert_param title author};";
-    );
-
-=head2 9. Other features
-
-=head3 Add method
-
-You can add method to L<DBIx::Custom> object.
-use C<method()>.
-
-    $dbi->method(
-        update_or_insert => sub {
-            my $self = shift;
-            # something
-        },
-        find_or_create   => sub {
-            my $self = shift;
-            # something
-        }
-    );
-
-You can call these methods from L<DBIx::Custom> object.
-
-    $dbi->update_or_insert;
-    $dbi->find_or_create;
-
-=head3 Change result class
-
-You can change result class. By default it is L<DBIx::Custom::Result>.
-
-    package MyResult;
-    use base 'DBIx::Custom::Result';
-    
-    sub some_method { ... }
-
-    1;
-    
-    package main;
-    
-    use MyResult;
-    
-    my $dbi = DBIx::Custom->connect(...);
-    $dbi->result_class('MyResult');
-
-=head1 EXAMPLES
-
-You can see exsamples in the following wiki.
-
-L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki> - Many useful examples
 
 =cut

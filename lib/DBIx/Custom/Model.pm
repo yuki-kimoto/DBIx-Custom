@@ -1,9 +1,6 @@
 package DBIx::Custom::Model;
 
-use strict;
-use warnings;
-
-use base 'Object::Simple';
+use Object::Simple -base;
 
 use Carp 'croak';
 use DBIx::Custom::Util '_subname';
@@ -11,16 +8,14 @@ use DBIx::Custom::Util '_subname';
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-__PACKAGE__->attr(
-    ['dbi', 'name', 'table', 'view'],
+has [qw/dbi name table view/],
     table_alias => sub { {} },
     columns => sub { [] },
     filter => sub { [] },
     result_filter => sub { [] },
     join => sub { [] },
     type => sub { [] },
-    primary_key => sub { [] }
-);
+    primary_key => sub { [] };
 
 our $AUTOLOAD;
 

@@ -1,17 +1,12 @@
 package DBIx::Custom::Result;
 
-use strict;
-use warnings;
-
-use base 'Object::Simple';
+use Object::Simple -base;
 
 use Carp 'croak';
 use DBIx::Custom::Util qw/_array_to_hash _subname/;
 
-__PACKAGE__->attr(
-    [qw/filters filter_off sth type_rule type_rule_off/],
-    stash => sub { {} }
-);
+has [qw/filters filter_off sth type_rule type_rule_off/],
+    stash => sub { {} };
 
 *all = \&fetch_hash_all;
 
