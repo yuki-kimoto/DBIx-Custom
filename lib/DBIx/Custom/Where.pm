@@ -66,7 +66,8 @@ sub _parse {
         
         # Operation
         my $op = $clause->[0] || '';
-        croak qq{"$op" is invalid operation (} . _subname . ")"
+        croak qq{First argument must be "and" or "or" in where clause } .
+              qq{"$op" is passed} . _subname . ")"
           unless $VALID_OPERATIONS{$op};
         
         # Parse internal clause
