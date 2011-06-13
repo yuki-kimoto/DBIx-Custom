@@ -854,7 +854,8 @@ sub register_filter {
 
 our %SELECT_ARGS
   = map { $_ => 1 } @COMMON_ARGS,
-                    qw/column where relation join param where_param wrap/;
+                    qw/column where relation join param where_param wrap
+                       prefix/;
 
 sub select {
     my ($self, %args) = @_;
@@ -884,6 +885,7 @@ sub select {
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
+    my $prefix = delete $args{prefix};
     
     # Check arguments
     foreach my $name (keys %args) {
@@ -900,6 +902,9 @@ sub select {
     
     # Reserved word quote
     my $q = $self->reserved_word_quote;
+    
+    # Prefix
+    push @sql, $prefix if defined $prefix;
     
     # Column clause
     if ($columns) {
@@ -2533,6 +2538,14 @@ you can pass parameter by C<param> option.
 
     join  => ['inner join (select * from table2 where table2.key3 = :table2.key3)' . 
               ' as table2 on table1.key1 = table2.key1']
+
+=itme C<prefix> EXPERIMENTAL
+
+    prefix => 'SQL_CALC_FOUND_ROWS'
+
+Prefix of column cluase
+
+    select SQL_CALC_FOUND_ROWS title, author from book;
 
 =item C<join>
 

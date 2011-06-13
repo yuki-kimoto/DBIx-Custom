@@ -104,7 +104,7 @@ is_deeply($rows, [[1, 2], [3, 4]], "fetch_all");
 
 $result = $dbi->execute($query);
 $rows = $result->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "fetch_hash_all");
+is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "all");
 
 test 'Insert query return value';
 $dbi->execute($DROP_TABLE->{0});
@@ -121,7 +121,7 @@ $dbi->execute($CREATE_TABLE->{0});
 $insert_SOURCE = "insert into table1 {insert_param key1 key2}";
 $dbi->execute($insert_SOURCE, param => {key1 => 1, key2 => 2});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
 test 'Filter basic';
@@ -135,7 +135,7 @@ $insert_query = $dbi->create_query($insert_SOURCE);
 $insert_query->filter({key1 => 'twice'});
 $dbi->execute($insert_query, param => {key1 => 1, key2 => 2});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows = $result->filter({key2 => 'three_times'})->fetch_hash_all;
+$rows = $result->filter({key2 => 'three_times'})->all;
 is_deeply($rows, [{key1 => 2, key2 => 6}], "filter fetch_filter");
 $dbi->execute($DROP_TABLE->{0});
 
@@ -148,7 +148,7 @@ $select_SOURCE = "select * from table1 where {in table1.key1 2} and {in table1.k
 $select_query = $dbi->create_query($select_SOURCE);
 $select_query->filter({'table1.key1' => 'twice'});
 $result = $dbi->execute($select_query, param => {'table1.key1' => [1,5], 'table1.key2' => [2,4]});
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [{key1 => 2, key2 => 4}], "filter");
 
 test 'DBIx::Custom::SQLTemplate basic tag';
@@ -160,19 +160,19 @@ $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 
 $source = "select * from table1 where {= key1} and {<> key2} and {< key3} and {> key4} and {>= key5};";
 $query = $dbi->create_query($source);
 $result = $dbi->execute($query, param => {key1 => 1, key2 => 3, key3 => 4, key4 => 3, key5 => 5});
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "basic tag1");
 
 $source = "select * from table1 where {= key1} and {<> key2} and {< key3} and {> key4} and {>= key5};";
 $query = $dbi->create_query($source);
 $result = $dbi->execute($query, {key1 => 1, key2 => 3, key3 => 4, key4 => 3, key5 => 5});
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "basic tag1");
 
 $source = "select * from table1 where {<= key1} and {like key2};";
 $query = $dbi->create_query($source);
 $result = $dbi->execute($query, param => {key1 => 1, key2 => '%2%'});
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "basic tag2");
 
 test 'DIB::Custom::SQLTemplate in tag';
@@ -184,7 +184,7 @@ $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 
 $source = "select * from table1 where {in key1 2};";
 $query = $dbi->create_query($source);
 $result = $dbi->execute($query, param => {key1 => [9, 1]});
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "basic");
 
 test 'DBIx::Custom::SQLTemplate insert tag';
@@ -193,7 +193,7 @@ $insert_SOURCE = 'insert into table1 {insert_param key1 key2 key3 key4 key5}';
 $dbi->execute($insert_SOURCE, param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "basic");
 
 test 'DBIx::Custom::SQLTemplate update tag';
@@ -206,7 +206,7 @@ $update_SOURCE = 'update table1 {update_param key1 key2 key3 key4} where {= key5
 $dbi->execute($update_SOURCE, param => {key1 => 1, key2 => 1, key3 => 1, key4 => 1, key5 => 5});
 
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 1, key3 => 1, key4 => 1, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "basic");
 
@@ -219,17 +219,17 @@ $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 
 
 $source = "select * from table1 where key1 = :key1 and key2 = :key2";
 $result = $dbi->execute($source, param => {key1 => 1, key2 => 2});
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
 
 $source = "select * from table1 where key1 = \n:key1\n and key2 = :key2";
 $result = $dbi->execute($source, param => {key1 => 1, key2 => 2});
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
 
 $source = "select * from table1 where key1 = :key1 or key1 = :key1";
 $result = $dbi->execute($source, param => {key1 => [1, 2]});
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
 
 $source = "select * from table1 where key1 = :table1.key1 and key2 = :table1.key2";
@@ -238,7 +238,7 @@ $result = $dbi->execute(
     param => {'table1.key1' => 1, 'table1.key2' => 1},
     filter => {'table1.key2' => sub { $_[0] * 2 }}
 );
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
 
 test 'Error case';
@@ -255,7 +255,7 @@ $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "basic");
 
 $dbi->execute('delete from table1');
@@ -266,14 +266,14 @@ $dbi->register_filter(
 $dbi->default_bind_filter('twice');
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, filter => {key1 => 'three_times'});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "filter");
 $dbi->default_bind_filter(undef);
 
 $dbi->execute($DROP_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, append => '   ');
-$rows = $dbi->select(table => 'table1')->fetch_hash_all;
+$rows = $dbi->select(table => 'table1')->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], 'insert append');
 
 eval{$dbi->insert(table => 'table1', noexist => 1)};
@@ -288,7 +288,7 @@ $dbi->execute('create table "table" ("select")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert(table => 'table', param => {select => 1});
 $result = $dbi->execute('select * from "table"');
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{select => 2}], "reserved word");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -296,7 +296,7 @@ $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
 $dbi->insert({key1 => 3, key2 => 4}, table => 'table1');
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "basic");
 
 test 'update';
@@ -306,7 +306,7 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 $dbi->update(table => 'table1', param => {key2 => 11}, where => {key1 => 1});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "basic");
@@ -316,14 +316,14 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 $dbi->update(table => 'table1', param => {key2 => 12}, where => {key2 => 2, key3 => 3});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 12, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "update key same as search key");
 
 $dbi->update(table => 'table1', param => {key2 => [12]}, where => {key2 => 2, key3 => 3});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 12, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "update key same as search key : param is array ref");
@@ -335,7 +335,7 @@ $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->update(table => 'table1', param => {key2 => 11}, where => {key1 => 1},
               filter => {key2 => sub { $_[0] * 2 }});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 22, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "filter");
@@ -356,7 +356,7 @@ $where->clause(['and', 'key1 = :key1', 'key2 = :key2']);
 $where->param({key1 => 1, key2 => 2});
 $dbi->update(table => 'table1', param => {key1 => 3}, where => $where);
 $result = $dbi->select(table => 'table1');
-is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 2}], 'update() where');
+is_deeply($result->all, [{key1 => 3, key2 => 2}], 'update() where');
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -370,7 +370,7 @@ $dbi->update(
     ]
 );
 $result = $dbi->select(table => 'table1');
-is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 2}], 'update() where');
+is_deeply($result->all, [{key1 => 3, key2 => 2}], 'update() where');
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -380,7 +380,7 @@ $where->clause(['and', '{= key2}']);
 $where->param({key2 => 2});
 $dbi->update(table => 'table1', param => {key1 => 3}, where => $where);
 $result = $dbi->select(table => 'table1');
-is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 2}], 'update() where');
+is_deeply($result->all, [{key1 => 3, key2 => 2}], 'update() where');
 
 eval{$dbi->update(table => 'table1', param => {';' => 1})};
 like($@, qr/safety/);
@@ -396,7 +396,7 @@ $dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
 $dbi->insert(table => 'table', param => {select => 1});
 $dbi->update(table => 'table', where => {select => 1}, param => {update => 2});
 $result = $dbi->execute('select * from "table"');
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{select => 2, update => 6}], "reserved word");
 
 eval {$dbi->update_all(table => 'table', param => {';' => 2}) };
@@ -410,7 +410,7 @@ $dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
 $dbi->insert(table => 'table', param => {select => 1});
 $dbi->update(table => 'table', where => {'table.select' => 1}, param => {update => 2});
 $result = $dbi->execute('select * from "table"');
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{select => 2, update => 6}], "reserved word");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -419,7 +419,7 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 $dbi->update({key2 => 11}, table => 'table1', where => {key1 => 1});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "basic");
@@ -432,7 +432,7 @@ $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->update_all(table => 'table1', param => {key2 => 10}, filter => {key2 => 'twice'});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 20, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 20, key3 => 8, key4 => 9, key5 => 10}],
                   "filter");
@@ -445,7 +445,7 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
 $dbi->delete(table => 'table1', where => {key1 => 1});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "basic");
 
 $dbi->execute("delete from table1;");
@@ -454,7 +454,7 @@ $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->delete(table => 'table1', where => {key2 => 1}, filter => {key2 => 'twice'});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "filter");
 
 $dbi->delete(table => 'table1', where => {key1 => 1}, append => '   ');
@@ -463,7 +463,7 @@ $dbi->delete_all(table => 'table1');
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
 $dbi->delete(table => 'table1', where => {key1 => 1, key2 => 2});
-$rows = $dbi->select(table => 'table1')->fetch_hash_all;
+$rows = $dbi->select(table => 'table1')->all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "delete multi key");
 
 eval{$dbi->delete(table => 'table1', noexist => 1)};
@@ -478,7 +478,7 @@ $where->clause(['and', '{= key1}', '{= key2}']);
 $where->param({ke1 => 1, key2 => 2});
 $dbi->delete(table => 'table1', where => $where);
 $result = $dbi->select(table => 'table1');
-is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 4}], 'delete() where');
+is_deeply($result->all, [{key1 => 3, key2 => 4}], 'delete() where');
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
@@ -492,7 +492,7 @@ $dbi->delete(
     ]
 );
 $result = $dbi->select(table => 'table1');
-is_deeply($result->fetch_hash_all, [{key1 => 3, key2 => 4}], 'delete() where');
+is_deeply($result->all, [{key1 => 3, key2 => 4}], 'delete() where');
 
 test 'delete error';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -511,7 +511,7 @@ $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert(table => 'table', param => {select => 1});
 $dbi->delete(table => 'table', where => {select => 1});
 $result = $dbi->execute('select * from "table"');
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [], "reserved word");
 
 test 'delete_all';
@@ -521,7 +521,7 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
 $dbi->delete_all(table => 'table1');
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [], "basic");
 
 
@@ -530,25 +530,25 @@ $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
-$rows = $dbi->select(table => 'table1')->fetch_hash_all;
+$rows = $dbi->select(table => 'table1')->all;
 is_deeply($rows, [{key1 => 1, key2 => 2},
                   {key1 => 3, key2 => 4}], "table");
 
-$rows = $dbi->select(table => 'table1', column => ['key1'])->fetch_hash_all;
+$rows = $dbi->select(table => 'table1', column => ['key1'])->all;
 is_deeply($rows, [{key1 => 1}, {key1 => 3}], "table and columns and where key");
 
-$rows = $dbi->select(table => 'table1', where => {key1 => 1})->fetch_hash_all;
+$rows = $dbi->select(table => 'table1', where => {key1 => 1})->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "table and columns and where key");
 
-$rows = $dbi->select(table => 'table1', column => ['key1'], where => {key1 => 3})->fetch_hash_all;
+$rows = $dbi->select(table => 'table1', column => ['key1'], where => {key1 => 3})->all;
 is_deeply($rows, [{key1 => 3}], "table and columns and where key");
 
-$rows = $dbi->select(table => 'table1', append => "order by key1 desc limit 1")->fetch_hash_all;
+$rows = $dbi->select(table => 'table1', append => "order by key1 desc limit 1")->all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "append statement");
 
 $dbi->register_filter(decrement => sub { $_[0] - 1 });
 $rows = $dbi->select(table => 'table1', where => {key1 => 2}, filter => {key1 => 'decrement'})
-            ->fetch_hash_all;
+            ->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "filter");
 
 $dbi->execute($CREATE_TABLE->{2});
@@ -558,14 +558,14 @@ $rows = $dbi->select(
     column => 'table1.key1 as table1_key1, table2.key1 as table2_key1, key2, key3',
     where   => {'table1.key2' => 2},
     relation  => {'table1.key1' => 'table2.key1'}
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "relation : exists where");
 
 $rows = $dbi->select(
     table => [qw/table1 table2/],
     column => ['table1.key1 as table1_key1', 'table2.key1 as table2_key1', 'key2', 'key3'],
     relation  => {'table1.key1' => 'table2.key1'}
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "relation : no exists where");
 
 eval{$dbi->select(table => 'table1', noexist => 1)};
@@ -577,7 +577,7 @@ $dbi->execute('create table "table" ("select", "update")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert(table => 'table', param => {select => 1, update => 2});
 $result = $dbi->select(table => 'table', where => {select => 1});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{select => 2, update => 2}], "reserved word");
 
 test 'fetch filter';
@@ -689,7 +689,7 @@ eval {
 $dbi->rollback if $@;
 
 $result = $dbi->select(table => 'table1');
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [], "rollback");
 
 $dbi->begin_work;
@@ -702,7 +702,7 @@ eval {
 $dbi->commit unless $@;
 
 $result = $dbi->select(table => 'table1');
-$rows = $result->fetch_hash_all;
+$rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "commit");
 
 $dbi->dbh->{AutoCommit} = 0;
@@ -785,7 +785,7 @@ $dbi->apply_filter(
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, filter => {key1=> undef});
 $dbi->delete(table => 'table1', where => {key1 => 1});
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [], "delete");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -797,7 +797,7 @@ $dbi->apply_filter(
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, filter => {key1 => undef});
 $result = $dbi->select(table => 'table1', where => {key1 => 1});
 $result->filter({'key2' => 'twice'});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 4, key2 => 4}], "select");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -810,7 +810,7 @@ $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, filter => {key1
 $result = $dbi->execute("select * from table1 where {= key1} and {= key2};",
                         param => {key1 => 1, key2 => 2},
                         table => ['table1']);
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 4, key2 => 2}], "execute");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -822,7 +822,7 @@ $dbi->apply_filter(
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 2}, filter => {key1 => undef});
 $result = $dbi->execute("select * from {table table1} where {= key1} and {= key2};",
                         param => {key1 => 1, key2 => 2});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 4, key2 => 2}], "execute table tag");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -844,7 +844,7 @@ $result = $dbi->select(
      where => {'table1.key2' => 1, 'table2.key3' => 2}, relation => {'table1.key1' => 'table2.key1'});
 
 $result->filter({'key2' => 'twice'});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key2 => 4, key3 => 18}], "select : join");
 
 $result = $dbi->select(
@@ -853,7 +853,7 @@ $result = $dbi->select(
      where => {'key2' => 1, 'key3' => 2}, relation => {'table1.key1' => 'table2.key1'});
 
 $result->filter({'key2' => 'twice'});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key2 => 4, key3 => 18}], "select : join : omit");
 
 test 'each_column';
@@ -902,19 +902,19 @@ $rows = $dbi->select(
   table => 'table1',
   where => {key1 => 1},
   append => "order by key2 {limit 1 0}"
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 $rows = $dbi->select(
   table => 'table1',
   where => {key1 => 1},
   append => "order by key2 {limit 2 1}"
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{key1 => 1, key2 => 4},{key1 => 1, key2 => 6}]);
 $rows = $dbi->select(
   table => 'table1',
   where => {key1 => 1},
   append => "order by key2 {limit 1}"
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
 test 'connect super';
@@ -1069,7 +1069,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
 
 $result = $dbi->select(
@@ -1079,7 +1079,7 @@ $result = $dbi->select(
         {key1 => 1}
     ]
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
 
 $where = $dbi->where
@@ -1089,7 +1089,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
 
 $where = $dbi->where
@@ -1099,7 +1099,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
 
 $where = $dbi->where
@@ -1109,7 +1109,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 ); 
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
 
 $where = $dbi->where;
@@ -1117,7 +1117,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
 
 eval {
@@ -1140,7 +1140,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
 
 $where = $dbi->where
@@ -1150,7 +1150,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
 
 $where = $dbi->where
@@ -1160,7 +1160,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
 
 $where = $dbi->where
@@ -1170,7 +1170,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
 
 $where = $dbi->where
@@ -1192,7 +1192,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
 
 $where = $dbi->where
@@ -1202,7 +1202,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
 
 $where = $dbi->where
@@ -1212,7 +1212,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
 
 $where = $dbi->where
@@ -1222,7 +1222,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
 
 $where = $dbi->where
@@ -1232,7 +1232,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
 
 $where = $dbi->where
@@ -1242,7 +1242,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
 
 $where = $dbi->where
@@ -1252,7 +1252,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
 
 $where = $dbi->where
@@ -1262,7 +1262,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
 
 $where = $dbi->where
@@ -1272,7 +1272,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 3, key2 => 4}], 'not_exists');
 
 $where = $dbi->where
@@ -1282,7 +1282,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
 
 $where = $dbi->where
@@ -1292,7 +1292,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2},{key1 => 3, key2 => 4}], 'not_exists');
 
 $where = $dbi->where
@@ -1302,7 +1302,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
 
 $where = $dbi->where
@@ -1311,7 +1311,7 @@ $result = $dbi->select(
     table => 'table1',
     where => $where,
 );
-$row = $result->fetch_hash_all;
+$row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
 
 eval {$dbi->where(ppp => 1) };
@@ -1364,7 +1364,7 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
 $dbi->apply_filter('table1', 'key2', 
                    {in => sub { $_[0] * 3 }, out => sub { $_[0] * 2 }});
-$rows = $dbi->select(table => 'table1', where => {key2 => 1})->fetch_hash_all;
+$rows = $dbi->select(table => 'table1', where => {key2 => 1})->all;
 is_deeply($rows, [{key1 => 1, key2 => 6}]);
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -1372,7 +1372,7 @@ $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
 $dbi->apply_filter('table1', 'key2', {});
-$rows = $dbi->select(table => 'table1', where => {key2 => 2})->fetch_hash_all;
+$rows = $dbi->select(table => 'table1', where => {key2 => 2})->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -1475,11 +1475,11 @@ $dbi = MyDBI1->connect($NEW_ARGS->{0});
 $dbi->execute("create table book (title, author)");
 $model = $dbi->model('book');
 $model->insert({title => 'a', author => 'b'});
-is_deeply($model->list->fetch_hash_all, [{title => 'a', author => 'b'}], 'basic');
+is_deeply($model->list->all, [{title => 'a', author => 'b'}], 'basic');
 $dbi->execute("create table company (name)");
 $model = $dbi->model('company');
 $model->insert({name => 'a'});
-is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'basic');
+is_deeply($model->list->all, [{name => 'a'}], 'basic');
 is($dbi->models->{'book'}, $dbi->model('book'));
 is($dbi->models->{'company'}, $dbi->model('company'));
 
@@ -1543,11 +1543,11 @@ $dbi = MyDBI4->connect($NEW_ARGS->{0});
 $dbi->execute("create table book (title, author)");
 $model = $dbi->model('book');
 $model->insert({title => 'a', author => 'b'});
-is_deeply($model->list->fetch_hash_all, [{title => 'a', author => 'b'}], 'basic');
+is_deeply($model->list->all, [{title => 'a', author => 'b'}], 'basic');
 $dbi->execute("create table company (name)");
 $model = $dbi->model('company');
 $model->insert({name => 'a'});
-is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'basic');
+is_deeply($model->list->all, [{name => 'a'}], 'basic');
 
 {
      package MyDBI5;
@@ -1568,10 +1568,10 @@ $dbi->execute("create table company (name)");
 $dbi->execute("create table table1 (key1)");
 $model = $dbi->model('company');
 $model->insert({name => 'a'});
-is_deeply($model->list->fetch_hash_all, [{name => 'a'}], 'include all model');
+is_deeply($model->list->all, [{name => 'a'}], 'include all model');
 $dbi->insert(table => 'table1', param => {key1 => 1});
 $model = $dbi->model('book');
-is_deeply($model->list->fetch_hash_all, [{key1 => 1}], 'include all model');
+is_deeply($model->list->all, [{key1 => 1}], 'include all model');
 
 test 'primary_key';
 use MyDBI1;
@@ -1606,7 +1606,7 @@ $dbi->delete_at(
     primary_key => ['key1', 'key2'],
     where => [1, 2],
 );
-is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
+is_deeply($dbi->select(table => 'table1')->all, []);
 
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->delete_at(
@@ -1614,7 +1614,7 @@ $dbi->delete_at(
     primary_key => 'key1',
     where => 1,
 );
-is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
+is_deeply($dbi->select(table => 'table1')->all, []);
 
 test 'insert_at';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -1804,13 +1804,13 @@ $dbi->execute("create table table2 (key1, key2, key3)");
 $dbi->execute("create table table3 (key1, key2, key3)");
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1')->delete_at(where => [1, 2]);
-is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
+is_deeply($dbi->select(table => 'table1')->all, []);
 $dbi->insert(table => 'table2', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1_1')->delete_at(where => [1, 2]);
-is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
+is_deeply($dbi->select(table => 'table1')->all, []);
 $dbi->insert(table => 'table3', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1_3')->delete_at(where => [1, 2]);
-is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
+is_deeply($dbi->select(table => 'table1')->all, []);
 
 test 'model insert_at';
 $dbi = MyDBI6->connect($NEW_ARGS->{0});
@@ -1893,7 +1893,7 @@ where key1 = 1
 EOS
 $dbi->execute($sql, param => $param);
 $result = $dbi->execute($SELECT_SOURCES->{0}, table => 'table1');
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "basic");
@@ -1912,7 +1912,7 @@ where key1 = 1
 EOS
 $dbi->execute($sql, param => $param);
 $result = $dbi->execute($SELECT_SOURCES->{0}, table => 'table1');
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 33, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "basic");
@@ -1930,7 +1930,7 @@ where key1 = 1
 EOS
 $dbi->execute($sql, param => $param);
 $result = $dbi->execute($SELECT_SOURCES->{0}, table => 'table1');
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 33, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "update param no_set");
@@ -1954,7 +1954,7 @@ where key1 = 1
 EOS
 $dbi->execute($sql, param => $param, table => 'table1');
 $result = $dbi->execute($SELECT_SOURCES->{0});
-$rows   = $result->fetch_hash_all;
+$rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "basic");
@@ -2002,14 +2002,14 @@ $rows = $dbi->select(
     column => 'table1.key1 as table1_key1, table2.key1 as table2_key1, key2, key3',
     where   => {'table1.key2' => 2},
     join  => ['left outer join table2 on table1.key1 = table2.key1']
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}]);
 
 $rows = $dbi->select(
     table => 'table1',
     where   => {'key1' => 1},
     join  => ['left outer join table2 on table1.key1 = table2.key1']
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
 eval {
@@ -2027,7 +2027,7 @@ $rows = $dbi->select(
     where   => {'key1' => 1},
     join  => ['left outer join table2 on table1.key1 = table2.key1',
               'left outer join table3 on table2.key3 = table3.key3']
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
 $rows = $dbi->select(
@@ -2036,7 +2036,7 @@ $rows = $dbi->select(
     where   => {'table1.key1' => 1},
     join  => ['left outer join table2 on table1.key1 = table2.key1',
               'left outer join table3 on table2.key3 = table3.key3']
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{table3__key4 => 4}]);
 
 $rows = $dbi->select(
@@ -2045,7 +2045,7 @@ $rows = $dbi->select(
     where   => {'table3.key4' => 4},
     join  => ['left outer join table2 on table1.key1 = table2.key1',
               'left outer join table3 on table2.key3 = table3.key3']
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{table1__key1 => 1}]);
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
@@ -2059,7 +2059,7 @@ $rows = $dbi->select(
     column => '"table1"."key1" as "table1_key1", "table2"."key1" as "table2_key1", "key2", "key3"',
     where   => {'table1.key2' => 2},
     join  => ['left outer join "table2" on "table1"."key1" = "table2"."key1"'],
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}],
           'reserved_word_quote');
 
@@ -2094,7 +2094,7 @@ $rows = $dbi->select(
     table => 'table1',
     column => 'latest_table1.key1 as latest_table1__key1',
     join  => $join
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{latest_table1__key1 => 1}]);
 
 test 'mycolumn';
@@ -2288,7 +2288,7 @@ $rows = $dbi->select(
     join  => ['inner join (select * from table2 where {= table2.key3})' . 
               ' as table2 on table1.key1 = table2.key1'],
     param => {'table2.key3' => 5}
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{table1_key1 => 2, key2 => 3, key3 => 5}]);
 
 
@@ -2301,7 +2301,7 @@ $rows = $dbi->select(
     table => 'table1',
     column => 'key1',
     wrap => ['select * from (', ') as t where key1 = 1']
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{key1 => 1}]);
 
 eval {
@@ -2322,7 +2322,7 @@ $rows = $dbi->select(
     table => 'table1',
     where => '{= key1} and {= key2}',
     where_param => {key1 => 1, key2 => 2}
-)->fetch_hash_all;
+)->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
 test 'delete() string where';
@@ -2335,7 +2335,7 @@ $dbi->delete(
     where => '{= key1} and {= key2}',
     where_param => {key1 => 1, key2 => 2}
 );
-$rows = $dbi->select(table => 'table1')->fetch_hash_all;
+$rows = $dbi->select(table => 'table1')->all;
 is_deeply($rows, [{key1 => 2, key2 => 3}]);
 
 
@@ -2349,7 +2349,7 @@ $dbi->update(
     where => '{= key1} and {= key2}',
     where_param => {key1 => 1, key2 => 2}
 );
-$rows = $dbi->select(table => 'table1')->fetch_hash_all;
+$rows = $dbi->select(table => 'table1')->all;
 is_deeply($rows, [{key1 => 5, key2 => 2}]);
 
 
@@ -2481,7 +2481,7 @@ $dbi->delete(
     primary_key => ['key1', 'key2'],
     id => [1, 2],
 );
-is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
+is_deeply($dbi->select(table => 'table1')->all, []);
 
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->delete(
@@ -2489,7 +2489,7 @@ $dbi->delete(
     primary_key => 'key1',
     id => 1,
 );
-is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
+is_deeply($dbi->select(table => 'table1')->all, []);
 
 
 test 'model delete and id option';
@@ -2499,13 +2499,13 @@ $dbi->execute("create table table2 (key1, key2, key3)");
 $dbi->execute("create table table3 (key1, key2, key3)");
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1')->delete(id => [1, 2]);
-is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
+is_deeply($dbi->select(table => 'table1')->all, []);
 $dbi->insert(table => 'table2', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1_1')->delete(id => [1, 2]);
-is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
+is_deeply($dbi->select(table => 'table1')->all, []);
 $dbi->insert(table => 'table3', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1_3')->delete(id => [1, 2]);
-is_deeply($dbi->select(table => 'table1')->fetch_hash_all, []);
+is_deeply($dbi->select(table => 'table1')->all, []);
 
 
 test 'select and id option';
@@ -2808,5 +2808,13 @@ is_deeply($result->fetch_first,
 test 'available_date_type';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 ok($dbi->can('available_data_type'));
+
+
+test 'select prefix option';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$rows = $dbi->select(prefix => 'key1,', column => 'key2', table => 'table1')->all;
+is_deeply($rows, [{key1 => 1, key2 => 2}], "table");
 
 =cut
