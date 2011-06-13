@@ -47,43 +47,6 @@ sub filter {
     return $self->{filter} ||= {};
 }
 
-sub end_filter {
-    my $self = shift;
-    
-    if (@_) {
-        my $end_filter = {};
-        
-        if (ref $_[0] eq 'HASH') {
-            $end_filter = $_[0];
-        }
-        else {
-            $end_filter = _array_to_hash(
-                @_ > 1 ? [@_] : $_[0]
-            );
-        }
-        
-        foreach my $column (keys %$end_filter) {
-            my $fname = $end_filter->{$column};
-            
-            if  (exists $end_filter->{$column}
-              && defined $fname
-              && ref $fname ne 'CODE') 
-            {
-              croak qq{Filter "$fname" is not registered" } . _subname
-                unless exists $self->filters->{$fname};
-              
-              $end_filter->{$column} = $self->filters->{$fname};
-            }
-        }
-        
-        $self->{end_filter} = {%{$self->end_filter}, %$end_filter};
-        
-        return $self;
-    }
-    
-    return $self->{end_filter} ||= {};
-}
-
 sub fetch {
     my $self = shift;
     
@@ -91,7 +54,7 @@ sub fetch {
     my $filter = $self->filter;
     
     # End filter
-    my $end_filter = $self->end_filter;
+    my $end_filter = $self->{end_filter} || {};
     
     # Fetch
     my @row = $self->{sth}->fetchrow_array;
@@ -116,7 +79,7 @@ sub fetch {
         my $column = $columns->[$i];
         my $f  = exists $filter->{$column}
                ? $filter->{$column}
-               : $self->_default_filter;
+               : $self->{default_filter};
         my $ef = $end_filter->{$column};
         
         # Filtering
@@ -160,7 +123,7 @@ sub fetch_hash {
     my $filter  = $self->filter;
     
     # End filter
-    my $end_filter = $self->end_filter;
+    my $end_filter = $self->{end_filter} || {};
     
     # Fetch
     my $row = $self->{sth}->fetchrow_arrayref;
@@ -186,7 +149,7 @@ sub fetch_hash {
         my $column = $columns->[$i];
         my $f  = exists $filter->{$column}
                ? $filter->{$column}
-               : $self->_default_filter;
+               : $self->{default_filter};
         my $ef = $end_filter->{$column};
         
         # Filtering
@@ -267,6 +230,44 @@ sub fetch_multi {
 *one = \&fetch_hash_first;
 
 # DEPRECATED!
+sub end_filter {
+    my $self = shift;
+    
+    if (@_) {
+        my $end_filter = {};
+        
+        if (ref $_[0] eq 'HASH') {
+            $end_filter = $_[0];
+        }
+        else {
+            $end_filter = _array_to_hash(
+                @_ > 1 ? [@_] : $_[0]
+            );
+        }
+        
+        foreach my $column (keys %$end_filter) {
+            my $fname = $end_filter->{$column};
+            
+            if  (exists $end_filter->{$column}
+              && defined $fname
+              && ref $fname ne 'CODE') 
+            {
+              croak qq{Filter "$fname" is not registered" } . _subname
+                unless exists $self->filters->{$fname};
+              
+              $end_filter->{$column} = $self->filters->{$fname};
+            }
+        }
+        
+        $self->{end_filter} = {%{$self->end_filter}, %$end_filter};
+        
+        return $self;
+    }
+    
+    return $self->{end_filter} ||= {};
+}
+
+# DEPRECATED!
 sub remove_end_filter {
     my $self = shift;
     
@@ -291,14 +292,8 @@ sub remove_filter {
 # DEPRECATED!
 sub default_filter {
     my $self = shift;
+
     warn "default_filter is DEPRECATED!";
-    return $self->_default_filter(@_)
-}
-
-# DEPRECATED!
-sub _default_filter {
-    my $self = shift;
-
     
     if (@_) {
         my $fname = $_[0];
