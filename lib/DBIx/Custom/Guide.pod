@@ -574,8 +574,9 @@ Generally Class name is model name, and table name is model name.
 You can change model name.
 
     package MyModel::book;
+    use MyModel -base;
     
-    __PACAKGE__->attr(name => 'book_model');
+    has name => 'book_model';
 
     CLASS        MODEL         TABLE
     book         book_model    (MODEL) -> book_model
@@ -587,8 +588,9 @@ Model name is the name used by L<model> of L<DBIx::Custom>.
 You can change table name.
 
     package MyModel::book;
+    use MyModel -base;
     
-    __PACAKGE__->attr(table => 'book_table');
+    has table => 'book_table';
 
     CLASS        MODEL              TABLE
     book         (CLASS) -> book    book_table
@@ -602,7 +604,7 @@ Table name is the table really accessed.
 To create column clause automatically, use C<mycolumn>.
 Valude of C<table> and C<columns> is used.
 
-    my $column_clause = $model->mycolumn;
+    my $mycolumns = $model->mycolumn;
 
 If C<table> is 'book'AC<column> is ['id', 'name'],
 the following clause is created.
@@ -613,34 +615,12 @@ These column name is for removing column name ambiguities.
 
 You can create column clause from columns of other table.
 
-    my $column_clause = $model->column('company');
+    my $columns = $model->column('company');
 
-If C<table> is 'company'AC<column> is ['id', 'name'],
+If C<table> is "company", C<column> return ['id', 'name'],
 the following clause is created.
 
-    company.id as company__id, company.name as company__name
-
-=head2 Create column clause automatically : column_clause
-
-To create column clause automatically, use C<column_clause>.
-Valude of C<table> and C<columns> is used.
-
-    my $column_clause = $model->column_clause;
-
-If C<table> is 'book'AC<column> is ['id', 'name'],
-the following clause is created.
-
-    book.id as id, book.name as name
-
-These column name is for removing column name ambiguities.
-
-If you remove some columns, use C<remove> option.
-
-    my $column_clause = $model->column_clause(remove => ['id']);
-
-If you add some column, use C<add> option.
-
-    my $column_clause = $model->column_clause(add => ['company.id as company__id']);
+    company.id as "company.id", company.name as "company.name"
 
 =head2 Model Examples
 

@@ -116,7 +116,7 @@ sub fetch {
         my $column = $columns->[$i];
         my $f  = exists $filter->{$column}
                ? $filter->{$column}
-               : $self->default_filter;
+               : $self->_default_filter;
         my $ef = $end_filter->{$column};
         
         # Filtering
@@ -186,7 +186,7 @@ sub fetch_hash {
         my $column = $columns->[$i];
         my $f  = exists $filter->{$column}
                ? $filter->{$column}
-               : $self->default_filter;
+               : $self->_default_filter;
         my $ef = $end_filter->{$column};
         
         # Filtering
@@ -266,25 +266,39 @@ sub fetch_multi {
 
 *one = \&fetch_hash_first;
 
+# DEPRECATED!
 sub remove_end_filter {
     my $self = shift;
+    
+    warn "remove_end_filter is DEPRECATED! use filter_off attribute instead";
     
     $self->{end_filter} = {};
     
     return $self;
 }
 
+# DEPRECATED!
 sub remove_filter {
     my $self = shift;
+
+    warn "remove_filter is DEPRECATED! use filter_off attribute instead";
     
     $self->{filter} = {};
     
     return $self;
 }
 
-# Deprecated
+# DEPRECATED!
 sub default_filter {
     my $self = shift;
+    warn "default_filter is DEPRECATED!";
+    return $self->_default_filter(@_)
+}
+
+# DEPRECATED!
+sub _default_filter {
+    my $self = shift;
+
     
     if (@_) {
         my $fname = $_[0];
@@ -305,7 +319,7 @@ sub default_filter {
 }
 
 # DEPRECATED!
-__PACKAGE__->attr('filter_check'); 
+has 'filter_check'; 
 
 1;
 
@@ -489,7 +503,7 @@ L<DBIx::Custom>.
 
 This is alias for C<fetch_hash_first>.
 
-=head2 C<remove_end_filter>
+=head2 C<remove_end_filter> DEPRECATED!
 
     $result->remove_end_filter;
 

@@ -1,4 +1,5 @@
 0.1691
+    - EXPERIMETAL column method and table_alias think about "-" separator
     - EXPERIMTANL column method think about separator
     - removed EXPERIMENTAL col method.
     - added EXPERIMENTAL separater method

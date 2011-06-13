@@ -6,7 +6,7 @@ use utf8;
 use Encode qw/encode_utf8 decode_utf8/;
 use Data::Dumper;
 
-$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
+#$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 
 BEGIN {
     eval { require DBD::SQLite; 1 }
@@ -2187,6 +2187,26 @@ $result = $model->select(
 is_deeply($result->one, 
           {'table2_alias.key1' => 1, 'table2_alias.key3' => 48});
 
+$dbi->separator('__');
+$result = $model->select(
+    column => [
+        $model->column('table2_alias')
+    ],
+    where => {'table2_alias.key3' => 2}
+);
+is_deeply($result->one, 
+          {'table2_alias__key1' => 1, 'table2_alias__key3' => 48});
+
+$dbi->separator('-');
+$result = $model->select(
+    column => [
+        $model->column('table2_alias')
+    ],
+    where => {'table2_alias.key3' => 2}
+);
+is_deeply($result->one, 
+          {'table2_alias-key1' => 1, 'table2_alias-key3' => 48});
+
 test 'type() option';
 $dbi = DBIx::Custom->connect(
     data_source => 'dbi:SQLite:dbname=:memory:',
@@ -2766,6 +2786,19 @@ $result = $model->select(
 );
 is_deeply($result->one,
           {key1 => 2, key2 => 2, 'table2__key1' => 3, 'table2__key3' => 9});
+is_deeply($model2->select->one, {key1 => 3, key3 => 9});
+
+$dbi->separator('-');
+$model = $dbi->model('table1');
+$result = $model->select(
+    column => [
+        $model->mycolumn,
+        {table2 => [qw/key1 key3/]}
+    ],
+    where => {'table1.key1' => 1}
+);
+is_deeply($result->one,
+          {key1 => 2, key2 => 2, 'table2-key1' => 3, 'table2-key3' => 9});
 is_deeply($model2->select->one, {key1 => 3, key3 => 9});
 
 

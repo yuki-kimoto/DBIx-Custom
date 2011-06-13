@@ -1,5 +1,4 @@
 package MyModel8;
-
-use base 'DBIx::Custom::Model';
+use DBIx::Custom::Model -base;
 
 1;

@@ -89,7 +89,7 @@ sub _parse_parameter {
 }
 
 # DEPRECATED!
-__PACKAGE__->attr('tags' => sub { {} });
+has tags => sub { {} };
 
 # DEPRECATED!
 sub register_tag {
@@ -335,7 +335,7 @@ sub _parse_tag {
 }
 
 # DEPRECATED!
-__PACKAGE__->attr('tag_processors' => sub { {} });
+has tag_processors => sub { {} };
 
 # DEPRECATED!
 sub register_tag_processor {

@@ -1,5 +1,4 @@
 package DBIx::Custom::Query;
-
 use Object::Simple -base;
 
 use Carp 'croak';
@@ -60,7 +59,7 @@ sub filter {
 }
 
 # DEPRECATED!
-__PACKAGE__->attr('default_filter');
+has 'default_filter';
 
 1;
 
