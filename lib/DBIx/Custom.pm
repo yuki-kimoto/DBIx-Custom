@@ -168,30 +168,20 @@ sub assign_param {
     return $tag;
 }
 
-sub col {
-    my ($self, $table, $columns) = @_;
-    
-    # Reserved word quote
-    my $q = $self->reserved_word_quote;
-    
-    # Column clause
-    my @column;
-    $columns ||= [];
-    push @column, "$q$table$q.$q$_$q as $q${table}.$_$q" for @$columns;
-    
-    return join (', ', @column);
-}
-
 sub column {
     my ($self, $table, $columns) = @_;
     
     # Reserved word quote
     my $q = $self->reserved_word_quote;
     
+    # Separator
+    my $separator = $self->separator;
+    
     # Column clause
     my @column;
     $columns ||= [];
-    push @column, "$q$table$q.$q$_$q as $q${table}__$_$q" for @$columns;
+    push @column, "$q$table$q.$q$_$q as $q${table}${separator}$_$q"
+      for @$columns;
     
     return join (', ', @column);
 }
@@ -911,7 +901,7 @@ sub select {
         $columns = [$columns] unless ref $columns eq 'ARRAY';
         foreach my $column (@$columns) {
             if (ref $column eq 'HASH') {
-                $column = $self->col(%$column) if ref $column eq 'HASH';
+                $column = $self->column(%$column) if ref $column eq 'HASH';
             }
             elsif (ref $column eq 'ARRAY') {
                 croak "Format must be [COLUMN, as => ALIAS] " . _subname

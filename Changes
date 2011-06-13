@@ -1,4 +1,6 @@
 0.1691
+    - EXPERIMTANL column method think about separator
+    - removed EXPERIMENTAL col method.
     - added EXPERIMENTAL separater method
     - added EXPERIMENTAL select prefix option.
     - fixed bug that data_source DEPRECATED warnings pirnt STDERR

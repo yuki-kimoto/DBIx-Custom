@@ -82,23 +82,6 @@ sub column {
     return $self->dbi->column($table, $columns);
 }
 
-sub col {
-    my ($self, $table, $columns) = @_;
-    
-    $self->{_table_alias} ||= {};
-    my $dist;
-    $dist = $self->dbi->{_table_alias}{$table}
-          ? $self->dbi->{_table_alias}{$table}
-          : $table;
-    
-    $self->dbi->{_model_from} ||= {};
-    my $model = $self->dbi->{_model_from}->{$dist};
-    
-    $columns ||= $self->model($model)->columns;
-    
-    return $self->dbi->col($table, $columns);
-}
-
 sub DESTROY { }
 
 sub method {
