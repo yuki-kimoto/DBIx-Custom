@@ -134,6 +134,12 @@ $dbi = DBIx::Custom->connect(
     password => $PASSWORD
 );
 eval{$dbi->execute("create table date_test (date DATE, datetime DATETIME)")};
+$dbi->each_column(
+    sub {
+        my ($self, $table, $column, $column_info) = @_;
+    }
+);
+
 $dbi->type_rule(
     into => {
         DATE=> sub {

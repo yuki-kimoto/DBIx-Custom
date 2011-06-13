@@ -2654,6 +2654,21 @@ $row = $result->one;
 is($row->{key1}, 'A');
 is($row->{key2}, 'B');
 
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+$dbi->execute("create table table1 (key1 Date, key2 datetime)");
+$dbi->register_filter(twice => sub { $_[0] * 2 });
+$dbi->type_rule(
+    from => {
+        Date => 'twice',
+    },
+    into => {
+        Date => 'twice',
+    }
+);
+$dbi->insert({key1 => 2}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+is($result->fetch->[0], 8);
+
 
 test 'type_rule_off';
 $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
@@ -2788,5 +2803,10 @@ $result->end_filter(key1 => sub { $_[0] * 5});
 
 is_deeply($result->fetch_first,
           [1, 2, 1, 3]);
+
+
+test 'available_date_type';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+ok($dbi->can('available_data_type'));
 
 =cut

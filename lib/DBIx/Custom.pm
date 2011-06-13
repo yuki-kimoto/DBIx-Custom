@@ -1028,18 +1028,19 @@ sub type_rule {
     
     if (@_) {
         my $type_rule = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-        $type_rule->{from} = _array_to_hash($type_rule->{from});
+        
+        # Into
         $type_rule->{into} = _array_to_hash($type_rule->{into});
         $self->{type_rule} = $type_rule;
         $self->{_into} ||= {};
         $self->each_column(sub {
             my ($dbi, $table, $column, $column_info) = @_;
             
-            my $type = $column_info->{TYPE_NAME};
+            my $type_name = $column_info->{TYPE_NAME};
             if ($type_rule->{into} &&
-                (my $filter = $type_rule->{into}->{$type}))
+                (my $filter = $type_rule->{into}->{$type_name}))
             {
-                return unless exists $type_rule->{into}->{$type};
+                return unless exists $type_rule->{into}->{$type_name};
                 if  (defined $filter && ref $filter ne 'CODE') 
                 {
                     my $fname = $filter;
@@ -1052,6 +1053,19 @@ sub type_rule {
                 $self->{_into}{$table}{$column} = $filter;
             }
         });
+        
+
+        # From
+        $type_rule->{from} = _array_to_hash($type_rule->{from});
+        foreach my $data_type (keys %{$type_rule->{from} || {}}) {
+            my $fname = $type_rule->{from}{$data_type};
+            if (defined $fname && ref $fname ne 'CODE') {
+                croak qq{Filter "$fname" is not registered" } . _subname
+                  unless exists $self->filters->{$fname};
+                
+                $type_rule->{from}{$data_type} = $self->filters->{$fname};
+            }
+        }
         
         return $self;
     }
