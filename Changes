@@ -1,4 +1,5 @@
 0.1691
+    - fixed bug that data_source DEPRECATED warnings pirnt STDERR
     - fixed bug that type_rule from option can't receive filter name
 0.1690
     - use latest Object::Simple features

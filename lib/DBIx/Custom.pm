@@ -1242,7 +1242,8 @@ sub _connect {
     
     # Attributes
     my $dsn = $self->data_source;
-    warn "data_source is DEPRECATED! use dsn instead\n";
+    warn "data_source is DEPRECATED! use dsn instead\n"
+      if $dsn;
     $dsn ||= $self->dsn;
     croak qq{"dsn" must be specified } . _subname
       unless $dsn;
