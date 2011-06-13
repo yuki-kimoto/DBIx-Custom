@@ -2817,4 +2817,15 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $rows = $dbi->select(prefix => 'key1,', column => 'key2', table => 'table1')->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "table");
 
+
+test 'separator';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+is($dbi->separator, '.');
+$dbi->separator('-');
+is($dbi->separator, '-');
+$dbi->separator('__');
+is($dbi->separator, '__');
+eval { $dbi->separator('?') };
+like($@, qr/Separator/);
+
 =cut

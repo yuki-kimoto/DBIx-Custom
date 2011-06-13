@@ -997,6 +997,22 @@ sub select {
     return $result;
 }
 
+sub separator {
+    my $self = shift;
+    
+    if (@_) {
+        my $separator = $_[0] || '';
+        croak qq{Separator must be "." or "__" or "-" } . _subname
+          unless $separator eq '.' || $separator eq '__'
+              || $separator eq '-';
+        
+        $self->{separator} = $separator;
+    
+        return $self;
+    }
+    return $self->{separator} ||= '.';
+}
+
 sub setup_model {
     my $self = shift;
     
