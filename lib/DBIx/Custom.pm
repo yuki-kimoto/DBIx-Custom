@@ -1328,7 +1328,8 @@ sub _push_join {
               = {position => $i, parent => $table1, join => $join_clause};
         }
         else {
-            croak qq{join "$join_clause" must be two table name } . _subname
+            croak qq{join clause must have two table name after "on" keyword. } .
+                  qq{"$join_clause" is passed }  . _subname
         }
     }
     
