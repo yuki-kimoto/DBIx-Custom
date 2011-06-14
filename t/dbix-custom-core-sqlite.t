@@ -6,7 +6,7 @@ use utf8;
 use Encode qw/encode_utf8 decode_utf8/;
 use Data::Dumper;
 
-#$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
+$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 
 BEGIN {
     eval { require DBD::SQLite; 1 }
@@ -2704,7 +2704,7 @@ $dbi->type_rule(
 );
 $dbi->insert({key1 => 2}, table => 'table1', type_rule_off => 1);
 $result = $dbi->select(table => 'table1', type_rule_off => 1);
-is($result->fetch->[0], 2);
+is($result->fetch->[0], 4);
 
 $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute("create table table1 (key1 Date, key2 datetime)");

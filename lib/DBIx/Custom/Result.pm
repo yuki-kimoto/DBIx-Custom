@@ -420,17 +420,6 @@ and implements the following new ones.
 
 This is alias for C<fetch_hash_all>.
 
-=head2 C<end_filter>
-
-    $result = $result->end_filter(title  => 'to_something',
-                                     author => 'to_something');
-
-    $result = $result->end_filter([qw/title author/] => 'to_something');
-
-End filters.
-These each filters is executed after the filters applied by C<apply_filter> of
-L<DBIx::Custom> or C<filter> method.
-
 =head2 C<fetch>
 
     my $row = $result->fetch;
@@ -498,12 +487,6 @@ L<DBIx::Custom>.
 
 This is alias for C<fetch_hash_first>.
 
-=head2 C<remove_end_filter> DEPRECATED!
-
-    $result->remove_end_filter;
-
-Remove end filter.
-
 =head2 C<remove_filter>
 
     $result->remove_filter;
@@ -517,5 +500,22 @@ Remove filter. End filter is not removed.
     $result->stash->{foo} = $foo;
 
 Stash is hash reference to save your data.
+
+=head2 C<remove_end_filter> DEPRECATED!
+
+    $result->remove_end_filter;
+
+Remove end filter.
+
+=head2 C<end_filter> DEPRECATED!
+
+    $result = $result->end_filter(title  => 'to_something',
+                                     author => 'to_something');
+
+    $result = $result->end_filter([qw/title author/] => 'to_something');
+
+End filters.
+These each filters is executed after the filters applied by C<apply_filter> of
+L<DBIx::Custom> or C<filter> method.
 
 =cut

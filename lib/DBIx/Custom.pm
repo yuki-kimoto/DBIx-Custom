@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1690';
+our $VERSION = '0.1691';
 use 5.008001;
 
 use Object::Simple -base;
@@ -522,7 +522,6 @@ sub execute {
             filter => $filter->{in} || {},
             end_filter => $filter->{end} || {},
             type_rule => $self->type_rule,
-            type_rule_off => $type_rule_off
         );
 
         return $result;
@@ -1908,49 +1907,6 @@ and implements the following new ones.
 
 Get available data type.
 
-=head2 C<apply_filter> DEPRECATED!
-
-    $dbi->apply_filter(
-        'book',
-        'issue_date' => {
-            out => 'tp_to_date',
-            in  => 'date_to_tp',
-            end => 'tp_to_displaydate'
-        },
-        'write_date' => {
-            out => 'tp_to_date',
-            in  => 'date_to_tp',
-            end => 'tp_to_displaydate'
-        }
-    );
-
-Apply filter to columns.
-C<out> filter is executed before data is send to database.
-C<in> filter is executed after a row is fetch.
-C<end> filter is execute after C<in> filter is executed.
-
-Filter is applied to the follwoing tree column name pattern.
-
-       PETTERN         EXAMPLE
-    1. Column        : author
-    2. Table.Column  : book.author
-    3. Table__Column : book__author
-    4. Table-Column  : book-author
-
-If column name is duplicate with other table,
-Main filter specified by C<table> option is used.
-
-You can set multiple filters at once.
-
-    $dbi->apply_filter(
-        'book',
-        [qw/issue_date write_date/] => {
-            out => 'tp_to_date',
-            in  => 'date_to_tp',
-            end => 'tp_to_displaydate'
-        }
-    );
-
 =head2 C<assign_param> EXPERIMENTAL
 
     my $assign_param = $dbi->assign_param({title => 'a', age => 2});
@@ -2886,6 +2842,49 @@ In this example, result statement is
 Column names is
 
     ['title', 'author']
+
+=head2 C<apply_filter> DEPRECATED!
+
+    $dbi->apply_filter(
+        'book',
+        'issue_date' => {
+            out => 'tp_to_date',
+            in  => 'date_to_tp',
+            end => 'tp_to_displaydate'
+        },
+        'write_date' => {
+            out => 'tp_to_date',
+            in  => 'date_to_tp',
+            end => 'tp_to_displaydate'
+        }
+    );
+
+Apply filter to columns.
+C<out> filter is executed before data is send to database.
+C<in> filter is executed after a row is fetch.
+C<end> filter is execute after C<in> filter is executed.
+
+Filter is applied to the follwoing tree column name pattern.
+
+       PETTERN         EXAMPLE
+    1. Column        : author
+    2. Table.Column  : book.author
+    3. Table__Column : book__author
+    4. Table-Column  : book-author
+
+If column name is duplicate with other table,
+Main filter specified by C<table> option is used.
+
+You can set multiple filters at once.
+
+    $dbi->apply_filter(
+        'book',
+        [qw/issue_date write_date/] => {
+            out => 'tp_to_date',
+            in  => 'date_to_tp',
+            end => 'tp_to_displaydate'
+        }
+    );
 
 =head1 Parameter
 
