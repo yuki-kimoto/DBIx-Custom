@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1691';
+our $VERSION = '0.1692';
 use 5.008001;
 
 use Object::Simple -base;
