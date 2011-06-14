@@ -68,10 +68,6 @@ sub fetch {
     my $type_rule = $self->type_rule || {};
     
     for (my $i = 0; $i < @$columns; $i++) {
-        if (!$self->type_rule_off && (my $rule = $type_rule->{lc($types->[$i])}))
-        {
-            $row[$i] = $rule->($row[$i]);
-        }
         
         # Filter name
         my $column = $columns->[$i];
@@ -81,7 +77,14 @@ sub fetch {
         my $ef = $end_filter->{$column};
         
         # Filtering
-        $row[$i] = $f->($row[$i]) if $f && !$self->filter_off;
+        if ($f && !$self->filter_off) {
+            $row[$i] = $f->($row[$i]);
+        }
+        elsif (!$self->type_rule_off && (my $rule = $type_rule->{lc($types->[$i])}))
+        {
+            $row[$i] = $rule->($row[$i]);
+        }
+
         $row[$i] = $ef->($row[$i]) if $ef && !$self->filter_off;
     }
 
@@ -136,12 +139,6 @@ sub fetch_hash {
     my $type_rule = $self->type_rule || {};
     for (my $i = 0; $i < @$columns; $i++) {
         
-        # Type rule
-        if (!$self->type_rule_off && (my $rule = $type_rule->{lc($types->[$i])}))
-        {
-            $row->[$i] = $rule->($row->[$i]);
-        }
-        
         # Filter name
         my $column = $columns->[$i];
         my $f  = exists $filter->{$column}
@@ -150,8 +147,14 @@ sub fetch_hash {
         my $ef = $end_filter->{$column};
         
         # Filtering
-        $row_hash->{$column} = $f && !$self->filter_off ? $f->($row->[$i])
-                                                        : $row->[$i];
+        if ($f && !$self->filter_off) {
+            $row_hash->{$column} =  $f->($row->[$i]);
+        }
+        elsif (!$self->type_rule_off && (my $rule = $type_rule->{lc($types->[$i])}))
+        {
+            $row_hash->{$column} = $rule->($row->[$i]);
+        }
+        else { $row_hash->{$column} = $row->[$i] }
         $row_hash->{$column} = $ef->($row_hash->{$column})
           if $ef && !$self->filter_off;
     }
