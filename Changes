@@ -1,4 +1,5 @@
 0.1692
+    - added EXPERIMENTAL available_type_name method 
     - EXPERIMENTAL type_rule_off is not passed form execute method 
       to DBIx::Custom::Result object
 0.1691

@@ -964,6 +964,21 @@ sub available_data_type {
     return $data_types;
 }
 
+sub available_type_name {
+    my $self = shift;
+    
+    # Type Names
+    my $type_names = {};
+    $self->each_column(sub {
+        my ($self, $table, $column, $column_info) = @_;
+        $type_names->{$column_info->{TYPE_NAME}} = 1
+          if $column_info->{TYPE_NAME};
+    });
+    my @output = sort keys %$type_names;
+    unshift @output, "Type Name";
+    return join "\n", @output;
+}
+
 sub type_rule {
     my $self = shift;
     
@@ -1905,7 +1920,15 @@ and implements the following new ones.
 
     print $dbi->available_data_type;
 
-Get available data type.
+Get available data types. You can use these data types
+in C<type rule>'s C<from> section.
+
+=head2 C<available_type_name> EXPERIMENTAL
+
+    print $dbi->available_type_name;
+
+Get available type names. You can use these type names in
+C<type_rule>'s C<into> section.
 
 =head2 C<assign_param> EXPERIMENTAL
 
