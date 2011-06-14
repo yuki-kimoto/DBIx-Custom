@@ -142,12 +142,12 @@ $dbi->each_column(
 
 $dbi->type_rule(
     into => {
-        DATE=> sub {
+        date=> sub {
             my $date = shift;
             $date =~ s/aaaaa//g;
             return $date;
         },
-        DATETIME => sub {
+        datetime => sub {
             my $date = shift;
             $date =~ s/ccccc//g;
             return $date;

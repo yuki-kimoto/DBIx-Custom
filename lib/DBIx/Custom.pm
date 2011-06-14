@@ -521,7 +521,7 @@ sub execute {
             default_filter => $self->{default_in_filter},
             filter => $filter->{in} || {},
             end_filter => $filter->{end} || {},
-            type_rule => $self->type_rule,
+            type_rule => \%{$self->type_rule->{from}},
         );
 
         return $result;
@@ -989,10 +989,14 @@ sub type_rule {
         $type_rule->{into} = _array_to_hash($type_rule->{into});
         $self->{type_rule} = $type_rule;
         $self->{_into} ||= {};
+        foreach my $type_name (keys %{$type_rule->{into} || {}}) {
+            croak qq{type name of into section must be lower case}
+              if $type_name =~ /[A-Z]/;
+        }
         $self->each_column(sub {
             my ($dbi, $table, $column, $column_info) = @_;
             
-            my $type_name = $column_info->{TYPE_NAME};
+            my $type_name = lc $column_info->{TYPE_NAME};
             if ($type_rule->{into} &&
                 (my $filter = $type_rule->{into}->{$type_name}))
             {
@@ -1014,6 +1018,8 @@ sub type_rule {
         # From
         $type_rule->{from} = _array_to_hash($type_rule->{from});
         foreach my $data_type (keys %{$type_rule->{from} || {}}) {
+            croak qq{data type of into section must be lower case or number}
+              if $data_type =~ /[A-Z]/;
             my $fname = $type_rule->{from}{$data_type};
             if (defined $fname && ref $fname ne 'CODE') {
                 croak qq{Filter "$fname" is not registered" } . _subname
