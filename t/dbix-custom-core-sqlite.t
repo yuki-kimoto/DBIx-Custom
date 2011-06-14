@@ -2863,13 +2863,10 @@ $dbi->type_rule(
 );
 $dbi->insert({key1 => 2}, table => 'table1');
 $result = $dbi->select(table => 'table1');
-$result->filter(key1 => sub { $_[0] * 3});
+$result->filter(key1 => sub { $_[0] * 3 });
 is($result->one->{key1}, 6);
-$result = $dbi->select(table => 'table1');
-$result->filter(key1 => sub { $_[0] * 3});
-is($result->fetch->[0], 6);
 
-test 'result_filter';
+test 'separator';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
@@ -2880,15 +2877,9 @@ $dbi->create_model(
        'left outer join table2 on table1.key1 = table2.key1'
     ],
     primary_key => ['key1'],
-    result_filter => {
-        key1 => sub { $_[0] * 2 }
-    }
 );
 $model2 = $dbi->create_model(
     table => 'table2',
-    result_filter => [
-        [qw/key1 key3/] => sub { $_[0] * 3 }
-    ]
 );
 $dbi->setup_model;
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
@@ -2902,8 +2893,8 @@ $result = $model->select(
     where => {'table1.key1' => 1}
 );
 is_deeply($result->one,
-          {key1 => 2, key2 => 2, 'table2.key1' => 3, 'table2.key3' => 9});
-is_deeply($model2->select->one, {key1 => 3, key3 => 9});
+          {key1 => 1, key2 => 2, 'table2.key1' => 1, 'table2.key3' => 3});
+is_deeply($model2->select->one, {key1 => 1, key3 => 3});
 
 $dbi->separator('__');
 $model = $dbi->model('table1');
@@ -2915,8 +2906,8 @@ $result = $model->select(
     where => {'table1.key1' => 1}
 );
 is_deeply($result->one,
-          {key1 => 2, key2 => 2, 'table2__key1' => 3, 'table2__key3' => 9});
-is_deeply($model2->select->one, {key1 => 3, key3 => 9});
+          {key1 => 1, key2 => 2, 'table2__key1' => 1, 'table2__key3' => 3});
+is_deeply($model2->select->one, {key1 => 1, key3 => 3});
 
 $dbi->separator('-');
 $model = $dbi->model('table1');
@@ -2928,8 +2919,8 @@ $result = $model->select(
     where => {'table1.key1' => 1}
 );
 is_deeply($result->one,
-          {key1 => 2, key2 => 2, 'table2-key1' => 3, 'table2-key3' => 9});
-is_deeply($model2->select->one, {key1 => 3, key3 => 9});
+          {key1 => 1, key2 => 2, 'table2-key1' => 1, 'table2-key3' => 3});
+is_deeply($model2->select->one, {key1 => 1, key3 => 3});
 
 
 test 'filter_off';
@@ -2943,45 +2934,13 @@ $dbi->create_model(
        'left outer join table2 on table1.key1 = table2.key1'
     ],
     primary_key => ['key1'],
-    result_filter => {
-        key1 => sub { $_[0] * 2 }
-    },
-);
-$model2 = $dbi->create_model(
-    table => 'table2',
-    result_filter => [
-        [qw/key1 key3/] => sub { $_[0] * 3 }
-    ]
 );
 $dbi->setup_model;
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
 $model = $dbi->model('table1');
-$result = $model->select(
-    column => [
-        $model->mycolumn,
-        {table2 => [qw/key1 key3/]}
-    ],
-    where => {'table1.key1' => 1}
-);
-$result->filter_off(1);
-$result->end_filter(key1 => sub { $_[0] * 5});
-is_deeply($result->one,
-          {key1 => 1, key2 => 2, 'table2.key1' => 1, 'table2.key3' => 3});
-
-$result = $model->select(
-    column => [
-        $model->mycolumn,
-        {table2 => [qw/key1 key3/]}
-    ],
-    where => {'table1.key1' => 1}
-);
-$result->filter_off(1);
-$result->end_filter(key1 => sub { $_[0] * 5});
-
-is_deeply($result->fetch_first,
-          [1, 2, 1, 3]);
-
+$result = $model->select(column => 'key1');
+$result->filter(key1 => sub { $_[0] * 2 });
+is_deeply($result->one, {key1 => 2});
 
 test 'available_date_type';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});

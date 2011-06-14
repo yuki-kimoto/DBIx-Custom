@@ -12,7 +12,6 @@ has [qw/dbi name table view/],
     table_alias => sub { {} },
     columns => sub { [] },
     filter => sub { [] },
-    result_filter => sub { [] },
     join => sub { [] },
     type => sub { [] },
     primary_key => sub { [] };
@@ -172,16 +171,6 @@ Join clause, this is used as C<select()>'s C<join> option.
 
 Foreign key, this is used as C<primary_key> of C<insert_at>,C<update_at()>,
 C<delete_at()>,C<select_at()>.
-
-=head2 C<result_filter> EXPERIMENTAL
-
-    my $dbi = $model->result_filter
-    $model  = $model->result_filter(
-        title => sub { ... },
-        author => sub { ... }
-    );
-
-This filter is applied when L<DBIx::Custom>'s C<include_model()> or C<create_model> is called.
 
 =head2 C<table>
 

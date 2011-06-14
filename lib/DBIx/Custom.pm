@@ -306,13 +306,6 @@ sub create_model {
                ? [%{$model->filter}]
                : $model->filter;
     $self->_apply_filter($model->table, @$filter);
-    my $result_filter = ref $model->result_filter eq 'HASH'
-               ? [%{$model->result_filter}]
-               : $model->result_filter;
-    for (my $i = 1; $i < @$result_filter; $i += 2) {
-        $result_filter->[$i] = {in => $result_filter->[$i]};
-    }
-    $self->_apply_filter($model->table, @$result_filter);
     
     # Associate table with model
     croak "Table name is duplicated " . _subname
@@ -1449,8 +1442,8 @@ sub apply_filter {
     my $self = shift;
     
     warn "apply_filter is DEPRECATED! " . 
-         "use type_rule method, DBIx::Custom::Result filter method, " .
-         "and DBIx::Custom::Model result_filter method instead";
+         "use type_rule method and DBIx::Custom::Result filter method, " .
+         "instead";
     
     return $self->_apply_filter(@_);
 }
