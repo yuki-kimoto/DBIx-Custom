@@ -6,7 +6,7 @@ use utf8;
 use Encode qw/encode_utf8 decode_utf8/;
 use Data::Dumper;
 
-#$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
+$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 
 BEGIN {
     eval { require DBD::SQLite; 1 }
@@ -2690,6 +2690,21 @@ $dbi->insert({key1 => 2}, table => 'table1');
 $result = $dbi->select(table => 'table1');
 is($result->fetch->[0], 8);
 
+test 'type_rule and filter order';
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+$dbi->execute("create table table1 (key1 Date, key2 datetime)");
+$dbi->type_rule(
+    into => {
+        date => sub { $_[0] . 'b' }
+    },
+    from => {
+        date => sub { $_[0] . 'c' }
+    }
+);
+$dbi->insert({key1 => '1'}, table => 'table1', filter => {key1 => sub { $_[0] . 'a' }});
+$result = $dbi->select(table => 'table1');
+$result->filter(key1 => sub { $_[0] . 'd' });
+is($result->fetch_first->[0], '1abcd');
 
 test 'type_rule_off';
 $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');

@@ -384,7 +384,7 @@ sub execute {
     }
     
     # Type rule
-    my $applied_filter = {};
+    my $type_filter = {};
     unless ($type_rule_off) {
         foreach my $name (keys %$param) {
             my $table;
@@ -399,13 +399,14 @@ sub execute {
             if (defined $table && $into->{$table} &&
                 (my $rule = $into->{$table}->{$column}))
             {
-                $applied_filter->{$column} = $rule;
-                $applied_filter->{"$table.$column"} = $rule;
+                $type_filter->{$column} = $rule;
+                $type_filter->{"$table.$column"} = $rule;
             }
         }
     }
     
     # Applied filter
+    my $applied_filter = {};
     foreach my $table (@$tables) {
         $applied_filter = {
             %$applied_filter,
@@ -432,6 +433,7 @@ sub execute {
         $param,
         $query->columns,
         $filter,
+        $type_filter,
         $type
     );
     
@@ -1171,7 +1173,7 @@ sub _apply_filter {
 }
 
 sub _create_bind_values {
-    my ($self, $params, $columns, $filter, $type) = @_;
+    my ($self, $params, $columns, $filter, $type_filter, $type) = @_;
     
     # Create bind values
     my $bind = [];
@@ -1201,12 +1203,14 @@ sub _create_bind_values {
         
         # Filter
         my $f = $filter->{$column} || $self->{default_out_filter} || '';
+        $value = $f->($value) if $f;
         
-        # Type
-        push @$bind, {
-            value => $f ? $f->($value) : $value,
-            type => $type->{$column}
-        };
+        # Type rule
+        my $tf = $type_filter->{$column};
+        $value = $tf->($value) if $tf;
+        
+        # Bind values
+        push @$bind, {value => $value, type => $type->{$column}};
         
         # Count up 
         $count->{$column}++;
@@ -2051,11 +2055,10 @@ The following opitons are available.
         [qw/title author/]  => sub { uc $_[0] }
     ]
 
-Filter, executed before data is saved into database.
-Filter value is code reference or
-filter name registerd by C<register_filter()>.
-
-These filters are added to the C<out> filters, set by C<apply_filter()>.
+Filter. You can set subroutine or filter name
+registered by by C<register_filter()>.
+This filter is executed before data is saved into database.
+and before type rule filter is executed.
 
 =item C<query>
 
@@ -2389,8 +2392,8 @@ Register filters, used by C<filter> option of many methods.
 
     $dbi->type_rule(
         into => {
-            DATE => sub { ... },
-            DATETIME => sub { ... }
+            date => sub { ... },
+            datetime => sub { ... }
         },
         from => {
             # DATE
@@ -2402,11 +2405,14 @@ Register filters, used by C<filter> option of many methods.
     );
 
 Filtering rule when data is send into and get from database.
-This has a little complex problem. 
+This has a little complex problem.
 
 In C<into> you can specify type name as same as type name defined
 by create table, such as C<DATETIME> or C<DATE>.
 Type rule of C<into> is enabled on the following pattern.
+
+Note that type name and data type don't contain upper case.
+If that contain upper case charactor, you specify it lower case.
 
 =over 4
 
