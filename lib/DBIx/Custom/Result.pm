@@ -1,44 +1,36 @@
 package DBIx::Custom::Result;
-
 use Object::Simple -base;
 
 use Carp 'croak';
 use DBIx::Custom::Util qw/_array_to_hash _subname/;
 
-has [qw/filters filter_off sth type_rule_off/],
-    stash => sub { {} };
+has [qw/filters filter_off sth type_rule_off/];
+has stash => sub { {} };
 
 *all = \&fetch_hash_all;
 
 sub filter {
     my $self = shift;
     
+    # Set
     if (@_) {
-        my $filter = {};
         
-        if (ref $_[0] eq 'HASH') {
-            $filter = $_[0];
-        }
-        else {
-            $filter = _array_to_hash(
-                @_ > 1 ? [@_] : $_[0]
-            );
-        }
-                
+        # Convert filter name to subroutine
+        my $filter = @_ == 1 ? $_[0] : [@_];
+        $filter = _array_to_hash($filter);
         foreach my $column (keys %$filter) {
             my $fname = $filter->{$column};
-
             if  (exists $filter->{$column}
               && defined $fname
               && ref $fname ne 'CODE') 
             {
               croak qq{Filter "$fname" is not registered" } . _subname
                 unless exists $self->filters->{$fname};
-              
               $filter->{$column} = $self->filters->{$fname};
             }
         }
         
+        # Merge
         $self->{filter} = {%{$self->filter}, %$filter};
         
         return $self;
@@ -86,9 +78,8 @@ sub fetch_all {
     
     # Fetch all rows
     my $rows = [];
-    while(my $row = $self->fetch) {
-        push @$rows, $row;
-    }
+    while(my $row = $self->fetch) { push @$rows, $row}
+    
     return $rows;
 }
 
@@ -97,8 +88,6 @@ sub fetch_first {
     
     # Fetch
     my $row = $self->fetch;
-    
-    # No row
     return unless $row;
     
     # Finish statement handle
@@ -149,9 +138,7 @@ sub fetch_hash_all {
     
     # Fetch all rows as hash
     my $rows = [];
-    while(my $row = $self->fetch_hash) {
-        push @$rows, $row;
-    }
+    while(my $row = $self->fetch_hash) { push @$rows, $row }
     
     return $rows;
 }
@@ -161,8 +148,6 @@ sub fetch_hash_first {
     
     # Fetch hash
     my $row = $self->fetch_hash;
-    
-    # No row
     return unless $row;
     
     # Finish statement handle
@@ -174,11 +159,9 @@ sub fetch_hash_first {
 sub fetch_hash_multi {
     my ($self, $count) = @_;
     
-    # Row count not specified
+    # Fetch multiple rows
     croak 'Row count must be specified ' . _subname
       unless $count;
-    
-    # Fetch multi rows
     my $rows = [];
     for (my $i = 0; $i < $count; $i++) {
         my $row = $self->fetch_hash;
@@ -229,84 +212,64 @@ sub type_rule {
                 $type_rule->{$data_type} = $self->filters->{$fname};
             }
         }
-        $self->{type_rule} = {%{$self->type_rule}, %$type_rule};
+        
+        # Replace
+        if (@_ == 1) { $self->{type_rule} = $type_rule }
+        # Merge
+        else { $self->{type_rule} = {%{$self->type_rule}, %$type_rule} }
     }
     
     return $self->{type_rule} ||= {};
 }
 
-sub clear_type_rule {
-    my $self = shift;
-    $self->{type_rule} = {};
-    return $self;
-}
-
 # DEPRECATED!
 sub end_filter {
     my $self = shift;
-    
     if (@_) {
         my $end_filter = {};
-        
-        if (ref $_[0] eq 'HASH') {
-            $end_filter = $_[0];
-        }
-        else {
+        if (ref $_[0] eq 'HASH') { $end_filter = $_[0] }
+        else { 
             $end_filter = _array_to_hash(
                 @_ > 1 ? [@_] : $_[0]
             );
         }
-        
         foreach my $column (keys %$end_filter) {
             my $fname = $end_filter->{$column};
-            
             if  (exists $end_filter->{$column}
               && defined $fname
               && ref $fname ne 'CODE') 
             {
               croak qq{Filter "$fname" is not registered" } . _subname
                 unless exists $self->filters->{$fname};
-              
               $end_filter->{$column} = $self->filters->{$fname};
             }
         }
-        
         $self->{end_filter} = {%{$self->end_filter}, %$end_filter};
-        
         return $self;
     }
-    
     return $self->{end_filter} ||= {};
 }
 
 # DEPRECATED!
 sub remove_end_filter {
     my $self = shift;
-    
     warn "remove_end_filter is DEPRECATED! use filter_off attribute instead";
-    
     $self->{end_filter} = {};
-    
     return $self;
 }
 
 # DEPRECATED!
 sub remove_filter {
     my $self = shift;
-
     warn "remove_filter is DEPRECATED! use filter_off attribute instead";
-    
     $self->{filter} = {};
-    
     return $self;
 }
 
 # DEPRECATED!
 sub default_filter {
     my $self = shift;
-
     warn "default_filter is DEPRECATED!";
-    
     if (@_) {
         my $fname = $_[0];
         if (@_ && !$fname) {
@@ -315,13 +278,10 @@ sub default_filter {
         else {
             croak qq{Filter "$fname" is not registered}
               unless exists $self->filters->{$fname};
-        
             $self->{default_filter} = $self->filters->{$fname};
         }
-        
         return $self;
     }
-    
     return $self->{default_filter};
 }
 
@@ -336,76 +296,50 @@ DBIx::Custom::Result - Result of select statement
 
 =head1 SYNOPSIS
 
-Get the result of select statement.
-
     # Result
-    my $result = $dbi->select(table => 'books');
+    my $result = $dbi->select(table => 'book');
 
-Fetch row into array.
-    
-    # Fetch a row into array
+    # Fetch a row and put it into array reference
     while (my $row = $result->fetch) {
         my $author = $row->[0];
         my $title  = $row->[1];
-        
     }
     
-    # Fetch only a first row into array
+    # Fetch only a first row and put it into array reference
     my $row = $result->fetch_first;
     
-    # Fetch multiple rows into array of array
-    while (my $rows = $result->fetch_multi(5)) {
-        my $first_author  = $rows->[0][0];
-        my $first_title   = $rows->[0][1];
-        my $second_author = $rows->[1][0];
-        my $second_value  = $rows->[1][1];
-    
-    }
-    
-    # Fetch all rows into array of array
+    # Fetch all rows and put them into array of array reference
     my $rows = $result->fetch_all;
 
-Fetch row into hash.
-
-    # Fetch a row into hash
+    # Fetch a row and put it into hash reference
     while (my $row = $result->fetch_hash) {
         my $title  = $row->{title};
         my $author = $row->{author};
-        
     }
     
-    # Fetch only a first row into hash
+    # Fetch only a first row and put it into hash reference
     my $row = $result->fetch_hash_first;
+    my $row = $result->one; # Same as fetch_hash_first
     
-    # Fetch multiple rows into array of hash
-    while (my $rows = $result->fetch_hash_multi(5)) {
-        my $first_title   = $rows->[0]{title};
-        my $first_author  = $rows->[0]{author};
-        my $second_title  = $rows->[1]{title};
-        my $second_author = $rows->[1]{author};
-    }
-    
-    # Fetch all rows into array of hash
+    # Fetch all rows and put them into array of hash reference
     my $rows = $result->fetch_hash_all;
+    my $rows = $result->all; # Same as fetch_hash_all
 
 =head1 ATTRIBUTES
-
-Filters when a row is fetched.
-This overwrites C<default_filter>.
 
 =head2 C<filter_off> EXPERIMENTAL
 
     my $filter_off = $resutl->filter_off;
     $result = $result->filter_off(1);
 
-Turn filter off.
+Filtering by C<filter> method is turned off.
 
 =head2 C<filters>
 
     my $filters = $result->filters;
-    $result     = $result->filters(\%filters);
+    $result = $result->filters(\%filters);
 
-Resistered filters.
+Filters.
 
 =head2 C<sth>
 
@@ -419,7 +353,7 @@ Statement handle of L<DBI>.
     my $type_rule_off = $result->type_rule_off;
     $result = $result->type_rule_off(1);
 
-Turn type rule off.
+Filtering by C<type_rule> is turned off.
 
 =head1 METHODS
 
@@ -430,80 +364,71 @@ and implements the following new ones.
 
     my $rows = $result->all;
 
-This is alias for C<fetch_hash_all>.
+Same as C<fetch_hash_all>.
 
 =head2 C<fetch>
 
     my $row = $result->fetch;
 
-Fetch a row into array.
+Fetch a row and put it into array reference.
 
 =head2 C<fetch_all>
 
     my $rows = $result->fetch_all;
 
-Fetch all rows into array of array.
+Fetch all rows and put them into array of array reference.
 
 =head2 C<fetch_first>
 
     my $row = $result->fetch_first;
 
-Fetch only a first row into array and finish statment handle.
+Fetch only a first row and put it into array reference,
+and finish statment handle.
 
 =head2 C<fetch_hash>
 
     my $row = $result->fetch_hash;
 
-Fetch a row into hash
+Fetch a row and put it into hash reference.
 
 =head2 C<fetch_hash_all>
 
     my $rows = $result->fetch_hash_all;
 
-Fetch all rows into array of hash.
+Fetch all rows and put them into array of hash reference.
 
 =head2 C<fetch_hash_first>
     
     my $row = $result->fetch_hash_first;
 
-Fetch only first row into hash and finish statment handle.
+Fetch only a first row and put it into hash reference,
+and finish statment handle.
 
 =head2 C<fetch_hash_multi>
 
     my $rows = $result->fetch_hash_multi(5);
     
-Fetch multiple rows into array of hash
-Row count must be specified.
+Fetch multiple rows and put them into array of hash reference.
 
 =head2 C<fetch_multi>
 
     my $rows = $result->fetch_multi(5);
     
-Fetch multiple rows into array of array.
-Row count must be specified.
+Fetch multiple rows and put them into array of array reference.
 
 =head2 C<filter>
 
-    $result = $result->filter(title  => 'to_something',
-                              author => 'to_something');
+    $result->filter(title  => sub { uc $_[0] }, author => 'to_upper');
+    $result->filter([qw/title author/] => 'to_upper');
 
-    $result = $result->filter([qw/title author/] => 'to_something');
-
-Filters.
-These each filters override the filters applied by C<apply_filter> of
-L<DBIx::Custom>.
+Set filter for column.
+You can use subroutine or filter name as filter.
 
 =head2 C<one>
 
     my $row = $result->one;
 
-This is alias for C<fetch_hash_first>.
-
-=head2 C<remove_filter>
-
-    $result->remove_filter;
-
-Remove filter. End filter is not removed.
+Same as C<fetch_hash_first>.
 
 =head2 C<stash>
 
@@ -511,10 +436,11 @@ Remove filter. End filter is not removed.
     my $foo = $result->stash->{foo};
     $result->stash->{foo} = $foo;
 
-Stash is hash reference to save your data.
+Stash is hash reference for data.
 
 =head2 C<type_rule> EXPERIMENTAL
-
+    
+    # Merge type rule
     $result->type_rule(
         # DATE
         9 => sub { ... },
@@ -522,23 +448,14 @@ Stash is hash reference to save your data.
         11 => sub { ... }
     );
 
-This override L<DBIx::Custom>'s C<type_rule> C<from> section.
+    # Replace type rule(by reference)
+    $result->type_rule([
+        # DATE
+        9 => sub { ... },
+        # DATETIME or TIMESTAMP
+        11 => sub { ... }
+    ]);
 
-=head2 C<remove_end_filter> DEPRECATED!
-
-    $result->remove_end_filter;
-
-Remove end filter.
-
-=head2 C<end_filter> DEPRECATED!
-
-    $result = $result->end_filter(title  => 'to_something',
-                                     author => 'to_something');
-
-    $result = $result->end_filter([qw/title author/] => 'to_something');
-
-End filters.
-These each filters is executed after the filters applied by C<apply_filter> of
-L<DBIx::Custom> or C<filter> method.
+This is same as L<DBIx::Custom>'s C<type_rule>'s <from>.
 
 =cut
