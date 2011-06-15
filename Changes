@@ -1,4 +1,4 @@
-0.1692
+0.1693
     - separate DBIx::Custom type_rule from filter
     - DBIx::Custom::Model filter attrribute is DEPRECATED!
     - DBIx::Custom::Model name attribute is DEPRECATED!

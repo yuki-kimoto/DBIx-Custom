@@ -244,30 +244,4 @@ you don't have to specify C<table> option.
 Same as C<update_all()> of L<DBIx::Custom> except that
 you don't have to specify table name.
 
-=head2 C<update_at> DEPRECATED!
-
-    $table->update_at(...);
-    
-Same as C<update_at()> of L<DBIx::Custom> except that
-you don't have to specify C<table> and C<primary_key> option.
-
-=head2 C<select_at> DEPRECATED!
-
-    $table->select_at(...);
-    
-Same as C<select_at()> of L<DBIx::Custom> except that
-you don't have to specify C<table> and C<primary_key> option.
-
-=head2 C<insert_at> DEPRECATED!
-
-    $table->insert_at(...);
-    
-Same as C<insert_at()> of L<DBIx::Custom> except that
-you don't have to specify C<table> and C<primary_key> option.
-
-=head2 C<delete_at> DEPRECATED!
-
-    $table->delete_at(...);
-    
-Same as C<delete()> of L<DBIx::Custom> except that
-you don't have to specify C<table> and C<primary_key> option.
+=cut

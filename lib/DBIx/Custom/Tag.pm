@@ -1,4 +1,3 @@
-# DEPRECATED!
 package DBIx::Custom::Tag;
 
 use strict;
