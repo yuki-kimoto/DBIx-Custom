@@ -423,6 +423,7 @@ Fetch multiple rows and put them into array of array reference.
 
 Set filter for column.
 You can use subroutine or filter name as filter.
+This filter is executed after C<type_rule> filter.
 
 =head2 C<one>
 

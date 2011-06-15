@@ -107,183 +107,137 @@ sub register_tag {
 # DEPRECATED!
 sub _parse_tag {
     my ($self, $source) = @_;
-
     # Source
     $source ||= '';
-
     # Tree
     my @tree;
-    
     # Value
     my $value = '';
-    
     # State
     my $state = 'text';
-    
     # Before charactor
     my $before = '';
-
     # Position
     my $pos = 0;
-    
     # Parse
     my $original = $source;
     my $tag_count = 0;
     while (defined(my $c = substr($source, $pos, 1))) {
-        
         # Last
         last unless length $c;
-        
         # Parameter
         if ($c eq ':' && (substr($source, $pos + 1, 1) || '') =~ /\w/) {
             push @tree, {type => 'param'};;
         }
-        
         # State is text
         if ($state eq 'text') {
-            
             # Tag start charactor
             if ($c eq '{') {
-                
                 # Escaped charactor
                 if ($before eq "\\") {
                     substr($value, -1, 1, '');
                     $value .= $c;
                 }
-                
                 # Tag start
                 else {
-                    
                     # Change state
                     $state = 'tag';
-                    
                     # Add text
                     push @tree, {type => 'text', value => $value}
                       if $value;
-                    
                     # Clear
                     $value = '';
                 }
             }
-            
             # Tag end charactor
             elsif ($c eq '}') {
-            
                 # Escaped charactor
                 if ($before eq "\\") {
                     substr($value, -1, 1, '');
                     $value .= $c;
                 }
-                
                 # Unexpected
                 else {
                     croak qq{Parsing error. unexpected "\}". }
                         . qq{pos $pos of "$original" } . _subname
                 }
             }
-            
             # Normal charactor
             else { $value .= $c }
         }
-        
         # State is tags
         else {
-            
             # Tag start charactor
             if ($c eq '{') {
-            
                 # Escaped charactor
                 if ($before eq "\\") {
                     substr($value, -1, 1, '');
                     $value .= $c;
                 }
-                
                 # Unexpected
                 else {
                     croak qq{Parsing error. unexpected "\{". }
                         . qq{pos $pos of "$original" } . _subname
                 }
             }
-            
             # Tag end charactor
             elsif ($c eq '}') {
-                
                 # Escaped charactor
                 if ($before eq "\\") {
                     substr($value, -1, 1, '');
                     $value .= $c;
                 }
-                
                 # Tag end
                 else {
-                
                     # Change state
                     $state = 'text';
-                    
                     # Add tag
                     my ($tag_name, @tag_args) = split /\s+/, $value;
                     push @tree, {type => 'tag', tag_name => $tag_name, 
                                  tag_args => \@tag_args};
-                    
                     # Clear
                     $value = '';
-                    
                     # Countup
                     $tag_count++;
                 }
             }
-            
             # Normal charactor
             else { $value .= $c }
         }
-        
         # Save before charactor
         $before = $c;
-        
         # increment position
         $pos++;
     }
-    
     # Tag not finished
     croak qq{Tag not finished. "$original" } . _subname
       if $state eq 'tag';
-    
     # Not contains tag
     return DBIx::Custom::Query->new(sql => $source, tag_count => $tag_count)
       if $tag_count == 0;
-    
     # Add rest text
     push @tree, {type => 'text', value => $value}
       if $value;
-        
     # SQL
     my $sql = '';
-    
     # All Columns
     my $all_columns = [];
-    
     # Tables
     my $tables = [];
-    
     # Build SQL 
     foreach my $node (@tree) {
-        
         # Text
         if ($node->{type} eq 'text') { $sql .= $node->{value} }
-        
         # Parameter
         elsif ($node->{type} eq 'param') {
             push @$all_columns, 'RESERVED_PARAMETER';
         }
         # Tag
         else {
-            
             # Tag name
             my $tag_name = $node->{tag_name};
-            
             # Tag arguments
             my $tag_args = $node->{tag_args};
-            
             # Table
             if ($tag_name eq 'table') {
                 my $table = $tag_args->[0];
@@ -291,38 +245,29 @@ sub _parse_tag {
                 $sql .= $table;
                 next;
             }
-
             # Get tag
             my $tag = $self->tag_processors->{$tag_name}
                              || $self->tags->{$tag_name};
-            
             # Tag is not registered
             croak qq{Tag "$tag_name" is not registered } . _subname
               unless $tag;
-            
             # Tag not sub reference
             croak qq{Tag "$tag_name" must be sub reference } . _subname
               unless ref $tag eq 'CODE';
-            
             # Execute tag
             my $r = $tag->(@$tag_args);
-            
             # Check tag return value
             croak qq{Tag "$tag_name" must return [STRING, ARRAY_REFERENCE] }
                 . _subname
               unless ref $r eq 'ARRAY' && defined $r->[0] && ref $r->[1] eq 'ARRAY';
-            
             # Part of SQL statement and colum names
             my ($part, $columns) = @$r;
-            
             # Add columns
             push @$all_columns, @$columns;
-            
             # Join part tag to SQL
             $sql .= $part;
         }
     }
-
     # Query
     my $query = DBIx::Custom::Query->new(
         sql => $sql,
@@ -330,7 +275,6 @@ sub _parse_tag {
         tables => $tables,
         tag_count => $tag_count
     );
-    
     return $query;
 }
 
@@ -340,13 +284,10 @@ has tag_processors => sub { {} };
 # DEPRECATED!
 sub register_tag_processor {
     my $self = shift;
-    
     warn "register_tag_processor is DEPRECATED! use register_tag instead";
-    
     # Merge tag
     my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $self->tag_processors({%{$self->tag_processors}, %{$tag_processors}});
-    
     return $self;
 }
 

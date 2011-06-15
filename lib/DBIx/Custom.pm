@@ -99,7 +99,16 @@ sub assign_param {
 }
 
 sub column {
-    my ($self, $table, $columns) = @_;
+    my $self = shift;
+    my $option = pop if ref $_[-1] eq 'HASH';
+    my $real_table = shift;
+    my $columns = shift;
+    my $table = $option->{alias} || $real_table;
+    
+    # Columns
+    unless ($columns) {
+        $columns ||= $self->model($real_table)->columns;
+    }
     
     # Reserved word quote
     my $q = $self->reserved_word_quote;
@@ -305,17 +314,10 @@ sub create_model {
     my $filter = ref $model->filter eq 'HASH'
                ? [%{$model->filter}]
                : $model->filter;
+    warn "DBIx::Custom::Model filter method is DEPRECATED!"
+      if @$filter;
     $self->_apply_filter($model->table, @$filter);
-    
-    # Associate table with model
-    croak "Table name is duplicated " . _subname
-      if exists $self->{_model_from}->{$model->table};
-    $self->{_model_from}->{$model->table} = $model->name;
 
-    # Table alias
-    $self->{_table_alias} ||= {};
-    $self->{_table_alias} = {%{$self->{_table_alias}}, %{$model->table_alias}};
-    
     # Set model
     $self->model($model->name, $model);
     
@@ -381,33 +383,6 @@ sub execute {
         $_ =~ s/$q//g for @$tables;
     }
     
-    # Table alias
-    foreach my $table (@$tables) {
-        
-        # No need
-        next unless my $alias = $self->{_table_alias}->{$table};
-        $self->{filter} ||= {};
-        next if $self->{filter}{out}{$table};
-        
-        # Filter
-        $self->{filter}{out} ||= {};
-        $self->{filter}{in}  ||= {};
-        $self->{filter}{end} ||= {};
-        
-        # Create alias filter
-        foreach my $type (qw/out in end/) {
-            my @filter_names = keys %{$self->{filter}{$type}{$alias} || {}};
-            foreach my $filter_name (@filter_names) {
-                my $filter_name_alias = $filter_name;
-                $filter_name_alias =~ s/^$alias\./$table\./;
-                $filter_name_alias =~ s/^${alias}__/${table}__/; 
-                $filter_name_alias =~ s/^${alias}-/${table}-/; 
-                $self->{filter}{$type}{$table}{$filter_name_alias}
-                  = $self->{filter}{$type}{$alias}{$filter_name}
-            }
-        }
-    }
-
     # Type rule
     my $applied_filter = {};
     unless ($type_rule_off) {
@@ -981,7 +956,7 @@ sub type_rule {
         # Into
         $type_rule->{into} = _array_to_hash($type_rule->{into});
         $self->{type_rule} = $type_rule;
-        $self->{_into} ||= {};
+        $self->{_into} = {};
         foreach my $type_name (keys %{$type_rule->{into} || {}}) {
             croak qq{type name of into section must be lower case}
               if $type_name =~ /[A-Z]/;

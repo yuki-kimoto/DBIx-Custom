@@ -1,4 +1,8 @@
 0.1692
+    - separate DBIx::Custom type_rule from filter
+    - DBIx::Custom Model filter attrribute is DEPRECATED!
+    - removed EXPERIMENTAL DBIx::Custom::Model alias_table
+    - added DBIx::Custom column method's table option
     - separate DBIx::Custom::Result type_rule from filter again
 0.1692
     - removed EXPERIMENTAL DBIx::Model result_filter

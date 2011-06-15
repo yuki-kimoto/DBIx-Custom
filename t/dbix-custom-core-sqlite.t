@@ -2170,7 +2170,7 @@ $model = $dbi->model('table1');
 eval{$model->execute('select * from table1')};
 ok(!$@);
 
-test 'table_alias';
+test 'column table option';
 $dbi = MyDBI9->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
@@ -2180,32 +2180,32 @@ $dbi->execute('insert into table2 (key1, key3) values (1, 4);');
 $model = $dbi->model('table1');
 $result = $model->select(
     column => [
-        $model->column('table2_alias')
+        $model->column('table2', {alias => 'table2_alias'})
     ],
-    where => {'table2_alias.key3' => 2}
+    where => {'table2_alias.key3' => 4}
 );
 is_deeply($result->one, 
-          {'table2_alias.key1' => 1, 'table2_alias.key3' => 48});
+          {'table2_alias.key1' => 1, 'table2_alias.key3' => 4});
 
 $dbi->separator('__');
 $result = $model->select(
     column => [
-        $model->column('table2_alias')
+        $model->column('table2', {alias => 'table2_alias'})
     ],
-    where => {'table2_alias.key3' => 2}
+    where => {'table2_alias.key3' => 4}
 );
 is_deeply($result->one, 
-          {'table2_alias__key1' => 1, 'table2_alias__key3' => 48});
+          {'table2_alias__key1' => 1, 'table2_alias__key3' => 4});
 
 $dbi->separator('-');
 $result = $model->select(
     column => [
-        $model->column('table2_alias')
+        $model->column('table2', {alias => 'table2_alias'})
     ],
-    where => {'table2_alias.key3' => 2}
+    where => {'table2_alias.key3' => 4}
 );
 is_deeply($result->one, 
-          {'table2_alias-key1' => 1, 'table2_alias-key3' => 48});
+          {'table2_alias-key1' => 1, 'table2_alias-key3' => 4});
 
 test 'type() option';
 $dbi = DBIx::Custom->connect(

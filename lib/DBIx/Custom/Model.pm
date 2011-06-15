@@ -9,9 +9,7 @@ use DBIx::Custom::Util '_subname';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
 has [qw/dbi name table view/],
-    table_alias => sub { {} },
     columns => sub { [] },
-    filter => sub { [] },
     join => sub { [] },
     type => sub { [] },
     primary_key => sub { [] };
@@ -64,23 +62,6 @@ foreach my $method (@methods) {
     *{"${class}::$method"} = $code;
 }
 
-sub column {
-    my ($self, $table, $columns) = @_;
-    
-    $self->{_table_alias} ||= {};
-    my $dist;
-    $dist = $self->dbi->{_table_alias}{$table}
-          ? $self->dbi->{_table_alias}{$table}
-          : $table;
-    
-    $self->dbi->{_model_from} ||= {};
-    my $model = $self->dbi->{_model_from}->{$dist};
-    
-    $columns ||= $self->model($model)->columns;
-    
-    return $self->dbi->column($table, $columns);
-}
-
 sub DESTROY { }
 
 sub method {
@@ -117,6 +98,9 @@ sub new {
     return $self;
 }
 
+# DEPRECATED!
+has filter => sub { [] };
+
 1;
 
 =head1 NAME
@@ -137,16 +121,6 @@ my $table = DBIx::Custom::Model->new(table => 'books');
     $model  = $model->dbi($dbi);
 
 L<DBIx::Custom> object.
-
-=head2 C<filter>
-
-    my $dbi = $model->filter
-    $model  = $model->filter(
-        title => {out => 'tp_to_date', in => 'date_to_tp'}
-        author => {out => ..., in => ...},
-    );
-
-This filter is applied when L<DBIx::Custom>'s C<include_model()> is called.
 
 =head2 C<name>
 
@@ -180,15 +154,6 @@ C<delete_at()>,C<select_at()>.
 Table name, this is used as C<select()> C<table> option.
 Generally, this is automatically set from class name.
 
-=head2 C<table_alias> EXPERIMENTAL
-
-    my $table_alias = $model->table_alias;
-    $model = $model->table_alias(user1 => 'user', user2 => 'user');
-
-Table alias. If you define table alias,
-same filter as the table is avaliable
-, and can write $dbi->column('user1') to get all columns.
-
 =head2 C<type>
 
     my $type = $model->type;
@@ -208,21 +173,9 @@ model is included by C<include_model>.
 
 =head1 METHODS
 
-L<DBIx::Custom> inherits all methods from L<Object::Simple>,
-and you can use all methods of the object set to C<dbi>.
+L<DBIx::Custom::Model> inherits all methods from L<Object::Simple>,
+and you can use all methods of L<DBIx::Custom> and L<DBI>
 and implements the following new ones.
-
-=head2 C<column> EXPERIMETNAL
-
-    my $column = $model->column(book => ['author', 'title']);
-    my $column = $model->column('book');
-
-Create column clause. The follwoing column clause is created.
-
-    book.author as "book.author",
-    book.title as "book.title"
-
-If Second argument is ommited, all columns set by C<columns> is used.
 
 =head2 C<delete>
 
