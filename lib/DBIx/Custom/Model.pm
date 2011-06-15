@@ -8,7 +8,7 @@ use DBIx::Custom::Util '_subname';
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-has [qw/dbi name table view/],
+has [qw/dbi table/],
     columns => sub { [] },
     join => sub { [] },
     type => sub { [] },
@@ -100,6 +100,7 @@ sub new {
 
 # DEPRECATED!
 has filter => sub { [] };
+has 'name';
 
 1;
 
@@ -121,13 +122,6 @@ my $table = DBIx::Custom::Model->new(table => 'books');
     $model  = $model->dbi($dbi);
 
 L<DBIx::Custom> object.
-
-=head2 C<name>
-
-    my $name = $model->name;
-    $model   = $model->name('book');
-
-Model name.
 
 =head2 C<join>
 
@@ -162,14 +156,6 @@ Generally, this is automatically set from class name.
 Database data type, this is used as type optioon of C<insert()>, C<insert_at()>,
 C<update()>, C<update_at()>, C<update_all>, C<delete()>, C<delete_all()>,
 C<select()>, C<select_at()>
-
-=head2 C<view>
-
-    my $view = $model->view;
-    $model   = $model->view('select id, DATE(issue_datetime) as date from book');
-
-View. This view is registered by C<view()> of L<DBIx::Custom> when
-model is included by C<include_model>.
 
 =head1 METHODS
 
