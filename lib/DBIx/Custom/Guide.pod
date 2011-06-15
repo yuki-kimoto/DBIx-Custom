@@ -257,12 +257,6 @@ You can specify C<filter> at C<execute>.
     $dbi->execute($sql, {title => 'Perl', author => '%Ken%'}
                   filter => {title => 'to_something');
 
-Note that at C<execute> the filter applied by C<apply_filter>
-don't has effective to columns.
-You have to use C<table> option
-
-    $dbi->execute($sql, table => ['author', 'book']);
-
 =head3 Manipulate same name's columns
 
 It is ok if there are same name's columns.
@@ -539,15 +533,6 @@ You can set primary key to model.
 Primary key is used by C<insert>, C<update>, C<delete>,
 and C<select> methods.
 
-by C<filter> you can define filters applied by C<apply_filter>
-
-    $model->filter({
-        title  => {out => ..., in => ..., end => ...},
-        author => {out => ..., in => ..., end => ...}
-    });
-
-This filters is applied when C<include_model> is called.
-
 You can set column names
 
     $model->columns(['id', 'number_id']);
@@ -562,42 +547,6 @@ You can set C<join>
     $model->join(['left outer join company on book.company_id = company.id']);
 
 C<join> is used by C<select> method.
-
-=head2 Class name, Model name, Table name
-
-Class name, model name, and table name is a little different.
-Generally Class name is model name, and table name is model name.
-
-    CLASS        MODEL              TABLE
-    book         (CLASS) -> book    (MODEL) -> book
-
-You can change model name.
-
-    package MyModel::book;
-    use MyModel -base;
-    
-    has name => 'book_model';
-
-    CLASS        MODEL         TABLE
-    book         book_model    (MODEL) -> book_model
-
-Model name is the name used by L<model> of L<DBIx::Custom>.
-
-    $dbi->model('book_model');
-
-You can change table name.
-
-    package MyModel::book;
-    use MyModel -base;
-    
-    has table => 'book_table';
-
-    CLASS        MODEL              TABLE
-    book         (CLASS) -> book    book_table
-
-Table name is the table really accessed.
-
-    $dbi->model('book')->insert(...); # access to "book_table"
 
 =head2 Create column clause automatically : mycolumn, column
 
