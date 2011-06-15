@@ -2864,7 +2864,19 @@ $dbi->type_rule(
 $dbi->insert({key1 => 2}, table => 'table1');
 $result = $dbi->select(table => 'table1');
 $result->filter(key1 => sub { $_[0] * 3 });
-is($result->one->{key1}, 6);
+is($result->one->{key1}, 12);
+
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+$dbi->execute("create table table1 (key1 Date, key2 datetime)");
+$dbi->type_rule(
+    from => {
+        date => sub { $_[0] * 2 },
+    },
+);
+$dbi->insert({key1 => 2}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+$result->filter(key1 => sub { $_[0] * 3 });
+is($result->fetch->[0], 12);
 
 test 'separator';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
