@@ -1,4 +1,5 @@
 0.1694
+    - EXPERIMENTAL type_rule argument format is changed
     - DBIx::Custom::Result type_rule method on setting return self 
     - reserved_word_quote is DEPRECATED! this is renamed to quote
     - DBIx::Custom::Model type attribute is DEPRECATED!

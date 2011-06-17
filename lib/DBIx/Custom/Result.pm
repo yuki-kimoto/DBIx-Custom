@@ -4,7 +4,7 @@ use Object::Simple -base;
 use Carp 'croak';
 use DBIx::Custom::Util qw/_array_to_hash _subname/;
 
-has [qw/filters filter_off sth type_rule_off/];
+has [qw/filters filter_off sth type_rule_off type_rule1_off type_rule2_off/];
 has stash => sub { {} };
 
 *all = \&fetch_hash_all;
@@ -49,7 +49,8 @@ sub fetch {
     # Filtering
     my $columns = $self->{sth}->{NAME};
     my $types = $self->{sth}->{TYPE};
-    my $type_rule = $self->type_rule || {};
+    my $type_rule1 = $self->type_rule->{from1} || {};
+    my $type_rule2 = $self->type_rule->{from2} || {};
     my $filter = $self->filter;
     my $end_filter = $self->end_filter;
     for (my $i = 0; $i < @$columns; $i++) {
@@ -58,9 +59,14 @@ sub fetch {
         my $column = $columns->[$i];
         
         # Type rule
-        my $type_filter = $type_rule->{lc($types->[$i])};
-        $row[$i] = $type_filter->($row[$i])
-          if $type_filter && !$self->{type_rule_off};
+        my $type_filter1 = $type_rule1->{lc($types->[$i])};
+        $row[$i] = $type_filter1->($row[$i])
+          if  $type_filter1 && !$self->{type_rule_off}
+           && !$self->{type_rule1_off};
+        my $type_filter2 = $type_rule2->{lc($types->[$i])};
+        $row[$i] = $type_filter2->($row[$i])
+          if  $type_filter2 && !$self->{type_rule_off}
+           && !$self->{type_rule2_off};
         
         # Filter
         my $filter  = $filter->{$column} || $self->{default_filter};
@@ -109,18 +115,23 @@ sub fetch_hash {
     my $end_filter = $self->end_filter || {};
     my $columns = $self->{sth}->{NAME};
     my $types = $self->{sth}->{TYPE};
-    my $type_rule = $self->type_rule || {};
+    my $type_rule1 = $self->type_rule->{from1} || {};
+    my $type_rule2 = $self->type_rule->{from2} || {};
     for (my $i = 0; $i < @$columns; $i++) {
         
         # Column
         my $column = $columns->[$i];
+        $hash_row->{$column} = $row->[$i];
         
         # Type rule
-        my $type_filter = $type_rule->{lc($types->[$i])};
-        if (!$self->{type_rule_off} && $type_filter) {
-            $hash_row->{$column} = $type_filter->($row->[$i]);
-        }
-        else { $hash_row->{$column} = $row->[$i] }
+        my $type_filter1 = $type_rule1->{lc($types->[$i])};
+        $hash_row->{$column} = $type_filter1->($hash_row->{$column})
+        if  !$self->{type_rule_off} && !$self->{type_rule1_off}
+         && $type_filter1;
+        my $type_filter2 = $type_rule2->{lc($types->[$i])};
+        $hash_row->{$column} = $type_filter2->($hash_row->{$column})
+        if  !$self->{type_rule_off} && !$self->{type_rule2_off}
+         && $type_filter2;
         
         # Filter
         my $f = $filter->{$column} || $self->{default_filter};
@@ -197,31 +208,30 @@ sub fetch_multi {
 sub type_rule {
     my $self = shift;
     
-    # Merge type rule
     if (@_) {
-        my $type_rule = @_ == 1 ? $_[0] : [@_];
-        $type_rule = _array_to_hash($type_rule) || {};
-        foreach my $data_type (keys %{$type_rule || {}}) {
-            croak qq{data type of into section must be lower case or number}
-              if $data_type =~ /[A-Z]/;
-            my $fname = $type_rule->{$data_type};
-            if (defined $fname && ref $fname ne 'CODE') {
-                croak qq{Filter "$fname" is not registered" } . _subname
-                  unless exists $self->filters->{$fname};
-                
-                $type_rule->{$data_type} = $self->filters->{$fname};
+        my $type_rule = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+
+        # From
+        foreach my $i (1 .. 2) {
+            $type_rule->{"from$i"} = _array_to_hash($type_rule->{"from$i"});
+            foreach my $data_type (keys %{$type_rule->{"from$i"} || {}}) {
+                croak qq{data type of from$i section must be lower case or number}
+                  if $data_type =~ /[A-Z]/;
+                my $fname = $type_rule->{"from$i"}{$data_type};
+                if (defined $fname && ref $fname ne 'CODE') {
+                    croak qq{Filter "$fname" is not registered" } . _subname
+                      unless exists $self->filters->{$fname};
+                    
+                    $type_rule->{"from$i"}{$data_type} = $self->filters->{$fname};
+                }
             }
         }
-        
-        # Replace
-        if (@_ == 1) { $self->{type_rule} = $type_rule }
-        # Merge
-        else { $self->{type_rule} = {%{$self->type_rule}, %$type_rule} }
+        $self->{type_rule} = $type_rule;
         
         return $self;
     }
     
-    return $self->{type_rule} ||= {};
+    return $self->{type_rule} || {};
 }
 
 # DEPRECATED!
@@ -355,7 +365,21 @@ Statement handle of L<DBI>.
     my $type_rule_off = $result->type_rule_off;
     $result = $result->type_rule_off(1);
 
-Filtering by C<type_rule> is turned off.
+Turn C<from1> and C<from2> type rule off.
+
+=head2 C<type_rule1_off> EXPERIMENTAL
+
+    my $type_rule1_off = $result->type_rule1_off;
+    $result = $result->type_rule1_off(1);
+
+Turn C<from1> type rule off.
+
+=head2 C<type_rule2_off> EXPERIMENTAL
+
+    my $type_rule2_off = $result->type_rule2_off;
+    $result = $result->type_rule2_off(1);
+
+Turn C<from2> type rule off.
 
 =head1 METHODS
 

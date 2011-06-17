@@ -20,7 +20,7 @@ use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 
 our @COMMON_ARGS = qw/bind_type table query filter id primary_key
-                      type_rule_off type/;
+                      type_rule_off type_rule1_off type_rule2_off type/;
 
 has [qw/connector dsn password quote user/],
     cache => 0,
@@ -362,6 +362,10 @@ sub execute {
     my $bind_type = delete $args{bind_type} || delete $args{type};
     $bind_type = _array_to_hash($bind_type);
     my $type_rule_off = delete $args{type_rule_off};
+    my $type_rule_off_parts = {
+        1 => delete $args{type_rule1_off},
+        2 => delete $args{type_rule2_off}
+    };
     my $query_return = delete $args{query};
     
     # Check argument names
@@ -384,7 +388,7 @@ sub execute {
     }
     
     # Type rule
-    my $type_filter = {};
+    my $type_filters = {};
     unless ($type_rule_off) {
         foreach my $name (keys %$param) {
             my $table;
@@ -395,12 +399,16 @@ sub execute {
             }
             $table ||= $main_table;
             
-            my $into = $self->{_into} || {};
-            if (defined $table && $into->{$table} &&
-                (my $rule = $into->{$table}->{$column}))
-            {
-                $type_filter->{$column} = $rule;
-                $type_filter->{"$table.$column"} = $rule;
+            foreach my $i (1 .. 2) {
+                unless ($type_rule_off_parts->{$i}) {
+                    my $into = $self->{"_into$i"} || {};
+                    if (defined $table && $into->{$table} &&
+                        (my $rule = $into->{$table}->{$column}))
+                    {
+                        $type_filters->{$i}->{$column} = $rule;
+                        $type_filters->{$i}->{"$table.$column"} = $rule;
+                    }
+                }
             }
         }
     }
@@ -433,7 +441,7 @@ sub execute {
         $param,
         $query->columns,
         $filter,
-        $type_filter,
+        $type_filters,
         $bind_type
     );
     
@@ -495,7 +503,10 @@ sub execute {
             default_filter => $self->{default_in_filter},
             filter => $filter->{in} || {},
             end_filter => $filter->{end} || {},
-            type_rule => \%{$self->type_rule->{from}},
+            type_rule => {
+                from1 => $self->type_rule->{from1},
+                from2 => $self->type_rule->{from2}
+            },
         );
 
         return $result;
@@ -960,46 +971,50 @@ sub type_rule {
         my $type_rule = ref $_[0] eq 'HASH' ? $_[0] : {@_};
         
         # Into
-        $type_rule->{into} = _array_to_hash($type_rule->{into});
-        $self->{type_rule} = $type_rule;
-        $self->{_into} = {};
-        foreach my $type_name (keys %{$type_rule->{into} || {}}) {
-            croak qq{type name of into section must be lower case}
-              if $type_name =~ /[A-Z]/;
-        }
-        $self->each_column(sub {
-            my ($dbi, $table, $column, $column_info) = @_;
-            
-            my $type_name = lc $column_info->{TYPE_NAME};
-            if ($type_rule->{into} &&
-                (my $filter = $type_rule->{into}->{$type_name}))
-            {
-                return unless exists $type_rule->{into}->{$type_name};
-                if  (defined $filter && ref $filter ne 'CODE') 
+        foreach my $i (1 .. 2) {
+            my $into = "into$i";
+            $type_rule->{$into} = _array_to_hash($type_rule->{$into});
+            $self->{type_rule} = $type_rule;
+            $self->{"_$into"} = {};
+            foreach my $type_name (keys %{$type_rule->{$into} || {}}) {
+                croak qq{type name of $into section must be lower case}
+                  if $type_name =~ /[A-Z]/;
+            }
+            $self->each_column(sub {
+                my ($dbi, $table, $column, $column_info) = @_;
+                
+                my $type_name = lc $column_info->{TYPE_NAME};
+                if ($type_rule->{$into} &&
+                    (my $filter = $type_rule->{$into}->{$type_name}))
                 {
-                    my $fname = $filter;
+                    return unless exists $type_rule->{$into}->{$type_name};
+                    if  (defined $filter && ref $filter ne 'CODE') 
+                    {
+                        my $fname = $filter;
+                        croak qq{Filter "$fname" is not registered" } . _subname
+                          unless exists $self->filters->{$fname};
+                        
+                        $filter = $self->filters->{$fname};
+                    }
+
+                    $self->{"_$into"}{$table}{$column} = $filter;
+                }
+            });
+        }
+
+        # From
+        foreach my $i (1 .. 2) {
+            $type_rule->{"from$i"} = _array_to_hash($type_rule->{"from$i"});
+            foreach my $data_type (keys %{$type_rule->{"from$i"} || {}}) {
+                croak qq{data type of from$i section must be lower case or number}
+                  if $data_type =~ /[A-Z]/;
+                my $fname = $type_rule->{"from$i"}{$data_type};
+                if (defined $fname && ref $fname ne 'CODE') {
                     croak qq{Filter "$fname" is not registered" } . _subname
                       unless exists $self->filters->{$fname};
                     
-                    $filter = $self->filters->{$fname};
+                    $type_rule->{"from$i"}{$data_type} = $self->filters->{$fname};
                 }
-
-                $self->{_into}{$table}{$column} = $filter;
-            }
-        });
-        
-
-        # From
-        $type_rule->{from} = _array_to_hash($type_rule->{from});
-        foreach my $data_type (keys %{$type_rule->{from} || {}}) {
-            croak qq{data type of into section must be lower case or number}
-              if $data_type =~ /[A-Z]/;
-            my $fname = $type_rule->{from}{$data_type};
-            if (defined $fname && ref $fname ne 'CODE') {
-                croak qq{Filter "$fname" is not registered" } . _subname
-                  unless exists $self->filters->{$fname};
-                
-                $type_rule->{from}{$data_type} = $self->filters->{$fname};
             }
         }
         
@@ -1177,7 +1192,7 @@ sub _apply_filter {
 }
 
 sub _create_bind_values {
-    my ($self, $params, $columns, $filter, $type_filter, $bind_type) = @_;
+    my ($self, $params, $columns, $filter, $type_filters, $bind_type) = @_;
     
     # Create bind values
     my $bind = [];
@@ -1210,8 +1225,11 @@ sub _create_bind_values {
         $value = $f->($value) if $f;
         
         # Type rule
-        my $tf = $type_filter->{$column};
-        $value = $tf->($value) if $tf;
+        foreach my $i (1 .. 2) {
+            my $type_filter = $type_filters->{$i};
+            my $tf = $type_filter->{$column};
+            $value = $tf->($value) if $tf;
+        }
         
         # Bind values
         push @$bind, {value => $value, bind_type => $bind_type->{$column}};
@@ -2104,7 +2122,19 @@ by C<insert()>, C<update()>, C<delete()>, C<select()>.
 
     type_rule_off => 1
 
-Trun type rule off.
+Turn C<into1> and C<into2> type rule off.
+
+=item C<type_rule1_off> EXPERIMENTAL
+
+    type_rule1_off => 1
+
+Turn C<into1> type rule off.
+
+=item C<type_rule2_off> EXPERIMENTAL
+
+    type_rule2_off => 1
+
+Turn C<into2> type rule off.
 
 =back
 
@@ -2167,6 +2197,18 @@ Same as C<execute> method's C<type> option.
 =item C<type_rule_off> EXPERIMENTAL
 
 Same as C<execute> method's C<type_rule_off> option.
+
+=item C<type_rule1_off> EXPERIMENTAL
+
+    type_rule1_off => 1
+
+Same as C<execute> method's C<type_rule1_off> option.
+
+=item C<type_rule2_off> EXPERIMENTAL
+
+    type_rule2_off => 1
+
+Same as C<execute> method's C<type_rule2_off> option.
 
 =back
 
@@ -2252,6 +2294,18 @@ Same as C<execute> method's C<type> option.
 =item C<type_rule_off> EXPERIMENTAL
 
 Same as C<execute> method's C<type_rule_off> option.
+
+=item C<type_rule1_off> EXPERIMENTAL
+
+    type_rule1_off => 1
+
+Same as C<execute> method's C<type_rule1_off> option.
+
+=item C<type_rule2_off> EXPERIMENTAL
+
+    type_rule2_off => 1
+
+Same as C<execute> method's C<type_rule2_off> option.
 
 =back
 
@@ -2401,14 +2455,23 @@ Register filters, used by C<filter> option of many methods.
 =head2 C<type_rule> EXPERIMENTAL
 
     $dbi->type_rule(
-        into => {
+        into1 => {
             date => sub { ... },
             datetime => sub { ... }
         },
-        from => {
+        into2 => {
+            date => sub { ... },
+            datetime => sub { ... }
+        },
+        from1 => {
             # DATE
             9 => sub { ... },
-            
+            # DATETIME or TIMESTAMP
+            11 => sub { ... },
+        }
+        from2 => {
+            # DATE
+            9 => sub { ... },
             # DATETIME or TIMESTAMP
             11 => sub { ... },
         }
@@ -2417,12 +2480,17 @@ Register filters, used by C<filter> option of many methods.
 Filtering rule when data is send into and get from database.
 This has a little complex problem.
 
-In C<into> you can specify type name as same as type name defined
+In C<into1> and C<into2> you can specify
+type name as same as type name defined
 by create table, such as C<DATETIME> or C<DATE>.
-Type rule of C<into> is enabled on the following pattern.
+
+C<into2> is executed after C<into1>.
 
 Note that type name and data type don't contain upper case.
-If that contain upper case charactor, you specify it lower case.
+If these contain upper case charactor, you convert it to lower case.
+
+Type rule of C<into1> and C<into2> is enabled on the following
+column name.
 
 =over 4
 
@@ -2442,33 +2510,18 @@ You get all type name used in database by C<available_type_name>.
 
     print $dbi->available_type_name;
 
-In C<from> you can't specify type name defined by create table.
-You must specify data type, this is internal one.
+In C<from1> and C<from2> you data type, not type name.
+C<from2> is executed after C<from1>.
 You get all data type by C<available_data_type>.
 
     print $dbi->available_data_type;
 
-Type rule of C<from> is enabled on the following pattern.
-
-=item 4. table name and column name, separator is hyphen
-
-    book-issue_date
-    book-issue_datetime
-
-This is useful in HTML.
-
-=back
-
-You can also specify multiple types
+You can also specify multiple types at once.
 
     $dbi->type_rule(
-        into => [
+        into1 => [
             [qw/DATE DATETIME/] => sub { ... },
         ],
-        from => {
-            # DATE
-            [qw/9 11/] => sub { ... },
-        }
     );
 
 =head2 C<select>
@@ -2624,6 +2677,18 @@ Table name.
 
 Same as C<execute> method's C<type_rule_off> option.
 
+=item C<type_rule1_off> EXPERIMENTAL
+
+    type_rule1_off => 1
+
+Same as C<execute> method's C<type_rule1_off> option.
+
+=item C<type_rule2_off> EXPERIMENTAL
+
+    type_rule2_off => 1
+
+Same as C<execute> method's C<type_rule2_off> option.
+
 =item C<where>
     
     # Hash refrence
@@ -2729,7 +2794,19 @@ Same as C<execute> method's C<type> option.
 
 =item C<type_rule_off> EXPERIMENTAL
 
-Same as C<execute> method's <type_rule_off>.
+Same as C<execute> method's C<type_rule_off> option.
+
+=item C<type_rule1_off> EXPERIMENTAL
+
+    type_rule1_off => 1
+
+Same as C<execute> method's C<type_rule1_off> option.
+
+=item C<type_rule2_off> EXPERIMENTAL
+
+    type_rule2_off => 1
+
+Same as C<execute> method's C<type_rule2_off> option.
 
 =back
 
