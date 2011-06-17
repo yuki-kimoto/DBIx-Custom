@@ -1,4 +1,5 @@
 0.1694
+    - reserved_word_quote is DEPRECATED! this is renamed to quote
     - DBIx::Custom::Model type attribute is DEPRECATED!
       this is renamed to bind_type.
 0.1693

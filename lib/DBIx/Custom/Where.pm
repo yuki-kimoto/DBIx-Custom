@@ -9,9 +9,8 @@ use overload '""' => sub { shift->to_string }, fallback => 1;
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-has [qw/param query_builder safety_character/],
-    clause => sub { [] },
-    reserved_word_quote => '';
+has [qw/param query_builder quote safety_character /],
+    clause => sub { [] };
 
 sub new {
     my $self = shift->SUPER::new(@_);
@@ -103,7 +102,7 @@ sub _parse {
         
         # Remove quote
         my $column = $columns->[0];
-        if (my $q = $self->reserved_word_quote) {
+        if (my $q = $self->quote) {
             $column =~ s/$q//g;
         }
         

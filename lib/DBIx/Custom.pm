@@ -22,7 +22,7 @@ use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 our @COMMON_ARGS = qw/bind_type table query filter id primary_key
                       type_rule_off type/;
 
-has [qw/connector dsn password user/],
+has [qw/connector dsn password quote user/],
     cache => 0,
     cache_method => sub {
         sub {
@@ -55,7 +55,6 @@ has [qw/connector dsn password user/],
     models => sub { {} },
     query_builder => sub { DBIx::Custom::QueryBuilder->new },
     result_class  => 'DBIx::Custom::Result',
-    reserved_word_quote => '',
     safety_character => '\w',
     stash => sub { {} };
 
@@ -86,7 +85,7 @@ sub assign_param {
     # Create set tag
     my @params;
     my $safety = $self->safety_character;
-    my $q = $self->reserved_word_quote;
+    my $q = $self->_quote;
     foreach my $column (keys %$param) {
         croak qq{"$column" is not safety column name } . _subname
           unless $column =~ /^[$safety\.]+$/;
@@ -112,7 +111,7 @@ sub column {
     }
     
     # Reserved word quote
-    my $q = $self->reserved_word_quote;
+    my $q = $self->_quote;
     
     # Separator
     my $separator = $self->separator;
@@ -165,7 +164,7 @@ sub create_query {
         $query = $builder->build_query($source);
 
         # Remove reserved word quote
-        if (my $q = $self->reserved_word_quote) {
+        if (my $q = $self->_quote) {
             $_ =~ s/$q//g for @{$query->columns}
         }
 
@@ -222,12 +221,12 @@ sub dbh {
         $self->{dbh} ||= $self->_connect;
         
         # Quote
-        unless ($self->reserved_word_quote) {
+        if (!defined $self->reserved_word_quote && !defined $self->quote) {
             my $driver = $self->{dbh}->{Driver}->{Name};
             my $quote = $driver eq 'mysql' ? '`' : '"';
-            $self->reserved_word_quote($quote);
+            $self->quote($quote);
         }
-
+        
         return $self->{dbh};
     }
 }
@@ -277,7 +276,7 @@ sub delete {
 
     # Delete statement
     my @sql;
-    my $q = $self->reserved_word_quote;
+    my $q = $self->_quote;
     push @sql, "delete from $q$table$q $where_clause";
     push @sql, $append if $append;
     my $sql = join(' ', @sql);
@@ -380,7 +379,7 @@ sub execute {
     unshift @$tables, @{$query->tables};
     my $main_table = pop @$tables;
     $tables = $self->_remove_duplicate_table($tables, $main_table);
-    if (my $q = $self->reserved_word_quote) {
+    if (my $q = $self->_quote) {
         $_ =~ s/$q//g for @$tables;
     }
     
@@ -541,7 +540,7 @@ sub insert {
     }
 
     # Reserved word quote
-    my $q = $self->reserved_word_quote;
+    my $q = $self->_quote;
     
     # Insert statement
     my @sql;
@@ -563,7 +562,7 @@ sub insert_param {
     
     # Create insert parameter tag
     my $safety = $self->safety_character;
-    my $q = $self->reserved_word_quote;
+    my $q = $self->_quote;
     my @columns;
     my @placeholders;
     foreach my $column (keys %$param) {
@@ -700,7 +699,7 @@ sub mycolumn {
     
     # Create column clause
     my @column;
-    my $q = $self->reserved_word_quote;
+    my $q = $self->_quote;
     $columns ||= [];
     push @column, "$q$table$q.$q$_$q as $q$_$q" for @$columns;
     
@@ -796,7 +795,7 @@ sub select {
     push @sql, 'select';
     
     # Reserved word quote
-    my $q = $self->reserved_word_quote;
+    my $q = $self->_quote;
     
     # Prefix
     push @sql, $prefix if defined $prefix;
@@ -1066,7 +1065,7 @@ sub update {
     
     # Update statement
     my @sql;
-    my $q = $self->reserved_word_quote;
+    my $q = $self->_quote;
     push @sql, "update $q$table$q $update_clause $where_clause";
     push @sql, $append if $append;
     
@@ -1103,7 +1102,7 @@ sub where {
     return DBIx::Custom::Where->new(
         query_builder => $self->query_builder,
         safety_character => $self->safety_character,
-        reserved_word_quote => $self->reserved_word_quote,
+        quote => $self->_quote,
         @_
     );
 }
@@ -1318,7 +1317,7 @@ sub _push_join {
     
     # Push join clause
     my $tree = {};
-    my $q = $self->reserved_word_quote;
+    my $q = $self->_quote;
     for (my $i = 0; $i < @$join; $i++) {
         
         # Search table in join clause
@@ -1352,6 +1351,14 @@ sub _push_join {
     }
 }
 
+sub _quote {
+    my $self = shift;
+    
+    return defined $self->reserved_word_quote ? $self->reserved_word_quote
+         : defined $self->quote ? $self->quote
+         : '';
+}
+
 sub _remove_duplicate_table {
     my ($self, $tables, $main_table) = @_;
     
@@ -1368,7 +1375,7 @@ sub _search_tables {
     # Search tables
     my $tables = [];
     my $safety_character = $self->safety_character;
-    my $q = $self->reserved_word_quote;
+    my $q = $self->_quote;
     my $q_re = quotemeta($q);
     my $table_re = $q ? qr/(?:^|[^$safety_character])$q_re?([$safety_character]+)$q_re?\./
                       : qr/(?:^|[^$safety_character])([$safety_character]+)\./;
@@ -1387,7 +1394,7 @@ sub _where_to_obj {
     # Hash
     if (ref $where eq 'HASH') {
         my $clause = ['and'];
-        my $q = $self->reserved_word_quote;
+        my $q = $self->_quote;
         foreach my $column (keys %$where) {
             my $column_quote = "$q$column$q";
             $column_quote =~ s/\./$q.$q/;
@@ -1553,11 +1560,9 @@ sub register_tag {
 
 # DEPRECATED!
 has 'data_source';
-
-# DEPRECATED!
-has dbi_options => sub { {} },
-    filter_check  => 1;
-
+has dbi_options => sub { {} };
+has filter_check  => 1;
+has 'reserved_word_quote';
 
 # DEPRECATED!
 sub default_bind_filter {
@@ -1785,7 +1790,7 @@ L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
 =head2 C<connector>
 
     my $connector = $dbi->connector;
-    $dbi          = $dbi->connector(DBIx::Connector->new(...));
+    $dbi = $dbi->connector(DBIx::Connector->new(...));
 
 Connection manager object. if connector is set, you can get C<dbh()>
 from connection manager. conection manager object must have dbh() mehtod.
@@ -1805,14 +1810,14 @@ C<default_dbi_option> to L<DBIx::Connector>.
 =head2 C<dsn>
 
     my $dsn = $dbi->dsn;
-    $dbi    = $dbi->dsn("DBI:mysql:database=dbname");
+    $dbi = $dbi->dsn("DBI:mysql:database=dbname");
 
 Data source name, used when C<connect()> is executed.
 
 =head2 C<dbi_option>
 
     my $dbi_option = $dbi->dbi_option;
-    $dbi           = $dbi->dbi_option($dbi_option);
+    $dbi = $dbi->dbi_option($dbi_option);
 
 L<DBI> option, used when C<connect()> is executed.
 Each value in option override the value of C<default_dbi_option>.
@@ -1820,7 +1825,7 @@ Each value in option override the value of C<default_dbi_option>.
 =head2 C<default_dbi_option>
 
     my $default_dbi_option = $dbi->default_dbi_option;
-    $dbi            = $dbi->default_dbi_option($default_dbi_option);
+    $dbi = $dbi->default_dbi_option($default_dbi_option);
 
 L<DBI> default option, used when C<connect()> is executed,
 default to the following values.
@@ -1837,35 +1842,35 @@ the value is used to check if the process is in transaction.
 =head2 C<filters>
 
     my $filters = $dbi->filters;
-    $dbi        = $dbi->filters(\%filters);
+    $dbi = $dbi->filters(\%filters);
 
 Filters, registered by C<register_filter()>.
 
 =head2 C<models>
 
     my $models = $dbi->models;
-    $dbi       = $dbi->models(\%models);
+    $dbi = $dbi->models(\%models);
 
 Models, included by C<include_model()>.
 
 =head2 C<password>
 
     my $password = $dbi->password;
-    $dbi         = $dbi->password('lkj&le`@s');
+    $dbi = $dbi->password('lkj&le`@s');
 
 Password, used when C<connect()> is executed.
 
 =head2 C<query_builder>
 
     my $sql_class = $dbi->query_builder;
-    $dbi          = $dbi->query_builder(DBIx::Custom::QueryBuilder->new);
+    $dbi = $dbi->query_builder(DBIx::Custom::QueryBuilder->new);
 
 Query builder, default to L<DBIx::Custom::QueryBuilder> object.
 
-=head2 C<reserved_word_quote>
+=head2 C<quote>
 
-     my reserved_word_quote = $dbi->reserved_word_quote;
-     $dbi                   = $dbi->reserved_word_quote('"');
+     my quote = $dbi->quote;
+     $dbi = $dbi->quote('"');
 
 Reserved word quote.
 Default to double quote '"' except for mysql.
@@ -1874,14 +1879,14 @@ In mysql, default to back quote '`'
 =head2 C<result_class>
 
     my $result_class = $dbi->result_class;
-    $dbi             = $dbi->result_class('DBIx::Custom::Result');
+    $dbi = $dbi->result_class('DBIx::Custom::Result');
 
 Result class, default to L<DBIx::Custom::Result>.
 
 =head2 C<safety_character>
 
     my $safety_character = $self->safety_character;
-    $dbi                 = $self->safety_character($character);
+    $dbi = $self->safety_character($character);
 
 Regex of safety character for table and column name, default to '\w'.
 Note that you don't have to specify like '[\w]'.
@@ -1889,7 +1894,7 @@ Note that you don't have to specify like '[\w]'.
 =head2 C<user>
 
     my $user = $dbi->user;
-    $dbi     = $dbi->user('Ken');
+    $dbi = $dbi->user('Ken');
 
 User name, used when C<connect()> is executed.
 

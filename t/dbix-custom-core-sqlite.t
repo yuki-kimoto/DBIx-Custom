@@ -283,7 +283,7 @@ eval{$dbi->insert(table => 'table', param => {';' => 1})};
 like($@, qr/safety/);
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->reserved_word_quote('"');
+$dbi->quote('"');
 $dbi->execute('create table "table" ("select")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert(table => 'table', param => {select => 1});
@@ -389,7 +389,7 @@ eval{$dbi->update(table => 'table1', param => {'key1' => 1}, where => {';' => 1}
 like($@, qr/safety/);
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->reserved_word_quote('"');
+$dbi->quote('"');
 $dbi->execute('create table "table" ("select", "update")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
@@ -505,7 +505,7 @@ eval{$dbi->delete(table => 'table1', where => {';' => 1})};
 like($@, qr/safety/);
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->reserved_word_quote('"');
+$dbi->quote('"');
 $dbi->execute('create table "table" ("select", "update")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert(table => 'table', param => {select => 1});
@@ -572,7 +572,7 @@ eval{$dbi->select(table => 'table1', noexist => 1)};
 like($@, qr/noexist/, "invalid");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->reserved_word_quote('"');
+$dbi->quote('"');
 $dbi->execute('create table "table" ("select", "update")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert(table => 'table', param => {select => 1, update => 2});
@@ -1974,7 +1974,7 @@ is($dbi->select(table => 'table1')->one->{key1}, 1);
 is($dbi->select(table => 'table1')->one->{key2}, 2);
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->reserved_word_quote('"');
+$dbi->quote('"');
 $dbi->execute($CREATE_TABLE->{1});
 $param = {key1 => 1, key2 => 2};
 $insert_param = $dbi->insert_param($param);
@@ -2050,7 +2050,7 @@ $rows = $dbi->select(
 is_deeply($rows, [{table1__key1 => 1}]);
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
-$dbi->reserved_word_quote('"');
+$dbi->quote('"');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->execute($CREATE_TABLE->{2});
@@ -2062,7 +2062,7 @@ $rows = $dbi->select(
     join  => ['left outer join "table2" on "table1"."key1" = "table2"."key1"'],
 )->all;
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}],
-          'reserved_word_quote');
+          'quote');
 
 {
     package MyDBI8;
