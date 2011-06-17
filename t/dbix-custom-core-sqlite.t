@@ -2763,8 +2763,7 @@ $dbi->type_rule(
 );
 $dbi->insert({key1 => 2}, table => 'table1', type_rule_off => 1);
 $result = $dbi->select(table => 'table1', type_rule_off => 1);
-$result->type_rule_off(1);
-is($result->fetch->[0], 2);
+is($result->type_rule_off(1)->fetch->[0], 2);
 
 $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute("create table table1 (key1 Date, key2 datetime)");

@@ -217,6 +217,8 @@ sub type_rule {
         if (@_ == 1) { $self->{type_rule} = $type_rule }
         # Merge
         else { $self->{type_rule} = {%{$self->type_rule}, %$type_rule} }
+        
+        return $self;
     }
     
     return $self->{type_rule} ||= {};
