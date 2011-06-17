@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1693';
+our $VERSION = '0.1694';
 use 5.008001;
 
 use Object::Simple -base;
@@ -19,7 +19,8 @@ use Encode qw/encode encode_utf8 decode_utf8/;
 use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 
-our @COMMON_ARGS = qw/table query filter type id primary_key type_rule_off/;
+our @COMMON_ARGS = qw/bind_type table query filter id primary_key
+                      type_rule_off type/;
 
 has [qw/connector dsn password user/],
     cache => 0,
@@ -359,8 +360,8 @@ sub execute {
     $tables = [$tables] unless ref $tables eq 'ARRAY';
     my $filter = delete $args{filter};
     $filter = _array_to_hash($filter);
-    my $type = delete $args{type};
-    $type = _array_to_hash($type);
+    my $bind_type = delete $args{bind_type} || delete $args{type};
+    $bind_type = _array_to_hash($bind_type);
     my $type_rule_off = delete $args{type_rule_off};
     my $query_return = delete $args{query};
     
@@ -434,7 +435,7 @@ sub execute {
         $query->columns,
         $filter,
         $type_filter,
-        $type
+        $bind_type
     );
     
     # Execute
@@ -442,8 +443,12 @@ sub execute {
     my $affected;
     eval {
         for (my $i = 0; $i < @$bind; $i++) {
-            my $type = $bind->[$i]->{type};
-            $sth->bind_param($i + 1, $bind->[$i]->{value}, $type ? $type : ());
+            my $bind_type = $bind->[$i]->{bind_type};
+            $sth->bind_param(
+                $i + 1,
+                $bind->[$i]->{value},
+                $bind_type ? $bind_type : ()
+            );
         }
         $affected = $sth->execute;
     };
@@ -1173,7 +1178,7 @@ sub _apply_filter {
 }
 
 sub _create_bind_values {
-    my ($self, $params, $columns, $filter, $type_filter, $type) = @_;
+    my ($self, $params, $columns, $filter, $type_filter, $bind_type) = @_;
     
     # Create bind values
     my $bind = [];
@@ -1210,7 +1215,7 @@ sub _create_bind_values {
         $value = $tf->($value) if $tf;
         
         # Bind values
-        push @$bind, {value => $value, type => $type->{$column}};
+        push @$bind, {value => $value, bind_type => $bind_type->{$column}};
         
         # Count up 
         $count->{$column}++;
@@ -1409,7 +1414,7 @@ sub _where_to_obj {
     
     # Check where argument
     croak qq{"where" must be hash reference or DBIx::Custom::Where object}
-        . qq{or array reference, which contains where clause and paramter}
+        . qq{or array reference, which contains where clause and parameter}
         . _subname
       unless ref $obj eq 'DBIx::Custom::Where';
     
@@ -1862,7 +1867,9 @@ Query builder, default to L<DBIx::Custom::QueryBuilder> object.
      my reserved_word_quote = $dbi->reserved_word_quote;
      $dbi                   = $dbi->reserved_word_quote('"');
 
-Reserved word quote, default to empty string.
+Reserved word quote.
+Default to double quote '"' except for mysql.
+In mysql, default to back quote '`'
 
 =head2 C<result_class>
 
@@ -2081,7 +2088,7 @@ Specify database data type.
     type => [image => DBI::SQL_BLOB]
     type => [[qw/image audio/] => DBI::SQL_BLOB]
 
-This is used to bind paramter by C<bind_param()> of statment handle.
+This is used to bind parameter by C<bind_param()> of statment handle.
 
     $sth->bind_param($pos, $value, DBI::SQL_BLOB);
 
@@ -2305,7 +2312,7 @@ See L<DBIx::Custom::Model> to know model features.
 
     my $param = $dbi->merge_param({key1 => 1}, {key1 => 1, key2 => 2});
 
-Merge paramters.
+Merge parameters.
 
 $param:
 

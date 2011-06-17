@@ -1,5 +1,4 @@
 package DBIx::Custom::Model;
-
 use Object::Simple -base;
 
 use Carp 'croak';
@@ -9,9 +8,9 @@ use DBIx::Custom::Util '_subname';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
 has [qw/dbi table/],
+    bind_type => sub { [] },
     columns => sub { [] },
     join => sub { [] },
-    type => sub { [] },
     primary_key => sub { [] };
 
 our $AUTOLOAD;
@@ -48,8 +47,9 @@ foreach my $method (@methods) {
 
         my @args = (
             table => $self->table,
-            type => $self->type,
-            primary_key => $self->primary_key
+            bind_type => $self->bind_type,
+            primary_key => $self->primary_key,
+            type => $self->type, # DEPRECATED!
         );
         push @args, (join => $self->join) if $method =~ /^select/;
         unshift @args, shift if @_ % 2;
@@ -101,6 +101,7 @@ sub new {
 # DEPRECATED!
 has filter => sub { [] };
 has 'name';
+has type => sub { [] };
 
 1;
 
@@ -119,43 +120,42 @@ my $table = DBIx::Custom::Model->new(table => 'books');
 =head2 C<dbi>
 
     my $dbi = $model->dbi;
-    $model  = $model->dbi($dbi);
+    $model = $model->dbi($dbi);
 
 L<DBIx::Custom> object.
 
 =head2 C<join>
 
     my $join = $model->join;
-    $model   = $model->join(
+    $model = $model->join(
         ['left outer join company on book.company_id = company.id']
     );
     
-Join clause, this is used as C<select()>'s C<join> option.
+Join clause, this value is passed to C<select> method.
 
 =head2 C<primary_key>
 
     my $primary_key = $model->primary_key;
-    $model          = $model->primary_key(['id', 'number']);
+    $model = $model->primary_key(['id', 'number']);
 
-Foreign key, this is used as C<primary_key> of C<insert_at>,C<update_at()>,
-C<delete_at()>,C<select_at()>.
+Primary key,this is passed to C<insert>, C<update>,
+C<delete>, and C<select> method.
 
 =head2 C<table>
 
     my $table = $model->table;
-    $model    = $model->table('book');
+    $model = $model->table('book');
 
-Table name, this is used as C<select()> C<table> option.
-Generally, this is automatically set from class name.
+Table name, this is passed to C<select> method.
 
-=head2 C<type>
+=head2 C<bind_type>
 
-    my $type = $model->type;
-    $model   = $model->type(['image' => DBI::SQL_BLOB]);
+    my $type = $model->bind_type;
+    $model = $model->bind_type(['image' => DBI::SQL_BLOB]);
     
-Database data type, this is used as type optioon of C<insert()>, C<insert_at()>,
-C<update()>, C<update_at()>, C<update_all>, C<delete()>, C<delete_all()>,
-C<select()>, C<select_at()>
+Database data type, this is used as type optioon of C<insert>, 
+C<update>, C<update_all>, C<delete>, C<delete_all>,
+C<select>, and C<execute> method
 
 =head1 METHODS
 
@@ -167,21 +167,21 @@ and implements the following new ones.
 
     $table->delete(...);
     
-Same as C<delete()> of L<DBIx::Custom> except that
+Same as C<delete> of L<DBIx::Custom> except that
 you don't have to specify C<table> option.
 
 =head2 C<delete_all>
 
     $table->delete_all(...);
     
-Same as C<delete_all()> of L<DBIx::Custom> except that
+Same as C<delete_all> of L<DBIx::Custom> except that
 you don't have to specify C<table> option.
 
 =head2 C<insert>
 
     $table->insert(...);
     
-Same as C<insert()> of L<DBIx::Custom> except that
+Same as C<insert> of L<DBIx::Custom> except that
 you don't have to specify C<table> option.
 
 =head2 C<method>
@@ -227,21 +227,21 @@ Create a L<DBIx::Custom::Table> object.
 
     $table->select(...);
     
-Same as C<select()> of L<DBIx::Custom> except that
+Same as C<select> of L<DBIx::Custom> except that
 you don't have to specify C<table> option.
 
 =head2 C<update>
 
     $table->update(...);
     
-Same as C<update()> of L<DBIx::Custom> except that
+Same as C<update> of L<DBIx::Custom> except that
 you don't have to specify C<table> option.
 
 =head2 C<update_all>
 
     $table->update_all(param => \%param);
     
-Same as C<update_all()> of L<DBIx::Custom> except that
+Same as C<update_all> of L<DBIx::Custom> except that
 you don't have to specify table name.
 
 =cut

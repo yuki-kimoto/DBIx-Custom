@@ -2207,7 +2207,7 @@ $result = $model->select(
 is_deeply($result->one, 
           {'table2_alias-key1' => 1, 'table2_alias-key3' => 4});
 
-test 'type() option';
+test 'type option'; # DEPRECATED!
 $dbi = DBIx::Custom->connect(
     data_source => 'dbi:SQLite:dbname=:memory:',
     dbi_option => {
@@ -2225,6 +2225,50 @@ $row = $result->one;
 is($row->{key1_length}, length $binary);
 
 $dbi->insert(table => 'table1', param => {key1 => $binary, key2 => 'あ'}, type => [['key1'] => DBI::SQL_BLOB]);
+$result = $dbi->select(table => 'table1');
+$row   = $result->one;
+is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
+$result = $dbi->execute('select length(key1) as key1_length from table1');
+$row = $result->one;
+is($row->{key1_length}, length $binary);
+
+
+test 'bind_type option';
+$dbi = DBIx::Custom->connect(
+    data_source => 'dbi:SQLite:dbname=:memory:',
+    dbi_option => {
+        $DBD::SQLite::VERSION > 1.26 ? (sqlite_unicode => 1) : (unicode => 1)
+    }
+);
+$binary = pack("I3", 1, 2, 3);
+$dbi->execute('create table table1(key1, key2)');
+$dbi->insert(table => 'table1', param => {key1 => $binary, key2 => 'あ'}, bind_type => [key1 => DBI::SQL_BLOB]);
+$result = $dbi->select(table => 'table1');
+$row   = $result->one;
+is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
+$result = $dbi->execute('select length(key1) as key1_length from table1');
+$row = $result->one;
+is($row->{key1_length}, length $binary);
+
+$dbi->insert(table => 'table1', param => {key1 => $binary, key2 => 'あ'}, bind_type => [['key1'] => DBI::SQL_BLOB]);
+$result = $dbi->select(table => 'table1');
+$row   = $result->one;
+is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
+$result = $dbi->execute('select length(key1) as key1_length from table1');
+$row = $result->one;
+is($row->{key1_length}, length $binary);
+
+test 'model type attribute';
+$dbi = DBIx::Custom->connect(
+    data_source => 'dbi:SQLite:dbname=:memory:',
+    dbi_option => {
+        $DBD::SQLite::VERSION > 1.26 ? (sqlite_unicode => 1) : (unicode => 1)
+    }
+);
+$binary = pack("I3", 1, 2, 3);
+$dbi->execute('create table table1(key1, key2)');
+$model = $dbi->create_model(table => 'table1', bind_type => [key1 => DBI::SQL_BLOB]);
+$model->insert(param => {key1 => $binary, key2 => 'あ'});
 $result = $dbi->select(table => 'table1');
 $row   = $result->one;
 is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");

@@ -1,12 +1,10 @@
 package DBIx::Custom::Where;
-
 use Object::Simple -base;
 
+use Carp 'croak';
+use DBIx::Custom::Util '_subname';
 use overload 'bool' => sub {1}, fallback => 1;
 use overload '""' => sub { shift->to_string }, fallback => 1;
-
-use DBIx::Custom::Util '_subname';
-use Carp 'croak';
 
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
@@ -102,12 +100,14 @@ sub _parse {
             croak qq{Each part contains one column name: "$clause" (}
                   . _subname . ")";
         }
-
+        
+        # Remove quote
         my $column = $columns->[0];
         if (my $q = $self->reserved_word_quote) {
             $column =~ s/$q//g;
         }
         
+        # Check safety
         my $safety = $self->safety_character;
         croak qq{"$column" is not safety column name (} . _subname . ")"
           unless $column =~ /^[$safety\.]+$/;
@@ -151,38 +151,51 @@ DBIx::Custom::Where - Where clause
 =head1 SYNOPSYS
 
     my $where = DBIx::Custom::Where->new;
+    my $string_where = "$where";
 
 =head1 ATTRIBUTES
 
 =head2 C<clause>
 
-    $where->clause(
-        ['and', '{= title}', ['or', '{< date}', '{> date}']]
+    my $clause = $where->clause;
+    $where = $where->clause(
+        ['and',
+            'title = :title', 
+            ['or', 'date < :date', 'date > :date']
+        ]
     );
 
 Where clause. Above one is expanded to the following SQL by to_string
 If all parameter names is exists.
 
-    "where ( {= title} and ( {< date} or {> date} ) )"
+    "where ( title = :title and ( date < :date or date > :date ) )"
 
 =head2 C<param>
 
     my $param = $where->param;
-    $where    = $where->param({title => 'Perl',
-                               date => ['2010-11-11', '2011-03-05']},
-                               name => ['Ken', 'Taro']);
+    $where = $where->param({
+        title => 'Perl',
+        date => ['2010-11-11', '2011-03-05'],
+    });
 
 =head2 C<safety_character>
 
     my $safety_character = $self->safety_character;
-    $dbi                 = $self->safety_character($name);
+    $where = $self->safety_character("\w");
 
 =head1 METHODS
+
+L<DBIx::Custom::Where> inherits all methods from L<Object::Simple>
+and implements the following new ones.
 
 =head2 C<to_string>
 
     $where->to_string;
 
-Convert where clause to string correspoinding to param name.
+Convert where clause to string.
+
+double quote is override to execute C<to_string> method.
+
+    my $string_where = "$where";
 
 =cut

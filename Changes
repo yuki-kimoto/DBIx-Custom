@@ -1,3 +1,6 @@
+0.1694
+    - DBIx::Custom::Model type attribute is DEPRECATED!
+      this is renamed to bind_type.
 0.1693
     - separate DBIx::Custom type_rule from filter
     - DBIx::Custom::Model filter attrribute is DEPRECATED!
