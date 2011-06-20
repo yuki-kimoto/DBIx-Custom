@@ -2792,7 +2792,7 @@ $dbi->type_rule(
 );
 $dbi->insert({key1 => 2}, table => 'table1', type_rule_off => 1);
 $result = $dbi->select(table => 'table1', type_rule_off => 1);
-is($result->type_rule_off(1)->fetch->[0], 2);
+is($result->type_rule_off->fetch->[0], 2);
 
 $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute("create table table1 (key1 Date, key2 datetime)");
@@ -2887,7 +2887,7 @@ $dbi->type_rule(
 );
 $dbi->insert({key1 => 2}, table => 'table1');
 $result = $dbi->select(table => 'table1');
-$result->type_rule_off(1);
+$result->type_rule_off;
 is($result->one->{key1}, 6);
 
 $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
@@ -2993,8 +2993,9 @@ $dbi->type_rule(
 );
 $dbi->insert({key1 => '1'}, table => 'table1', type_rule_off => 1);
 $result = $dbi->select(table => 'table1');
-$result->type_rule_off(1);
-is($result->fetch_first->[0], '1');
+is($result->type_rule_off->fetch_first->[0], '1');
+$result = $dbi->select(table => 'table1');
+is($result->type_rule_on->fetch_first->[0], '1de');
 
 $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute("create table table1 (key1 Date, key2 datetime)");
@@ -3014,8 +3015,9 @@ $dbi->type_rule(
 );
 $dbi->insert({key1 => '1'}, table => 'table1', type_rule1_off => 1);
 $result = $dbi->select(table => 'table1');
-$result->type_rule1_off(1);
-is($result->fetch_first->[0], '1ce');
+is($result->type_rule1_off->fetch_first->[0], '1ce');
+$result = $dbi->select(table => 'table1');
+is($result->type_rule1_on->fetch_first->[0], '1cde');
 
 $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute("create table table1 (key1 Date, key2 datetime)");
@@ -3035,8 +3037,9 @@ $dbi->type_rule(
 );
 $dbi->insert({key1 => '1'}, table => 'table1', type_rule2_off => 1);
 $result = $dbi->select(table => 'table1');
-$result->type_rule2_off(1);
-is($result->fetch_first->[0], '1bd');
+is($result->type_rule2_off->fetch_first->[0], '1bd');
+$result = $dbi->select(table => 'table1');
+is($result->type_rule2_on->fetch_first->[0], '1bde');
 
 test 'separator';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});

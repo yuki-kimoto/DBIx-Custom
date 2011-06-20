@@ -1,3 +1,12 @@
+0.1695
+    - changed EXPERIMENTAL DBIx::Custom::Result type_rule_off method argument
+    - added EXPERIMENTAL DBIx::Custom::Result type_rule_on method
+    - changed EXPERIMENTAL DBIx::Custom::Result type_rule1_off method argument
+    - added EXPERIMENTAL DBIx::Custom::Result type_rule1_on method
+    - changed EXPERIMENTAL DBIx::Custom::Result type_rule2_off method argument
+    - added EXPERIMENTAL DBIx::Custom::Result type_rule2_on method
+    - changed EXPERIMENTAL DBIx::Custom::Result filter_off method argument
+    - added EXPERIMENTAL DBIx::Custom::Result filter_on method
 0.1694
     - EXPERIMENTAL type_rule argument format is changed
     - DBIx::Custom::Result type_rule method on setting return self 

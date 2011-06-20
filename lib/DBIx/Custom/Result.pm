@@ -4,8 +4,8 @@ use Object::Simple -base;
 use Carp 'croak';
 use DBIx::Custom::Util qw/_array_to_hash _subname/;
 
-has [qw/filters filter_off sth type_rule_off type_rule1_off type_rule2_off/];
-has stash => sub { {} };
+has [qw/filters sth/],
+    stash => sub { {} };
 
 *all = \&fetch_hash_all;
 
@@ -37,6 +37,18 @@ sub filter {
     }
     
     return $self->{filter} ||= {};
+}
+
+sub filter_off {
+    my $self = shift;
+    $self->{filter_off} = 1;
+    return $self;
+}
+
+sub filter_on {
+    my $self = shift;
+    $self->{filter_off} = 0;
+    return $self;
 }
 
 sub fetch {
@@ -234,6 +246,42 @@ sub type_rule {
     return $self->{type_rule} || {};
 }
 
+sub type_rule_off {
+    my $self = shift;
+    $self->{type_rule_off} = 1;
+    return $self;
+}
+
+sub type_rule_on {
+    my $self = shift;
+    $self->{type_rule_off} = 0;
+    return $self;
+}
+
+sub type_rule1_off {
+    my $self = shift;
+    $self->{type_rule1_off} = 1;
+    return $self;
+}
+
+sub type_rule1_on {
+    my $self = shift;
+    $self->{type_rule1_off} = 0;
+    return $self;
+}
+
+sub type_rule2_off {
+    my $self = shift;
+    $self->{type_rule2_off} = 1;
+    return $self;
+}
+
+sub type_rule2_on {
+    my $self = shift;
+    $self->{type_rule2_off} = 0;
+    return $self;
+}
+
 # DEPRECATED!
 sub end_filter {
     my $self = shift;
@@ -339,13 +387,6 @@ DBIx::Custom::Result - Result of select statement
 
 =head1 ATTRIBUTES
 
-=head2 C<filter_off> EXPERIMENTAL
-
-    my $filter_off = $resutl->filter_off;
-    $result = $result->filter_off(1);
-
-Filtering by C<filter> method is turned off.
-
 =head2 C<filters>
 
     my $filters = $result->filters;
@@ -359,27 +400,6 @@ Filters.
     $result = $result->sth($sth);
 
 Statement handle of L<DBI>.
-
-=head2 C<type_rule_off> EXPERIMENTAL
-
-    my $type_rule_off = $result->type_rule_off;
-    $result = $result->type_rule_off(1);
-
-Turn C<from1> and C<from2> type rule off.
-
-=head2 C<type_rule1_off> EXPERIMENTAL
-
-    my $type_rule1_off = $result->type_rule1_off;
-    $result = $result->type_rule1_off(1);
-
-Turn C<from1> type rule off.
-
-=head2 C<type_rule2_off> EXPERIMENTAL
-
-    my $type_rule2_off = $result->type_rule2_off;
-    $result = $result->type_rule2_off(1);
-
-Turn C<from2> type rule off.
 
 =head1 METHODS
 
@@ -451,6 +471,20 @@ Set filter for column.
 You can use subroutine or filter name as filter.
 This filter is executed after C<type_rule> filter.
 
+=head2 C<filter_off> EXPERIMENTAL
+
+    $result = $result->filter_off;
+
+Turn filtering by C<filter> method off.
+By default, filterin is on.
+
+=head2 C<filter_on> EXPERIMENTAL
+
+    $result = $resutl->filter_on;
+
+Turn filtering by C<filter> method on.
+By default, filterin is on.
+
 =head2 C<one>
 
     my $row = $result->one;
@@ -484,5 +518,47 @@ Stash is hash reference for data.
     ]);
 
 This is same as L<DBIx::Custom>'s C<type_rule>'s <from>.
+
+=head2 C<type_rule_off> EXPERIMENTAL
+
+    $result = $result->type_rule_off;
+
+Turn C<from1> and C<from2> type rule off.
+By default, type rule is on.
+
+=head2 C<type_rule_on> EXPERIMENTAL
+
+    $result = $result->type_rule_on;
+
+Turn C<from1> and C<from2> type rule on.
+By default, type rule is on.
+
+=head2 C<type_rule1_off> EXPERIMENTAL
+
+    $result = $result->type_rule1_off;
+
+Turn C<from1> type rule off.
+By default, type rule is on.
+
+=head2 C<type_rule1_on> EXPERIMENTAL
+
+    $result = $result->type_rule1_on;
+
+Turn C<from1> type rule on.
+By default, type rule is on.
+
+=head2 C<type_rule2_off> EXPERIMENTAL
+
+    $result = $result->type_rule2_off;
+
+Turn C<from2> type rule off.
+By default, type rule is on.
+
+=head2 C<type_rule2_on> EXPERIMENTAL
+
+    $result = $result->type_rule2_on;
+
+Turn C<from2> type rule on.
+By default, type rule is on.
 
 =cut
