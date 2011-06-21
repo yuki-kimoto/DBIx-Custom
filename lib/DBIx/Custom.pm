@@ -1,9 +1,8 @@
 package DBIx::Custom;
+use Object::Simple -base;
 
 our $VERSION = '0.1696';
 use 5.008001;
-
-use Object::Simple -base;
 
 use Carp 'croak';
 use DBI;
@@ -231,8 +230,8 @@ sub dbh {
     }
 }
 
-our %DELETE_ARGS
-  = map { $_ => 1 } @COMMON_ARGS, qw/where append allow_delete_all where_param/;
+our %DELETE_ARGS = map { $_ => 1 } @COMMON_ARGS,
+  qw/where append allow_delete_all where_param prefix/;
 
 sub delete {
     my ($self, %args) = @_;
@@ -257,6 +256,7 @@ sub delete {
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
+    my $prefix = delete $args{prefix};
     
     # Where
     $where = $self->_create_param_from_id($id, $primary_key) if defined $id;
@@ -277,8 +277,10 @@ sub delete {
     # Delete statement
     my @sql;
     my $q = $self->_quote;
-    push @sql, "delete from $q$table$q $where_clause";
-    push @sql, $append if $append;
+    push @sql, "delete";
+    push @sql, $prefix if defined $prefix;
+    push @sql, "from $q$table$q $where_clause";
+    push @sql, $append if defined $append;
     my $sql = join(' ', @sql);
     
     # Execute query
@@ -537,6 +539,7 @@ sub insert {
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
+    my $prefix = delete $args{prefix};
 
     # Check arguments
     foreach my $name (keys %args) {
@@ -555,8 +558,10 @@ sub insert {
     
     # Insert statement
     my @sql;
-    push @sql, "insert into $q$table$q " . $self->insert_param($param);
-    push @sql, $append if $append;
+    push @sql, "insert";
+    push @sql, $prefix if defined $prefix;
+    push @sql, "into $q$table$q " . $self->insert_param($param);
+    push @sql, $append if defined $append;
     my $sql = join (' ', @sql);
     
     # Execute query
@@ -757,10 +762,8 @@ sub register_filter {
     return $self;
 }
 
-our %SELECT_ARGS
-  = map { $_ => 1 } @COMMON_ARGS,
-                    qw/column where relation join param where_param wrap
-                       prefix/;
+our %SELECT_ARGS = map { $_ => 1 } @COMMON_ARGS,
+  qw/column where relation join param where_param wrap prefix/;
 
 sub select {
     my ($self, %args) = @_;
@@ -878,7 +881,7 @@ sub select {
     $self->_push_relation(\@sql, $tables, $relation, $where_clause eq '' ? 1 : 0);
     
     # Append
-    push @sql, $append if $append;
+    push @sql, $append if defined $append;
     
     # Wrap
     if ($wrap) {
@@ -1024,8 +1027,8 @@ sub type_rule {
     return $self->{type_rule} || {};
 }
 
-our %UPDATE_ARGS
-  = map { $_ => 1 } @COMMON_ARGS, qw/param where allow_update_all where_param/;
+our %UPDATE_ARGS = map { $_ => 1 } @COMMON_ARGS,
+  qw/param where allow_update_all where_param prefix/;
 
 sub update {
     my $self = shift;
@@ -1039,9 +1042,9 @@ sub update {
       unless $table;
     my $p = delete $args{param} || {};
     $param  ||= $p;
-    my $where            = delete $args{where} || {};
-    my $where_param      = delete $args{where_param} || {};
-    my $append           = delete $args{append} || '';
+    my $where = delete $args{where} || {};
+    my $where_param = delete $args{where_param} || {};
+    my $append = delete $args{append} || '';
     my $allow_update_all = delete $args{allow_update_all};
     my $id = delete $args{id};
     my $primary_key = delete $args{primary_key};
@@ -1049,6 +1052,7 @@ sub update {
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
+    my $prefix = delete $args{prefix};
     
     # Check argument names
     foreach my $name (keys %args) {
@@ -1081,8 +1085,10 @@ sub update {
     # Update statement
     my @sql;
     my $q = $self->_quote;
-    push @sql, "update $q$table$q $update_clause $where_clause";
-    push @sql, $append if $append;
+    push @sql, "update";
+    push @sql, $prefix if defined $prefix;
+    push @sql, "$q$table$q $update_clause $where_clause";
+    push @sql, $append if defined $append;
     
     # SQL
     my $sql = join(' ', @sql);
@@ -2174,6 +2180,14 @@ The above is same as the followin one.
 
     $dbi->delete(where => {id1 => 4, id2 => 5}, table => 'book');
 
+=item C<prefix> EXPERIMENTAL
+
+    prefix => 'some'
+
+prefix before table name section.
+
+    delete some from book
+
 =item C<query>
 
 Same as C<execute> method's C<query> option.
@@ -2258,6 +2272,14 @@ The above is same as the followin one.
         {id1 => 4, id2 => 5, title => 'Perl', author => 'Ken'},
         table => 'book'
     );
+
+=item C<prefix> EXPERIMENTAL
+
+    prefix => 'or replace'
+
+prefix before table name section
+
+    insert or replace into book
 
 =item C<primary_key>
 
@@ -2766,6 +2788,14 @@ Update data.
 If C<update> method's arguments is odd numbers, first argument is received as C<param>.
 
     $dbi->update({title => 'Perl'}, table => 'book', where => {id => 2});
+
+=item C<prefix> EXPERIMENTAL
+
+    prefix => 'or replace'
+
+prefix before table name section
+
+    update or replace book
 
 =item C<primary_key>
 
