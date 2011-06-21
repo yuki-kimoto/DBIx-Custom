@@ -1,3 +1,6 @@
+0.1696
+    - added EXPERIMENTAL insert, update, and select method prefix option
+    - fixed small insert, update, delete, select method id option bug
 0.1695
     - changed EXPERIMENTAL DBIx::Custom::Result type_rule_off method argument
     - added EXPERIMENTAL DBIx::Custom::Result type_rule_on method

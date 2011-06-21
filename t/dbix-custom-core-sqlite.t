@@ -2432,15 +2432,14 @@ is($dbi->select(table => 'table1')->one->{key2}, 2);
 is($dbi->select(table => 'table1')->one->{key3}, 3);
 
 $dbi->delete_all(table => 'table1');
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->insert(
     primary_key => 'key1', 
     table => 'table1',
-    id => 1,
+    id => 0,
     param => {key2 => 2, key3 => 3}
 );
 
-is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key1}, 0);
 is($dbi->select(table => 'table1')->one->{key2}, 2);
 is($dbi->select(table => 'table1')->one->{key3}, 3);
 
@@ -2497,14 +2496,14 @@ is($dbi->select(table => 'table1')->one->{key2}, 2);
 is($dbi->select(table => 'table1')->one->{key3}, 4);
 
 $dbi->delete_all(table => 'table1');
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->insert(table => 'table1', param => {key1 => 0, key2 => 2, key3 => 3});
 $dbi->update(
     table => 'table1',
     primary_key => 'key1',
-    id => 1,
+    id => 0,
     param => {key3 => 4}
 );
-is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key1}, 0);
 is($dbi->select(table => 'table1')->one->{key2}, 2);
 is($dbi->select(table => 'table1')->one->{key3}, 4);
 
@@ -2548,11 +2547,11 @@ $dbi->delete(
 );
 is_deeply($dbi->select(table => 'table1')->all, []);
 
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->insert(table => 'table1', param => {key1 => 0, key2 => 2, key3 => 3});
 $dbi->delete(
     table => 'table1',
     primary_key => 'key1',
-    id => 1,
+    id => 0,
 );
 is_deeply($dbi->select(table => 'table1')->all, []);
 
@@ -2588,14 +2587,14 @@ is($row->{key2}, 2);
 is($row->{key3}, 3);
 
 $dbi->delete_all(table => 'table1');
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->insert(table => 'table1', param => {key1 => 0, key2 => 2, key3 => 3});
 $result = $dbi->select(
     table => 'table1',
     primary_key => 'key1',
-    id => 1,
+    id => 0,
 );
 $row = $result->one;
-is($row->{key1}, 1);
+is($row->{key1}, 0);
 is($row->{key2}, 2);
 is($row->{key3}, 3);
 

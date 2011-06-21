@@ -1,6 +1,6 @@
 package DBIx::Custom;
 
-our $VERSION = '0.1695';
+our $VERSION = '0.1696';
 use 5.008001;
 
 use Object::Simple -base;
@@ -259,7 +259,7 @@ sub delete {
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     
     # Where
-    $where = $self->_create_param_from_id($id, $primary_key) if $id;
+    $where = $self->_create_param_from_id($id, $primary_key) if defined $id;
     my $where_clause = '';
     if (ref $where) {
         $where = $self->_where_to_obj($where);
@@ -545,7 +545,7 @@ sub insert {
     }
 
     # Merge parameter
-    if ($id) {
+    if (defined $id) {
         my $id_param = $self->_create_param_from_id($id, $primary_key);
         $param = $self->merge_param($id_param, $param);
     }
@@ -853,7 +853,7 @@ sub select {
     
     # Where
     my $where_clause = '';
-    $where = $self->_create_param_from_id($id, $primary_key) if $id;
+    $where = $self->_create_param_from_id($id, $primary_key) if defined $id;
     if (ref $where) {
         $where = $self->_where_to_obj($where);
         $where_param = keys %$where_param
@@ -1060,7 +1060,7 @@ sub update {
     my $update_clause = $self->update_param($param);
 
     # Where
-    $where = $self->_create_param_from_id($id, $primary_key) if $id;
+    $where = $self->_create_param_from_id($id, $primary_key) if defined $id;
     my $where_clause = '';
     if (ref $where) {
         $where = $self->_where_to_obj($where);
@@ -1246,7 +1246,7 @@ sub _create_param_from_id {
     
     # Create parameter
     my $param = {};
-    if ($id) {
+    if (defined $id) {
         $id = [$id] unless ref $id;
         croak qq{"id" must be constant value or array reference}
             . " (" . (caller 1)[3] . ")"
