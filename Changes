@@ -1,4 +1,6 @@
 0.1696
+    - added new argument format update, delete, select method where option
+    - create_query is DEPRECATED! use query option of each method instead.
     - added EXPERIMENTAL insert, update, and select method prefix option
     - fixed small insert, update, delete, select method id option bug
 0.1695

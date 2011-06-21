@@ -19,7 +19,7 @@ This module have the following features.
 
 =item * Creating where clause flexibly
 
-=imte * Support model
+=item * Support model
 
 =back
 
