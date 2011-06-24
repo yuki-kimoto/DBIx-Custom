@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1696';
+our $VERSION = '0.1670';
 use 5.008001;
 
 use Carp 'croak';
@@ -588,6 +588,48 @@ sub include_model {
     }
     
     return $self;
+}
+
+sub map_param {
+    my $self = shift;
+    my $param = shift;
+    my %map = @_;
+    
+    # Mapping
+    my $map_param = {};
+    foreach my $key (keys %map) {
+        my $value_cb;
+        my $condition;
+        my $map_key;
+        
+        # Get mapping information
+        if (ref $map{$key} eq 'ARRAY') {
+            foreach my $some (@{$map{$key}}) {
+                $map_key = $some unless ref $some;
+                $condition = $some->{if} if ref $some eq 'HASH';
+                $value_cb = $some if ref $some eq 'CODE';
+            }
+        }
+        else {
+            $map_key = $map{$key};
+        }
+        $value_cb ||= sub { $_[0] };
+        $condition ||= sub { defined $_[0] && length $_[0] };
+
+        # Map parameter
+        my $value;
+        if (ref $condition eq 'CODE') {
+            $map_param->{$map_key} = $value_cb->($param->{$key})
+              if $condition->($param->{$key});
+        }
+        elsif ($condition eq 'exists') {
+            $map_param->{$map_key} = $value_cb->($param->{$key})
+              if exists $param->{$key};
+        }
+        else { croak qq/Condition must be code reference or "exists" / . _subname }
+    }
+    
+    return $map_param;
 }
 
 sub merge_param {
@@ -2336,6 +2378,54 @@ You can get model object by C<model>.
     my $company_model = $dbi->model('company');
 
 See L<DBIx::Custom::Model> to know model features.
+
+=head2 C<map_param> EXPERIMENTAL
+
+    my $map_param = $dbi->map_param(
+        {id => 1, authro => 'Ken', price => 1900},
+        'id' => 'book.id',
+        'author' => ['book.author' => sub { '%' . $_[0] . '%' }],
+        'price' => [
+            'book.price', {if => sub { length $_[0] }}
+        ]
+    );
+
+Map paramters to other key and value. First argument is original
+parameter. this is hash reference. Rest argument is mapping.
+By default, Mapping is done if the value length is not zero.
+
+=over 4
+
+=item Key mapping
+
+    'id' => 'book.id'
+
+This is only key mapping. Value is same as original one.
+
+    (id => 1) is mapped to ('book.id' => 1) if value length is not zero.
+
+=item Key and value mapping
+
+    'author' => ['book.author' => sub { '%' . $_[0] . '%' }]
+
+This is key and value mapping. Frist element of array reference
+is mapped key name, second element is code reference to map the value.
+
+    (author => 'Ken') is mapped to ('book.author' => '%Ken%')
+      if value length is not zero.
+
+=item Condition
+
+    'price' => ['book.price', {if => 'exists'}]
+    'price' => ['book.price', sub { '%' . $_[0] . '%' }, {if => 'exists'}]
+    'price' => ['book.price', {if => sub { defined shift }}]
+
+If you need condition, you can sepecify it. this is code reference
+or 'exists'. By default, condition is the following one.
+
+    sub { defined $_[0] && length $_[0] }
+
+=back
 
 =head2 C<merge_param>
 

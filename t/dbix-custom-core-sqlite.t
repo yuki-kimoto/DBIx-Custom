@@ -3204,4 +3204,48 @@ is($dbi->separator, '__');
 eval { $dbi->separator('?') };
 like($@, qr/Separator/);
 
+
+test 'map_param';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$param = $dbi->map_param(
+    {id => 1, author => 'Ken', price => 1900},
+    id => 'book.id',
+    author => ['book.author', sub { '%' . $_[0] . '%' }],
+    price => ['book.price', {if => sub { $_[0] eq 1900 }}]
+);
+is_deeply($param, {'book.id' => 1, 'book.author' => '%Ken%',
+  'book.price' => 1900});
+
+$param = $dbi->map_param(
+    {id => 0, author => 0, price => 0},
+    id => 'book.id',
+    author => ['book.author', sub { '%' . $_[0] . '%' }],
+    price => ['book.price', sub { '%' . $_[0] . '%' },
+      {if => sub { $_[0] eq 0 }}]
+);
+is_deeply($param, {'book.id' => 0, 'book.author' => '%0%', 'book.price' => '%0%'});
+
+$param = $dbi->map_param(
+    {id => '', author => '', price => ''},
+    id => 'book.id',
+    author => ['book.author', sub { '%' . $_[0] . '%' }],
+    price => ['book.price', sub { '%' . $_[0] . '%' },
+      {if => sub { $_[0] eq 1 }}]
+);
+is_deeply($param, {});
+
+$param = $dbi->map_param(
+    {id => undef, author => undef, price => undef},
+    id => 'book.id',
+    price => ['book.price', {if => 'exists'}]
+);
+is_deeply($param, {'book.price' => undef});
+
+$param = $dbi->map_param(
+    {price => 'a'},
+    id => ['book.id', {if => 'exists'}],
+    price => ['book.price', sub { '%' . $_[0] }, {if => 'exists'}]
+);
+is_deeply($param, {'book.price' => '%a'});
+
 =cut

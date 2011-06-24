@@ -1,3 +1,5 @@
+0.1697
+    - added EXPERIMENTAL map_param method
 0.1696
     - added new argument format update, delete, select method where option
     - create_query is DEPRECATED! use query option of each method instead.
