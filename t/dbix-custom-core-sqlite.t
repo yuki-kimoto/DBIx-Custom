@@ -3272,4 +3272,18 @@ $param = $dbi->map_param(
 );
 is_deeply($param, {'book.price' => '%a'});
 
+
+test 'table_alias';
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+$dbi->execute("create table table1 (key1 Date, key2 datetime)");
+$dbi->type_rule(
+    into1 => {
+        date => sub { uc $_[0] }
+    }
+);
+$dbi->execute("insert into table1 (key1) values (:table2.key1)", {'table2.key1' => 'a'},
+  table_alias => {table2 => 'table1'});
+$result = $dbi->select(table => 'table1');
+is($result->one->{key1}, 'A');
+
 =cut

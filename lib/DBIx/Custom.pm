@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1697';
+our $VERSION = '0.1698';
 use 5.008001;
 
 use Carp 'croak';
@@ -19,7 +19,7 @@ use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 
 our @COMMON_ARGS = qw/bind_type table query filter id primary_key
-                      type_rule_off type_rule1_off type_rule2_off type/;
+  type_rule_off type_rule1_off type_rule2_off type table_alias/;
 
 has [qw/connector dsn password quote user/],
     cache => 0,
@@ -305,6 +305,7 @@ sub execute {
         2 => delete $args{type_rule2_off}
     };
     my $query_return = delete $args{query};
+    my $table_alias = delete $args{table_alias} || {};
     
     # Check argument names
     foreach my $name (keys %args) {
@@ -340,11 +341,17 @@ sub execute {
             foreach my $i (1 .. 2) {
                 unless ($type_rule_off_parts->{$i}) {
                     my $into = $self->{"_into$i"} || {};
+                    
+                    my $alias = $table;
+                    $table = $table_alias->{$alias}
+                      if defined $alias && $table_alias->{$alias};
+                    
                     if (defined $table && $into->{$table} &&
                         (my $rule = $into->{$table}->{$column}))
                     {
                         $type_filters->{$i}->{$column} = $rule;
                         $type_filters->{$i}->{"$table.$column"} = $rule;
+                        $type_filters->{$i}->{"$alias.$column"} = $rule if $alias ne $table;
                     }
                 }
             }
@@ -2124,6 +2131,14 @@ Specify database bind data type.
 This is used to bind parameter by C<bind_param> of statment handle.
 
     $sth->bind_param($pos, $value, DBI::SQL_BLOB);
+
+=item C<table_alias> EXPERIMENTAL
+
+    table_alias => {user => 'hiker'}
+
+Table alias. Key is real table name, value is alias table name.
+If you set C<table_alias>, you can enable C<into1> and C<into2> type rule
+on alias table name.
 
 =item C<type_rule_off> EXPERIMENTAL
 

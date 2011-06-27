@@ -1,5 +1,6 @@
 0.1698
     - fixed DBIx::Custom::Where to_string method small bug
+    - added EXPERIMENTAL execute method table_alias option
 0.1697
     - added EXPERIMENTAL map_param method
 0.1696
