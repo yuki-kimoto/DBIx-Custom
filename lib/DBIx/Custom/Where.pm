@@ -67,20 +67,24 @@ sub _parse {
               qq{"$op" is passed} . _subname . ")"
           unless $VALID_OPERATIONS{$op};
         
+        my $pushed_array;
         # Parse internal clause
         for (my $i = 1; $i < @$clause; $i++) {
             my $pushed = $self->_parse($clause->[$i], $where, $count, $op);
             push @$where, $op if $pushed;
+            $pushed_array = 1 if $pushed;
         }
         pop @$where if $where->[-1] eq $op;
         
         # Undo
         if ($where->[-1] eq '(') {
             pop @$where;
-            pop @$where;
+            pop @$where if ($where->[-1] || '') eq $op;
         }
         # End
         else { push @$where, ')' }
+        
+        return $pushed_array;
     }
     
     # String
@@ -139,6 +143,7 @@ sub _parse {
         }
         return $pushed;
     }
+    return;
 }
 
 1;

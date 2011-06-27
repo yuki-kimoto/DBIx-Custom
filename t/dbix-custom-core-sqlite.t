@@ -1342,6 +1342,30 @@ is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
 eval {$dbi->where(ppp => 1) };
 like($@, qr/invalid/);
 
+$where = $dbi->where(
+    clause => ['and', ['or'], ['and', 'key1 = :key1', 'key2 = :key2']],
+    param => {key1 => 1, key2 => 2}
+);
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+
+$where = $dbi->where(
+    clause => ['and', ['or'], ['or', ':key1', ':key2']],
+    param => {}
+);
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+
 test 'dbi_option default';
 $dbi = DBIx::Custom->new;
 is_deeply($dbi->dbi_option, {});
