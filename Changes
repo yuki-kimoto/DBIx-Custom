@@ -1,3 +1,17 @@
+0.1699
+    - added EXPERIMENTAL order method
+    - added EXPERIMENTAL DBIx::Custom::Order module
+    - changed backword compatible policy
+      ------------------------------------------------------------------------
+      If a functionality is DEPRECATED, you can know it by DEPRECATED warnings
+      except for attribute method.
+      You can check all DEPRECATED functionalities by document.
+      DEPRECATED functionality is removed after five years,
+      but if at least one person use the functionality and tell me that thing
+      I extend one year each time you tell me it.
+
+      EXPERIMENTAL functionality will be changed without warnings.
+      ------------------------------------------------------------------------
 0.1698
     - fixed DBIx::Custom::Where to_string method small bug
     - added EXPERIMENTAL execute method table_alias option

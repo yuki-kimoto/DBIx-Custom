@@ -284,6 +284,7 @@ sub type_rule2_on {
 
 # DEPRECATED!
 sub end_filter {
+    warn "end_filter method is DEPRECATED!";
     my $self = shift;
     if (@_) {
         my $end_filter = {};
@@ -309,27 +310,24 @@ sub end_filter {
     }
     return $self->{end_filter} ||= {};
 }
-
 # DEPRECATED!
 sub remove_end_filter {
+    warn "remove_end_filter is DEPRECATED!";
     my $self = shift;
-    warn "remove_end_filter is DEPRECATED! use filter_off attribute instead";
     $self->{end_filter} = {};
     return $self;
 }
-
 # DEPRECATED!
 sub remove_filter {
+    warn "remove_filter is DEPRECATED!";
     my $self = shift;
-    warn "remove_filter is DEPRECATED! use filter_off attribute instead";
     $self->{filter} = {};
     return $self;
 }
-
 # DEPRECATED!
 sub default_filter {
-    my $self = shift;
     warn "default_filter is DEPRECATED!";
+    my $self = shift;
     if (@_) {
         my $fname = $_[0];
         if (@_ && !$fname) {
@@ -344,7 +342,6 @@ sub default_filter {
     }
     return $self->{default_filter};
 }
-
 # DEPRECATED!
 has 'filter_check'; 
 

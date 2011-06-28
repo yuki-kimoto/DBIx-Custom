@@ -12,6 +12,7 @@ use DBIx::Custom::QueryBuilder;
 use DBIx::Custom::Where;
 use DBIx::Custom::Model;
 use DBIx::Custom::Tag;
+use DBIx::Custom::Order;
 use DBIx::Custom::Util qw/_array_to_hash _subname/;
 use Encode qw/encode encode_utf8 decode_utf8/;
 
@@ -732,6 +733,11 @@ sub new {
 
 sub not_exists { bless {}, 'DBIx::Custom::NotExists' }
 
+sub order {
+    my $self = shift;
+    return DBIx::Custom::Order->new(@_);
+}
+
 sub register_filter {
     my $self = shift;
     
@@ -760,10 +766,10 @@ sub select {
     croak qq{"join" must be array reference } . _subname
       unless ref $join eq 'ARRAY';
     my $relation = delete $args{relation};
-    warn "select() relation option is DEPRECATED! use join option instead"
+    warn "select() relation option is DEPRECATED!"
       if $relation;
     my $param = delete $args{param} || {}; # DEPRECATED!
-    warn "select() param option is DEPRECATED! use where_param option instead"
+    warn "select() param option is DEPRECATED!"
       if keys %$param;
     my $where_param = delete $args{where_param} || $param || {};
     my $wrap = delete $args{wrap};
@@ -1244,7 +1250,7 @@ sub _connect {
     
     # Attributes
     my $dsn = $self->data_source;
-    warn "data_source is DEPRECATED! use dsn instead\n"
+    warn "data_source is DEPRECATED!\n"
       if $dsn;
     $dsn ||= $self->dsn;
     croak qq{"dsn" must be specified } . _subname
@@ -1420,7 +1426,6 @@ sub _where_to_obj {
     return $obj;
 }
 
-# DEPRECATED!
 sub _apply_filter {
     my ($self, $table, @cinfos) = @_;
 
@@ -1500,10 +1505,7 @@ sub create_query {
 sub apply_filter {
     my $self = shift;
     
-    warn "apply_filter is DEPRECATED! " . 
-         "use type_rule method and DBIx::Custom::Result filter method, " .
-         "instead";
-    
+    warn "apply_filter is DEPRECATED!";
     return $self->_apply_filter(@_);
 }
 
@@ -1740,7 +1742,7 @@ sub _add_relation_table {
 
 =head1 NAME
 
-DBIx::Custom - Useful database access, respecting SQL!
+DBIx::Custom - Execute insert, update, delete, and select statement easily
 
 =head1 SYNOPSYS
 
@@ -2503,6 +2505,12 @@ Create a new L<DBIx::Custom> object.
 DBIx::Custom::NotExists object, indicating the column is not exists.
 This is used by C<clause> of L<DBIx::Custom::Where> .
 
+=head2 C<order> EXPERIMENTAL
+
+    my $order = $dbi->order;
+
+Create a new L<DBIx::Custom::Order> object.
+
 =head2 C<register_filter>
 
     $dbi->register_filter(
@@ -2931,10 +2939,91 @@ executed SQL and bind values are printed to STDERR.
 
 DEBUG output encoding. Default to UTF-8.
 
-=head1 STABILITY
+=head1 DEPRECATED FUNCTIONALITIES
 
-L<DBIx::Custom> is stable. APIs keep backword compatible
-except EXPERIMENTAL one in the feature.
+L<DBIx::Custom>
+
+    # Attribute methods
+    data_source # Removed at 2017/1/1
+    dbi_options # Removed at 2017/1/1
+    filter_check # Removed at 2017/1/1
+    reserved_word_quote # Removed at 2017/1/1
+    
+    # Methods
+    create_query # Removed at 2017/1/1
+    apply_filter # Removed at 2017/1/1
+    select_at # Removed at 2017/1/1
+    delete_at # Removed at 2017/1/1
+    update_at # Removed at 2017/1/1
+    insert_at # Removed at 2017/1/1
+    register_tag # Removed at 2017/1/1
+    default_bind_filter # Removed at 2017/1/1
+    default_fetch_filter # Removed at 2017/1/1
+    insert_param_tag # Removed at 2017/1/1
+    register_tag_processor # Removed at 2017/1/1
+    update_param_tag # Removed at 2017/1/1
+    
+    # Options
+    select method relation option # Removed at 2017/1/1
+    select method param option # Removed at 2017/1/1
+    
+    # Others
+    execute("select * from {= title}"); # execute tag parsing functionality
+                                        # Removed at 2017/1/1
+
+L<DBIx::Custom::Model>
+
+    # Attribute method
+    filter # Removed at 2017/1/1
+    name # Removed at 2017/1/1
+    type # Removed at 2017/1/1
+
+L<DBIx::Custom::Query>
+    
+    # Attribute method
+    default_filter # Removed at 2017/1/1
+
+L<DBIx::Custom::QueryBuilder>
+    
+    # Attribute method
+    tags # Removed at 2017/1/1
+    tag_processors # Removed at 2017/1/1
+    
+    # Method
+    register_tag # Removed at 2017/1/1
+    register_tag_processor # Removed at 2017/1/1
+    
+    # Others
+    build_query("select * from {= title}"); # tag parsing functionality
+                                            # Removed at 2017/1/1
+
+L<DBIx::Custom::Result>
+    
+    # Attribute method
+    filter_check # Removed at 2017/1/1
+    
+    # Methods
+    end_filter # Removed at 2017/1/1
+    remove_end_filter # Removed at 2017/1/1
+    remove_filter # Removed at 2017/1/1
+    default_filter # Removed at 2017/1/1
+
+L<DBIx::Custom::Tag>
+
+    This module is DEPRECATED! # Removed at 2017/1/1
+
+=head1 BACKWORD COMPATIBLE POLICY
+
+If a functionality is DEPRECATED, you can know it by DEPRECATED warnings
+except for attribute method.
+You can check all DEPRECATED functionalities by document.
+DEPRECATED functionality is removed after five years,
+but if at least one person use the functionality and tell me that thing
+I extend one year each time you tell me it.
+
+EXPERIMENTAL functionality will be changed without warnings.
+
+This policy is changed at 2011/6/28
 
 =head1 BUGS
 

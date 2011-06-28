@@ -3286,4 +3286,25 @@ $dbi->execute("insert into table1 (key1) values (:table2.key1)", {'table2.key1' 
 $result = $dbi->select(table => 'table1');
 is($result->one->{key1}, 'A');
 
+
+test 'order';
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+{
+    $dbi->execute("create table table1 (key1, key2)");
+    $dbi->insert({key1 => 1, key2 => 1}, table => 'table1');
+    $dbi->insert({key1 => 1, key2 => 3}, table => 'table1');
+    $dbi->insert({key1 => 2, key2 => 2}, table => 'table1');
+    $dbi->insert({key1 => 2, key2 => 4}, table => 'table1');
+    my $order = $dbi->order;
+    $order->prepend('key1', 'key2 desc');
+    $result = $dbi->select(table => 'table1', append => "$order");
+    is_deeply($result->all, [{key1 => 1, key2 => 3}, {key1 => 1, key2 => 1},
+      {key1 => 2, key2 => 4}, {key1 => 2, key2 => 2}]);
+    $order->prepend('key1 desc');
+    $result = $dbi->select(table => 'table1', append => "$order");
+    is_deeply($result->all, [{key1 => 2, key2 => 4}, {key1 => 2, key2 => 2},
+      {key1 => 1, key2 => 3}, {key1 => 1, key2 => 1}]);
+}
+
+
 =cut

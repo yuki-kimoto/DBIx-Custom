@@ -3,6 +3,8 @@ use strict;
 use warnings;
 use DBI;
 
+$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
+
 BEGIN {
     eval { require DBD::SQLite; 1 }
         or plan skip_all => 'DBD::SQLite required';

@@ -284,7 +284,7 @@ has tag_processors => sub { {} };
 # DEPRECATED!
 sub register_tag_processor {
     my $self = shift;
-    warn "register_tag_processor is DEPRECATED! use register_tag instead";
+    warn "register_tag_processor is DEPRECATED!";
     # Merge tag
     my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $self->tag_processors({%{$self->tag_processors}, %{$tag_processors}});
