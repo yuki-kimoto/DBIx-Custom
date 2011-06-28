@@ -3306,5 +3306,14 @@ $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
       {key1 => 1, key2 => 3}, {key1 => 1, key2 => 1}]);
 }
 
+test 'tag_parse';
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+$dbi->tag_parse(0);
+{
+    $dbi->execute("create table table1 (key1, key2)");
+    $dbi->insert({key1 => 1, key2 => 1}, table => 'table1');
+    eval {$dbi->execute("select * from table1 where {= key1}", {key1 => 1})};
+    ok($@);
+}
 
 =cut

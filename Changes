@@ -1,4 +1,5 @@
 0.1699
+    - added tag_parse attribute.
     - added EXPERIMENTAL order method
     - added EXPERIMENTAL DBIx::Custom::Order module
     - changed backword compatible policy

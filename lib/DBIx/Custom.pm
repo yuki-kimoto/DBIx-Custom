@@ -56,7 +56,8 @@ has [qw/connector dsn password quote user/],
     query_builder => sub { DBIx::Custom::QueryBuilder->new },
     result_class  => 'DBIx::Custom::Result',
     safety_character => '\w',
-    stash => sub { {} };
+    stash => sub { {} },
+    tag_parse => 1;
 
 our $AUTOLOAD;
 sub AUTOLOAD {
@@ -1138,6 +1139,7 @@ sub _create_query {
 
         # Create query
         my $builder = $self->query_builder;
+        $builder->{_tag_parse} = $self->tag_parse;
         $query = $builder->build_query($source);
 
         # Remove reserved word quote
@@ -1931,6 +1933,14 @@ Result class, default to L<DBIx::Custom::Result>.
 
 Regex of safety character for table and column name, default to '\w'.
 Note that you don't have to specify like '[\w]'.
+
+=head2 C<tag_parse>
+
+    my $tag_parse = $dbi->tag_parse(0);
+    $dbi = $dbi->tag_parse;
+
+Enable DEPRECATED tag parsing functionality, default to 1.
+If you want to disable tag parsing functionality, set to 0.
 
 =head2 C<user>
 
@@ -2948,6 +2958,7 @@ L<DBIx::Custom>
     dbi_options # Removed at 2017/1/1
     filter_check # Removed at 2017/1/1
     reserved_word_quote # Removed at 2017/1/1
+    cache_method # Removed at 2017/1/1
     
     # Methods
     create_query # Removed at 2017/1/1
@@ -2970,6 +2981,7 @@ L<DBIx::Custom>
     # Others
     execute("select * from {= title}"); # execute tag parsing functionality
                                         # Removed at 2017/1/1
+    Query caching # Removed at 2017/1/1
 
 L<DBIx::Custom::Model>
 
