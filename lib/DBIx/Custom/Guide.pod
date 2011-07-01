@@ -17,7 +17,7 @@ This module have the following features.
 
 =item * Filtering by data type. and you can set filter to any column
 
-=item * Creating where clause flexibly
+=item * Creating where clause and order by clause flexibly
 
 =item * Support model
 
@@ -25,7 +25,7 @@ This module have the following features.
 
 =head1 GUIDE
 
-=head2 Connect To Database
+=head2 Connect to database
 
     use DBIx::Custom;
     my $dbi = DBIx::Custom->connect(
@@ -40,7 +40,7 @@ C<dsn> is data source name, C<user> is user name, C<password> is password.
 
 C<dbi_option> is L<DBI> option.
 By default, the following option is set.
-Fatal error throw exeption and commit mode is auto commit.
+Exeption is thrown when fatal error occur and commit mode is auto commit.
 
     {
         RaiseError  =>  1
@@ -48,7 +48,7 @@ Fatal error throw exeption and commit mode is auto commit.
         AutoCommit  =>  1
     }
 
-=head2 Execute Query
+=head2 Execute query
 
 =head3 Insert Statement : C<insert>
 

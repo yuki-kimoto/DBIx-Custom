@@ -64,7 +64,7 @@ sub fetch {
     my $type_rule1 = $self->type_rule->{from1} || {};
     my $type_rule2 = $self->type_rule->{from2} || {};
     my $filter = $self->filter;
-    my $end_filter = $self->end_filter;
+    my $end_filter = $self->{end_filter} || {};
     for (my $i = 0; $i < @$columns; $i++) {
         
         # Column
@@ -124,7 +124,7 @@ sub fetch_hash {
     # Filter
     my $hash_row = {};
     my $filter  = $self->filter;
-    my $end_filter = $self->end_filter || {};
+    my $end_filter = $self->{end_filter} || {};
     my $columns = $self->{sth}->{NAME};
     my $types = $self->{sth}->{TYPE};
     my $type_rule1 = $self->type_rule->{from1} || {};
