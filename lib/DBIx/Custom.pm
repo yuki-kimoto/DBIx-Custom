@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1700';
+our $VERSION = '0.1701';
 use 5.008001;
 
 use Carp 'croak';
@@ -52,6 +52,7 @@ has [qw/connector dsn password quote user/],
             decode_utf8 => sub { decode_utf8($_[0]) }
         }
     },
+    last_sql => '',
     models => sub { {} },
     query_builder => sub { DBIx::Custom::QueryBuilder->new },
     result_class  => 'DBIx::Custom::Result',
@@ -317,6 +318,10 @@ sub execute {
     
     # Create query
     $query = $self->_create_query($query) unless ref $query;
+    
+    # Save query
+    $self->last_sql($query->sql);
+
     return $query if $query_return;
     $filter ||= $query->filter;
     
@@ -1158,6 +1163,9 @@ sub _create_query {
         ) if $cache;
     }
     
+    # Save sql
+    $self->last_sql($query->sql);
+    
     # Prepare statement handle
     my $sth;
     eval { $sth = $self->dbh->prepare($query->{sql})};
@@ -1888,6 +1896,13 @@ default to the following values.
     $dbi = $dbi->filters(\%filters);
 
 Filters, registered by C<register_filter> method.
+
+=head2 C<last_sql> EXPERIMENTAL
+
+    my $last_sql = $dbi->last_sql;
+    $dbi = $dbi->last_sql($last_sql);
+
+Get last successed SQL executed by C<execute> method.
 
 =head2 C<models>
 

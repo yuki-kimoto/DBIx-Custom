@@ -3316,4 +3316,15 @@ $dbi->tag_parse(0);
     ok($@);
 }
 
+test 'last_sql';
+{
+    my $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+    $dbi->execute("create table table1 (key1, key2)");
+    $dbi->execute('select * from table1');
+    is($dbi->last_sql, 'select * from table1;');
+    
+    eval{$dbi->execute("aaa")};
+    is($dbi->last_sql, 'aaa;');
+    
+}
 =cut
