@@ -1,4 +1,5 @@
 0.1701
+    - simplified arguments check
     - added EXPERIMENTAL each_table method
     - select method column option [COLUMN, as => ALIAS] format is DEPRECATED!
       changed to [COLUMN => ALIAS]

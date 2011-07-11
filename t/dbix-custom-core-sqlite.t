@@ -350,7 +350,7 @@ is_deeply($rows, [{key1 => 1, key2 => 22, key3 => 3, key4 => 4, key5 => 5},
 
 $result = $dbi->update(table => 'table1', param => {key2 => 11}, where => {key1 => 1}, append => '   ');
 
-eval{$dbi->update(table => 'table1', noexist => 1)};
+eval{$dbi->update(table => 'table1', where => {key1 => 1}, noexist => 1)};
 like($@, qr/noexist/, "invalid");
 
 eval{$dbi->update(table => 'table1')};
@@ -483,7 +483,7 @@ $dbi->delete(table => 'table1', where => {key1 => 1, key2 => 2});
 $rows = $dbi->select(table => 'table1')->all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "delete multi key");
 
-eval{$dbi->delete(table => 'table1', noexist => 1)};
+eval{$dbi->delete(table => 'table1', where => {key1 => 1}, noexist => 1)};
 like($@, qr/noexist/, "invalid");
 
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});

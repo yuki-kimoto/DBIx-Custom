@@ -19,9 +19,6 @@ use Encode qw/encode encode_utf8 decode_utf8/;
 use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 
-our @COMMON_ARGS = qw/bind_type table query filter id primary_key
-  type_rule_off type_rule1_off type_rule2_off type table_alias/;
-
 has [qw/connector dsn password quote user/],
     cache => 0,
     cache_method => sub {
@@ -170,18 +167,9 @@ sub dbh {
     }
 }
 
-our %DELETE_ARGS = map { $_ => 1 } @COMMON_ARGS,
-  qw/where append allow_delete_all where_param prefix/;
-
 sub delete {
     my ($self, %args) = @_;
 
-    # Check arguments
-    foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option } . _subname
-          unless $DELETE_ARGS{$name};
-    }
-    
     # Arguments
     my $table = $args{table} || '';
     croak qq{"table" option must be specified. } . _subname
@@ -297,7 +285,10 @@ sub each_table {
     }
 }
 
-our %EXECUTE_ARGS = map { $_ => 1 } @COMMON_ARGS, 'param';
+our %VALID_ARGS = map { $_ => 1 } qw/append allow_delete_all
+  allow_update_all bind_type column filter id join param prefix primary_key
+  query relation table table_alias type type_rule_off type_rule1_off
+  type_rule2_off wrap/;
 
 sub execute {
     my $self = shift;
@@ -326,7 +317,7 @@ sub execute {
     # Check argument names
     foreach my $name (keys %args) {
         croak qq{"$name" is wrong option } . _subname
-          unless $EXECUTE_ARGS{$name};
+          unless $VALID_ARGS{$name};
     }
     
     # Create query
@@ -481,8 +472,6 @@ sub execute {
     else { return $affected }
 }
 
-our %INSERT_ARGS = map { $_ => 1 } @COMMON_ARGS, qw/param/;
-
 sub insert {
     my $self = shift;
     
@@ -492,7 +481,7 @@ sub insert {
     my %args = @_;
     my $table  = delete $args{table};
     croak qq{"table" option must be specified } . _subname
-      unless $table;
+      unless defined $table;
     my $p = delete $args{param} || {};
     $param  ||= $p;
     my $append = delete $args{append} || '';
@@ -503,12 +492,6 @@ sub insert {
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     my $prefix = delete $args{prefix};
-
-    # Check arguments
-    foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option } . _subname
-          unless $INSERT_ARGS{$name};
-    }
 
     # Merge parameter
     if (defined $id) {
@@ -767,9 +750,6 @@ sub register_filter {
     return $self;
 }
 
-our %SELECT_ARGS = map { $_ => 1 } @COMMON_ARGS,
-  qw/column where relation join param where_param wrap prefix/;
-
 sub select {
     my ($self, %args) = @_;
 
@@ -799,12 +779,6 @@ sub select {
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     my $prefix = delete $args{prefix};
-    
-    # Check arguments
-    foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option } . _subname
-          unless $SELECT_ARGS{$name};
-    }
     
     # Add relation tables(DEPRECATED!);
     $self->_add_relation_table($tables, $relation);
@@ -1034,9 +1008,6 @@ sub type_rule {
     return $self->{type_rule} || {};
 }
 
-our %UPDATE_ARGS = map { $_ => 1 } @COMMON_ARGS,
-  qw/param where allow_update_all where_param prefix/;
-
 sub update {
     my $self = shift;
 
@@ -1060,12 +1031,6 @@ sub update {
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     my $prefix = delete $args{prefix};
-    
-    # Check argument names
-    foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option } . _subname
-          unless $UPDATE_ARGS{$name};
-    }
 
     # Update clause
     my $update_clause = $self->update_param($param);
@@ -1536,7 +1501,7 @@ sub apply_filter {
 }
 
 # DEPRECATED!
-our %SELECT_AT_ARGS = (%SELECT_ARGS, where => 1, primary_key => 1);
+our %SELECT_AT_ARGS = (%VALID_ARGS, where => 1, primary_key => 1);
 sub select_at {
     my ($self, %args) = @_;
 
@@ -1566,7 +1531,7 @@ sub select_at {
 }
 
 # DEPRECATED!
-our %DELETE_AT_ARGS = (%DELETE_ARGS, where => 1, primary_key => 1);
+our %DELETE_AT_ARGS = (%VALID_ARGS, where => 1, primary_key => 1);
 sub delete_at {
     my ($self, %args) = @_;
 
@@ -1590,7 +1555,7 @@ sub delete_at {
 }
 
 # DEPRECATED!
-our %UPDATE_AT_ARGS = (%UPDATE_ARGS, where => 1, primary_key => 1);
+our %UPDATE_AT_ARGS = (%VALID_ARGS, where => 1, primary_key => 1);
 sub update_at {
     my $self = shift;
 
@@ -1619,7 +1584,7 @@ sub update_at {
 }
 
 # DEPRECATED!
-our %INSERT_AT_ARGS = (%INSERT_ARGS, where => 1, primary_key => 1);
+our %INSERT_AT_ARGS = (%VALID_ARGS, where => 1, primary_key => 1);
 sub insert_at {
     my $self = shift;
     
