@@ -5,9 +5,27 @@ use overload
   '""'     => sub { shift->to_string },
   fallback => 1;
 
-has orders => sub { [] };
 
-sub prepend { unshift @{shift->orders}, @_ }
+has orders => sub { [] },
+    quote => '';
+
+sub prepend {
+    my $self = shift;
+    
+    my $q = $self->quote;
+    foreach my $order (reverse @_) {
+        if (ref $order eq 'ARRAY') {
+            my $column = shift @$order;
+            $column = "$q$column$q" if defined $column;
+            my $derection = shift @$order;
+            $order = $column;
+            $order .= " $derection" if $derection;
+        }
+        unshift @{$self->orders}, $order;
+    }
+    
+    return $self;
+}
 
 sub to_string {
     my $self = shift;
@@ -60,6 +78,18 @@ and implements the following new ones.
     $order->prepend('title', 'author desc');
 
 Prepend order parts to C<orders>.
+
+You can pass array reference, which contain column name and direction.
+Column name is quoted properly
+    
+    # Column name and direction
+    $order->prepend(['book-title']);
+    $order->prepend([qw/book-title desc/]);
+
+This is expanded to the following way.
+
+    "book-title"
+    "book-title" desc
 
 =head2 C<to_string>
 

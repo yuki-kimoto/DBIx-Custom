@@ -737,7 +737,7 @@ sub not_exists { bless {}, 'DBIx::Custom::NotExists' }
 
 sub order {
     my $self = shift;
-    return DBIx::Custom::Order->new(@_);
+    return DBIx::Custom::Order->new(quote => $self->quote, @_);
 }
 
 sub register_filter {
