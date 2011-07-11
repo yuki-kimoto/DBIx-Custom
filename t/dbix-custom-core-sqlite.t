@@ -3327,4 +3327,15 @@ test 'last_sql';
     is($dbi->last_sql, 'aaa;');
     
 }
+
+test 'DBIx::Custom header';
+{
+    my $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+    $dbi->execute("create table table1 (key1, key2)");
+    my $result = $dbi->execute('select key1 as h1, key2 as h2 from table1');
+    
+    is_deeply($result->header, [qw/h1 h2/]);
+    
+}
+
 =cut

@@ -1,4 +1,5 @@
 0.1701
+    - added EXPERIMENTAL DBIx::Custom::Result header method
     - added EXPERIMENTAL last_sql attribute method
 0.1700
     - fixed end_filter DEPRECATED warnings bug

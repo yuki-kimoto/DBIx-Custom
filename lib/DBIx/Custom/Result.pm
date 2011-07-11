@@ -54,13 +54,15 @@ sub filter_on {
 sub fetch {
     my $self = shift;
     
+    # Info
+    my $columns = $self->{sth}->{NAME};
+    my $types = $self->{sth}->{TYPE};
+    
     # Fetch
     my @row = $self->{sth}->fetchrow_array;
     return unless @row;
     
     # Filtering
-    my $columns = $self->{sth}->{NAME};
-    my $types = $self->{sth}->{TYPE};
     my $type_rule1 = $self->type_rule->{from1} || {};
     my $type_rule2 = $self->type_rule->{from2} || {};
     my $filter = $self->filter;
@@ -117,6 +119,10 @@ sub fetch_first {
 sub fetch_hash {
     my $self = shift;
     
+    # Info
+    my $columns = $self->{sth}->{NAME};
+    my $types = $self->{sth}->{TYPE};
+    
     # Fetch
     my $row = $self->{sth}->fetchrow_arrayref;
     return unless $row;
@@ -125,8 +131,6 @@ sub fetch_hash {
     my $hash_row = {};
     my $filter  = $self->filter;
     my $end_filter = $self->{end_filter} || {};
-    my $columns = $self->{sth}->{NAME};
-    my $types = $self->{sth}->{TYPE};
     my $type_rule1 = $self->type_rule->{from1} || {};
     my $type_rule2 = $self->type_rule->{from2} || {};
     for (my $i = 0; $i < @$columns; $i++) {
@@ -214,6 +218,8 @@ sub fetch_multi {
     return unless @$rows;
     return $rows;
 }
+
+sub header { shift->sth->{NAME} }
 
 *one = \&fetch_hash_first;
 
@@ -481,6 +487,12 @@ By default, filterin is on.
 
 Turn filtering by C<filter> method on.
 By default, filterin is on.
+
+=head2 C<header> EXPERIMENTAL
+
+    my $header = $result->header;
+
+Get header column names.
 
 =head2 C<one>
 
