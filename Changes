@@ -1,4 +1,6 @@
 0.1701
+    - select method column option [COLUMN, as => ALIAS] format is DEPRECATED!
+      changed to [COLUMN => ALIAS]
     - added EXPERIMENTAL DBIx::Custom::Result header method
     - added EXPERIMENTAL last_sql attribute method
 0.1700

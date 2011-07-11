@@ -814,9 +814,12 @@ sub select {
                 $column = $self->column(%$column) if ref $column eq 'HASH';
             }
             elsif (ref $column eq 'ARRAY') {
-                croak "Format must be [COLUMN, as => ALIAS] " . _subname
-                  unless @$column == 3 && $column->[1] eq 'as';
-                $column = join(' ', $column->[0], 'as', $q . $column->[2] . $q);
+                if (@$column == 3 && $column->[1] eq 'as') {
+                    warn "[COLUMN, as => ALIAS] is DEPRECATED! use [COLUMN => ALIAS]";
+                    splice @$column, 1, 1;
+                }
+                
+                $column = join(' ', $column->[0], 'as', $q . $column->[1] . $q);
             }
             unshift @$tables, @{$self->_search_tables($column)};
             push @sql, ($column, ',');
@@ -2672,13 +2675,14 @@ This is expanded to the following one by using C<colomn> method.
     person.name as "person.name",
     person.age as "person.age"
 
-You can specify array of array reference.
+You can specify array of array reference, first argument is
+column name, second argument is alias.
 
     column => [
-        ['date(book.register_datetime)', as => 'book.register_date']
+        ['date(book.register_datetime)' => 'book.register_date']
     ];
 
-Alias is quoted and joined.
+Alias is quoted properly and joined.
 
     date(book.register_datetime) as "book.register_date"
 
