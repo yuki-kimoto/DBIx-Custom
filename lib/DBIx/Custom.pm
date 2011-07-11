@@ -284,6 +284,19 @@ sub each_column {
     }
 }
 
+sub each_table {
+    my ($self, $cb) = @_;
+    
+    # Iterate all tables
+    my $sth_tables = $self->dbh->table_info;
+    while (my $table_info = $sth_tables->fetchrow_hashref) {
+        
+        # Table
+        my $table = $table_info->{TABLE_NAME};
+        $self->$cb($table, $table_info);
+    }
+}
+
 our %EXECUTE_ARGS = map { $_ => 1 } @COMMON_ARGS, 'param';
 
 sub execute {
@@ -2076,6 +2089,21 @@ Argument is callback when one column is found.
 Callback receive four arguments, dbi object, table name,
 column name and column information.
 
+=head2 C<each_table> EXPERIMENTAL
+
+    $dbi->each_table(
+        sub {
+            my ($dbi, $table, $table_info) = @_;
+            
+            my $table_name = $table_info->{TABLE_NAME};
+        }
+    );
+
+Iterate all table informationsfrom database.
+Argument is callback when one table is found.
+Callback receive three arguments, dbi object, table name,
+table information.
+
 =head2 C<execute>
 
     my $result = $dbi->execute(
@@ -2973,75 +3001,77 @@ DEBUG output encoding. Default to UTF-8.
 L<DBIx::Custom>
 
     # Attribute methods
-    data_source # Removed at 2017/1/1
-    dbi_options # Removed at 2017/1/1
-    filter_check # Removed at 2017/1/1
-    reserved_word_quote # Removed at 2017/1/1
-    cache_method # Removed at 2017/1/1
+    data_source # will be removed at 2017/1/1
+    dbi_options # will be removed at 2017/1/1
+    filter_check # will be removed at 2017/1/1
+    reserved_word_quote # will be removed at 2017/1/1
+    cache_method # will be removed at 2017/1/1
     
     # Methods
-    create_query # Removed at 2017/1/1
-    apply_filter # Removed at 2017/1/1
-    select_at # Removed at 2017/1/1
-    delete_at # Removed at 2017/1/1
-    update_at # Removed at 2017/1/1
-    insert_at # Removed at 2017/1/1
-    register_tag # Removed at 2017/1/1
-    default_bind_filter # Removed at 2017/1/1
-    default_fetch_filter # Removed at 2017/1/1
-    insert_param_tag # Removed at 2017/1/1
-    register_tag_processor # Removed at 2017/1/1
-    update_param_tag # Removed at 2017/1/1
+    create_query # will be removed at 2017/1/1
+    apply_filter # will be removed at 2017/1/1
+    select_at # will be removed at 2017/1/1
+    delete_at # will be removed at 2017/1/1
+    update_at # will be removed at 2017/1/1
+    insert_at # will be removed at 2017/1/1
+    register_tag # will be removed at 2017/1/1
+    default_bind_filter # will be removed at 2017/1/1
+    default_fetch_filter # will be removed at 2017/1/1
+    insert_param_tag # will be removed at 2017/1/1
+    register_tag_processor # will be removed at 2017/1/1
+    update_param_tag # will be removed at 2017/1/1
     
     # Options
-    select method relation option # Removed at 2017/1/1
-    select method param option # Removed at 2017/1/1
+    select method relation option # will be removed at 2017/1/1
+    select method param option # will be removed at 2017/1/1
+    select method column option [COLUMN, as => ALIAS] format
+      # will be removed at 2017/1/1
     
     # Others
     execute("select * from {= title}"); # execute tag parsing functionality
-                                        # Removed at 2017/1/1
-    Query caching # Removed at 2017/1/1
+                                        # will be removed at 2017/1/1
+    Query caching # will be removed at 2017/1/1
 
 L<DBIx::Custom::Model>
 
     # Attribute method
-    filter # Removed at 2017/1/1
-    name # Removed at 2017/1/1
-    type # Removed at 2017/1/1
+    filter # will be removed at 2017/1/1
+    name # will be removed at 2017/1/1
+    type # will be removed at 2017/1/1
 
 L<DBIx::Custom::Query>
     
     # Attribute method
-    default_filter # Removed at 2017/1/1
+    default_filter # will be removed at 2017/1/1
 
 L<DBIx::Custom::QueryBuilder>
     
     # Attribute method
-    tags # Removed at 2017/1/1
-    tag_processors # Removed at 2017/1/1
+    tags # will be removed at 2017/1/1
+    tag_processors # will be removed at 2017/1/1
     
     # Method
-    register_tag # Removed at 2017/1/1
-    register_tag_processor # Removed at 2017/1/1
+    register_tag # will be removed at 2017/1/1
+    register_tag_processor # will be removed at 2017/1/1
     
     # Others
     build_query("select * from {= title}"); # tag parsing functionality
-                                            # Removed at 2017/1/1
+                                            # will be removed at 2017/1/1
 
 L<DBIx::Custom::Result>
     
     # Attribute method
-    filter_check # Removed at 2017/1/1
+    filter_check # will be removed at 2017/1/1
     
     # Methods
-    end_filter # Removed at 2017/1/1
-    remove_end_filter # Removed at 2017/1/1
-    remove_filter # Removed at 2017/1/1
-    default_filter # Removed at 2017/1/1
+    end_filter # will be removed at 2017/1/1
+    remove_end_filter # will be removed at 2017/1/1
+    remove_filter # will be removed at 2017/1/1
+    default_filter # will be removed at 2017/1/1
 
 L<DBIx::Custom::Tag>
 
-    This module is DEPRECATED! # Removed at 2017/1/1
+    This module is DEPRECATED! # will be removed at 2017/1/1
 
 =head1 BACKWORD COMPATIBLE POLICY
 
@@ -3050,11 +3080,11 @@ except for attribute method.
 You can check all DEPRECATED functionalities by document.
 DEPRECATED functionality is removed after five years,
 but if at least one person use the functionality and tell me that thing
-I extend one year each time you tell me it.
+I extend one year each time he tell me it.
 
 EXPERIMENTAL functionality will be changed without warnings.
 
-This policy is changed at 2011/6/28
+This policy was changed at 2011/6/28
 
 =head1 BUGS
 

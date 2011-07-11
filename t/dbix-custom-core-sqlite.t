@@ -905,6 +905,27 @@ is_deeply($infos,
     ]
     
 );
+test 'each_table';
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{2});
+$dbi->execute($CREATE_TABLE->{3});
+
+$infos = [];
+$dbi->each_table(sub {
+    my ($self, $table, $table_info) = @_;
+    
+    if ($table =~ /^table/) {
+         my $info = [$table, $table_info->{TABLE_NAME}];
+         push @$infos, $info;
+    }
+});
+$infos = [sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } @$infos];
+is_deeply($infos, 
+    [
+        ['table1', 'table1'],
+        ['table2', 'table2'],
+    ]
+);
 
 test 'limit';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
