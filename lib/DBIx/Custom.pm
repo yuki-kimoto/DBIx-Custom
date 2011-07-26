@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1701';
+our $VERSION = '0.1702';
 use 5.008001;
 
 use Carp 'croak';
@@ -1314,15 +1314,21 @@ sub _push_join {
         
         # Search table in join clause
         my $join_clause = $join->[$i];
+        my $j_clause = (split /\s+on\s+/, $join_clause)[-1];
+        $j_clause =~ s/'.+?'//g;
         my $q_re = quotemeta($q);
-        my $join_re = $q ? qr/\s$q_re?([^\.\s$q_re]+?)$q_re?\..+?\s$q_re?([^\.\s$q_re]+?)$q_re?\..+?$/
-                         : qr/\s([^\.\s]+?)\..+?\s([^\.\s]+?)\..+?$/;
-        if ($join_clause =~ $join_re) {
+        $j_clause =~ s/$q_re//g;
+        my $c = $self->safety_character;
+        my $join_re = qr/(?:^|\s)($c+)\.$c+\s+=\s+($c+)\.$c+/;
+        if ($j_clause =~ $join_re) {
             my $table1 = $1;
             my $table2 = $2;
             croak qq{right side table of "$join_clause" must be unique }
                 . _subname
               if exists $tree->{$table2};
+            croak qq{Same table "$table1" is specified} . _subname
+              if $table1 eq $table2;
+            
             $tree->{$table2}
               = {position => $i, parent => $table1, join => $join_clause};
         }
@@ -1878,7 +1884,7 @@ default to the following values.
 
 Filters, registered by C<register_filter> method.
 
-=head2 C<last_sql> EXPERIMENTAL
+=head2 C<last_sql>
 
     my $last_sql = $dbi->last_sql;
     $dbi = $dbi->last_sql($last_sql);
@@ -2054,7 +2060,7 @@ Argument is callback when one column is found.
 Callback receive four arguments, dbi object, table name,
 column name and column information.
 
-=head2 C<each_table> EXPERIMENTAL
+=head2 C<each_table>
 
     $dbi->each_table(
         sub {
@@ -2219,7 +2225,7 @@ The above is same as the followin one.
 
     $dbi->delete(where => {id1 => 4, id2 => 5}, table => 'book');
 
-=item C<prefix> EXPERIMENTAL
+=item C<prefix>
 
     prefix => 'some'
 
@@ -2315,7 +2321,7 @@ The above is same as the followin one.
         table => 'book'
     );
 
-=item C<prefix> EXPERIMENTAL
+=item C<prefix>
 
     prefix => 'or replace'
 
@@ -2654,7 +2660,7 @@ if C<column> is not specified, '*' is set.
 
     column => '*'
 
-You can specify hash of array reference. This is EXPERIMENTAL.
+You can specify hash of array reference.
 
     column => [
         {book => [qw/author title/]},
@@ -2716,7 +2722,7 @@ you can pass parameter by C<param> option.
     join  => ['inner join (select * from table2 where table2.key3 = :table2.key3)' . 
               ' as table2 on table1.key1 = table2.key1']
 
-=itme C<prefix> EXPERIMENTAL
+=itme C<prefix>
 
     prefix => 'SQL_CALC_FOUND_ROWS'
 
@@ -2868,7 +2874,7 @@ The above is same as the followin one.
         table => 'book'
     );
 
-=item C<prefix> EXPERIMENTAL
+=item C<prefix>
 
     prefix => 'or replace'
 

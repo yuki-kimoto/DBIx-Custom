@@ -488,7 +488,7 @@ By default, filterin is on.
 Turn filtering by C<filter> method on.
 By default, filterin is on.
 
-=head2 C<header> EXPERIMENTAL
+=head2 C<header>
 
     my $header = $result->header;
 
