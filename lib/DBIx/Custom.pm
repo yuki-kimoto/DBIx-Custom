@@ -1309,10 +1309,9 @@ sub _push_join {
     
     # Push join clause
     my $tree = {};
-    my $q = $self->_quote;
     for (my $i = 0; $i < @$join; $i++) {
         
-        # Search table in join clause
+        # Arrange
         my $join_clause;;
         my $option;
         if (ref $join->[$i] eq 'HASH') {
@@ -1323,34 +1322,35 @@ sub _push_join {
             $join_clause = $join->[$i];
             $option = {};
         };
-        my $j_clause = (split /\s+on\s+/, $join_clause)[-1];
-        $j_clause =~ s/'.+?'//g;
-        my $q_re = quotemeta($q);
-        $j_clause =~ s/$q_re//g;
-        my $c = $self->safety_character;
-        my $join_re = qr/(?:^|\s)($c+)\.$c+\s+=\s+($c+)\.$c+/;
-        
+
+        # Find tables in join clause
         my $table1;
         my $table2;
         if (my $table = $option->{table}) {
             $table1 = $table->[0];
             $table2 = $table->[1];
         }
-        elsif ($j_clause =~ $join_re) {
-            $table1 = $1;
-            $table2 = $2;
+        else {
+            my $q = $self->_quote;
+            my $j_clause = (split /\s+on\s+/, $join_clause)[-1];
+            $j_clause =~ s/'.+?'//g;
+            my $q_re = quotemeta($q);
+            $j_clause =~ s/$q_re//g;
+            my $c = $self->safety_character;
+            my $join_re = qr/(?:^|\s)($c+)\.$c+\s+=\s+($c+)\.$c+/;
+            if ($j_clause =~ $join_re) {
+                $table1 = $1;
+                $table2 = $2;
+            }
         }
         croak qq{join clause must have two table name after "on" keyword. } .
               qq{"$join_clause" is passed }  . _subname
           unless defined $table1 && defined $table2;
-
         croak qq{right side table of "$join_clause" must be unique }
             . _subname
           if exists $tree->{$table2};
-        
         croak qq{Same table "$table1" is specified} . _subname
           if $table1 eq $table2;
-        
         $tree->{$table2}
           = {position => $i, parent => $table1, join => $join_clause};
     }
@@ -2776,7 +2776,7 @@ the following SQL is created
     where company.name = ?;
 
 You can specify two table by yourself. This is useful when join parser can't parse
-the join clause correctly.
+the join clause correctly. This is EXPERIMENTAL.
 
     $dbi->select(
         table => 'book',
@@ -2803,7 +2803,7 @@ Same as C<execute> method's C<query> option.
 
 =item C<bind_type>
 
-Same as C<execute> method's C<type> option.
+Same as C<execute> method's C<bind_type> option.
 
 =item C<table>
 
@@ -2937,7 +2937,7 @@ Same as C<select> method's C<where> option.
 
 =item C<bind_type>
 
-Same as C<execute> method's C<type> option.
+Same as C<execute> method's C<bind_type> option.
 
 =item C<type_rule_off> EXPERIMENTAL
 
@@ -3031,7 +3031,8 @@ L<DBIx::Custom>
       # will be removed at 2017/1/1
     
     # Others
-    execute("select * from {= title}"); # execute tag parsing functionality
+    execute("select * from {= title}"); # execute method's
+                                        # tag parsing functionality
                                         # will be removed at 2017/1/1
     Query caching # will be removed at 2017/1/1
 
