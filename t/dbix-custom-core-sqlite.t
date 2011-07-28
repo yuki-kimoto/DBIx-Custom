@@ -2189,6 +2189,32 @@ $result = $dbi->select(
     ]
 );
 is_deeply($result->all, [{'table2.key3' => 4}]);
+$result = $dbi->select(
+    table => 'table1',
+    column => [{table2 => ['key3']}],
+    join => [
+        "left outer join table2 on table1.key1 = table2.key1 and table2.key3 = '4'"
+    ]
+);
+is_deeply($result->all, [{'table2.key3' => 4}]);
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->execute($CREATE_TABLE->{2});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 4});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
+$result = $dbi->select(
+    table => 'table1',
+    column => [{table2 => ['key3']}],
+    join => [
+        {
+            clause => "left outer join table2 on table2.key3 = '4' and table1.key1 = table2.key1",
+            table => ['table1', 'table2']
+        }
+    ]
+);
+is_deeply($result->all, [{'table2.key3' => 4}]);
 
 test 'mycolumn';
 $dbi = MyDBI8->connect($NEW_ARGS->{0});

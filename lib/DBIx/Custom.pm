@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1702';
+our $VERSION = '0.1703';
 use 5.008001;
 
 use Carp 'croak';
@@ -1313,29 +1313,46 @@ sub _push_join {
     for (my $i = 0; $i < @$join; $i++) {
         
         # Search table in join clause
-        my $join_clause = $join->[$i];
+        my $join_clause;;
+        my $option;
+        if (ref $join->[$i] eq 'HASH') {
+            $join_clause = $join->[$i]->{clause};
+            $option = {table => $join->[$i]->{table}};
+        }
+        else {
+            $join_clause = $join->[$i];
+            $option = {};
+        };
         my $j_clause = (split /\s+on\s+/, $join_clause)[-1];
         $j_clause =~ s/'.+?'//g;
         my $q_re = quotemeta($q);
         $j_clause =~ s/$q_re//g;
         my $c = $self->safety_character;
         my $join_re = qr/(?:^|\s)($c+)\.$c+\s+=\s+($c+)\.$c+/;
-        if ($j_clause =~ $join_re) {
-            my $table1 = $1;
-            my $table2 = $2;
-            croak qq{right side table of "$join_clause" must be unique }
-                . _subname
-              if exists $tree->{$table2};
-            croak qq{Same table "$table1" is specified} . _subname
-              if $table1 eq $table2;
-            
-            $tree->{$table2}
-              = {position => $i, parent => $table1, join => $join_clause};
+        
+        my $table1;
+        my $table2;
+        if (my $table = $option->{table}) {
+            $table1 = $table->[0];
+            $table2 = $table->[1];
         }
-        else {
-            croak qq{join clause must have two table name after "on" keyword. } .
-                  qq{"$join_clause" is passed }  . _subname
+        elsif ($j_clause =~ $join_re) {
+            $table1 = $1;
+            $table2 = $2;
         }
+        croak qq{join clause must have two table name after "on" keyword. } .
+              qq{"$join_clause" is passed }  . _subname
+          unless defined $table1 && defined $table2;
+
+        croak qq{right side table of "$join_clause" must be unique }
+            . _subname
+          if exists $tree->{$table2};
+        
+        croak qq{Same table "$table1" is specified} . _subname
+          if $table1 eq $table2;
+        
+        $tree->{$table2}
+          = {position => $i, parent => $table1, join => $join_clause};
     }
     
     # Search need tables
@@ -2757,6 +2774,21 @@ the following SQL is created
     from book
       left outer join company on book.company_id = company.id
     where company.name = ?;
+
+You can specify two table by yourself. This is useful when join parser can't parse
+the join clause correctly.
+
+    $dbi->select(
+        table => 'book',
+        column => ['company.location_id as location_id'],
+        where => {'company.name' => 'Orange'},
+        join => [
+            {
+                clause => 'left outer join location on company.location_id = location.id',
+                table => ['company', 'location']
+            }
+        ]
+    );
 
 =item C<primary_key>
 

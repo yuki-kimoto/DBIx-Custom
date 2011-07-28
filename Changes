@@ -1,3 +1,5 @@
+0.1703
+    - added join new syntax.
 0.1702
     - removed EXPERIMENTAL status of some methods.
     - fixed some join bug
