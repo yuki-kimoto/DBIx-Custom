@@ -307,6 +307,14 @@ $result = $dbi->execute($SELECT_SOURCES->{0});
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
 
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => \"'1'", key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+$result = $dbi->execute($SELECT_SOURCES->{0});
+$rows   = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "basic");
+
 test 'update';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});
 $dbi->execute($CREATE_TABLE->{1});
@@ -440,6 +448,17 @@ $dbi->update(table => 'table1', param => {key2 => 4},
 $result = $dbi->execute($SELECT_SOURCES->{0});
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+$dbi->update(table => 'table1', param => {key2 => \"'11'"}, where => {key1 => 1});
+$result = $dbi->execute($SELECT_SOURCES->{0});
+$rows   = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
+                  "basic");
 
 test 'update_all';
 $dbi = DBIx::Custom->connect($NEW_ARGS->{0});

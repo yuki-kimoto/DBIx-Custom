@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1704';
+our $VERSION = '0.1705';
 use 5.008001;
 
 use Carp 'croak';
@@ -84,12 +84,15 @@ sub assign_param {
     # Create set tag
     my @params;
     my $safety = $self->safety_character;
-    foreach my $column (keys %$param) {
+    foreach my $column (sort keys %$param) {
         croak qq{"$column" is not safety column name } . _subname
           unless $column =~ /^[$safety\.]+$/;
         my $column_quote = $self->_q($column);
         $column_quote =~ s/\./$self->_q(".")/e;
-        push @params, "$column_quote = :$column";
+        push @params, ref $param->{$column} eq 'SCALAR'
+          ? "$column_quote = " . ${$param->{$column}}
+          : "$column_quote = :$column";
+
     }
     my $tag = join(', ', @params);
     
@@ -515,13 +518,14 @@ sub insert_param {
     my $safety = $self->safety_character;
     my @columns;
     my @placeholders;
-    foreach my $column (keys %$param) {
+    foreach my $column (sort keys %$param) {
         croak qq{"$column" is not safety column name } . _subname
           unless $column =~ /^[$safety\.]+$/;
         my $column_quote = $self->_q($column);
         $column_quote =~ s/\./$self->_q(".")/e;
         push @columns, $column_quote;
-        push @placeholders, ":$column";
+        push @placeholders, ref $param->{$column} eq 'SCALAR'
+          ? ${$param->{$column}} : ":$column";
     }
     
     return '(' . join(', ', @columns) . ') ' . 'values ' .
@@ -2346,6 +2350,11 @@ Options is same as C<delete>.
 Execute insert statement. First argument is row data. Return value is
 affected row count.
 
+If you want to set constant value to row data, use scalar reference
+as parameter value.
+
+    {date => \"NOW()"}
+
 The following opitons are available.
 
 =over 4
@@ -2911,7 +2920,12 @@ This option is for Oracle and SQL Server paging process.
 
     $dbi->update({title => 'Perl'}, table  => 'book', where  => {id => 4});
 
-Execute update statement. First argument is update data.
+Execute update statement. First argument is update row data.
+
+If you want to set constant value to row data, use scalar reference
+as parameter value.
+
+    {date => \"NOW()"}
 
 The following opitons are available.
 

@@ -1,3 +1,6 @@
+0.1705
+    - insert and update method's param can set constant value by scalara reference
+      such as {date => \"NOW()"} This is EXPERIMENTAL.
 0.1704
     - added quote method's two character support like []
       for Microsoft SQL Server and Access
