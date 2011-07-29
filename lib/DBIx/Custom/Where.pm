@@ -107,7 +107,8 @@ sub _parse {
         # Remove quote
         my $column = $columns->[0];
         if (my $q = $self->quote) {
-            $column =~ s/$q//g;
+            $q = quotemeta($q);
+            $column =~ s/[$q]//g;
         }
         
         # Check safety

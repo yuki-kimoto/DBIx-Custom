@@ -7,16 +7,15 @@ use overload
 
 
 has orders => sub { [] },
-    quote => '';
+    dbi => '';
 
 sub prepend {
     my $self = shift;
     
-    my $q = $self->quote;
     foreach my $order (reverse @_) {
         if (ref $order eq 'ARRAY') {
             my $column = shift @$order;
-            $column = "$q$column$q" if defined $column;
+            $column = $self->dbi->_q($column) if defined $column;
             my $derection = shift @$order;
             $order = $column;
             $order .= " $derection" if $derection;
