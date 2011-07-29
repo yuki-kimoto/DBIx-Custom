@@ -1375,6 +1375,16 @@ sub _quote {
          : '';
 }
 
+sub _q {
+    my $self = shift;
+    
+    my $quote = $self->_quote;
+    my $q = substr($quote, 0, 1) || '';
+    my $p = substr($quote, 1, 1) || $q || '';
+    
+    return ($q, $p);
+}
+
 sub _remove_duplicate_table {
     my ($self, $tables, $main_table) = @_;
     

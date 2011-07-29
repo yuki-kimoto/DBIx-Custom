@@ -1,5 +1,7 @@
 0.1704
-    - added EXPERIMENTAL parameter new syntax :name(operator)
+    - added quote method's two character support like []
+      for Microsoft SQL Server and Access
+    - added EXPERIMENTAL parameter new syntax :name{operator}
 0.1703
     - added EXPERIMENTAL join new syntax.
 0.1702
