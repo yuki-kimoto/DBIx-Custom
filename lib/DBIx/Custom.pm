@@ -1821,34 +1821,56 @@ DBIx::Custom - Execute insert, update, delete, and select statement easily
     
 =head1 DESCRIPTIONS
 
-L<DBIx::Custom> is L<DBI> wrapper module.
-
-=head1 FEATURES
-
-L<DBIx::Custom> is the wrapper class of L<DBI> to execute SQL easily.
+L<DBIx::Custom> is L<DBI> wrapper module to execute SQL easily.
 This module have the following features.
 
 =over 4
 
-=item * Execute INSERT, UPDATE, DELETE, SELECT statement easily
+=item *
 
-=item * You can specify bind values by hash reference
+Execute C<insert>, C<update>, C<delete>, or C<select> statement easily
 
-=item * Filtering by data type. and you can set filter to any column
+=item *
 
-=item * Creating where clause flexibly
+Create C<where> clause flexibly
 
-=item * Support model
+=item *
+
+Model support
+
+=item *
+
+Connection manager support
+
+=item *
+
+Choice your favorite relation database management system,
+C<MySQL>, C<SQLite>, C<PostgreSQL>, C<Oracle>,
+C<Microsoft SQL Server>, C<Microsoft Access>, C<DB2> or anything, 
+
+=item *
+
+Filtering by data type or column name(EXPERIMENTAL)
+
+=item *
+
+Create C<order by> clause flexibly(EXPERIMENTAL)
 
 =back
 
-=head1 GUIDE
+=head1 DOCUMENTATIONS
 
-L<DBIx::Custom::Guide> - L<DBIx::Custom> Guide
-
-=head1 Wiki
+L<DBIx::Custom::Guide> - How to use L<DBIx::Custom>
 
 L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
+- Theare are various examples.
+
+Mosdule documentations - 
+L<DBIx::Custom::Result>,
+L<DBIx::Custom::Query>,
+L<DBIx::Custom::Where>,
+L<DBIx::Custom::Model>,
+L<DBIx::Custom::Order>
 
 =head1 ATTRIBUTES
 
