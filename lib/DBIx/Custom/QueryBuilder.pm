@@ -10,8 +10,7 @@ use DBIx::Custom::Util '_subname';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 push @DBIx::Custom::Where::CARP_NOT, __PACKAGE__;
 
-# Parameter regex
-our $PARAM_RE = qr/(^|[^\.\w]):([\.\w]+)([^\.\w]|$)/sm;
+has 'safety_character';
 
 sub build_query {
     my ($self, $source) = @_;
@@ -69,14 +68,17 @@ sub _placeholder_count {
 
 sub _parse_parameter {
     my ($self, $source) = @_;
-    
+
     # Get and replace parameters
     my $sql = $source || '';
     my $columns = [];
-    while ($source =~ /$PARAM_RE/g) {
+    my $c = $self->safety_character;
+    # Parameter regex
+    my $re = qr/^(.*?):([$c\.]+)(.*)/s;
+    while ($sql =~ /$re/g) {
         push @$columns, $2;
+        $sql = "$1?$3";
     }
-    $sql =~ s/$PARAM_RE/$1?$3/g;
 
     # Create query
     my $query = DBIx::Custom::Query->new(

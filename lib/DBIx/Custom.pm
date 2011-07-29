@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1703';
+our $VERSION = '0.1704';
 use 5.008001;
 
 use Carp 'croak';
@@ -1126,6 +1126,7 @@ sub _create_query {
         # Create query
         my $builder = $self->query_builder;
         $builder->{_tag_parse} = $self->tag_parse;
+        $builder->safety_character($self->safety_character);
         $query = $builder->build_query($source);
 
         # Remove reserved word quote
