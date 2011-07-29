@@ -74,10 +74,10 @@ sub _parse_parameter {
     my $columns = [];
     my $c = $self->safety_character;
     # Parameter regex
-    my $re = qr/^(.*?):([$c\.]+)(.*)/s;
+    my $re = qr/^(.*?):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
     while ($sql =~ /$re/g) {
         push @$columns, $2;
-        $sql = "$1?$3";
+        $sql = defined $3 ? "$1$2 $3 ?$4" : "$1?$4";
     }
 
     # Create query

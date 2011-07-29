@@ -3417,4 +3417,34 @@ test 'DBIx::Custom header';
     
 }
 
+test 'parameter :name(operater) syntax';
+$dbi->execute($DROP_TABLE->{0});
+$dbi->execute($CREATE_TABLE->{1});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+
+$source = "select * from table1 where :key1{=} and :key2{=}";
+$result = $dbi->execute($source, param => {key1 => 1, key2 => 2});
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
+
+$source = "select * from table1 where :key1{ = } and :key2{=}";
+$result = $dbi->execute($source, param => {key1 => 1, key2 => 2});
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
+
+$source = "select * from table1 where :key1{<} and :key2{=}";
+$result = $dbi->execute($source, param => {key1 => 5, key2 => 2});
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
+
+$source = "select * from table1 where :table1.key1{=} and :table1.key2{=}";
+$result = $dbi->execute(
+    $source,
+    param => {'table1.key1' => 1, 'table1.key2' => 1},
+    filter => {'table1.key2' => sub { $_[0] * 2 }}
+);
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
+
 =cut

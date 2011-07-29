@@ -1999,7 +1999,7 @@ Create assign parameter.
 
 This is equal to C<update_param> exept that set is not added.
 
-=head2 C<column> EXPERIMETNAL
+=head2 C<column>
 
     my $column = $dbi->column(book => ['author', 'title']);
 
@@ -2112,7 +2112,20 @@ Return value is L<DBIx::Custom::Result> object when select statement is executed
 or the count of affected rows when insert, update, delete statement is executed.
 
 Parameter is replaced by placeholder C<?>.
+    
+    # Before
+    select * from book where title = :title and author like :author
+    
+    # After
+    select * from where title = ? and author like ?;
 
+You can specify operator with parameter by C<name{operator}> syntax.
+This is EXPERIMENTAL.
+
+    # Before
+    select * from book where :title{=} and :author{like}
+    
+    # After
     select * from where title = ? and author like ?;
 
 The following opitons are available.
