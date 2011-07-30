@@ -330,11 +330,14 @@ sub execute {
     
     # Tables
     unshift @$tables, @{$query->{tables} || []};
-    my $main_table = pop @$tables;
-    $tables = $self->_remove_duplicate_table($tables, $main_table);
-    if (my $q = $self->_quote) {
-        $q = quotemeta($q);
-        $_ =~ s/[$q]//g for @$tables;
+    my $main_table = @{$tables}[-1];
+    if (@$tables > 1) {
+        # DEPRECATED logic
+        $tables = $self->_remove_duplicate_table($tables, $main_table);
+        if (my $q = $self->_quote) {
+            $q = quotemeta($q);
+            $_ =~ s/[$q]//g for @$tables;
+        }
     }
     
     # Type rule
@@ -1840,6 +1843,10 @@ Create C<where> clause flexibly
 
 =item *
 
+Named place holder support
+
+=item *
+
 Model support
 
 =item *
@@ -1869,7 +1876,7 @@ L<DBIx::Custom::Guide> - How to use L<DBIx::Custom>
 L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
 - Theare are various examples.
 
-Mosdule documentations - 
+Module documentations - 
 L<DBIx::Custom::Result>,
 L<DBIx::Custom::Query>,
 L<DBIx::Custom::Where>,
@@ -1881,10 +1888,10 @@ L<DBIx::Custom::Order>
 =head2 C<connector>
 
     my $connector = $dbi->connector;
-    $dbi = $dbi->connector(DBIx::Connector->new(...));
+    $dbi = $dbi->connector($connector);
 
-Connection manager object. if connector is set, you can get C<dbh>
-through connection manager. conection manager object must have C<dbh> mehtod.
+Connection manager object. if C<connector> is set, you can get C<dbh>
+through connection manager. Conection manager object must have C<dbh> mehtod.
 
 This is L<DBIx::Connector> example. Please pass
 C<default_dbi_option> to L<DBIx::Connector> C<new> method.
@@ -2149,19 +2156,19 @@ or the count of affected rows when insert, update, delete statement is executed.
 
 Named placeholder such as C<:title> is replaced by placeholder C<?>.
     
-    # Before
+    # Original
     select * from book where title = :title and author like :author
     
-    # After
+    # Replaced
     select * from where title = ? and author like ?;
 
 You can specify operator with named placeholder
  by C<name{operator}> syntax.
 
-    # Before
+    # Original
     select * from book where :title{=} and :author{like}
     
-    # After
+    # Replaced
     select * from where title = ? and author like ?;
 
 The following opitons are available.
