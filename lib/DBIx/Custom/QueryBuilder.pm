@@ -19,7 +19,7 @@ sub build_query {
     
     # Parse tag. tag is DEPRECATED!
     $self->{_tag_parse} = 1 unless defined $self->{_tag_parse};
-    if ($self->{_tag_parse} && $source =~ /\{/ && $source =~ /\}/) {
+    if ($self->{_tag_parse} && $source =~ /(\s|^)\{/) {
         $query = $self->_parse_tag($source);
         my $tag_count = delete $query->{tag_count};
         warn qq/Tag system such as {? name} is DEPRECATED! / .

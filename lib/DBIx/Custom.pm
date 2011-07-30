@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1706';
+our $VERSION = '0.1707';
 use 5.008001;
 
 use Carp 'croak';
@@ -2156,7 +2156,6 @@ Parameter is replaced by placeholder C<?>.
     select * from where title = ? and author like ?;
 
 You can specify operator with parameter by C<name{operator}> syntax.
-This is EXPERIMENTAL.
 
     # Before
     select * from book where :title{=} and :author{like}
