@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1705';
+our $VERSION = '0.1706';
 use 5.008001;
 
 use Carp 'croak';
@@ -1848,7 +1848,7 @@ Connection manager support
 
 =item *
 
-Choice your favorite relation database management system,
+Choice your favorite relational database management system,
 C<MySQL>, C<SQLite>, C<PostgreSQL>, C<Oracle>,
 C<Microsoft SQL Server>, C<Microsoft Access>, C<DB2> or anything, 
 
@@ -1970,6 +1970,10 @@ Query builder, default to L<DBIx::Custom::QueryBuilder> object.
 Reserved word quote.
 Default to double quote '"' except for mysql.
 In mysql, default to back quote '`'
+
+You can set quote pair.
+
+    $dbi->quote('[]');
 
 =head2 C<result_class>
 
@@ -2192,10 +2196,25 @@ and before type rule filter is executed.
     query => 1
 
 C<execute> method return L<DBIx::Custom::Query> object, not executing SQL.
-You can check executed SQL and columns order.
+You can check SQL or get statment handle.
 
     my $sql = $query->sql;
-    my $columns = $query->columns;
+    my $sth = $query->sth;
+
+If you want to execute SQL as possible as fast and don't need filtering.
+You do the following way.
+    
+    my $query;
+    my $sth;
+    foreach my $row (@$rows) {
+      $query ||= $dbi->insert($row, table => 'book', query => 1);
+      $sth ||= $query->sth;
+      $sth->execute(map { $row->{$_} } sort keys %$row);
+    }
+
+Note that $row must be simple hash reference, such as
+{title => 'Perl', author => 'Ken'}.
+and don't forget to sort $row values by $row key asc order.
 
 =item C<table>
     

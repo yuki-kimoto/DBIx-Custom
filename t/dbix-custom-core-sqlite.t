@@ -3466,4 +3466,26 @@ $result = $dbi->execute(
 $rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
 
+test 'high perfomance way';
+$dbi->execute($DROP_TABLE->{0});
+$dbi->execute("create table table1 (ab, bc, ik, hi, ui, pq, dc);");
+$rows = [
+    {ab => 1, bc => 2, ik => 3, hi => 4, ui => 5, pq => 6, dc => 7},
+    {ab => 1, bc => 2, ik => 3, hi => 4, ui => 5, pq => 6, dc => 8},
+];
+{
+    my $query;
+    my $sth;
+    foreach my $row (@$rows) {
+      $query ||= $dbi->insert($row, table => 'table1', query => 1);
+      $sth ||= $query->sth;
+      $sth->execute(map { $row->{$_} } sort keys %$row);
+    }
+    is_deeply($dbi->select(table => 'table1')->all,
+      [
+          {ab => 1, bc => 2, ik => 3, hi => 4, ui => 5, pq => 6, dc => 7},
+          {ab => 1, bc => 2, ik => 3, hi => 4, ui => 5, pq => 6, dc => 8},
+      ]
+    );
+}
 =cut
