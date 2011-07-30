@@ -139,18 +139,16 @@ If you want to execute SQL, use C<execute> method.
 
     $dbi->execute("select * from book;");
 
-You can specify parameters.
+You can specify named placeholder.
 
     $dbi->execute(
         "select * from book title = :title and author = :author;"
         {title => 'Perl', author => 'Ken'}
     );
 
-:title and :author is parameters, which is replaced to placeholers.
+:title and :author is named placeholder, which is replaced to placeholers.
 
     select * from book title = ? and author = ?;
-
-See also L<Parameter/"Parameter"> about parameter.
 
 =head3 C<dbh>
 
@@ -230,17 +228,17 @@ C<fetch_hash_all> fetch all rows and put them into array of hash reference.
 
 If you want to get statment handle, use <sth> method.
 
-=head2 Parameter
+=head2 Named placeholder
 
 =head3 Basic of Parameter
 
-You can embedd parameter into SQL.
+You can embedd named placeholder into SQL.
 
     select * from book where title = :title and author like :author;
 
-:title and :author is parameter
+:title and :author is named placeholder
 
-Parameter is converted to place holder.
+Named placeholder is replaced by place holder.
 
     select * from book where title = ? and author like ?;
 
@@ -300,7 +298,7 @@ C<clause> is the following format.
     ['or' or 'and', PART1, PART1, PART1]
 
 First argument is 'or' or 'and'.
-Later than first argument are part which contains parameter.
+Later than first argument are part which contains named placeholder.
 
 You can write more complex format.
 
@@ -318,7 +316,7 @@ After setting C<clause>, set C<param>.
 In this example, parameter contains only title.
 
 If you execute C<string_to>, you can get where clause
-which contain only parameter name.
+which contain only named placeholder.
 
     my $where_clause = $where->to_string;
 
