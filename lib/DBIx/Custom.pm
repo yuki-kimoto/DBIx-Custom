@@ -371,15 +371,17 @@ sub execute {
         }
     }
     
-    # Applied filter
-    my $applied_filter = {};
-    foreach my $table (@$tables) {
-        $applied_filter = {
-            %$applied_filter,
-            %{$self->{filter}{out}->{$table} || {}}
+    # Applied filter(DEPRECATED!)
+    if ($self->{filter}{on}) {
+        my $applied_filter = {};
+        foreach my $table (@$tables) {
+            $applied_filter = {
+                %$applied_filter,
+                %{$self->{filter}{out}->{$table} || {}}
+            }
         }
+        $filter = {%$applied_filter, %$filter};
     }
-    $filter = {%$applied_filter, %$filter};
     
     # Replace filter name to code
     foreach my $column (keys %$filter) {
@@ -1464,6 +1466,7 @@ sub _apply_filter {
 
     # Initialize filters
     $self->{filter} ||= {};
+    $self->{filter}{on} = 1;
     $self->{filter}{out} ||= {};
     $self->{filter}{in} ||= {};
     $self->{filter}{end} ||= {};
