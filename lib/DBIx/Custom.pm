@@ -238,14 +238,17 @@ sub create_model {
     $model->name($model_name) unless $model->name;
     $model->table($model_table) unless $model->table;
     
-    # Apply filter
-    my $filter = ref $model->filter eq 'HASH'
-               ? [%{$model->filter}]
-               : $model->filter;
-    warn "DBIx::Custom::Model filter method is DEPRECATED!"
-      if @$filter;
-    $self->_apply_filter($model->table, @$filter);
-
+    # Apply filter(DEPRECATED logic)
+    if ($model->{filter}) {
+        my $filter = ref $model->filter eq 'HASH'
+                   ? [%{$model->filter}]
+                   : $model->filter;
+        $filter ||= [];
+        warn "DBIx::Custom::Model filter method is DEPRECATED!"
+          if @$filter;
+        $self->_apply_filter($model->table, @$filter);
+    }
+    
     # Set model
     $self->model($model->name, $model);
     

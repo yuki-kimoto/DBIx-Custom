@@ -99,7 +99,7 @@ sub new {
 }
 
 # DEPRECATED!
-has filter => sub { [] };
+has 'filter';
 has 'name';
 has type => sub { [] };
 
