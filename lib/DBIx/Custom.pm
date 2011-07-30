@@ -329,7 +329,7 @@ sub execute {
     $filter ||= $query->filter;
     
     # Tables
-    unshift @$tables, @{$query->tables};
+    unshift @$tables, @{$query->{tables} || []};
     my $main_table = pop @$tables;
     $tables = $self->_remove_duplicate_table($tables, $main_table);
     if (my $q = $self->_quote) {
@@ -1135,7 +1135,7 @@ sub _create_query {
             {
                 sql     => $query->sql, 
                 columns => $query->columns,
-                tables  => $query->tables
+                tables  => $query->{tables} || []
             }
         ) if $cache;
     }

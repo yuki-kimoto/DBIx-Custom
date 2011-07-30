@@ -19,11 +19,21 @@ sub filters {
     }
     return $self->{filters};
 }
-has  tables => sub { [] };
+
+# DEPRECATED!
+sub tables {
+    warn "DBIx::Custom::Query tables attribute method is DEPRECATED!";
+    my $self = shift;
+    if (@_) {
+        $self->{tables} = $_[0];
+        return $self;
+    }
+    return $self->{tables} ||= [];
+}
 
 #DEPRECATED!
 sub filter {
-    warn "DBIx::Custom::Query filter method is DEPRECATED!";
+    #warn "DBIx::Custom::Query filter method is DEPRECATED!";
     my $self = shift;
     if (@_) {
         my $filter = {};
