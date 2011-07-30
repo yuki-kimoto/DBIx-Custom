@@ -331,14 +331,10 @@ sub execute {
     # Tables
     unshift @$tables, @{$query->{tables} || []};
     my $main_table = @{$tables}[-1];
-    if (@$tables > 1) {
-        # DEPRECATED logic
-        $tables = $self->_remove_duplicate_table($tables, $main_table);
-        if (my $q = $self->_quote) {
-            $q = quotemeta($q);
-            $_ =~ s/[$q]//g for @$tables;
-        }
-    }
+    
+    # DEPRECATED!
+    $tables = $self->_remove_duplicate_table($tables, $main_table)
+      if @$tables > 1;
     
     # Type rule
     my $type_filters = {};
@@ -1394,7 +1390,13 @@ sub _remove_duplicate_table {
     my %tables = map {defined $_ ? ($_ => 1) : ()} @$tables;
     delete $tables{$main_table} if $main_table;
     
-    return [keys %tables, $main_table ? $main_table : ()];
+    my $new_tables = [keys %tables, $main_table ? $main_table : ()];
+    if (my $q = $self->_quote) {
+        $q = quotemeta($q);
+        $_ =~ s/[$q]//g for @$new_tables;
+    }
+
+    return $new_tables;
 }
 
 sub _search_tables {
