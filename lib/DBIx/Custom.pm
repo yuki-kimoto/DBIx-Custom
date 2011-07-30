@@ -429,17 +429,19 @@ sub execute {
     # Select statement
     if ($sth->{NUM_OF_FIELDS}) {
         
-        # Filter
+        # DEPRECATED! Filter
         my $filter = {};
-        $filter->{in}  = {};
-        $filter->{end} = {};
-        push @$tables, $main_table if $main_table;
-        foreach my $table (@$tables) {
-            foreach my $way (qw/in end/) {
-                $filter->{$way} = {
-                    %{$filter->{$way}},
-                    %{$self->{filter}{$way}{$table} || {}}
-                };
+        if ($self->{filter}{on}) {
+            $filter->{in}  = {};
+            $filter->{end} = {};
+            push @$tables, $main_table if $main_table;
+            foreach my $table (@$tables) {
+                foreach my $way (qw/in end/) {
+                    $filter->{$way} = {
+                        %{$filter->{$way}},
+                        %{$self->{filter}{$way}{$table} || {}}
+                    };
+                }
             }
         }
         
