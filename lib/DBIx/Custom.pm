@@ -1110,7 +1110,7 @@ sub _create_query {
         # Create query
         if ($q) {
             $query = DBIx::Custom::Query->new($q);
-            $query->filters($self->filters);
+            $query->{filters} = $self->filters;
         }
     }
     
@@ -1156,7 +1156,7 @@ sub _create_query {
     $query->sth($sth);
     
     # Set filters
-    $query->filters($self->filters);
+    $query->{filters} = $self->filters;
     
     return $query;
 }
@@ -3113,23 +3113,28 @@ L<DBIx::Custom>
 
 L<DBIx::Custom::Model>
 
-    # Attribute method
+    # Attribute methods
     filter # will be removed at 2017/1/1
     name # will be removed at 2017/1/1
     type # will be removed at 2017/1/1
 
 L<DBIx::Custom::Query>
     
-    # Attribute method
+    # Attribute methods
     default_filter # will be removed at 2017/1/1
+    table # will be removed at 2017/1/1
+    filters # will be removed at 2017/1/1
+    
+    # Methods
+    filter # will be removed at 2017/1/1
 
 L<DBIx::Custom::QueryBuilder>
     
-    # Attribute method
+    # Attribute methods
     tags # will be removed at 2017/1/1
     tag_processors # will be removed at 2017/1/1
     
-    # Method
+    # Methods
     register_tag # will be removed at 2017/1/1
     register_tag_processor # will be removed at 2017/1/1
     
@@ -3139,7 +3144,7 @@ L<DBIx::Custom::QueryBuilder>
 
 L<DBIx::Custom::Result>
     
-    # Attribute method
+    # Attribute methods
     filter_check # will be removed at 2017/1/1
     
     # Methods

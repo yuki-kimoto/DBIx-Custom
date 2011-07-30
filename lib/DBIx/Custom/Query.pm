@@ -4,27 +4,37 @@ use Object::Simple -base;
 use Carp 'croak';
 use DBIx::Custom::Util '_subname';
 
-has [qw/sth filters/],
+has 'sth',
     sql => '',
-    tables => sub { [] },
     columns => sub { [] };
 
-sub filter {
+# DEPRECATED!
+has 'default_filter';
+sub filters {
+    warn "DBIx::Custom::Query filters attribute method is DEPRECATED!";
     my $self = shift;
-    
+    if (@_) {
+        $self->{filters} = $_[0];
+        return $self;
+    }
+    return $self->{filters};
+}
+has  tables => sub { [] };
+
+#DEPRECATED!
+sub filter {
+    warn "DBIx::Custom::Query filter method is DEPRECATED!";
+    my $self = shift;
     if (@_) {
         my $filter = {};
-        
         if (ref $_[0] eq 'HASH') {
             $filter = $_[0];
         }
         else {
             my $ef = @_ > 1 ? [@_] : $_[0];
-            
             for (my $i = 0; $i < @$ef; $i += 2) {
                 my $column = $ef->[$i];
                 my $f = $ef->[$i + 1];
-                
                 if (ref $column eq 'ARRAY') {
                     foreach my $c (@$column) {
                         $filter->{$c} = $f;
@@ -35,31 +45,23 @@ sub filter {
                 }
             }
         }
-        
         foreach my $column (keys %$filter) {
             my $fname = $filter->{$column};
-
             if  (exists $filter->{$column}
               && defined $fname
               && ref $fname ne 'CODE') 
             {
-              croak qq{Filter "$fname" is not registered" } . _subname
-                unless exists $self->filters->{$fname};
-              
-              $filter->{$column} = $self->filters->{$fname};
+                my $filters = $self->{filters} || {};
+                croak qq{Filter "$fname" is not registered" } . _subname
+                  unless exists $filters->{$fname};
+                $filter->{$column} = $filters->{$fname};
             }
         }
-        
         $self->{filter} = {%{$self->filter}, %$filter};
-        
         return $self;
     }
-    
     return $self->{filter} ||= {};
 }
-
-# DEPRECATED!
-has 'default_filter';
 
 1;
 
@@ -70,6 +72,9 @@ DBIx::Custom::Query - Query
 =head1 SYNOPSIS
     
     my $query = DBIx::Custom::Query->new;
+    my $sth = $query->sth;
+    my $sql = $query->sql;
+    my $columns = $query->columns;
     
 =head1 ATTRIBUTES
 
@@ -79,16 +84,6 @@ DBIx::Custom::Query - Query
     $query      = $query->columns(['auhtor', 'title']);
 
 Column names.
-
-=head2 C<filter>
-
-    my $filter = $query->filter;
-    $query     = $query->filter(author => 'to_something',
-                                 title  => 'to_something');
-
-    $query     = $query->filter([qw/author title/] => 'to_something');
-
-Filters when parameter binding is executed.
 
 =head2 C<sql>
 

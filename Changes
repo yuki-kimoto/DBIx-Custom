@@ -1,5 +1,6 @@
 0.1706
-    - DBIx::Custom::Query table and filters method is DEPRECATED!
+    - DBIx::Custom::Query table and filters attribute method and
+      filter method is DEPRECATED!
       because I think query object must have only the information
       for statement handle caching.
 0.1705
