@@ -3475,6 +3475,26 @@ $rows = [
 ];
 {
     my $query;
+    foreach my $row (@$rows) {
+      $query ||= $dbi->insert($row, table => 'table1', query => 1);
+      $dbi->execute($query, $row, filter => {ab => sub { $_[0] * 2 }});
+    }
+    is_deeply($dbi->select(table => 'table1')->all,
+      [
+          {ab => 2, bc => 2, ik => 3, hi => 4, ui => 5, pq => 6, dc => 7},
+          {ab => 2, bc => 2, ik => 3, hi => 4, ui => 5, pq => 6, dc => 8},
+      ]
+    );
+}
+
+$dbi->execute($DROP_TABLE->{0});
+$dbi->execute("create table table1 (ab, bc, ik, hi, ui, pq, dc);");
+$rows = [
+    {ab => 1, bc => 2, ik => 3, hi => 4, ui => 5, pq => 6, dc => 7},
+    {ab => 1, bc => 2, ik => 3, hi => 4, ui => 5, pq => 6, dc => 8},
+];
+{
+    my $query;
     my $sth;
     foreach my $row (@$rows) {
       $query ||= $dbi->insert($row, table => 'table1', query => 1);

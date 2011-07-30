@@ -2200,9 +2200,21 @@ You can check SQL or get statment handle.
 
     my $sql = $query->sql;
     my $sth = $query->sth;
+    my $columns = $query->columns;
+    
+If you want to execute SQL fast, you can do the following way.
+
+    my $query;
+    foreach my $row (@$rows) {
+      $query ||= $dbi->insert($row, table => 'table1', query => 1);
+      $dbi->execute($query, $row, filter => {ab => sub { $_[0] * 2 }});
+    }
+
+Statement handle is reused and SQL parsing is finished,
+so you can get more performance than normal way.
 
 If you want to execute SQL as possible as fast and don't need filtering.
-You do the following way.
+You can do the following way.
     
     my $query;
     my $sth;
