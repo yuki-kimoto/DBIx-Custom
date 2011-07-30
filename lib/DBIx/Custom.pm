@@ -329,49 +329,38 @@ sub execute {
     $self->last_sql($query->sql);
 
     return $query if $query_return;
+    
+    # DEPRECATED! Merge query filter
     $filter ||= $query->{filter} || {};
     
     # Tables
     unshift @$tables, @{$query->{tables} || []};
     my $main_table = @{$tables}[-1];
     
-    # DEPRECATED!
+    # DEPRECATED! Cleanup tables
     $tables = $self->_remove_duplicate_table($tables, $main_table)
       if @$tables > 1;
     
     # Type rule
     my $type_filters = {};
     unless ($type_rule_off) {
-        foreach my $name (keys %$param) {
-            my $table;
-            my $column;
-            if ($name =~ /(?:(.+)\.)?(.+)/) {
-                $table = $1;
-                $column = $2;
-            }
-            $table ||= $main_table;
-            
-            foreach my $i (1 .. 2) {
-                unless ($type_rule_off_parts->{$i}) {
-                    my $into = $self->{"_into$i"} || {};
+        foreach my $i (1, 2) {
+            unless ($type_rule_off_parts->{$i}) {
+                $type_filters->{$i} = {};
+                foreach my $alias (keys %$table_alias) {
+                    my $table = $table_alias->{$alias};
                     
-                    my $alias = $table;
-                    $table = $table_alias->{$alias}
-                      if defined $alias && $table_alias->{$alias};
-                    
-                    if (defined $table && $into->{$table} &&
-                        (my $rule = $into->{$table}->{$column}))
-                    {
-                        $type_filters->{$i}->{$column} = $rule;
-                        $type_filters->{$i}->{"$table.$column"} = $rule;
-                        $type_filters->{$i}->{"$alias.$column"} = $rule if $alias ne $table;
+                    foreach my $column (keys %{$self->{"_into$i"}{key}{$table} || {}}) {
+                        $type_filters->{$i}->{"$alias.$column"} = $self->{"_into$i"}{key}{$table}{$column};
                     }
                 }
+                $type_filters->{$i} = {%{$type_filters->{$i}}, %{$self->{"_into$i"}{key}{$main_table} || {}}}
+                  if $main_table;
             }
         }
     }
     
-    # Applied filter(DEPRECATED!)
+    # DEPRECATED! Applied filter
     if ($self->{filter}{on}) {
         my $applied_filter = {};
         foreach my $table (@$tables) {
@@ -420,10 +409,8 @@ sub execute {
         $affected = $sth->execute;
     };
     
-    if ($@) {
-        $self->_croak($@, qq{. Following SQL is executed.\n}
-                        . qq{$query->{sql}\n} . _subname);
-    }
+    $self->_croak($@, qq{. Following SQL is executed.\n}
+      . qq{$query->{sql}\n} . _subname) if $@;
     
     # DEBUG message
     if (DEBUG) {
@@ -980,7 +967,8 @@ sub type_rule {
                         $filter = $self->filters->{$fname};
                     }
 
-                    $self->{"_$into"}{$table}{$column} = $filter;
+                    $self->{"_$into"}{key}{$table}{$column} = $filter;
+                    $self->{"_$into"}{dot}{"$table.$column"} = $filter;
                 }
             });
         }
@@ -1201,7 +1189,7 @@ sub _create_bind_values {
         # Type rule
         foreach my $i (1 .. 2) {
             my $type_filter = $type_filters->{$i};
-            my $tf = $type_filter->{$column};
+            my $tf = $self->{"_into$i"}->{dot}->{$column} || $type_filter->{$column};
             $value = $tf->($value) if $tf;
         }
         
