@@ -326,7 +326,7 @@ sub execute {
     $self->last_sql($query->sql);
 
     return $query if $query_return;
-    $filter ||= $query->filter;
+    $filter ||= $query->{filter} || {};
     
     # Tables
     unshift @$tables, @{$query->{tables} || []};

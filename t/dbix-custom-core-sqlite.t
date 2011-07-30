@@ -6,7 +6,7 @@ use utf8;
 use Encode qw/encode_utf8 decode_utf8/;
 use Data::Dumper;
 
-#$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
+$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 
 BEGIN {
     eval { require DBD::SQLite; 1 }

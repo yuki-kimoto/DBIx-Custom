@@ -33,7 +33,7 @@ sub tables {
 
 #DEPRECATED!
 sub filter {
-    #warn "DBIx::Custom::Query filter method is DEPRECATED!";
+    Carp::carp "DBIx::Custom::Query filter method is DEPRECATED!";
     my $self = shift;
     if (@_) {
         my $filter = {};
@@ -67,7 +67,7 @@ sub filter {
                 $filter->{$column} = $filters->{$fname};
             }
         }
-        $self->{filter} = {%{$self->filter}, %$filter};
+        $self->{filter} = {%{$self->{filter} || {}}, %$filter};
         return $self;
     }
     return $self->{filter} ||= {};
