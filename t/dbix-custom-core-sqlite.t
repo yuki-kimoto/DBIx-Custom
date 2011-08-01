@@ -211,7 +211,7 @@ is_deeply($rows, [{key1 => 1, key2 => 1, key3 => 1, key4 => 1, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "basic");
 
 
-test 'parameter';
+test 'Named placeholder';
 $dbi->execute($DROP_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
@@ -240,6 +240,30 @@ $result = $dbi->execute(
 );
 $rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
+
+$dbi->execute($DROP_TABLE->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => '2011-10-14 12:19:18', key2 => 2});
+$source = "select * from table1 where key1 = '2011-10-14 12:19:18' and key2 = :key2";
+$result = $dbi->execute(
+    $source,
+    param => {'key2' => 2},
+);
+
+$rows = $result->all;
+is_deeply($rows, [{key1 => '2011-10-14 12:19:18', key2 => 2}]);
+
+$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi->execute($CREATE_TABLE->{0});
+$dbi->insert(table => 'table1', param => {key1 => 'a:b c:d', key2 => 2});
+$source = "select * from table1 where key1 = 'a\\:b c\\:d' and key2 = :key2";
+$result = $dbi->execute(
+    $source,
+    param => {'key2' => 2},
+);
+$rows = $result->all;
+is_deeply($rows, [{key1 => 'a:b c:d', key2 => 2}]);
+
 
 test 'Error case';
 eval {DBIx::Custom->connect(dsn => 'dbi:SQLit')};
@@ -3436,7 +3460,7 @@ test 'DBIx::Custom header';
     
 }
 
-test 'parameter :name(operater) syntax';
+test 'Named placeholder :name(operater) syntax';
 $dbi->execute($DROP_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});

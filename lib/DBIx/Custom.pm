@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1707';
+our $VERSION = '0.1709';
 use 5.008001;
 
 use Carp 'croak';
@@ -2168,6 +2168,12 @@ You can specify operator with named placeholder
     
     # Replaced
     select * from where title = ? and author like ?;
+
+Note that colons in time format such as 12:13:15 is exeption,
+it is not parsed as named placeholder.
+If you want to use colon generally, you must escape it by C<\\>
+
+    select * from where title = "aa\\:bb";
 
 The following opitons are available.
 

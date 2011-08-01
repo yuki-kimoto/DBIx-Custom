@@ -68,17 +68,19 @@ sub _placeholder_count {
 
 sub _parse_parameter {
     my ($self, $source) = @_;
-
+    
     # Get and replace parameters
     my $sql = $source || '';
     my $columns = [];
     my $c = $self->safety_character;
     # Parameter regex
-    my $re = qr/^(.*?):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
+    $sql =~ s/([^:]):(\d+):([^:])/$1\\:$2\\:$3/g;
+    my $re = qr/(^|.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
     while ($sql =~ /$re/g) {
         push @$columns, $2;
         $sql = defined $3 ? "$1$2 $3 ?$4" : "$1?$4";
     }
+    $sql =~ s/\\:/:/g;
 
     # Create query
     my $query = DBIx::Custom::Query->new(
@@ -88,7 +90,7 @@ sub _parse_parameter {
     
     return $query;
 }
-
+    
 # DEPRECATED!
 has tags => sub { {} };
 

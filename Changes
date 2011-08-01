@@ -1,3 +1,7 @@
+0.1709
+    - fixed named placeholder bug and added escape syntax
+0.1708
+    - improved execute method performance
 0.1707
     - I call :title named placeholder, stoping calling it parameter
     - removed some EXPERIMENTAL status
