@@ -448,7 +448,7 @@ sub execute {
         # Result
         my $result = $self->result_class->new(
             sth => $sth,
-            filters => $self->filters,
+            dbi => $self,
             default_filter => $self->{default_in_filter},
             filter => $filter->{in} || {},
             end_filter => $filter->{end} || {},
@@ -1073,16 +1073,7 @@ sub update_param {
     return $tag;
 }
 
-sub where {
-    my $self = shift;
-    
-    # Create where
-    return DBIx::Custom::Where->new(
-        quote => $self->_quote,
-        dbi => $self,
-        @_
-    );
-}
+sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
 
 sub _create_query {
     

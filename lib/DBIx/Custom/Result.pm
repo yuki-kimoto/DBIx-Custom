@@ -4,7 +4,7 @@ use Object::Simple -base;
 use Carp 'croak';
 use DBIx::Custom::Util qw/_array_to_hash _subname/;
 
-has [qw/filters sth/],
+has [qw/dbi sth/],
     stash => sub { {} };
 
 *all = \&fetch_hash_all;
@@ -25,8 +25,8 @@ sub filter {
               && ref $fname ne 'CODE') 
             {
               croak qq{Filter "$fname" is not registered" } . _subname
-                unless exists $self->filters->{$fname};
-              $filter->{$column} = $self->filters->{$fname};
+                unless exists $self->dbi->filters->{$fname};
+              $filter->{$column} = $self->dbi->filters->{$fname};
             }
         }
         
@@ -238,9 +238,9 @@ sub type_rule {
                 my $fname = $type_rule->{"from$i"}{$data_type};
                 if (defined $fname && ref $fname ne 'CODE') {
                     croak qq{Filter "$fname" is not registered" } . _subname
-                      unless exists $self->filters->{$fname};
+                      unless exists $self->dbi->filters->{$fname};
                     
-                    $type_rule->{"from$i"}{$data_type} = $self->filters->{$fname};
+                    $type_rule->{"from$i"}{$data_type} = $self->dbi->filters->{$fname};
                 }
             }
         }
@@ -307,8 +307,8 @@ sub end_filter {
               && ref $fname ne 'CODE') 
             {
               croak qq{Filter "$fname" is not registered" } . _subname
-                unless exists $self->filters->{$fname};
-              $end_filter->{$column} = $self->filters->{$fname};
+                unless exists $self->dbi->filters->{$fname};
+              $end_filter->{$column} = $self->dbi->filters->{$fname};
             }
         }
         $self->{end_filter} = {%{$self->end_filter}, %$end_filter};
@@ -341,8 +341,8 @@ sub default_filter {
         }
         else {
             croak qq{Filter "$fname" is not registered}
-              unless exists $self->filters->{$fname};
-            $self->{default_filter} = $self->filters->{$fname};
+              unless exists $self->dbi->filters->{$fname};
+            $self->{default_filter} = $self->dbi->filters->{$fname};
         }
         return $self;
     }
@@ -390,12 +390,12 @@ DBIx::Custom::Result - Result of select statement
 
 =head1 ATTRIBUTES
 
-=head2 C<filters>
+=head2 C<dbi>
 
-    my $filters = $result->filters;
-    $result = $result->filters(\%filters);
+    my $dbi = $result->dbi;
+    $result = $result->dbi($dbi);
 
-Filters.
+L<DBIx::Custom> object.
 
 =head2 C<sth>
 

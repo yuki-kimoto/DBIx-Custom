@@ -15,13 +15,15 @@ BEGIN {
     use_ok('DBIx::Custom::Result');
 }
 
+use DBIx::Custom;
+
 sub test { print "# $_[0]\n" }
 
 sub query {
     my ($dbh, $sql) = @_;
     my $sth = $dbh->prepare($sql);
     $sth->execute;
-    return DBIx::Custom::Result->new(sth => $sth);
+    return DBIx::Custom::Result->new(dbi => DBIx::Custom->new, sth => $sth);
 }
 
 my $dbh;
@@ -141,14 +143,14 @@ is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
 
 test 'fetch filter';
 $result = query($dbh, $sql);
-$result->filters({three_times => sub { $_[0] * 3}});
+$result->dbi->filters({three_times => sub { $_[0] * 3}});
 $result->filter({key1 => 'three_times'});
 
 $rows = $result->fetch_all;
 is_deeply($rows, [[3, 2], [9, 4]], "array");
 
 $result = query($dbh, $sql);
-$result->filters({three_times => sub { $_[0] * 3}});
+$result->dbi->filters({three_times => sub { $_[0] * 3}});
 $result->filter({key1 => 'three_times'});
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 3, key2 => 2}, {key1 => 9, key2 => 4}], "hash");

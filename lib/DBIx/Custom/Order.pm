@@ -5,9 +5,8 @@ use overload
   '""'     => sub { shift->to_string },
   fallback => 1;
 
-
-has orders => sub { [] },
-    dbi => '';
+has 'dbi',
+    orders => sub { [] };
 
 sub prepend {
     my $self = shift;
@@ -57,8 +56,14 @@ DBIx::Custom::Order - Order by EXPERIMENTAL
     $order->prepend('title', 'author desc');
     my $order_by = "$order";
     
-
 =head1 ATTRIBUTES
+
+=head2 C<dbi>
+
+    my $dbi = $order->dbi;
+    $order = $order->dbi($dbi);
+
+L<DBIx::Custom> object.
 
 =head2 C<orders>
 

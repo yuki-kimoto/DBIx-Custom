@@ -1,5 +1,5 @@
 0.1710
-    - Fixed fisrt where clause failed.
+    - Fixed fisrt executed where clause failed in some condition.
 0.1709
     - fixed named placeholder bug and added escape syntax
 0.1708
