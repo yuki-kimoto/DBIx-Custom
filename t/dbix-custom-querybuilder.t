@@ -57,7 +57,6 @@ $datas = [
 for (my $i = 0; $i < @$datas; $i++) {
     my $data = $datas->[$i];
     my $builder = DBIx::Custom->new->query_builder;
-    $builder->safety_character('\w');
     my $query = $builder->build_query($data->{source});
     is($query->{sql}, $data->{sql_expected}, "$data->{name} : sql");
     is_deeply($query->columns, $data->{columns_expected}, "$data->{name} : columns");
@@ -66,7 +65,6 @@ for (my $i = 0; $i < @$datas; $i++) {
 
 test 'Original tag';
 $builder = DBIx::Custom->new->query_builder;
-$builder->safety_character('\w');
 
 $ret_val = $builder->register_tag(
     p => sub {
@@ -86,7 +84,6 @@ isa_ok($ret_val, 'DBIx::Custom::QueryBuilder');
 
 test "Tag error case";
 $builder = DBIx::Custom->new->query_builder;
-$builder->safety_character('\w');
 
 eval{$builder->build_query('{? }')};
 like($@, qr/\QColumn name must be specified in tag "{? }"/, "? not arguments");
@@ -122,7 +119,6 @@ $builder->register_tag(
 
 test 'General error case';
 $builder = DBIx::Custom->new->query_builder;
-$builder->safety_character('\w');
 $builder->register_tag(
     a => sub {
         return ["? ? ?", ['']];

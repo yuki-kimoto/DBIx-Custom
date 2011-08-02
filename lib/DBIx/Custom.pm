@@ -51,7 +51,7 @@ has [qw/connector dsn password quote user/],
     },
     last_sql => '',
     models => sub { {} },
-    query_builder => sub { DBIx::Custom::QueryBuilder->new },
+    query_builder => sub { DBIx::Custom::QueryBuilder->new(_dbi => shift) },
     result_class  => 'DBIx::Custom::Result',
     safety_character => '\w',
     stash => sub { {} },
@@ -1114,7 +1114,6 @@ sub _create_query {
         # Create query
         my $builder = $self->query_builder;
         $builder->{_tag_parse} = $self->tag_parse;
-        $builder->safety_character($self->safety_character);
         $query = $builder->build_query($source);
 
         # Remove reserved word quote

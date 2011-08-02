@@ -10,8 +10,6 @@ use DBIx::Custom::Util '_subname';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 push @DBIx::Custom::Where::CARP_NOT, __PACKAGE__;
 
-has 'safety_character';
-
 sub build_query {
     my ($self, $source) = @_;
     
@@ -72,7 +70,7 @@ sub _parse_parameter {
     # Get and replace parameters
     my $sql = $source || '';
     my $columns = [];
-    my $c = $self->safety_character;
+    my $c = $self->{_dbi}->safety_character;
     # Parameter regex
     $sql =~ s/([^:]):(\d+):([^:])/$1\\:$2\\:$3/g;
     my $re = qr/(^|.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
