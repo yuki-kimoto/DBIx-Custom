@@ -9,7 +9,7 @@ use overload '""' => sub { shift->to_string }, fallback => 1;
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-has [qw/param query_builder quote safety_character /],
+has [qw/dbi param quote/],
     clause => sub { [] };
 
 sub new {
@@ -29,7 +29,7 @@ sub to_string {
     my $self = shift;
     
     # Check if column name is safety character;
-    my $safety = $self->safety_character;
+    my $safety = $self->dbi->safety_character;
     if (ref $self->param eq 'HASH') {
         foreach my $column (keys %{$self->param}) {
             croak qq{"$column" is not safety column name (} . _subname . ")"
@@ -93,7 +93,7 @@ sub _parse {
         my $pushed;
         
         # Column
-        my $columns = $self->query_builder->build_query($clause)->columns;
+        my $columns = $self->dbi->query_builder->build_query($clause)->columns;
         if (@$columns == 0) {
             push @$where, $clause;
             $pushed = 1;
@@ -112,7 +112,7 @@ sub _parse {
         }
         
         # Check safety
-        my $safety = $self->safety_character;
+        my $safety = $self->dbi->safety_character;
         croak qq{"$column" is not safety column name (} . _subname . ")"
           unless $column =~ /^[$safety\.]+$/;
         
@@ -183,10 +183,12 @@ If all parameter names is exists.
         date => ['2010-11-11', '2011-03-05'],
     });
 
-=head2 C<safety_character>
+=head2 C<dbi>
 
-    my $safety_character = $self->safety_character;
-    $where = $self->safety_character("\w");
+    my $dbi = $where->dbi;
+    $where = $where->dbi($dbi);
+
+L<DBIx::Custom> object.
 
 =head1 METHODS
 

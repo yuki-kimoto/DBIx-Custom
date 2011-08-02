@@ -1078,9 +1078,8 @@ sub where {
     
     # Create where
     return DBIx::Custom::Where->new(
-        query_builder => $self->query_builder,
-        safety_character => $self->safety_character,
         quote => $self->_quote,
+        dbi => $self,
         @_
     );
 }

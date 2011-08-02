@@ -306,6 +306,15 @@ DBIx::Custom::QueryBuilder - Query builder
         "select from table title = :title and author = :author"
     );
 
+=head1 ATTRIBUTES
+
+=head2 C<dbi>
+
+    my $dbi = $builder->dbi;
+    $builder = $builder->dbi($dbi);
+
+L<DBIx::Custom> object.
+
 =head1 METHODS
 
 L<DBIx::Custom::QueryBuilder> inherits all methods from L<Object::Simple>
@@ -316,10 +325,5 @@ and implements the following new ones.
     my $query = $builder->build_query($source);
 
 Create a new L<DBIx::Custom::Query> object from SQL source.
-
-=head2 C<dbi>
-
-    my $dbi = $builder->dbi;
-    $builder = $builder->dbi($dbi);
 
 =cut
