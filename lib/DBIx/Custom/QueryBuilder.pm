@@ -10,14 +10,15 @@ use DBIx::Custom::Util '_subname';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 push @DBIx::Custom::Where::CARP_NOT, __PACKAGE__;
 
+has 'dbi';
+
 sub build_query {
     my ($self, $source) = @_;
     
     my $query;
     
     # Parse tag. tag is DEPRECATED!
-    $self->{_tag_parse} = 1 unless defined $self->{_tag_parse};
-    if ($self->{_tag_parse} && $source =~ /(\s|^)\{/) {
+    if ($self->dbi->tag_parse && $source =~ /(\s|^)\{/) {
         $query = $self->_parse_tag($source);
         my $tag_count = delete $query->{tag_count};
         warn qq/Tag system such as {? name} is DEPRECATED! / .
@@ -70,7 +71,7 @@ sub _parse_parameter {
     # Get and replace parameters
     my $sql = $source || '';
     my $columns = [];
-    my $c = $self->{_dbi}->safety_character;
+    my $c = $self->dbi->safety_character;
     # Parameter regex
     $sql =~ s/([^:]):(\d+):([^:])/$1\\:$2\\:$3/g;
     my $re = qr/(^|.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
@@ -315,5 +316,10 @@ and implements the following new ones.
     my $query = $builder->build_query($source);
 
 Create a new L<DBIx::Custom::Query> object from SQL source.
+
+=head2 C<dbi>
+
+    my $dbi = $builder->dbi;
+    $builder = $builder->dbi($dbi);
 
 =cut
