@@ -4,7 +4,6 @@ use warnings;
 
 use utf8;
 use Encode qw/encode_utf8 decode_utf8/;
-use Data::Dumper;
 
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 
@@ -37,14 +36,6 @@ my $SELECT_SOURCES = {
     0 => 'select * from table1;'
 };
 
-my $DROP_TABLE = {
-    0 => 'drop table table1'
-};
-
-my $NEW_ARGS = {
-    0 => {dsn => 'dbi:SQLite:dbname=:memory:'}
-};
-
 # Variables
 my $dbi;
 my $sth;
@@ -75,7 +66,7 @@ my $insert_param;
 my $join;
 
 # Prepare table
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -107,7 +98,7 @@ $rows = $result->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "all");
 
 test 'Insert query return value';
-$dbi->execute($DROP_TABLE->{0});
+$dbi->execute('drop table table1');
 $dbi->execute($CREATE_TABLE->{0});
 $source = "insert into table1 {insert_param key1 key2}";
 $query = $dbi->execute($source, {}, query => 1);
@@ -116,7 +107,7 @@ ok($ret_val);
 
 
 test 'Direct query';
-$dbi->execute($DROP_TABLE->{0});
+$dbi->execute('drop table table1');
 $dbi->execute($CREATE_TABLE->{0});
 $insert_SOURCE = "insert into table1 {insert_param key1 key2}";
 $dbi->execute($insert_SOURCE, param => {key1 => 1, key2 => 2});
@@ -125,7 +116,7 @@ $rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
 test 'Filter basic';
-$dbi->execute($DROP_TABLE->{0});
+$dbi->execute('drop table table1');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice       => sub { $_[0] * 2}, 
                     three_times => sub { $_[0] * 3});
@@ -137,7 +128,7 @@ $dbi->execute($insert_query, param => {key1 => 1, key2 => 2});
 $result = $dbi->execute($SELECT_SOURCES->{0});
 $rows = $result->filter({key2 => 'three_times'})->all;
 is_deeply($rows, [{key1 => 2, key2 => 6}], "filter fetch_filter");
-$dbi->execute($DROP_TABLE->{0});
+$dbi->execute('drop table table1');
 
 test 'Filter in';
 $dbi->execute($CREATE_TABLE->{0});
@@ -152,7 +143,7 @@ $rows = $result->all;
 is_deeply($rows, [{key1 => 2, key2 => 4}], "filter");
 
 test 'DBIx::Custom::SQLTemplate basic tag';
-$dbi->execute($DROP_TABLE->{0});
+$dbi->execute('drop table table1');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -176,7 +167,7 @@ $rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "basic tag2");
 
 test 'DIB::Custom::SQLTemplate in tag';
-$dbi->execute($DROP_TABLE->{0});
+$dbi->execute('drop table table1');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -212,7 +203,7 @@ is_deeply($rows, [{key1 => 1, key2 => 1, key3 => 1, key4 => 1, key5 => 5},
 
 
 test 'Named placeholder';
-$dbi->execute($DROP_TABLE->{0});
+$dbi->execute('drop table table1');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -241,7 +232,7 @@ $result = $dbi->execute(
 $rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
 
-$dbi->execute($DROP_TABLE->{0});
+$dbi->execute('drop table table1');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => '2011-10-14 12:19:18', key2 => 2});
 $source = "select * from table1 where key1 = '2011-10-14 12:19:18' and key2 = :key2";
@@ -253,7 +244,7 @@ $result = $dbi->execute(
 $rows = $result->all;
 is_deeply($rows, [{key1 => '2011-10-14 12:19:18', key2 => 2}]);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 'a:b c:d', key2 => 2});
 $source = "select * from table1 where key1 = 'a\\:b c\\:d' and key2 = :key2";
@@ -269,12 +260,12 @@ test 'Error case';
 eval {DBIx::Custom->connect(dsn => 'dbi:SQLit')};
 ok($@, "connect error");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 eval{$dbi->execute("{p }", {}, query => 1)};
 ok($@, "create_query invalid SQL template");
 
 test 'insert';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -294,7 +285,7 @@ $rows   = $result->all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "filter");
 $dbi->default_bind_filter(undef);
 
-$dbi->execute($DROP_TABLE->{0});
+$dbi->execute('drop table table1');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, append => '   ');
 $rows = $dbi->select(table => 'table1')->all;
@@ -306,7 +297,7 @@ like($@, qr/noexist/, "invalid");
 eval{$dbi->insert(table => 'table', param => {';' => 1})};
 like($@, qr/safety/);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->quote('"');
 $dbi->execute('create table "table" ("select")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
@@ -315,7 +306,7 @@ $result = $dbi->execute('select * from "table"');
 $rows   = $result->all;
 is_deeply($rows, [{select => 2}], "reserved word");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
 $dbi->insert({key1 => 3, key2 => 4}, table => 'table1');
@@ -323,7 +314,7 @@ $result = $dbi->execute($SELECT_SOURCES->{0});
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "basic");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute("create table table1 (key1 char(255), key2 char(255), primary key(key1))");
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4}, prefix => 'or replace');
@@ -331,7 +322,7 @@ $result = $dbi->execute($SELECT_SOURCES->{0});
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => \"'1'", key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -340,7 +331,7 @@ $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "basic");
 
 test 'update';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -388,7 +379,7 @@ like($@, qr/noexist/, "invalid");
 eval{$dbi->update(table => 'table1')};
 like($@, qr/where/, "not contain where");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $where = $dbi->where;
@@ -398,7 +389,7 @@ $dbi->update(table => 'table1', param => {key1 => 3}, where => $where);
 $result = $dbi->select(table => 'table1');
 is_deeply($result->all, [{key1 => 3, key2 => 2}], 'update() where');
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->update(
@@ -412,7 +403,7 @@ $dbi->update(
 $result = $dbi->select(table => 'table1');
 is_deeply($result->all, [{key1 => 3, key2 => 2}], 'update() where');
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $where = $dbi->where;
@@ -428,7 +419,7 @@ like($@, qr/safety/);
 eval{$dbi->update(table => 'table1', param => {'key1' => 1}, where => {';' => 1})};
 like($@, qr/safety/);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->quote('"');
 $dbi->execute('create table "table" ("select", "update")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
@@ -442,7 +433,7 @@ is_deeply($rows, [{select => 2, update => 6}], "reserved word");
 eval {$dbi->update_all(table => 'table', param => {';' => 2}) };
 like($@, qr/safety/);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->reserved_word_quote('"');
 $dbi->execute('create table "table" ("select", "update")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
@@ -453,7 +444,7 @@ $result = $dbi->execute('select * from "table"');
 $rows   = $result->all;
 is_deeply($rows, [{select => 2, update => 6}], "reserved word");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -464,7 +455,7 @@ is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "basic");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute("create table table1 (key1 char(255), key2 char(255), primary key(key1))");
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->update(table => 'table1', param => {key2 => 4},
@@ -473,7 +464,7 @@ $result = $dbi->execute($SELECT_SOURCES->{0});
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -485,7 +476,7 @@ is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   "basic");
 
 test 'update_all';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -499,7 +490,7 @@ is_deeply($rows, [{key1 => 1, key2 => 20, key3 => 3, key4 => 4, key5 => 5},
 
 
 test 'delete';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -529,7 +520,7 @@ is_deeply($rows, [{key1 => 3, key2 => 4}], "delete multi key");
 eval{$dbi->delete(table => 'table1', where => {key1 => 1}, noexist => 1)};
 like($@, qr/noexist/, "invalid");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -540,7 +531,7 @@ $dbi->delete(table => 'table1', where => $where);
 $result = $dbi->select(table => 'table1');
 is_deeply($result->all, [{key1 => 3, key2 => 4}], 'delete() where');
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -554,7 +545,7 @@ $dbi->delete(
 $result = $dbi->select(table => 'table1');
 is_deeply($result->all, [{key1 => 3, key2 => 4}], 'delete() where');
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute("create table table1 (key1 char(255), key2 char(255), primary key(key1))");
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->delete(table => 'table1', where => {key1 => 1}, prefix => '    ');
@@ -563,7 +554,7 @@ $rows   = $result->all;
 is_deeply($rows, [], "basic");
 
 test 'delete error';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 eval{$dbi->delete(table => 'table1')};
 like($@, qr/"where" must be specified/,
@@ -572,7 +563,7 @@ like($@, qr/"where" must be specified/,
 eval{$dbi->delete(table => 'table1', where => {';' => 1})};
 like($@, qr/safety/);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->quote('"');
 $dbi->execute('create table "table" ("select", "update")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
@@ -583,7 +574,7 @@ $rows   = $result->all;
 is_deeply($rows, [], "reserved word");
 
 test 'delete_all';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -594,7 +585,7 @@ is_deeply($rows, [], "basic");
 
 
 test 'select';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -639,7 +630,7 @@ is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}], "
 eval{$dbi->select(table => 'table1', noexist => 1)};
 like($@, qr/noexist/, "invalid");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->quote('"');
 $dbi->execute('create table "table" ("select", "update")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
@@ -649,7 +640,7 @@ $rows   = $result->all;
 is_deeply($rows, [{select => 2, update => 2}], "reserved word");
 
 test 'fetch filter';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->register_filter(
     twice       => sub { $_[0] * 2 },
     three_times => sub { $_[0] * 3 }
@@ -672,7 +663,7 @@ is($dbi->filters->{encode_utf8}->('あ'),
    encode_utf8('あ'), "encode_utf8");
 
 test 'transaction';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->dbh->begin_work;
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
@@ -682,7 +673,7 @@ $result = $dbi->select(table => 'table1');
 is_deeply(scalar $result->all, [{key1 => 1, key2 => 2}, {key1 => 2, key2 => 3}],
           "commit");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->dbh->begin_work(0);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
@@ -692,7 +683,7 @@ $result = $dbi->select(table => 'table1');
 ok(! $result->fetch_first, "rollback");
 
 test 'cache';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->cache(1);
 $dbi->execute($CREATE_TABLE->{0});
 $source = 'select * from table1 where key1 = :key1 and key2 = :key2;';
@@ -700,7 +691,7 @@ $dbi->execute($source, {}, query => 1);
 is_deeply($dbi->{_cached}->{$source}, 
           {sql => "select * from table1 where key1 = ? and key2 = ?;", columns => ['key1', 'key2'], tables => []}, "cache");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->{_cached} = {};
 $dbi->cache(0);
@@ -708,7 +699,7 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is(scalar keys %{$dbi->{_cached}}, 0, 'not cache');
 
 test 'execute';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 {
     local $Carp::Verbose = 0;
@@ -743,7 +734,7 @@ ok($@, "execute fail");
 
 
 test 'transaction';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 
 $dbi->begin_work;
@@ -780,7 +771,7 @@ $dbi->dbh->{AutoCommit} = 1;
 
 
 test 'method';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->method(
     one => sub { 1 }
 );
@@ -802,7 +793,7 @@ eval {$dbi->XXXXXX};
 ok($@, "not exists");
 
 test 'out filter';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->register_filter(three_times => sub { $_[0] * 3});
@@ -817,7 +808,7 @@ $result = $dbi->select(table => 'table1');
 $row   = $result->one;
 is_deeply($row, {key1 => 6, key2 => 12}, "insert");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->register_filter(three_times => sub { $_[0] * 3});
@@ -832,7 +823,7 @@ $result = $dbi->execute($SELECT_SOURCES->{0});
 $row   = $result->one;
 is_deeply($row, {key1 => 1, key2 => 6}, "insert");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
@@ -844,7 +835,7 @@ $result = $dbi->execute($SELECT_SOURCES->{0});
 $row   = $result->one;
 is_deeply($row, {key1 => 4, key2 => 2}, "update");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
@@ -856,7 +847,7 @@ $result = $dbi->execute($SELECT_SOURCES->{0});
 $rows   = $result->all;
 is_deeply($rows, [], "delete");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
@@ -868,7 +859,7 @@ $result->filter({'key2' => 'twice'});
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 4, key2 => 4}], "select");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
@@ -881,7 +872,7 @@ $result = $dbi->execute("select * from table1 where key1 = :key1 and key2 = :key
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 4, key2 => 2}], "execute");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
@@ -893,7 +884,7 @@ $result = $dbi->execute("select * from {table table1} where key1 = :key1 and key
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 4, key2 => 2}], "execute table tag");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
@@ -925,7 +916,7 @@ $rows   = $result->all;
 is_deeply($rows, [{key2 => 4, key3 => 18}], "select : join : omit");
 
 test 'each_column';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->execute($CREATE_TABLE->{3});
 
@@ -949,7 +940,7 @@ is_deeply($infos,
     
 );
 test 'each_table';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->execute($CREATE_TABLE->{3});
 
@@ -971,7 +962,7 @@ is_deeply($infos,
 );
 
 test 'limit';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4});
@@ -1024,12 +1015,12 @@ test 'connect super';
     }
 }
 
-$dbi = MyDBI->connect($NEW_ARGS->{0});
+$dbi = MyDBI->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is($dbi->select(table => 'table1')->one->{key1}, 1);
 
-$dbi = MyDBI->new($NEW_ARGS->{0});
+$dbi = MyDBI->new(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->connect;
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
@@ -1047,13 +1038,13 @@ is($dbi->select(table => 'table1')->one->{key1}, 1);
     }
 }
 
-$dbi = MyDBI->connect($NEW_ARGS->{0});
+$dbi = MyDBI->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is($dbi->select(table => 'table1')->one->{key1}, 1);
 
 test 'end_filter';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1');
@@ -1062,7 +1053,7 @@ $result->end_filter(key1 => sub { $_[0] * 3 }, key2 => sub { $_[0] * 5 });
 $row = $result->fetch_first;
 is_deeply($row, [6, 40]);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1');
@@ -1071,7 +1062,7 @@ $result->end_filter([[qw/key1 key2/] => sub { $_[0] * 3 }]);
 $row = $result->fetch_first;
 is_deeply($row, [6, 12]);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1');
@@ -1110,7 +1101,7 @@ $row = $result->one;
 is_deeply($row, {key1 => 1, key2 => 40}, 'apply_filter overwrite');
 
 test 'remove_end_filter and remove_filter';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1');
@@ -1123,7 +1114,7 @@ $row = $result
 is_deeply($row, [1, 2]);
 
 test 'empty where select';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1', where => {});
@@ -1131,7 +1122,7 @@ $row = $result->one;
 is_deeply($row, {key1 => 1, key2 => 2});
 
 test 'select query option';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $query = $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, query => 1);
 is(ref $query, 'DBIx::Custom::Query');
@@ -1143,7 +1134,7 @@ $query = $dbi->select(table => 'table1', where => {key1 => 1, key2 => 2}, query 
 is(ref $query, 'DBIx::Custom::Query');
 
 test 'DBIx::Custom::Where';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -1435,21 +1426,21 @@ $dbi = DBIx::Custom->new;
 is_deeply($dbi->dbi_option, {});
 
 test 'register_tag_processor';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->register_tag_processor(
     a => sub { 1 }
 );
 is($dbi->query_builder->tag_processors->{a}->(), 1);
 
 test 'register_tag';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->register_tag(
     b => sub { 2 }
 );
 is($dbi->query_builder->tags->{b}->(), 2);
 
 test 'table not specify exception';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 eval {$dbi->insert};
 like($@, qr/table/);
 eval {$dbi->update};
@@ -1461,7 +1452,7 @@ like($@, qr/table/);
 
 
 test 'more tests';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 eval{$dbi->apply_filter('table', 'column', [])};
 like($@, qr/apply_filter/);
 
@@ -1471,7 +1462,7 @@ like($@, qr/apply_filter/);
 $dbi->apply_filter(
 
 );
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -1480,7 +1471,7 @@ $dbi->apply_filter('table1', 'key2',
 $rows = $dbi->select(table => 'table1', where => {key2 => 1})->all;
 is_deeply($rows, [{key1 => 1, key2 => 6}]);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -1488,7 +1479,7 @@ $dbi->apply_filter('table1', 'key2', {});
 $rows = $dbi->select(table => 'table1', where => {key2 => 2})->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 eval {$dbi->apply_filter('table1', 'key2', {out => 'no'})};
 like($@, qr/not registered/);
 eval {$dbi->apply_filter('table1', 'key2', {in => 'no'})};
@@ -1499,7 +1490,7 @@ is($dbi->one, 1);
 eval{DBIx::Custom->connect()};
 like($@, qr/_connect/);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2},
@@ -1526,7 +1517,7 @@ ok(!defined $dbi->default_fetch_filter);
 eval {$dbi->execute('select * from table1 {} {= author') };
 like($@, qr/Tag not finished/);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->register_filter(one => sub { 1 });
 $result = $dbi->select(table => 'table1');
@@ -1554,7 +1545,7 @@ $result->stash->{foo} = 1;
 is($result->stash->{foo}, 1, 'get and set');
 
 test 'filter __ expression';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute('create table company (id, name, location_id)');
 $dbi->execute('create table location (id, name)');
 $dbi->apply_filter('location',
@@ -1584,7 +1575,7 @@ is($result->fetch_first->[0], 'B');
 
 test 'Model class';
 use MyDBI1;
-$dbi = MyDBI1->connect($NEW_ARGS->{0});
+$dbi = MyDBI1->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute("create table book (title, author)");
 $model = $dbi->model('book');
 $model->insert({title => 'a', author => 'b'});
@@ -1652,7 +1643,7 @@ is($dbi->models->{'company'}, $dbi->model('company'));
 
     sub list { shift->select; }
 }
-$dbi = MyDBI4->connect($NEW_ARGS->{0});
+$dbi = MyDBI4->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute("create table book (title, author)");
 $model = $dbi->model('book');
 $model->insert({title => 'a', author => 'b'});
@@ -1676,7 +1667,7 @@ is_deeply($model->list->all, [{name => 'a'}], 'basic');
         $self->include_model('MyModel4');
     }
 }
-$dbi = MyDBI5->connect($NEW_ARGS->{0});
+$dbi = MyDBI5->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute("create table company (name)");
 $dbi->execute("create table table1 (key1)");
 $model = $dbi->model('company');
@@ -1688,21 +1679,21 @@ is_deeply($model->list->all, [{key1 => 1}], 'include all model');
 
 test 'primary_key';
 use MyDBI1;
-$dbi = MyDBI1->connect($NEW_ARGS->{0});
+$dbi = MyDBI1->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $model = $dbi->model('book');
 $model->primary_key(['id', 'number']);
 is_deeply($model->primary_key, ['id', 'number']);
 
 test 'columns';
 use MyDBI1;
-$dbi = MyDBI1->connect($NEW_ARGS->{0});
+$dbi = MyDBI1->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $model = $dbi->model('book');
 $model->columns(['id', 'number']);
 is_deeply($model->columns, ['id', 'number']);
 
 test 'setup_model';
 use MyDBI1;
-$dbi = MyDBI1->connect($NEW_ARGS->{0});
+$dbi = MyDBI1->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute('create table book (id)');
 $dbi->execute('create table company (id, name);');
 $dbi->execute('create table test (id, name, primary key (id, name));');
@@ -1711,7 +1702,7 @@ is_deeply($dbi->model('book')->columns, ['id']);
 is_deeply($dbi->model('company')->columns, ['id', 'name']);
 
 test 'delete_at';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->delete_at(
@@ -1730,7 +1721,7 @@ $dbi->delete_at(
 is_deeply($dbi->select(table => 'table1')->all, []);
 
 test 'insert_at';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert_at(
     primary_key => ['key1', 'key2'], 
@@ -1765,7 +1756,7 @@ eval {
 };
 like($@, qr/must be/);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert_at(
     {key3 => 3},
@@ -1778,7 +1769,7 @@ is($dbi->select(table => 'table1')->one->{key2}, 2);
 is($dbi->select(table => 'table1')->one->{key3}, 3);
 
 test 'update_at';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->update_at(
@@ -1803,7 +1794,7 @@ is($dbi->select(table => 'table1')->one->{key1}, 1);
 is($dbi->select(table => 'table1')->one->{key2}, 2);
 is($dbi->select(table => 'table1')->one->{key3}, 4);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->update_at(
@@ -1817,7 +1808,7 @@ is($dbi->select(table => 'table1')->one->{key2}, 2);
 is($dbi->select(table => 'table1')->one->{key3}, 4);
 
 test 'select_at';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $result = $dbi->select_at(
@@ -1893,7 +1884,7 @@ like($@, qr/must be/);
 
 test 'columns';
 use MyDBI1;
-$dbi = MyDBI1->connect($NEW_ARGS->{0});
+$dbi = MyDBI1->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $model = $dbi->model('book');
 
 
@@ -1911,7 +1902,7 @@ test 'model delete_at';
         return $self;
     }
 }
-$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi = MyDBI6->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->execute("create table table2 (key1, key2, key3)");
 $dbi->execute("create table table3 (key1, key2, key3)");
@@ -1926,7 +1917,7 @@ $dbi->model('table1_3')->delete_at(where => [1, 2]);
 is_deeply($dbi->select(table => 'table1')->all, []);
 
 test 'model insert_at';
-$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi = MyDBI6->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->model('table1')->insert_at(
     where => [1, 2],
@@ -1939,7 +1930,7 @@ is($row->{key2}, 2);
 is($row->{key3}, 3);
 
 test 'model update_at';
-$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi = MyDBI6->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1')->update_at(
@@ -1953,7 +1944,7 @@ is($row->{key2}, 2);
 is($row->{key3}, 4);
 
 test 'model select_at';
-$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi = MyDBI6->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $result = $dbi->model('table1')->select_at(where => [1, 2]);
@@ -1978,7 +1969,7 @@ test 'mycolumn and column';
         return $self;
     }
 }
-$dbi = MyDBI7->connect($NEW_ARGS->{0});
+$dbi = MyDBI7->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->separator('__');
@@ -1994,7 +1985,7 @@ is_deeply($result->one,
           {key1 => 1, key2 => 2, 'table2__key1' => 1, 'table2__key3' => 3});
 
 test 'update_param';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -2013,7 +2004,7 @@ is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   "basic");
 
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -2031,7 +2022,7 @@ is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 33, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "basic");
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -2055,7 +2046,7 @@ like($@, qr/not safety/);
 
 
 test 'update_param';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -2075,7 +2066,7 @@ is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
 
 
 test 'insert_param';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $param = {key1 => 1, key2 => 2};
 $insert_param = $dbi->insert_param($param);
@@ -2086,7 +2077,7 @@ $dbi->execute($sql, param => $param, table => 'table1');
 is($dbi->select(table => 'table1')->one->{key1}, 1);
 is($dbi->select(table => 'table1')->one->{key2}, 2);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->quote('"');
 $dbi->execute($CREATE_TABLE->{1});
 $param = {key1 => 1, key2 => 2};
@@ -2103,7 +2094,7 @@ like($@, qr/not safety/);
 
 
 test 'join';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -2162,7 +2153,7 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{table1__key1 => 1}]);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->quote('"');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
@@ -2191,7 +2182,7 @@ is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}],
     }
 }
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $sql = <<"EOS";
@@ -2211,7 +2202,7 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{latest_table1__key1 => 1}]);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
@@ -2241,7 +2232,7 @@ $result = $dbi->select(
 );
 is_deeply($result->all, [{'table2.key3' => 4}]);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
@@ -2260,7 +2251,7 @@ $result = $dbi->select(
 is_deeply($result->all, [{'table2.key3' => 4}]);
 
 test 'mycolumn';
-$dbi = MyDBI8->connect($NEW_ARGS->{0});
+$dbi = MyDBI8->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->setup_model;
@@ -2325,14 +2316,14 @@ test 'dbi method from model';
         return $self;
     }
 }
-$dbi = MyDBI9->connect($NEW_ARGS->{0});
+$dbi = MyDBI9->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $model = $dbi->model('table1');
 eval{$model->execute('select * from table1')};
 ok(!$@);
 
 test 'column table option';
-$dbi = MyDBI9->connect($NEW_ARGS->{0});
+$dbi = MyDBI9->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->setup_model;
@@ -2438,7 +2429,7 @@ $row = $result->one;
 is($row->{key1_length}, length $binary);
 
 test 'create_model';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
 
@@ -2472,7 +2463,7 @@ is_deeply($model2->select->one, {key1 => 1, key3 => 3});
 
 test 'model method';
 test 'create_model';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
 $model = $dbi->create_model(
@@ -2500,7 +2491,7 @@ test 'merge_param';
 }
 
 test 'select() param option';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
@@ -2519,7 +2510,7 @@ is_deeply($rows, [{table1_key1 => 2, key2 => 3, key3 => 5}]);
 
 
 test 'select() wrap option';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
@@ -2540,7 +2531,7 @@ $dbi->select(
 like($@, qr/array/);
 
 test 'select() string where';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
@@ -2551,7 +2542,7 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
@@ -2565,7 +2556,7 @@ $rows = $dbi->select(
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
 test 'delete() string where';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
@@ -2577,7 +2568,7 @@ $dbi->delete(
 $rows = $dbi->select(table => 'table1')->all;
 is_deeply($rows, [{key1 => 2, key2 => 3}]);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
@@ -2593,7 +2584,7 @@ is_deeply($rows, [{key1 => 2, key2 => 3}]);
 
 
 test 'update() string where';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->update(
@@ -2605,7 +2596,7 @@ $dbi->update(
 $rows = $dbi->select(table => 'table1')->all;
 is_deeply($rows, [{key1 => 5, key2 => 2}]);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->update(
@@ -2620,7 +2611,7 @@ $rows = $dbi->select(table => 'table1')->all;
 is_deeply($rows, [{key1 => 5, key2 => 2}]);
 
 test 'insert id and primary_key option';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(
     primary_key => ['key1', 'key2'], 
@@ -2644,7 +2635,7 @@ is($dbi->select(table => 'table1')->one->{key1}, 0);
 is($dbi->select(table => 'table1')->one->{key2}, 2);
 is($dbi->select(table => 'table1')->one->{key3}, 3);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(
     {key3 => 3},
@@ -2658,7 +2649,7 @@ is($dbi->select(table => 'table1')->one->{key3}, 3);
 
 
 test 'model insert id and primary_key option';
-$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi = MyDBI6->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->model('table1')->insert(
     id => [1, 2],
@@ -2670,7 +2661,7 @@ is($row->{key1}, 1);
 is($row->{key2}, 2);
 is($row->{key3}, 3);
 
-$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi = MyDBI6->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->model('table1')->insert(
     {key3 => 3},
@@ -2683,7 +2674,7 @@ is($row->{key2}, 2);
 is($row->{key3}, 3);
 
 test 'update and id option';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->update(
@@ -2708,7 +2699,7 @@ is($dbi->select(table => 'table1')->one->{key1}, 0);
 is($dbi->select(table => 'table1')->one->{key2}, 2);
 is($dbi->select(table => 'table1')->one->{key3}, 4);
 
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->update(
@@ -2723,7 +2714,7 @@ is($dbi->select(table => 'table1')->one->{key3}, 4);
 
 
 test 'model update and id option';
-$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi = MyDBI6->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1')->update(
@@ -2738,7 +2729,7 @@ is($row->{key3}, 4);
 
 
 test 'delete and id option';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->delete(
@@ -2758,7 +2749,7 @@ is_deeply($dbi->select(table => 'table1')->all, []);
 
 
 test 'model delete and id option';
-$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi = MyDBI6->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->execute("create table table2 (key1, key2, key3)");
 $dbi->execute("create table table3 (key1, key2, key3)");
@@ -2774,7 +2765,7 @@ is_deeply($dbi->select(table => 'table1')->all, []);
 
 
 test 'select and id option';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $result = $dbi->select(
@@ -2813,7 +2804,7 @@ is($row->{key3}, 3);
 
 
 test 'model select_at';
-$dbi = MyDBI6->connect($NEW_ARGS->{0});
+$dbi = MyDBI6->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $result = $dbi->model('table1')->select(id => [1, 2]);
@@ -2823,7 +2814,7 @@ is($row->{key2}, 2);
 is($row->{key3}, 3);
 
 test 'column separator is default .';
-$dbi = MyDBI7->connect($NEW_ARGS->{0});
+$dbi = MyDBI7->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
 $dbi->setup_model;
@@ -3242,7 +3233,7 @@ $result = $dbi->select(table => 'table1');
 is($result->type_rule2_on->fetch_first->[0], '1bde');
 
 test 'separator';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
 
@@ -3299,7 +3290,7 @@ is_deeply($model2->select->one, {key1 => 1, key3 => 3});
 
 
 test 'filter_off';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->execute($CREATE_TABLE->{2});
 
@@ -3318,12 +3309,12 @@ $result->filter(key1 => sub { $_[0] * 2 });
 is_deeply($result->one, {key1 => 2});
 
 test 'available_date_type';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 ok($dbi->can('available_data_type'));
 
 
 test 'select prefix option';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute($CREATE_TABLE->{0});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $rows = $dbi->select(prefix => 'key1,', column => 'key2', table => 'table1')->all;
@@ -3331,7 +3322,7 @@ is_deeply($rows, [{key1 => 1, key2 => 2}], "table");
 
 
 test 'separator';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 is($dbi->separator, '.');
 $dbi->separator('-');
 is($dbi->separator, '-');
@@ -3342,7 +3333,7 @@ like($@, qr/Separator/);
 
 
 test 'map_param';
-$dbi = DBIx::Custom->connect($NEW_ARGS->{0});
+$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $param = $dbi->map_param(
     {id => 1, author => 'Ken', price => 1900},
     id => 'book.id',
@@ -3461,7 +3452,7 @@ test 'DBIx::Custom header';
 }
 
 test 'Named placeholder :name(operater) syntax';
-$dbi->execute($DROP_TABLE->{0});
+$dbi->execute('drop table table1');
 $dbi->execute($CREATE_TABLE->{1});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -3491,7 +3482,7 @@ $rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
 
 test 'high perfomance way';
-$dbi->execute($DROP_TABLE->{0});
+$dbi->execute('drop table table1');
 $dbi->execute("create table table1 (ab, bc, ik, hi, ui, pq, dc);");
 $rows = [
     {ab => 1, bc => 2, ik => 3, hi => 4, ui => 5, pq => 6, dc => 7},
@@ -3511,7 +3502,7 @@ $rows = [
     );
 }
 
-$dbi->execute($DROP_TABLE->{0});
+$dbi->execute('drop table table1');
 $dbi->execute("create table table1 (ab, bc, ik, hi, ui, pq, dc);");
 $rows = [
     {ab => 1, bc => 2, ik => 3, hi => 4, ui => 5, pq => 6, dc => 7},
