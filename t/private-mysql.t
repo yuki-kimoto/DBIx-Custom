@@ -140,8 +140,6 @@ $rows = $dbi->select(
 is_deeply($rows, [{key1 => 1, key2 => 4}]);
 $dbi->delete_all(table => 'table1');
 
-
-
 test 'type_rule';
 $dbi = DBIx::Custom->connect(
     dsn => "dbi:mysql:database=$DATABASE",
@@ -247,6 +245,34 @@ test 'dbh';
     };
     is_deeply($dbi->select(table => 'table1')->fetch_hash_all,
               []);
+}
+
+use DBIx::Custom;
+use Scalar::Util 'blessed';
+{
+    my $dbi = DBIx::Custom->connect(
+        user => $USER,
+        password => $PASSWORD,
+        dsn => "dbi:mysql:dbname=$DATABASE"
+    );
+    $dbi->connect;
+    
+    ok(blessed $dbi->dbh);
+    can_ok($dbi->dbh, qw/prepare/);
+    ok($dbi->dbh->{AutoCommit});
+    ok(!$dbi->dbh->{mysql_enable_utf8});
+}
+
+{
+    my $dbi = DBIx::Custom->connect(
+        user => $USER,
+        password => $PASSWORD,
+        dsn => "dbi:mysql:dbname=$DATABASE",
+        dbi_options => {AutoCommit => 0, mysql_enable_utf8 => 1}
+    );
+    $dbi->connect;
+    ok(!$dbi->dbh->{AutoCommit});
+    #ok($dbi->dbh->{mysql_enable_utf8});
 }
 
 test 'fork';
