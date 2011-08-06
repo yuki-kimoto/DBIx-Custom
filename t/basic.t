@@ -19,12 +19,6 @@ BEGIN {
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 sub test { print "# $_[0]\n" }
 
-# Constant varialbes for test
-my $CREATE_TABLE = {
-    3 => 'create table table1 (key1 Date, key2 datetime);',
-    4 => 'create table table3 (key3 int, key4 int);'
-};
-
 # Variables
 my $dbi;
 my $sth;
@@ -52,7 +46,6 @@ my $model2;
 my $where;
 my $update_param;
 my $insert_param;
-my $join;
 
 # Prepare table
 $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
@@ -2089,7 +2082,7 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
 $dbi->execute('create table table2 (key1 char(255), key3 char(255));');
 $dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
-$dbi->execute($CREATE_TABLE->{4});
+$dbi->execute('create table table3 (key3 int, key4 int);');
 $dbi->insert(table => 'table3', param => {key3 => 5, key4 => 4});
 $rows = $dbi->select(
     table => 'table1',
@@ -2170,11 +2163,11 @@ is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}],
         return $self;
     }
 }
-
-$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
-$dbi->execute('create table table1 (key1 char(255), key2 char(255));');
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$sql = <<"EOS";
+{
+    $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+    $dbi->execute('create table table1 (key1 char(255), key2 char(255));');
+    $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+    $sql = <<"EOS";
 left outer join (
   select * from table1 as t1
   where t1.key2 = (
@@ -2183,14 +2176,14 @@ left outer join (
   )
 ) as latest_table1 on table1.key1 = latest_table1.key1
 EOS
-$join = [$sql];
-$rows = $dbi->select(
-    table => 'table1',
-    column => 'latest_table1.key1 as latest_table1__key1',
-    join  => $join
-)->all;
-is_deeply($rows, [{latest_table1__key1 => 1}]);
-
+    my $join = [$sql];
+    $rows = $dbi->select(
+        table => 'table1',
+        column => 'latest_table1.key1 as latest_table1__key1',
+        join  => $join
+    )->all;
+    is_deeply($rows, [{latest_table1__key1 => 1}]);
+}
 $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute('create table table1 (key1 char(255), key2 char(255));');
 $dbi->execute('create table table2 (key1 char(255), key3 char(255));');
