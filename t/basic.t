@@ -2460,22 +2460,21 @@ $model->method(foo => sub { shift->select(@_) });
 is_deeply($model->foo->one, {key1 => 1, key3 => 3});
 
 test 'merge_param';
-{
-    my $dbi = DBIx::Custom->new;
-    my $param1 = {key1 => 1, key2 => 2, key3 => 3};
-    my $param2 = {key1 => 1, key2 => 2};
-    my $param3 = {key1 => 1};
-    my $param = $dbi->merge_param($param1, $param2, $param3);
-    is_deeply($param, {key1 => [1, 1, 1], key2 => [2, 2], key3 => 3});
-}
+$dbi = DBIx::Custom->new;
+$params = [
+    {key1 => 1, key2 => 2, key3 => 3},
+    {key1 => 1, key2 => 2},
+    {key1 => 1}
+];
+$param = $dbi->merge_param($params->[0], $params->[1], $params->[2]);
+is_deeply($param, {key1 => [1, 1, 1], key2 => [2, 2], key3 => 3});
 
-{
-    my $dbi = DBIx::Custom->new;
-    my $param1 = {key1 => [1, 2], key2 => 1, key3 => [1, 2]};
-    my $param2 = {key1 => [3, 4], key2 => [2, 3], key3 => 3};
-    my $param = $dbi->merge_param($param1, $param2);
-    is_deeply($param, {key1 => [1, 2, 3, 4], key2 => [1, 2, 3], key3 => [1, 2, 3]});
-}
+$params = [
+    {key1 => [1, 2], key2 => 1, key3 => [1, 2]},
+    {key1 => [3, 4], key2 => [2, 3], key3 => 3}
+];
+$param = $dbi->merge_param($params->[0], $params->[1]);
+is_deeply($param, {key1 => [1, 2, 3, 4], key2 => [1, 2, 3], key3 => [1, 2, 3]});
 
 test 'select() param option';
 $dbi = DBIx::Custom->connect(%memory);
