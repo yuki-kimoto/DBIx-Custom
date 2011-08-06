@@ -2,14 +2,16 @@ use Test::More;
 use strict;
 use warnings;
 
+use FindBin;
+
+plan skip_all => 'private test' unless -f "$FindBin::Bin/private-mysql-run.tmp";
+
+plan 'no_plan';
+
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 
 # user password database
-our ($USER, $PASSWORD, $DATABASE) = connect_info();
-
-plan skip_all => 'private MySQL test' unless $USER;
-
-plan 'no_plan';
+our ($USER, $PASSWORD, $DATABASE) = qw/appuser 123456 usertest/;
 
 require DBIx::Connector;
 
