@@ -3499,4 +3499,108 @@ $rows = [
     );
 }
 
+test 'result';
+$dbi = DBIx::Custom->connect(%memory);
+$dbi->execute($create_table_default);
+$dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
+$dbi->insert({key1 => 3, key2 => 4}, table => 'table1');
+
+$result = $dbi->select(table => 'table1');
+@rows = ();
+while (my $row = $result->fetch) {
+    push @rows, [@$row];
+}
+is_deeply(\@rows, [[1, 2], [3, 4]]);
+
+$result = $dbi->select(table => 'table1');
+@rows = ();
+while (my $row = $result->fetch_hash) {
+    push @rows, {%$row};
+}
+is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$result = $dbi->select(table => 'table1');
+$row = $result->fetch_first;
+is_deeply($row, [1, 2], "row");
+$row = $result->fetch;
+ok(!$row, "finished");
+
+$result = $dbi->select(table => 'table1');
+$row = $result->fetch_hash_first;
+is_deeply($row, {key1 => 1, key2 => 2}, "row");
+$row = $result->fetch_hash;
+ok(!$row, "finished");
+
+$dbi->execute('create table table2 (key1, key2);');
+$result = $dbi->select(table => 'table2');
+$row = $result->fetch_hash_first;
+ok(!$row, "no row fetch");
+
+$dbi = DBIx::Custom->connect(%memory);
+$dbi->execute($create_table_default);
+$dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
+$dbi->insert({key1 => 3, key2 => 4}, table => 'table1');
+$dbi->insert({key1 => 5, key2 => 6}, table => 'table1');
+$dbi->insert({key1 => 7, key2 => 8}, table => 'table1');
+$dbi->insert({key1 => 9, key2 => 10}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+$rows = $result->fetch_multi(2);
+is_deeply($rows, [[1, 2],
+                  [3, 4]], "fetch_multi first");
+$rows = $result->fetch_multi(2);
+is_deeply($rows, [[5, 6],
+                  [7, 8]], "fetch_multi secound");
+$rows = $result->fetch_multi(2);
+is_deeply($rows, [[9, 10]], "fetch_multi third");
+$rows = $result->fetch_multi(2);
+ok(!$rows);
+
+$result = $dbi->select(table => 'table1');
+eval {$result->fetch_multi};
+like($@, qr/Row count must be specified/, "Not specified row count");
+
+$result = $dbi->select(table => 'table1');
+$rows = $result->fetch_hash_multi(2);
+is_deeply($rows, [{key1 => 1, key2 => 2},
+                  {key1 => 3, key2 => 4}], "fetch_multi first");
+$rows = $result->fetch_hash_multi(2);
+is_deeply($rows, [{key1 => 5, key2 => 6},
+                  {key1 => 7, key2 => 8}], "fetch_multi secound");
+$rows = $result->fetch_hash_multi(2);
+is_deeply($rows, [{key1 => 9, key2 => 10}], "fetch_multi third");
+$rows = $result->fetch_hash_multi(2);
+ok(!$rows);
+
+$result = $dbi->select(table => 'table1');
+eval {$result->fetch_hash_multi};
+like($@, qr/Row count must be specified/, "Not specified row count");
+
+$dbi = DBIx::Custom->connect(%memory);
+$dbi->execute($create_table_default);
+$dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
+$dbi->insert({key1 => 3, key2 => 4}, table => 'table1');
+
+test 'fetch_all';
+$result = $dbi->select(table => 'table1');
+$rows = $result->fetch_all;
+is_deeply($rows, [[1, 2], [3, 4]]);
+
+test 'fetch_hash_all';
+$result = $dbi->select(table => 'table1');
+$rows = $result->fetch_hash_all;
+is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$result = $dbi->select(table => 'table1');
+$result->dbi->filters({three_times => sub { $_[0] * 3}});
+$result->filter({key1 => 'three_times'});
+
+$rows = $result->fetch_all;
+is_deeply($rows, [[3, 2], [9, 4]], "array");
+
+$result = $dbi->select(table => 'table1');
+$result->dbi->filters({three_times => sub { $_[0] * 3}});
+$result->filter({key1 => 'three_times'});
+$rows = $result->fetch_hash_all;
+is_deeply($rows, [{key1 => 3, key2 => 2}, {key1 => 9, key2 => 4}], "hash");
+
 =cut
