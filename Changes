@@ -1,4 +1,8 @@
 0.1710
+    - use more DBIx::Custom information in sub modules to decrease bugs
+      (very sorry, this change can't keep backword compatible,
+       but maybe no effects,
+       because the attributes is automatically set by DBIx::Custom, not user).
     - Fixed fisrt executed where clause failed in some condition.
 0.1709
     - fixed named placeholder bug and added escape syntax
