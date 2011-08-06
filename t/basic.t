@@ -3378,64 +3378,53 @@ is($result->one->{key1}, 'A');
 
 test 'order';
 $dbi = DBIx::Custom->connect(%memory);
-{
-    $dbi->execute("create table table1 (key1, key2)");
-    $dbi->insert({key1 => 1, key2 => 1}, table => 'table1');
-    $dbi->insert({key1 => 1, key2 => 3}, table => 'table1');
-    $dbi->insert({key1 => 2, key2 => 2}, table => 'table1');
-    $dbi->insert({key1 => 2, key2 => 4}, table => 'table1');
-    my $order = $dbi->order;
-    $order->prepend('key1', 'key2 desc');
-    $result = $dbi->select(table => 'table1', append => "$order");
-    is_deeply($result->all, [{key1 => 1, key2 => 3}, {key1 => 1, key2 => 1},
-      {key1 => 2, key2 => 4}, {key1 => 2, key2 => 2}]);
-    $order->prepend('key1 desc');
-    $result = $dbi->select(table => 'table1', append => "$order");
-    is_deeply($result->all, [{key1 => 2, key2 => 4}, {key1 => 2, key2 => 2},
-      {key1 => 1, key2 => 3}, {key1 => 1, key2 => 1}]);
+$dbi->execute("create table table1 (key1, key2)");
+$dbi->insert({key1 => 1, key2 => 1}, table => 'table1');
+$dbi->insert({key1 => 1, key2 => 3}, table => 'table1');
+$dbi->insert({key1 => 2, key2 => 2}, table => 'table1');
+$dbi->insert({key1 => 2, key2 => 4}, table => 'table1');
+my $order = $dbi->order;
+$order->prepend('key1', 'key2 desc');
+$result = $dbi->select(table => 'table1', append => "$order");
+is_deeply($result->all, [{key1 => 1, key2 => 3}, {key1 => 1, key2 => 1},
+  {key1 => 2, key2 => 4}, {key1 => 2, key2 => 2}]);
+$order->prepend('key1 desc');
+$result = $dbi->select(table => 'table1', append => "$order");
+is_deeply($result->all, [{key1 => 2, key2 => 4}, {key1 => 2, key2 => 2},
+  {key1 => 1, key2 => 3}, {key1 => 1, key2 => 1}]);
 
-    $order = $dbi->order;
-    $order->prepend(['table1-key1'], [qw/table1-key2 desc/]);
-    $result = $dbi->select(table => 'table1',
-      column => [[key1 => 'table1-key1'], [key2 => 'table1-key2']],
-      append => "$order");
-    is_deeply($result->all, [{'table1-key1' => 1, 'table1-key2' => 3},
-      {'table1-key1' => 1, 'table1-key2' => 1},
-      {'table1-key1' => 2, 'table1-key2' => 4},
-      {'table1-key1' => 2, 'table1-key2' => 2}]);
-}
+$order = $dbi->order;
+$order->prepend(['table1-key1'], [qw/table1-key2 desc/]);
+$result = $dbi->select(table => 'table1',
+  column => [[key1 => 'table1-key1'], [key2 => 'table1-key2']],
+  append => "$order");
+is_deeply($result->all, [{'table1-key1' => 1, 'table1-key2' => 3},
+  {'table1-key1' => 1, 'table1-key2' => 1},
+  {'table1-key1' => 2, 'table1-key2' => 4},
+  {'table1-key1' => 2, 'table1-key2' => 2}]);
 
 test 'tag_parse';
 $dbi = DBIx::Custom->connect(%memory);
 $dbi->tag_parse(0);
-{
-    $dbi->execute("create table table1 (key1, key2)");
-    $dbi->insert({key1 => 1, key2 => 1}, table => 'table1');
-    eval {$dbi->execute("select * from table1 where {= key1}", {key1 => 1})};
-    ok($@);
-}
+$dbi->execute("create table table1 (key1, key2)");
+$dbi->insert({key1 => 1, key2 => 1}, table => 'table1');
+eval {$dbi->execute("select * from table1 where {= key1}", {key1 => 1})};
+ok($@);
 
 test 'last_sql';
-{
-    my $dbi = DBIx::Custom->connect(%memory);
-    $dbi->execute("create table table1 (key1, key2)");
-    $dbi->execute('select * from table1');
-    is($dbi->last_sql, 'select * from table1;');
-    
-    eval{$dbi->execute("aaa")};
-    is($dbi->last_sql, 'aaa;');
-    
-}
+$dbi = DBIx::Custom->connect(%memory);
+$dbi->execute("create table table1 (key1, key2)");
+$dbi->execute('select * from table1');
+is($dbi->last_sql, 'select * from table1;');
+
+eval{$dbi->execute("aaa")};
+is($dbi->last_sql, 'aaa;');
 
 test 'DBIx::Custom header';
-{
-    my $dbi = DBIx::Custom->connect(%memory);
-    $dbi->execute("create table table1 (key1, key2)");
-    my $result = $dbi->execute('select key1 as h1, key2 as h2 from table1');
-    
-    is_deeply($result->header, [qw/h1 h2/]);
-    
-}
+$dbi = DBIx::Custom->connect(%memory);
+$dbi->execute("create table table1 (key1, key2)");
+$result = $dbi->execute('select key1 as h1, key2 as h2 from table1');
+is_deeply($result->header, [qw/h1 h2/]);
 
 test 'Named placeholder :name(operater) syntax';
 $dbi->execute('drop table table1');
