@@ -5,32 +5,17 @@ use warnings;
 use FindBin;
 
 plan skip_all => 'private test' unless -f "$FindBin::Bin/private-mysql-run.tmp";
-
 plan 'no_plan';
 
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 
 # user password database
-our ($USER, $PASSWORD, $DATABASE) = qw/appuser 123456 usertest/;
+our ($user, $password, $database) = qw/appuser 123456 usertest/;
 
 require DBIx::Connector;
 
 # Function for test name
 sub test { print "# $_[0]\n" }
-
-# Functions for tests
-sub connect_info {
-    my $file = 'password.tmp';
-    open my $fh, '<', $file
-      or return;
-    
-    my ($user, $password, $database) = split(/\s/, (<$fh>)[0]);
-    
-    close $fh;
-    
-    return ($user, $password, $database);
-}
-
 
 # Varialbes for tests
 my $dbi;
@@ -38,59 +23,21 @@ my $dbname;
 my $rows;
 my $result;
 
-{
-    package DBIx::Custom::MySQL;
-
-    use strict;
-    use warnings;
-
-    use base 'DBIx::Custom';
-
-    __PACKAGE__->attr([qw/database host port/]);
-
-    sub connect {
-        my $proto = shift;
-        
-        # Create a new object
-        my $self = ref $proto ? $proto : $proto->new(@_);
-        
-        # Data source
-        if (!$self->dsn) {
-            my $database = $self->database;
-            my $host     = $self->host;
-            my $port     = $self->port;
-            my $dsn = "dbi:mysql:";
-            $dsn .= "database=$database;" if $database;
-            $dsn .= "host=$host;"         if $host;
-            $dsn .= "port=$port;"         if $port;
-            $self->dsn($dsn);
-        }
-        
-        return $self->SUPER::connect;
-    }
-
-    1;
-}
-
 test 'connect';
-$dbi = DBIx::Custom::MySQL->new(user => $USER, password => $PASSWORD,
-                    database => $DATABASE, host => 'localhost', port => '10000');
-$dbi->connect;
-like($dbi->dsn, qr/dbi:mysql:database=.*;host=localhost;port=10000;/, "created data source");
-is(ref $dbi->dbh, 'DBI::db');
-
-test 'attributes';
-$dbi = DBIx::Custom::MySQL->new;
-$dbi->host('a');
-is($dbi->host, 'a', "host");
-$dbi->port('b');
-is($dbi->port, 'b', "port");
+eval {
+    $dbi = DBIx::Custom->new(
+        dsn => "dbi:mysql:database=$database;host=localhost;port=10000",
+        user => $user,
+        password => $password
+    );
+};
+ok(!$@);
 
 test 'limit';
 $dbi = DBIx::Custom->connect(
-    dsn => "dbi:mysql:database=$DATABASE",
-    user => $USER,
-    password => $PASSWORD
+    dsn => "dbi:mysql:database=$database",
+    user => $user,
+    password => $password
 );
 $dbi->delete_all(table => 'table1');
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
@@ -130,9 +77,9 @@ is_deeply($rows, [{key1 => 1, key2 => 2}]);
 $dbi->dbh->disconnect;
 $dbi = undef;
 $dbi = DBIx::Custom->connect(
-    dsn => "dbi:mysql:database=$DATABASE",
-    user => $USER,
-    password => $PASSWORD
+    dsn => "dbi:mysql:database=$database",
+    user => $user,
+    password => $password
 );
 $rows = $dbi->select(
   table => 'table1',
@@ -144,9 +91,9 @@ $dbi->delete_all(table => 'table1');
 
 test 'type_rule';
 $dbi = DBIx::Custom->connect(
-    dsn => "dbi:mysql:database=$DATABASE",
-    user => $USER,
-    password => $PASSWORD
+    dsn => "dbi:mysql:database=$database",
+    user => $user,
+    password => $password
 );
 eval{$dbi->execute("create table date_test (date DATE, datetime DATETIME)")};
 $dbi->each_column(
@@ -201,9 +148,9 @@ $dbi->execute("drop table date_test");
 test 'dbh';
 {
     my $connector = DBIx::Connector->new(
-        "dbi:mysql:database=$DATABASE",
-        $USER,
-        $PASSWORD,
+        "dbi:mysql:database=$database",
+        $user,
+        $password,
         DBIx::Custom->new->default_dbi_option
     );
 
@@ -221,9 +168,9 @@ test 'transaction';
 test 'dbh';
 {
     my $connector = DBIx::Connector->new(
-        "dbi:mysql:database=$DATABASE",
-        $USER,
-        $PASSWORD,
+        "dbi:mysql:database=$database",
+        $user,
+        $password,
         DBIx::Custom->new->default_dbi_option
     );
 
@@ -253,9 +200,9 @@ use DBIx::Custom;
 use Scalar::Util 'blessed';
 {
     my $dbi = DBIx::Custom->connect(
-        user => $USER,
-        password => $PASSWORD,
-        dsn => "dbi:mysql:dbname=$DATABASE"
+        user => $user,
+        password => $password,
+        dsn => "dbi:mysql:dbname=$database"
     );
     $dbi->connect;
     
@@ -267,9 +214,9 @@ use Scalar::Util 'blessed';
 
 {
     my $dbi = DBIx::Custom->connect(
-        user => $USER,
-        password => $PASSWORD,
-        dsn => "dbi:mysql:dbname=$DATABASE",
+        user => $user,
+        password => $password,
+        dsn => "dbi:mysql:dbname=$database",
         dbi_options => {AutoCommit => 0, mysql_enable_utf8 => 1}
     );
     $dbi->connect;
@@ -280,9 +227,9 @@ use Scalar::Util 'blessed';
 test 'fork';
 {
     my $connector = DBIx::Connector->new(
-        "dbi:mysql:database=$DATABASE",
-        $USER,
-        $PASSWORD,
+        "dbi:mysql:database=$database",
+        $user,
+        $password,
         DBIx::Custom->new->default_dbi_option
     );
     
