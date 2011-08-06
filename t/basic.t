@@ -907,7 +907,7 @@ is_deeply($rows, [{key2 => 4, key3 => 18}], "select : join : omit");
 test 'each_column';
 $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute('create table table2 (key1 char(255), key3 char(255));');
-$dbi->execute($CREATE_TABLE->{3});
+$dbi->execute('create table table1 (key1 Date, key2 datetime);');
 
 $infos = [];
 $dbi->each_column(sub {
@@ -931,7 +931,7 @@ is_deeply($infos,
 test 'each_table';
 $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
 $dbi->execute('create table table2 (key1 char(255), key3 char(255));');
-$dbi->execute($CREATE_TABLE->{3});
+$dbi->execute('create table table1 (key1 Date, key2 datetime);');
 
 $infos = [];
 $dbi->each_table(sub {
