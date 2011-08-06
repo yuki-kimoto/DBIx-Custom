@@ -2048,32 +2048,30 @@ is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
 
 
 test 'insert_param';
-$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
-$dbi->execute('create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));');
-$param = {key1 => 1, key2 => 2};
-$insert_param = $dbi->insert_param($param);
-$sql = <<"EOS";
-insert into table1 $insert_param
-EOS
-$dbi->execute($sql, param => $param, table => 'table1');
-is($dbi->select(table => 'table1')->one->{key1}, 1);
-is($dbi->select(table => 'table1')->one->{key2}, 2);
+{
+    $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+    $dbi->execute('create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));');
+    $param = {key1 => 1, key2 => 2};
+    my $insert_param = $dbi->insert_param($param);
+    $sql = "insert into table1 $insert_param";
+    $dbi->execute($sql, param => $param, table => 'table1');
+    is($dbi->select(table => 'table1')->one->{key1}, 1);
+    is($dbi->select(table => 'table1')->one->{key2}, 2);
+}
+{
+    $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
+    $dbi->quote('"');
+    $dbi->execute('create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));');
+    $param = {key1 => 1, key2 => 2};
+    my $insert_param = $dbi->insert_param($param);
+    $sql = "insert into table1 $insert_param";
+    $dbi->execute($sql, param => $param, table => 'table1');
+    is($dbi->select(table => 'table1')->one->{key1}, 1);
+    is($dbi->select(table => 'table1')->one->{key2}, 2);
 
-$dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
-$dbi->quote('"');
-$dbi->execute('create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));');
-$param = {key1 => 1, key2 => 2};
-$insert_param = $dbi->insert_param($param);
-$sql = <<"EOS";
-insert into table1 $insert_param
-EOS
-$dbi->execute($sql, param => $param, table => 'table1');
-is($dbi->select(table => 'table1')->one->{key1}, 1);
-is($dbi->select(table => 'table1')->one->{key2}, 2);
-
-eval { $dbi->insert_param({";" => 1}) };
-like($@, qr/not safety/);
-
+    eval { $dbi->insert_param({";" => 1}) };
+    like($@, qr/not safety/);
+}
 
 test 'join';
 $dbi = DBIx::Custom->connect(dsn => 'dbi:SQLite:dbname=:memory:');
