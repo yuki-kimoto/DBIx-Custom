@@ -8,4 +8,4 @@ use DBIx::Custom;
 
 use FindBin;
 
-require "$FindBin::Bin/basic.t";
+require "$FindBin::Bin/sqlite.t";
