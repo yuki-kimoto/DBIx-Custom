@@ -16,6 +16,8 @@ sub test { print "# $_[0]\n" }
 
 # Constant
 my $create_table1 = $dbi->create_table1;
+my $create_table1_2 = $dbi->create_table1_2;
+
 
 # Variable
 # Variables
@@ -127,7 +129,7 @@ is_deeply($rows, [{key1 => 2, key2 => 4}], "filter");
 
 test 'DBIx::Custom::SQLTemplate basic tag';
 $dbi->execute('drop table table1');
-$dbi->execute($dbi->create_table1_2);
+$dbi->execute($create_table1_2);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 
@@ -151,7 +153,7 @@ is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "bas
 
 test 'DIB::Custom::SQLTemplate in tag';
 $dbi->execute('drop table table1');
-$dbi->execute($dbi->create_table1_2);
+$dbi->execute($create_table1_2);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 
@@ -183,5 +185,57 @@ $result = $dbi->execute('select * from table1 order by key1;');
 $rows = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 1, key3 => 1, key4 => 1, key5 => 5},
                   {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "basic");
+
+test 'Named placeholder';
+$dbi->execute('drop table table1');
+$dbi->execute($create_table1_2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+
+$source = "select * from table1 where key1 = :key1 and key2 = :key2";
+$result = $dbi->execute($source, param => {key1 => 1, key2 => 2});
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
+
+$source = "select * from table1 where key1 = \n:key1\n and key2 = :key2";
+$result = $dbi->execute($source, param => {key1 => 1, key2 => 2});
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
+
+$source = "select * from table1 where key1 = :key1 or key1 = :key1";
+$result = $dbi->execute($source, param => {key1 => [1, 2]});
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
+
+$source = "select * from table1 where key1 = :table1.key1 and key2 = :table1.key2";
+$result = $dbi->execute(
+    $source,
+    param => {'table1.key1' => 1, 'table1.key2' => 1},
+    filter => {'table1.key2' => sub { $_[0] * 2 }}
+);
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}]);
+
+$dbi->execute('drop table table1');
+$dbi->execute($create_table1);
+$dbi->insert(table => 'table1', param => {key1 => '2011-10-14 12:19:18', key2 => 2});
+$source = "select * from table1 where key1 = '2011-10-14 12:19:18' and key2 = :key2";
+$result = $dbi->execute(
+    $source,
+    param => {'key2' => 2},
+);
+
+$rows = $result->all;
+is_deeply($rows, [{key1 => '2011-10-14 12:19:18', key2 => 2}]);
+
+$dbi->delete_all(table => 'table1');
+$dbi->insert(table => 'table1', param => {key1 => 'a:b c:d', key2 => 2});
+$source = "select * from table1 where key1 = 'a\\:b c\\:d' and key2 = :key2";
+$result = $dbi->execute(
+    $source,
+    param => {'key2' => 2},
+);
+$rows = $result->all;
+is_deeply($rows, [{key1 => 'a:b c:d', key2 => 2}]);
 
 1;
