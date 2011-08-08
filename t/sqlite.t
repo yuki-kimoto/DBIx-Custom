@@ -56,83 +56,8 @@ my $join;
 
 # Prepare table
 $dbi = DBIx::Custom->connect(%memory);
-$dbi->execute($create_table_default);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
-
-test 'DBIx::Custom::Result test';
-$source = "select key1, key2 from table1";
-$query = $dbi->create_query($source);
-$result = $dbi->execute($query);
-
-@rows = ();
-while (my $row = $result->fetch) {
-    push @rows, [@$row];
-}
-is_deeply(\@rows, [[1, 2], [3, 4]], "fetch");
-
-$result = $dbi->execute($query);
-@rows = ();
-while (my $row = $result->fetch_hash) {
-    push @rows, {%$row};
-}
-is_deeply(\@rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "fetch_hash");
-
-$result = $dbi->execute($query);
-$rows = $result->fetch_all;
-is_deeply($rows, [[1, 2], [3, 4]], "fetch_all");
-
-$result = $dbi->execute($query);
-$rows = $result->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "all");
-
-test 'Insert query return value';
-$dbi->execute('drop table table1');
-$dbi->execute($create_table_default);
-$source = "insert into table1 {insert_param key1 key2}";
-$query = $dbi->execute($source, {}, query => 1);
-$ret_val = $dbi->execute($query, param => {key1 => 1, key2 => 2});
-ok($ret_val);
-
-
-test 'Direct query';
-$dbi->execute('drop table table1');
-$dbi->execute($create_table_default);
-$insert_source = "insert into table1 {insert_param key1 key2}";
-$dbi->execute($insert_source, param => {key1 => 1, key2 => 2});
-$result = $dbi->execute('select * from table1;');
-$rows = $result->all;
-is_deeply($rows, [{key1 => 1, key2 => 2}]);
-
-test 'Filter basic';
-$dbi->execute('drop table table1');
-$dbi->execute($create_table_default);
-$dbi->register_filter(twice       => sub { $_[0] * 2}, 
-                    three_times => sub { $_[0] * 3});
-
-$insert_source  = "insert into table1 {insert_param key1 key2};";
-$insert_query = $dbi->execute($insert_source, {}, query => 1);
-$insert_query->filter({key1 => 'twice'});
-$dbi->execute($insert_query, param => {key1 => 1, key2 => 2});
-$result = $dbi->execute('select * from table1;');
-$rows = $result->filter({key2 => 'three_times'})->all;
-is_deeply($rows, [{key1 => 2, key2 => 6}], "filter fetch_filter");
-$dbi->execute('drop table table1');
-
-test 'Filter in';
-$dbi->execute($create_table_default);
-$insert_source  = "insert into table1 {insert_param key1 key2};";
-$insert_query = $dbi->execute($insert_source, {}, query => 1);
-$dbi->execute($insert_query, param => {key1 => 2, key2 => 4});
-$select_source = "select * from table1 where {in table1.key1 2} and {in table1.key2 2}";
-$select_query = $dbi->execute($select_source,{}, query => 1);
-$select_query->filter({'table1.key1' => 'twice'});
-$result = $dbi->execute($select_query, param => {'table1.key1' => [1,5], 'table1.key2' => [2,4]});
-$rows = $result->all;
-is_deeply($rows, [{key1 => 2, key2 => 4}], "filter");
 
 test 'DBIx::Custom::SQLTemplate basic tag';
-$dbi->execute('drop table table1');
 $dbi->execute('create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));');
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
