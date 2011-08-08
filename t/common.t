@@ -125,3 +125,63 @@ $result = $dbi->execute($select_query, param => {'table1.key1' => [1,5], 'table1
 $rows = $result->all;
 is_deeply($rows, [{key1 => 2, key2 => 4}], "filter");
 
+test 'DBIx::Custom::SQLTemplate basic tag';
+$dbi->execute('drop table table1');
+$dbi->execute($dbi->create_table1_2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+
+$source = "select * from table1 where key1 = :key1 and {<> key2} and {< key3} and {> key4} and {>= key5};";
+$query = $dbi->execute($source, {}, query => 1);
+$result = $dbi->execute($query, param => {key1 => 1, key2 => 3, key3 => 4, key4 => 3, key5 => 5});
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "basic tag1");
+
+$source = "select * from table1 where key1 = :key1 and {<> key2} and {< key3} and {> key4} and {>= key5};";
+$query = $dbi->execute($source, {}, query => 1);
+$result = $dbi->execute($query, {key1 => 1, key2 => 3, key3 => 4, key4 => 3, key5 => 5});
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "basic tag1");
+
+$source = "select * from table1 where {<= key1} and {like key2};";
+$query = $dbi->execute($source, {}, query => 1);
+$result = $dbi->execute($query, param => {key1 => 1, key2 => '%2%'});
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "basic tag2");
+
+test 'DIB::Custom::SQLTemplate in tag';
+$dbi->execute('drop table table1');
+$dbi->execute($dbi->create_table1_2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+
+$source = "select * from table1 where {in key1 2};";
+$query = $dbi->execute($source, {}, query => 1);
+$result = $dbi->execute($query, param => {key1 => [9, 1]});
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "basic");
+
+test 'DBIx::Custom::SQLTemplate insert tag';
+$dbi->delete_all(table => 'table1');
+$insert_source = 'insert into table1 {insert_param key1 key2 key3 key4 key5}';
+$dbi->execute($insert_source, param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+
+$result = $dbi->execute('select * from table1;');
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5}], "basic");
+
+test 'DBIx::Custom::SQLTemplate update tag';
+$dbi->delete_all(table => 'table1');
+$insert_source = "insert into table1 {insert_param key1 key2 key3 key4 key5}";
+$dbi->execute($insert_source, param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->execute($insert_source, param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+
+$update_source = 'update table1 {update_param key1 key2 key3 key4} where {= key5}';
+$dbi->execute($update_source, param => {key1 => 1, key2 => 1, key3 => 1, key4 => 1, key5 => 5});
+
+$result = $dbi->execute('select * from table1 order by key1;');
+$rows = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 1, key3 => 1, key4 => 1, key5 => 5},
+                  {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10}], "basic");
+
+1;
