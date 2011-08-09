@@ -25,16 +25,6 @@ sub _map_param {
     my $map_param = {};
     foreach my $key (keys %$param) {
     
-        unless (exists $map{$key}) {
-            if (ref $param->{$key} eq 'ARRAY') {
-                $map_param->{$key} = [@{$param->{$key}}];
-            }
-            else {
-                $map_param->{$key} = $param->{$key};
-            }
-            next;
-        }
-        
         my $value_cb;
         my $condition;
         my $map_key;
@@ -47,9 +37,13 @@ sub _map_param {
                 $value_cb = $some if ref $some eq 'CODE';
             }
         }
-        else {
+        elsif (defined $map{$key}) {
             $map_key = $map{$key};
         }
+        else {
+            $map_key = $key;
+        }
+        
         $value_cb ||= sub { $_[0] };
         $condition ||= $self->if || 'exists';
 
@@ -238,23 +232,10 @@ sub _parse {
                 my $if = $self->{_if};
                 
                 if (ref $param->{$column} eq 'ARRAY') {
-                    unless (ref $param->{$column}->[$count - 1] eq 'DBIx::Custom::NotExists') {
-                        if ($if eq 'exists') {
-                            $pushed = 1 if exists $param->{$column}->[$count - 1];
-                        }
-                        else {
-                            $pushed = 1 if $if->($param->{$column}->[$count - 1]);
-                        }
-                    }
-                } 
-                elsif ($count == 1) {
-                    if ($if eq 'exists') {
-                        $pushed = 1 if exists $param->{$column};
-                    }
-                    else {
-                        $pushed = 1 if $if->($param->{$column});
-                    }
+                    $pushed = 1 if exists $param->{$column}->[$count - 1]
+                      && ref $param->{$column}->[$count - 1] ne 'DBIx::Custom::NotExists'
                 }
+                elsif ($count == 1) { $pushed = 1 }
             }
             push @$where, $clause if $pushed;
         }
