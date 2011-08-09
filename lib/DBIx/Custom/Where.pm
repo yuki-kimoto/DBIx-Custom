@@ -10,8 +10,15 @@ use overload '""' => sub { shift->to_string }, fallback => 1;
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
 has [qw/dbi param/],
-    map => sub { {} },
     clause => sub { [] };
+
+sub map {
+    my ($self, %map) = @_;
+    
+    my $param = $self->_map_param($self->param, %map);
+    $self->param($param);
+    return $self;
+}
 
 sub _map_param {
     my $self = shift;
@@ -145,8 +152,6 @@ sub to_string {
       unless $if;
     $self->{_if} = $if;
     
-    $self->{_param} = $self->_map_param($self->param, %{$self->map});
-    
     # Parse
     my $where = [];
     my $count = {};
@@ -226,7 +231,7 @@ sub _parse {
         my $count = ++$count->{$column};
         
         # Push
-        my $param = $self->{_param};
+        my $param = $self->param;
         if (ref $param eq 'HASH') {
             if (exists $param->{$column}) {
                 my $if = $self->{_if};
@@ -280,44 +285,6 @@ If all parameter names is exists.
 
     "where ( title = :title and ( date < :date or date > :date ) )"
 
-=head2 C<map EXPERIMENTAL>
-
-Mapping parameter key and value when C<to_stirng> method is executed.
-
-    $where->map({
-        'id' => 'book.id',
-        'author' => ['book.author' => sub { '%' . $_[0] . '%' }],
-        'price' => [
-            'book.price', {if => sub { length $_[0] }
-        ]
-    });
-
-The following option is available.
-
-=over 4
-
-=item * C<if>
-
-By default, if parameter key is exists, mapping is done.
-    
-    if => 'exists';
-
-In case C<defined> is specified, if the value is defined,
-mapping is done.
-
-    if => 'defined';
-
-In case C<length> is specified, the value is defined
-and the length is bigger than 0, mappting is done.
-
-    if => 'length';
-
-You can also subroutine like C<sub { defined $_[0] }> for mappging.
-
-    if => sub { defined $_[0] }
-
-=back
-
 =head2 C<param>
 
     my $param = $where->param;
@@ -344,6 +311,45 @@ and implements the following new ones.
     $where->if($condition);
 
 C<if> is default of C<map> method C<if> option.
+
+=head2 C<map EXPERIMENTAL>
+
+Mapping parameter key and value. C<param> is converted,
+so this method must be called after C<param> is set.
+
+    $where->map(
+        'id' => 'book.id',
+        'author' => ['book.author' => sub { '%' . $_[0] . '%' }],
+        'price' => [
+            'book.price', {if => sub { length $_[0] }
+        ]
+    );
+
+The following option is available.
+
+=over 4
+
+=item * C<if>
+
+By default, if parameter key is exists, mapping is done.
+    
+    if => 'exists';
+
+In case C<defined> is specified, if the value is defined,
+mapping is done.
+
+    if => 'defined';
+
+In case C<length> is specified, the value is defined
+and the length is bigger than 0, mappting is done.
+
+    if => 'length';
+
+You can also subroutine like C<sub { defined $_[0] }> for mappging.
+
+    if => sub { defined $_[0] }
+
+=back
 
 =head2 C<to_string>
 
