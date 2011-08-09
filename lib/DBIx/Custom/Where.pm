@@ -55,6 +55,7 @@ sub _map_param {
         
         $value_cb ||= sub { $_[0] };
         $condition ||= $self->if || 'exists';
+        $condition = $self->_if_to_sub($condition);
 
         # Map parameter
         my $value;
@@ -97,20 +98,26 @@ sub if {
     if (@_) {
         my $if = $_[0];
         
-        $if = $if eq 'exists' ? $if
-                : $if eq 'defined' ? sub { defined $_[0] }
-                : $if eq 'length'  ? sub { defined $_[0] && length $_[0] }
-                : ref $if eq 'CODE' ? $if
-                : undef;
-
-        croak "You can must specify right value to C<if> " . _subname
-          unless $if;
-
+        $if = $self->_if_to_sub($if);
         $self->{if} = $if;
         return $self;
     }
     $self->{if} = 'exists' unless exists $self->{if};
     return $self->{if};
+}
+
+sub _if_to_sub {
+    my ($self, $if) = @_;
+    $if = $if eq 'exists' ? $if
+            : $if eq 'defined' ? sub { defined $_[0] }
+            : $if eq 'length'  ? sub { defined $_[0] && length $_[0] }
+            : ref $if eq 'CODE' ? $if
+            : undef;
+
+    croak "You can must specify right value to C<if> " . _subname
+      unless $if;
+    
+    return $if;
 }
 
 sub new {

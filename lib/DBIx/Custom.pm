@@ -724,7 +724,8 @@ sub new {
     return $self;
 }
 
-sub not_exists { bless {}, 'DBIx::Custom::NotExists' }
+my $not_exists = bless {}, 'DBIx::Custom::NotExists';
+sub not_exists { $not_exists }
 
 sub order {
     my $self = shift;
