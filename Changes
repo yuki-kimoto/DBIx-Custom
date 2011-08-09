@@ -2,7 +2,7 @@
     - renamed EXPERIMENTAL available_type_name to available_typename
     - renamed EXPERIMENTAL available_data_type to available_datatype
     - added EXPERIMENTAL DBIx::Custom::Where if method
-    - added EXPERIMENTAL DBIx::Custom::Where map attribute
+    - added EXPERIMENTAL DBIx::Custom::Where map method
 0.1710
     - use more DBIx::Custom information in sub modules to decrease bugs
       (very sorry, this change can't keep backword compatible,

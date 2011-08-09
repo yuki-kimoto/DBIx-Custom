@@ -316,8 +316,9 @@ C<if> is default of C<map> method C<if> option.
 
 =head2 C<map EXPERIMENTAL>
 
-Mapping parameter key and value. C<param> is converted,
+Mapping parameter key and value. C<param> is converted based on,
 so this method must be called after C<param> is set.
+Set C<if> if you need before C<map> method call.
 
     $where->map(
         'id' => 'book.id',
@@ -326,6 +327,22 @@ so this method must be called after C<param> is set.
             'book.price', {if => sub { length $_[0] }
         ]
     );
+
+The followin parameter
+
+    {
+        id => 1,
+        auhtor => 'Ken',
+        price => 1000
+    }
+
+is converted to
+
+    {
+        'book.id' => 1,
+        'book.author' => '%Ken%',
+        'book.price' => 1000
+    }
 
 The following option is available.
 
