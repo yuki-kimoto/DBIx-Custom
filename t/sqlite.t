@@ -1061,12 +1061,6 @@ eval{$where->to_string};
 like($@, qr/one column/);
 
 $where = $dbi->where
-             ->clause('key1 = :key1')
-             ->param([]);
-eval{$where->to_string};
-like($@, qr/Parameter/);
-
-$where = $dbi->where
              ->clause(['or', ('key1 = :key1') x 3])
              ->param({key1 => [$dbi->not_exists, 1, 3]});
 $result = $dbi->select(
@@ -1231,7 +1225,7 @@ is_deeply($row, [{key1 => 1, key2 => 2}]);
 $where = $dbi->where;
 $where->clause(['and', ':key1{=}']);
 $where->param({key1 => undef});
-$where->map_if('defined');
+$where->if('defined');
 $result = $dbi->execute("select * from table1 $where", {key1 => 1});
 $row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
@@ -1249,7 +1243,7 @@ is_deeply($row, [{key1 => 1, key2 => 2}]);
 $where = $dbi->where;
 $where->clause(['and', ':key1{=}']);
 $where->param({key1 => [undef, undef]});
-$where->map_if('defined');
+$where->if('defined');
 $result = $dbi->execute("select * from table1 $where", {key1 => [1, 0]});
 $row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
@@ -1260,7 +1254,7 @@ is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
 $where = $dbi->where;
 $where->clause(['and', ':key1{=}']);
 $where->param({key1 => 0});
-$where->map_if('length');
+$where->if('length');
 $result = $dbi->execute("select * from table1 $where", {key1 => 1});
 $row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
@@ -1268,7 +1262,7 @@ is_deeply($row, [{key1 => 1, key2 => 2}]);
 $where = $dbi->where;
 $where->clause(['and', ':key1{=}']);
 $where->param({key1 => ''});
-$where->map_if('length');
+$where->if('length');
 $result = $dbi->execute("select * from table1 $where", {key1 => 1});
 $row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
@@ -1276,7 +1270,7 @@ is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
 $where = $dbi->where;
 $where->clause(['and', ':key1{=}']);
 $where->param({key1 => 5});
-$where->map_if(sub { ($_[0] || '') eq 5 });
+$where->if(sub { ($_[0] || '') eq 5 });
 $result = $dbi->execute("select * from table1 $where", {key1 => 1});
 $row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}]);
@@ -1284,7 +1278,7 @@ is_deeply($row, [{key1 => 1, key2 => 2}]);
 $where = $dbi->where;
 $where->clause(['and', ':key1{=}']);
 $where->param({key1 => 7});
-$where->map_if(sub { ($_[0] || '') eq 5 });
+$where->if(sub { ($_[0] || '') eq 5 });
 $result = $dbi->execute("select * from table1 $where", {key1 => 1});
 $row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
