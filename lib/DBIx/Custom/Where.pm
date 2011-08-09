@@ -15,8 +15,10 @@ has [qw/dbi param/],
 sub map {
     my ($self, %map) = @_;
     
-    my $param = $self->_map_param($self->param, %map);
-    $self->param($param);
+    if ($self->if ne 'exists' || keys %map) {
+        my $param = $self->_map_param($self->param, %map);
+        $self->param($param);
+    }
     return $self;
 }
 
@@ -97,7 +99,7 @@ sub if {
         
         $if = $if eq 'exists' ? $if
                 : $if eq 'defined' ? sub { defined $_[0] }
-                : $if eq 'length'  ? sub { length $_[0] }
+                : $if eq 'length'  ? sub { defined $_[0] && length $_[0] }
                 : ref $if eq 'CODE' ? $if
                 : undef;
 
