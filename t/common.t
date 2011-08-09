@@ -238,4 +238,6 @@ $result = $dbi->execute(
 $rows = $result->all;
 is_deeply($rows, [{key1 => 'a:b c:d', key2 => 2}]);
 
+
+
 1;

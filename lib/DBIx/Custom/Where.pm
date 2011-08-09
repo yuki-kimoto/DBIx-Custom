@@ -10,7 +10,8 @@ use overload '""' => sub { shift->to_string }, fallback => 1;
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
 has [qw/dbi param/],
-    clause => sub { [] };
+    clause => sub { [] },
+    map_if => 'exists';
 
 sub new {
     my $self = shift->SUPER::new(@_);
@@ -40,7 +41,19 @@ sub to_string {
     my $clause = $self->clause;
     $clause = ['and', $clause] unless ref $clause eq 'ARRAY';
     $clause->[0] = 'and' unless @$clause;
-
+    
+    # Map condition
+    my $map_if = $self->map_if || '';
+    $map_if = $map_if eq 'exists' ? $map_if
+            : $map_if eq 'defined' ? sub { defined $_[0] }
+            : $map_if eq 'length'  ? sub { length $_[0] }
+            : ref $map_if eq 'CODE' ? $map_if
+            : undef;
+    
+    croak "You can must specify right value to C<map_if> " . _subname
+      unless $map_if;
+    $self->{_map_if} = $map_if;
+    
     # Parse
     my $where = [];
     my $count = {};
@@ -123,13 +136,25 @@ sub _parse {
         my $param = $self->param;
         if (ref $param eq 'HASH') {
             if (exists $param->{$column}) {
+                my $map_if = $self->{_map_if};
+                
                 if (ref $param->{$column} eq 'ARRAY') {
-                    $pushed = 1
-                      if  exists $param->{$column}->[$count - 1]
-                       && ref $param->{$column}->[$count - 1] ne 'DBIx::Custom::NotExists';
+                    unless (ref $param->{$column}->[$count - 1] eq 'DBIx::Custom::NotExists') {
+                        if ($map_if eq 'exists') {
+                            $pushed = 1 if exists $param->{$column}->[$count - 1];
+                        }
+                        else {
+                            $pushed = 1 if $map_if->($param->{$column}->[$count - 1]);
+                        }
+                    }
                 } 
                 elsif ($count == 1) {
-                    $pushed = 1;
+                    if ($map_if eq 'exists') {
+                        $pushed = 1 if  exists $param->{$column};
+                    }
+                    else {
+                        $pushed = 1 if $map_if->($param->{$column});
+                    }
                 }
             }
             push @$where, $clause if $pushed;
@@ -174,6 +199,35 @@ Where clause. Above one is expanded to the following SQL by to_string
 If all parameter names is exists.
 
     "where ( title = :title and ( date < :date or date > :date ) )"
+
+=head2 C<map_if EXPERIMENTAL>
+    
+    my $map_if = $where->map_if($condition);
+    $where->map_if($condition);
+
+If C<clause> contain named placeholder like ':title{=}'
+and C<param> contain the corresponding key like {title => 'Perl'},
+C<to_string> method join the cluase and convert to placeholder
+like 'title = ?'.
+
+C<map_if> method can change this mapping rule.
+Default is C<exists>. If the key exists, mapping is done.
+    
+    $where->map_if('exists');
+
+In case C<defined> is specified, if the value is defined,
+mapping is done.
+
+    $where->map_if('defined');
+
+In case C<length> is specified, the value is defined
+and the length is bigger than 0, mappting is done.
+
+    $where->map_if('length');
+
+You can also subroutine like C<sub { defined $_[0] }> for mappging.
+
+    $where->map_if(sub { defined $_[0] });
 
 =head2 C<param>
 

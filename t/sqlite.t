@@ -1221,6 +1221,74 @@ $result = $dbi->select(
 $row = $result->all;
 is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
 
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => undef});
+$result = $dbi->execute("select * from table1 $where", {key1 => 1});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => undef});
+$where->map_if('defined');
+$result = $dbi->execute("select * from table1 $where", {key1 => 1});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$where = $dbi->where;
+$where->clause(['or', ':key1{=}', ':key1{=}']);
+$where->param({key1 => [undef, undef]});
+$result = $dbi->execute("select * from table1 $where", {key1 => [1, 0]});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+$result = $dbi->execute("select * from table1 $where", {key1 => [0, 1]});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => [undef, undef]});
+$where->map_if('defined');
+$result = $dbi->execute("select * from table1 $where", {key1 => [1, 0]});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+$result = $dbi->execute("select * from table1 $where", {key1 => [0, 1]});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => 0});
+$where->map_if('length');
+$result = $dbi->execute("select * from table1 $where", {key1 => 1});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => ''});
+$where->map_if('length');
+$result = $dbi->execute("select * from table1 $where", {key1 => 1});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => 5});
+$where->map_if(sub { ($_[0] || '') eq 5 });
+$result = $dbi->execute("select * from table1 $where", {key1 => 1});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => 7});
+$where->map_if(sub { ($_[0] || '') eq 5 });
+$result = $dbi->execute("select * from table1 $where", {key1 => 1});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
 
 test 'dbi_option default';
 $dbi = DBIx::Custom->new;
@@ -3108,9 +3176,9 @@ $result = $model->select(column => 'key1');
 $result->filter(key1 => sub { $_[0] * 2 });
 is_deeply($result->one, {key1 => 2});
 
-test 'available_date_type';
+test 'available_datetype';
 $dbi = DBIx::Custom->connect(%memory);
-ok($dbi->can('available_data_type'));
+ok($dbi->can('available_datatype'));
 
 
 test 'select prefix option';
@@ -3560,3 +3628,4 @@ like($@, qr/unexpected "}"/, "error : 1");
 $source = "a {= {}";
 eval{$builder->build_query($source)};
 like($@, qr/unexpected "{"/, "error : 2");
+

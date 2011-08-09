@@ -905,7 +905,7 @@ sub setup_model {
     return $self;
 }
 
-sub available_data_type {
+sub available_datatype {
     my $self = shift;
     
     my $data_types = '';
@@ -921,7 +921,7 @@ sub available_data_type {
     return $data_types;
 }
 
-sub available_type_name {
+sub available_typename {
     my $self = shift;
     
     # Type Names
@@ -2004,16 +2004,16 @@ L<DBIx::Custom> inherits all methods from L<Object::Simple>
 and use all methods of L<DBI>
 and implements the following new ones.
 
-=head2 C<available_data_type> EXPERIMENTAL
+=head2 C<available_datatype> EXPERIMENTAL
 
-    print $dbi->available_data_type;
+    print $dbi->available_datatype;
 
 Get available data types. You can use these data types
 in C<type rule>'s C<from1> and C<from2> section.
 
-=head2 C<available_type_name> EXPERIMENTAL
+=head2 C<available_typename> EXPERIMENTAL
 
-    print $dbi->available_type_name;
+    print $dbi->available_typename;
 
 Get available type names. You can use these type names in
 C<type_rule>'s C<into1> and C<into2> section.
@@ -2709,15 +2709,15 @@ This need C<table> option in each method.
 
 =back
 
-You get all type name used in database by C<available_type_name>.
+You get all type name used in database by C<available_typename>.
 
-    print $dbi->available_type_name;
+    print $dbi->available_typename;
 
 In C<from1> and C<from2> you specify data type, not type name.
 C<from2> is executed after C<from1>.
-You get all data type by C<available_data_type>.
+You get all data type by C<available_datatype>.
 
-    print $dbi->available_data_type;
+    print $dbi->available_datatype;
 
 You can also specify multiple types at once.
 
