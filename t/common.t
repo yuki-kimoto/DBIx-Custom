@@ -153,6 +153,12 @@ my $create_table3 = $dbi->create_table3;
 my $create_table_reserved = $dbi->create_table_reserved;
 my $q = substr($dbi->quote, 0, 1);
 my $p = substr($dbi->quote, 1, 1) || $q;
+my $date_typename = $dbi->date_typename;
+my $time_typename = $dbi->time_typename;
+my $datetime_typename = $dbi->datetime_typename;
+my $date_datatype = $dbi->date_datatype;
+my $time_datatype = $dbi->time_datatype;
+my $datetime_datatype = $dbi->datetime_datatype;
 
 # Variable
 # Variables
@@ -189,7 +195,150 @@ my $binary;
 # Drop table
 eval { $dbi->execute('drop table table1') };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+test 'type_rule into';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    into1 => {
+        $date_typename => sub { '2010-' . $_[0] }
+    }
+);
+$dbi->insert({key1 => '01-01'}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+is($result->one->{key1}, '2010-01-01');
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    into1 => [
+         [$date_typename, $datetime_typename] => sub {
+            my $value = shift;
+            $value =~ s/02/03/g;
+            return $value;
+         }
+    ]
+);
+$dbi->insert({key1 => '2010-01-02', key2 => '2010-01-01 01:01:02'}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+$row = $result->one;
+is($row->{key1}, '2010-01-03');
+is($row->{key2}, '2010-01-01 01:01:03');
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->insert({key1 => '2010-01-03', key2 => '2010-01-01 01:01:03'}, table => 'table1');
+$dbi->type_rule(
+    into1 => [
+        [$date_typename, $datetime_typename] => sub {
+            my $value = shift;
+            $value =~ s/02/03/g;
+            return $value;
+        }
+    ]
+);
+$result = $dbi->execute(
+    "select * from table1 where key1 = :key1 and key2 = :table1.key2;",
+    param => {key1 => '2010-01-03', 'table1.key2' => '2010-01-01 01:01:02'}
+);
+$row = $result->one;
+is($row->{key1}, '2010-01-03');
+is($row->{key2}, '2010-01-01 01:01:03');
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->insert({key1 => '2010-01-03', key2 => '2010-01-01 01:01:03'}, table => 'table1');
+$dbi->type_rule(
+    into1 => [
+        [$date_typename, $datetime_typename] => sub {
+            my $value = shift;
+            $value =~ s/02/03/g;
+            return $value;
+        }
+    ]
+);
+$result = $dbi->execute(
+    "select * from table1 where key1 = :key1 and key2 = :table1.key2;",
+    param => {key1 => '2010-01-02', 'table1.key2' => '2010-01-01 01:01:02'},
+    table => 'table1'
+);
+$row = $result->one;
+is($row->{key1}, '2010-01-03');
+is($row->{key2}, '2010-01-01 01:01:03');
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->register_filter(convert => sub {
+    my $value = shift;
+    $value =~ s/02/03/;
+    return $value;
+});
+$dbi->type_rule(
+    from1 => {
+        $date_datatype => 'convert',
+    },
+    into1 => {
+        $date_typename => 'convert',
+    }
+);
+$dbi->insert({key1 => '2010-02-02'}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+is($result->fetch->[0], '2010-03-03');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Create table
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $model = $dbi->create_model(table => 'table1');
 $model->insert({key1 => 1, key2 => 2});
@@ -661,6 +810,7 @@ like($@, qr/"where" must be specified/,
 eval{$dbi->delete(table => 'table1', where => {';' => 1})};
 like($@, qr/safety/);
 
+$dbi = undef;
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->execute($create_table_reserved);
@@ -1707,14 +1857,14 @@ $dbi = DBIx::Custom->connect;
 $dbi->register_tag_processor(
     a => sub { 1 }
 );
-is($dbi->query_builder->tag_processors->{a}->(), 1);
+is($dbi->{_tags}->{a}->(), 1);
 
 test 'register_tag';
 $dbi = DBIx::Custom->connect;
 $dbi->register_tag(
     b => sub { 2 }
 );
-is($dbi->query_builder->tags->{b}->(), 2);
+is($dbi->{_tags}->{b}->(), 2);
 
 test 'table not specify exception';
 $dbi = DBIx::Custom->connect;
@@ -3346,20 +3496,19 @@ $result = $dbi->select(
 );
 is_deeply($result->all, [{'table2.key3' => 4}]);
 
+
 test 'table_alias';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
     into1 => {
-        date => sub { '2010-' . $_[0] }
+        $date_typename => sub { '2010-' . $_[0] }
     }
 );
 $dbi->execute("insert into table1 (key1) values (:table2.key1)", {'table2.key1' => '01-01'},
   table_alias => {table2 => 'table1'});
 $result = $dbi->select(table => 'table1');
 is($result->one->{key1}, '2010-01-01');
-
-
 
 1;

@@ -9,15 +9,27 @@ use DBIx::Custom;
     package DBIx::Custom;
     no warnings 'redefine';
 
-    my $date = 'Date';
-    my $time = 'Time';
-    my $datetime = 'Datetime';
+    my $date_typename = 'Date';
+    my $time_typename = 'Time';
+    my $datetime_typename = 'Datetime';
+    
+    sub date_typename { lc $date_typename }
+    sub time_typename { lc $time_typename }
+    sub datetime_typename { lc $datetime_typename }
+
+    my $date_datatype = 'Date';
+    my $time_datatype = 'Time';
+    my $datetime_datatype = 'Datetime';
+    
+    sub date_datatype { lc $date_datatype }
+    sub time_datatype { lc $time_datatype }
+    sub datetime_datatype { lc $datetime_datatype }
 
     has dsn => 'dbi:SQLite:dbname=:memory:';
     sub quote { '""' }
     sub create_table1 { 'create table table1 (key1 varchar, key2 varchar);' }
     sub create_table1_2 {'create table table1 (key1 varchar, key2 varchar, key3 varchar, key4 varchar, key5 varchar);' }
-    sub create_table1_type { 'create table table1 (key1 Date, key2 datetime);' }
+    sub create_table1_type { "create table table1 (key1 $date_typename, key2 $datetime_typename);" }
     
     sub create_table1_highperformance { "create table table1 (ab varchar, bc varchar, ik varchar, hi varchar, ui varchar, pq varchar, dc varchar);" }
     

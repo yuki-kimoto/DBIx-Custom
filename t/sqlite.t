@@ -179,20 +179,6 @@ my $binary;
 $dbi = DBIx::Custom->connect;
 
 ### a little complex test
-test 'table_alias';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute("create table table1 (key1 Date, key2 datetime)");
-$dbi->type_rule(
-    into1 => {
-        date => sub { uc $_[0] }
-    }
-);
-$dbi->execute("insert into table1 (key1) values (:table2.key1)", {'table2.key1' => 'a'},
-  table_alias => {table2 => 'table1'});
-$result = $dbi->select(table => 'table1');
-is($result->one->{key1}, 'A');
-
 test 'type_rule into';
 $dbi = DBIx::Custom->connect;
 $dbi->execute("create table table1 (key1 Date, key2 datetime)");

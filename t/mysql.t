@@ -43,7 +43,7 @@ $dbi->delete_all(table => 'table1');
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 6});
-$dbi->query_builder->register_tag_processor(
+$dbi->register_tag(
     limit => sub {
         my ($count, $offset) = @_;
         

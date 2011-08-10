@@ -11,9 +11,21 @@ use DBIx::Custom;
     package DBIx::Custom;
     no warnings 'redefine';
 
-    my $date = 'Date';
-    my $time = 'Time';
-    my $datetime = 'Timestamp';
+    my $date_typename = 'Date';
+    my $time_typename = 'Time';
+    my $datetime_typename = 'Timestamp';
+
+    sub date_typename { lc $date_typename }
+    sub time_typename { lc $time_typename }
+    sub datetime_typename { 'timestamp without time zone' }
+
+    my $date_datatype = 91;
+    my $time_datatype = 'Time';
+    my $datetime_datatype = 11;
+
+    sub date_datatype { lc $date_datatype }
+    sub time_datatype { lc $time_datatype }
+    sub datetime_datatype { lc $datetime_datatype }
 
     has dsn => "dbi:Pg:dbname=dbix_custom";
     has user  => 'dbix_custom';
@@ -22,7 +34,7 @@ use DBIx::Custom;
     sub create_table1 { 'create table table1 (key1 varchar(255), key2 varchar(255));' }
     sub create_table1_2 {'create table table1 (key1 varchar(255), key2 varchar(255), '
      . 'key3 varchar(255), key4 varchar(255), key5 varchar(255));' }
-    sub create_table1_type { 'create table table1 (key1 Date, key2 varchar(255));' }
+    sub create_table1_type { "create table table1 (key1 $date_typename, key2 $datetime_typename);" }
     sub create_table1_highperformance { "create table table1 (ab varchar(255), bc varchar(255), "
       . "ik varchar(255), hi varchar(255), ui varchar(255), pq varchar(255), dc varchar(255));" }
     sub create_table2 { 'create table table2 (key1 varchar(255), key3 varchar(255));' }

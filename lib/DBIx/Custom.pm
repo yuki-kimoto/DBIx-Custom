@@ -51,12 +51,33 @@ has [qw/connector dsn password quote user/],
     },
     last_sql => '',
     models => sub { {} },
-    query_builder => sub { DBIx::Custom::QueryBuilder->new(dbi => shift) },
     result_class  => 'DBIx::Custom::Result',
     safety_character => '\w',
     separator => '.',
     stash => sub { {} },
     tag_parse => 1;
+
+sub query_builder {
+    my $self = shift;
+    my $builder = DBIx::Custom::QueryBuilder->new(dbi => $self);
+    
+    # DEPRECATED
+    $builder->register_tag(
+        '?'     => \&DBIx::Custom::Tag::placeholder,
+        '='     => \&DBIx::Custom::Tag::equal,
+        '<>'    => \&DBIx::Custom::Tag::not_equal,
+        '>'     => \&DBIx::Custom::Tag::greater_than,
+        '<'     => \&DBIx::Custom::Tag::lower_than,
+        '>='    => \&DBIx::Custom::Tag::greater_than_equal,
+        '<='    => \&DBIx::Custom::Tag::lower_than_equal,
+        'like'  => \&DBIx::Custom::Tag::like,
+        'in'    => \&DBIx::Custom::Tag::in,
+        'insert_param' => \&DBIx::Custom::Tag::insert_param,
+        'update_param' => \&DBIx::Custom::Tag::update_param
+    );
+    $builder->register_tag($self->{_tags} || {});
+    return $builder;
+}
 
 our $AUTOLOAD;
 sub AUTOLOAD {
@@ -221,7 +242,9 @@ sub delete {
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
 
-sub DESTROY { }
+sub DESTROY {
+
+}
 
 sub create_model {
     my $self = shift;
@@ -706,21 +729,6 @@ sub new {
         croak qq{"$attr" is wrong name } . _subname
           unless $self->can($attr);
     }
-    
-    # DEPRECATED!
-    $self->query_builder->{tags} = {
-        '?'     => \&DBIx::Custom::Tag::placeholder,
-        '='     => \&DBIx::Custom::Tag::equal,
-        '<>'    => \&DBIx::Custom::Tag::not_equal,
-        '>'     => \&DBIx::Custom::Tag::greater_than,
-        '<'     => \&DBIx::Custom::Tag::lower_than,
-        '>='    => \&DBIx::Custom::Tag::greater_than_equal,
-        '<='    => \&DBIx::Custom::Tag::lower_than_equal,
-        'like'  => \&DBIx::Custom::Tag::like,
-        'in'    => \&DBIx::Custom::Tag::in,
-        'insert_param' => \&DBIx::Custom::Tag::insert_param,
-        'update_param' => \&DBIx::Custom::Tag::update_param
-    };
     
     return $self;
 }
@@ -1624,8 +1632,25 @@ sub insert_at {
 
 # DEPRECATED!
 sub register_tag {
+    my $self = shift;
+    
     warn "register_tag is DEPRECATED!";
-    shift->query_builder->register_tag(@_)
+    
+    # Merge tag
+    my $tags = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $self->{_tags} = {%{$self->{_tags} || {}}, %$tags};
+    
+    return $self;
+}
+
+# DEPRECATED!
+sub register_tag_processor {
+    my $self = shift;
+    warn "register_tag_processor is DEPRECATED!";
+    # Merge tag
+    my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $self->{_tags} = {%{$self->{_tags} || {}}, %{$tag_processors}};
+    return $self;
 }
 
 # DEPRECATED!
@@ -1688,12 +1713,6 @@ sub insert_param_tag {
     warn "insert_param_tag is DEPRECATED! " .
          "use insert_param instead!";
     return shift->insert_param(@_);
-}
-
-# DEPRECATED!
-sub register_tag_processor {
-    warn "register_tag_processor is DEPRECATED!";
-    return shift->query_builder->register_tag_processor(@_);
 }
 
 # DEPRECATED!
@@ -1936,10 +1955,9 @@ Password, used when C<connect> method is executed.
 
 =head2 C<query_builder>
 
-    my $sql_class = $dbi->query_builder;
-    $dbi = $dbi->query_builder(DBIx::Custom::QueryBuilder->new);
+    my $builder = $dbi->query_builder;
 
-Query builder, default to L<DBIx::Custom::QueryBuilder> object.
+Creat query builder. This is L<DBIx::Custom::QueryBuilder>.
 
 =head2 C<quote>
 
