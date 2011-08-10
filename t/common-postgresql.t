@@ -30,6 +30,37 @@ use DBIx::Custom;
     has dsn => "dbi:Pg:dbname=dbix_custom";
     has user  => 'dbix_custom';
     has password => 'dbix_custom';
+    has system_table => sub {
+
+        return qr/^(
+            pg_|column_|role_|view_|sql_
+            |applicable_roles
+            |check_constraints
+            |columns
+            |constraint_column_usage
+            |constraint_table_usage
+            |data_type_privileges
+            |domain_constraints
+            |domain_udt_usage
+            |domains
+            |element_types
+            |enabled_roles
+            |information_schema_catalog_name
+            |key_column_usage
+            |parameters
+            |referential_constraints
+            |routine_privileges
+            |routines
+            |schemata
+            |table_constraints
+            |table_privileges
+            |tables
+            |triggered_update_columns
+            |triggers
+            |usage_privileges
+            |views
+        )/x
+    };
     
     sub create_table1 { 'create table table1 (key1 varchar(255), key2 varchar(255));' }
     sub create_table1_2 {'create table table1 (key1 varchar(255), key2 varchar(255), '

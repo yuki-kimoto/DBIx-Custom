@@ -19,7 +19,7 @@ use Encode qw/encode encode_utf8 decode_utf8/;
 use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 
-has [qw/connector dsn password quote user/],
+has [qw/connector dsn password quote user system_table/],
     cache => 0,
     cache_method => sub {
         sub {
@@ -57,26 +57,45 @@ has [qw/connector dsn password quote user/],
     stash => sub { {} },
     tag_parse => 1;
 
-sub query_builder {
+sub available_datatype {
     my $self = shift;
-    my $builder = DBIx::Custom::QueryBuilder->new(dbi => $self);
     
-    # DEPRECATED
-    $builder->register_tag(
-        '?'     => \&DBIx::Custom::Tag::placeholder,
-        '='     => \&DBIx::Custom::Tag::equal,
-        '<>'    => \&DBIx::Custom::Tag::not_equal,
-        '>'     => \&DBIx::Custom::Tag::greater_than,
-        '<'     => \&DBIx::Custom::Tag::lower_than,
-        '>='    => \&DBIx::Custom::Tag::greater_than_equal,
-        '<='    => \&DBIx::Custom::Tag::lower_than_equal,
-        'like'  => \&DBIx::Custom::Tag::like,
-        'in'    => \&DBIx::Custom::Tag::in,
-        'insert_param' => \&DBIx::Custom::Tag::insert_param,
-        'update_param' => \&DBIx::Custom::Tag::update_param
-    );
-    $builder->register_tag($self->{_tags} || {});
-    return $builder;
+    my $data_types = '';
+    foreach my $i (-1000 .. 1000) {
+         my $type_info = $self->dbh->type_info($i);
+         my $data_type = $type_info->{DATA_TYPE};
+         my $type_name = $type_info->{TYPE_NAME};
+         $data_types .= "$data_type ($type_name)\n"
+           if defined $data_type;
+    }
+    return "Data Type maybe equal to Type Name" unless $data_types;
+    $data_types = "Data Type (Type name)\n" . $data_types;
+    return $data_types;
+}
+
+sub show_datatype {
+    my ($self, $table) = @_;
+    
+    
+}
+
+sub show_typename {
+    
+}
+
+sub available_typename {
+    my $self = shift;
+    
+    # Type Names
+    my $type_names = {};
+    $self->each_column(sub {
+        my ($self, $table, $column, $column_info) = @_;
+        $type_names->{$column_info->{TYPE_NAME}} = 1
+          if $column_info->{TYPE_NAME};
+    });
+    my @output = sort keys %$type_names;
+    unshift @output, "Type Name";
+    return join "\n", @output;
 }
 
 our $AUTOLOAD;
@@ -281,6 +300,8 @@ sub create_model {
 
 sub each_column {
     my ($self, $cb) = @_;
+
+    my $re = $self->system_table;
     
     # Iterate all tables
     my $sth_tables = $self->dbh->table_info;
@@ -288,6 +309,7 @@ sub each_column {
         
         # Table
         my $table = $table_info->{TABLE_NAME};
+        next if defined $re && $table =~ /$re/;
         
         # Iterate all columns
         my $sth_columns = $self->dbh->column_info(undef, undef, $table, '%');
@@ -298,8 +320,13 @@ sub each_column {
     }
 }
 
+
+
+
 sub each_table {
     my ($self, $cb) = @_;
+    
+    my $re = $self->system_table;
     
     # Iterate all tables
     my $sth_tables = $self->dbh->table_info;
@@ -307,6 +334,7 @@ sub each_table {
         
         # Table
         my $table = $table_info->{TABLE_NAME};
+        next if defined $re && $table =~ /$re/;
         $self->$cb($table, $table_info);
     }
 }
@@ -741,6 +769,28 @@ sub order {
     return DBIx::Custom::Order->new(dbi => $self, @_);
 }
 
+sub query_builder {
+    my $self = shift;
+    my $builder = DBIx::Custom::QueryBuilder->new(dbi => $self);
+    
+    # DEPRECATED
+    $builder->register_tag(
+        '?'     => \&DBIx::Custom::Tag::placeholder,
+        '='     => \&DBIx::Custom::Tag::equal,
+        '<>'    => \&DBIx::Custom::Tag::not_equal,
+        '>'     => \&DBIx::Custom::Tag::greater_than,
+        '<'     => \&DBIx::Custom::Tag::lower_than,
+        '>='    => \&DBIx::Custom::Tag::greater_than_equal,
+        '<='    => \&DBIx::Custom::Tag::lower_than_equal,
+        'like'  => \&DBIx::Custom::Tag::like,
+        'in'    => \&DBIx::Custom::Tag::in,
+        'insert_param' => \&DBIx::Custom::Tag::insert_param,
+        'update_param' => \&DBIx::Custom::Tag::update_param
+    );
+    $builder->register_tag($self->{_tags} || {});
+    return $builder;
+}
+
 sub register_filter {
     my $self = shift;
     
@@ -897,37 +947,6 @@ sub setup_model {
         }
     );
     return $self;
-}
-
-sub available_datatype {
-    my $self = shift;
-    
-    my $data_types = '';
-    foreach my $i (-1000 .. 1000) {
-         my $type_info = $self->dbh->type_info($i);
-         my $data_type = $type_info->{DATA_TYPE};
-         my $type_name = $type_info->{TYPE_NAME};
-         $data_types .= "$data_type ($type_name)\n"
-           if defined $data_type;
-    }
-    return "Data Type maybe equal to Type Name" unless $data_types;
-    $data_types = "Data Type (Type name)\n" . $data_types;
-    return $data_types;
-}
-
-sub available_typename {
-    my $self = shift;
-    
-    # Type Names
-    my $type_names = {};
-    $self->each_column(sub {
-        my ($self, $table, $column, $column_info) = @_;
-        $type_names->{$column_info->{TYPE_NAME}} = 1
-          if $column_info->{TYPE_NAME};
-    });
-    my @output = sort keys %$type_names;
-    unshift @output, "Type Name";
-    return join "\n", @output;
 }
 
 sub type_rule {
@@ -1994,6 +2013,18 @@ Note that you don't have to specify like '[\w]'.
 
 Separator whichi join table and column.
 This is used by C<column> and C<mycolumn> method.
+
+=head2 C<system_table EXPERIMENTAL>
+
+    my $system_table = $self->system_table;
+    $dbi = $self->system_table(qr/pg_/);
+
+Regex matching system table.
+this regex match is used by C<each_table> method and C<each_column> method
+System table is ignored.
+C<type_rule> method and C<setup_model> method call
+C<each_table>, so if you set C<system_table> properly,
+The performance is up.
 
 =head2 C<tag_parse>
 
