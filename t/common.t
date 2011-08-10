@@ -23,6 +23,8 @@ my $create_table1 = $dbi->create_table1;
 my $create_table1_2 = $dbi->create_table1_2;
 my $create_table1_type = $dbi->create_table1_type;
 my $create_table2 = $dbi->create_table2;
+my $create_table2_2 = $dbi->create_table2_2;
+my $create_table3 = $dbi->create_table3;
 my $create_table_reserved = $dbi->create_table_reserved;
 my $q = substr($dbi->quote, 0, 1);
 my $p = substr($dbi->quote, 1, 1) || $q;
@@ -1778,4 +1780,38 @@ $result = DBIx::Custom::Result->new;
 is_deeply($result->stash, {}, 'default');
 $result->stash->{foo} = 1;
 is($result->stash->{foo}, 1, 'get and set');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 1;
