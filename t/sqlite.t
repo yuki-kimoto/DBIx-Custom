@@ -4,7 +4,7 @@ use warnings;
 use utf8;
 use Encode qw/encode_utf8 decode_utf8/;
 use FindBin;
-use lib "$FindBin::Bin/basic";
+use lib "$FindBin::Bin/common";
 
 BEGIN {
     eval { require DBD::SQLite; 1 }
@@ -28,6 +28,8 @@ sub test { print "# $_[0]\n" }
 my $create_table1 = 'create table table1 (key1 char(255), key2 char(255));';
 my $create_table1_2 = 'create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));';
 my $create_table2 = 'create table table2 (key1 char(255), key3 char(255));';
+my $create_table2_2 = "create table table2 (key1, key2, key3)";
+my $create_table3 = "create table table3 (key1, key2, key3)";
 my $create_table_reserved = 'create table "table" ("select", "update")';
 
 my $q = '"';
@@ -545,8 +547,8 @@ eval { $dbi->execute('drop table table1') };
 eval { $dbi->execute('drop table table2') };
 eval { $dbi->execute('drop table table3') };
 $dbi->execute($create_table1_2);
-$dbi->execute("create table table2 (key1, key2, key3)");
-$dbi->execute("create table table3 (key1, key2, key3)");
+$dbi->execute($create_table2_2);
+$dbi->execute($create_table3);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1')->delete_at(where => [1, 2]);
 is_deeply($dbi->select(table => 'table1')->all, []);
@@ -1435,8 +1437,8 @@ eval { $dbi->execute('drop table table1') };
 eval { $dbi->execute('drop table table2') };
 eval { $dbi->execute('drop table table3') };
 $dbi->execute($create_table1_2);
-$dbi->execute("create table table2 (key1, key2, key3)");
-$dbi->execute("create table table3 (key1, key2, key3)");
+$dbi->execute($create_table2_2);
+$dbi->execute($create_table3);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1')->delete(id => [1, 2]);
 is_deeply($dbi->select(table => 'table1')->all, []);

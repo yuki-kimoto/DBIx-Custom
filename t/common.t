@@ -3,6 +3,9 @@ use strict;
 use warnings;
 use DBIx::Custom;
 use Encode qw/encode_utf8/;
+use FindBin;
+use lib "$FindBin::Bin/common";
+
 
 my $dbi;
 
