@@ -9,6 +9,10 @@ $ENV{DBIX_CUSTOM_SKIP_MESSAGE} = 'mysql private test';
 use DBIx::Custom;
 {
     package DBIx::Custom;
+
+    my $date = 'Date';
+    my $time = 'Time';
+    my $datetime = 'Datetime';
     
     no warnings 'redefine';
     has dsn => "dbi:mysql:database=dbix_custom";

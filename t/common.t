@@ -3346,6 +3346,19 @@ $result = $dbi->select(
 );
 is_deeply($result->all, [{'table2.key3' => 4}]);
 
+test 'table_alias';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    into1 => {
+        date => sub { '2010-' . $_[0] }
+    }
+);
+$dbi->execute("insert into table1 (key1) values (:table2.key1)", {'table2.key1' => '01-01'},
+  table_alias => {table2 => 'table1'});
+$result = $dbi->select(table => 'table1');
+is($result->one->{key1}, '2010-01-01');
 
 
 

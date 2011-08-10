@@ -8,6 +8,11 @@ use DBIx::Custom;
 {
     package DBIx::Custom;
     no warnings 'redefine';
+
+    my $date = 'Date';
+    my $time = 'Time';
+    my $datetime = 'Datetime';
+
     has dsn => 'dbi:SQLite:dbname=:memory:';
     sub quote { '""' }
     sub create_table1 { 'create table table1 (key1 varchar, key2 varchar);' }

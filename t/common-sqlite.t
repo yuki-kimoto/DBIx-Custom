@@ -8,10 +8,15 @@ use DBIx::Custom;
 {
     package DBIx::Custom;
     no warnings 'redefine';
+    
+    my $date = 'Date';
+    my $time = 'Time';
+    my $datetime = 'Datetime';
+    
     has dsn => 'dbi:SQLite:dbname=:memory:';
     sub create_table1 { 'create table table1 (key1 varchar, key2 varchar);' }
     sub create_table1_2 {'create table table1 (key1 varchar, key2 varchar, key3 varchar, key4 varchar, key5 varchar);' }
-    sub create_table1_type { 'create table table1 (key1 Date, key2 datetime);' }
+    sub create_table1_type { "create table table1 (key1 $date, key2 $time);" }
     
     sub create_table1_highperformance { "create table table1 (ab varchar, bc varchar, ik varchar, hi varchar, ui varchar, pq varchar, dc varchar);" }
     

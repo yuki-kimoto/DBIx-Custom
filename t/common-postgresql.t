@@ -10,6 +10,11 @@ use DBIx::Custom;
 {
     package DBIx::Custom;
     no warnings 'redefine';
+
+    my $date = 'Date';
+    my $time = 'Time';
+    my $datetime = 'Timestamp';
+
     has dsn => "dbi:Pg:dbname=dbix_custom";
     has user  => 'dbix_custom';
     has password => 'dbix_custom';
