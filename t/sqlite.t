@@ -780,26 +780,6 @@ is($result->type_rule2_off->fetch_first->[0], '1bd');
 $result = $dbi->select(table => 'table1');
 is($result->type_rule2_on->fetch_first->[0], '1bde');
 
-test 'prefix';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute("create table table1 (key1 char(255), key2 char(255), primary key(key1))");
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4}, prefix => 'or replace');
-$result = $dbi->execute('select * from table1;');
-$rows   = $result->all;
-is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute("create table table1 (key1 char(255), key2 char(255), primary key(key1))");
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->update(table => 'table1', param => {key2 => 4},
-  where => {key1 => 1}, prefix => 'or replace');
-$result = $dbi->execute('select * from table1;');
-$rows   = $result->all;
-is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
-
 test 'Model class';
 use MyDBI1;
 $dbi = MyDBI1->connect;
@@ -861,7 +841,7 @@ eval { $dbi->execute('drop table test') };
 
 $dbi->execute('create table book (id)');
 $dbi->execute('create table company (id, name);');
-$dbi->execute('create table test (id, name, primary key (id, name));');
+$dbi->execute('create table test (id, name);');
 $dbi->setup_model;
 is_deeply($dbi->model('book')->columns, ['id']);
 is_deeply($dbi->model('company')->columns, ['id', 'name']);
@@ -876,10 +856,28 @@ is_deeply($dbi->model('company')->columns, ['id', 'name']);
 
 
 
-
-
-
 ### SQLite only test
+test 'prefix';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute('create table table1 (key1 varchar, key2 varchar, primary key(key1));');
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4}, prefix => 'or replace');
+$result = $dbi->execute('select * from table1;');
+$rows   = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute('create table table1 (key1 varchar, key2 varchar, primary key(key1));');
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->update(table => 'table1', param => {key2 => 4},
+  where => {key1 => 1}, prefix => 'or replace');
+$result = $dbi->execute('select * from table1;');
+$rows   = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
+
+
 test 'quote';
 $dbi = DBIx::Custom->connect;
 $dbi->quote('"');
@@ -954,6 +952,7 @@ ok(!$rows);
 $result = $dbi->select(table => 'table1');
 eval {$result->fetch_hash_multi};
 like($@, qr/Row count must be specified/, "Not specified row count");
+
 
 # DEPRECATED! test
 test 'filter __ expression';
