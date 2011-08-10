@@ -151,12 +151,12 @@ use MyDBI1;
 }
 
 # Constant
-my $create_table1 = 'create table table1 (key1 char(255), key2 char(255));';
-my $create_table1_2 = 'create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));';
-my $create_table2 = 'create table table2 (key1 char(255), key3 char(255));';
-my $create_table2_2 = "create table table2 (key1, key2, key3)";
-my $create_table3 = "create table table3 (key1, key2, key3)";
-my $create_table_reserved = 'create table "table" ("select", "update")';
+my $create_table1 = 'create table table1 (key1 varchar, key2 varchar);';
+my $create_table1_2 = 'create table table1 (key1 varchar, key2 varchar, key3 varchar, key4 varchar, key5 varchar);';
+my $create_table2 = 'create table table2 (key1 varchar, key3 varchar);';
+my $create_table2_2 = "create table table2 (key1 varchar, key2 varchar, key3 varchar)";
+my $create_table3 = "create table table3 (key1 varchar, key2 varchar, key3 varchar)";
+my $create_table_reserved = 'create table "table" ("select" varchar, "update" varchar)';
 
 my $q = '"';
 my $p = '"';
@@ -195,40 +195,6 @@ my $binary;
 
 # Prepare table
 $dbi = DBIx::Custom->connect;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ### a little complex test
 test 'table_alias';
@@ -1186,24 +1152,6 @@ ok(!$rows);
 $result = $dbi->select(table => 'table1');
 eval {$result->fetch_hash_multi};
 like($@, qr/Row count must be specified/, "Not specified row count");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # DEPRECATED! test
 test 'filter __ expression';
