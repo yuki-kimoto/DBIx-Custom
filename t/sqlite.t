@@ -196,215 +196,11 @@ my $binary;
 # Prepare table
 $dbi = DBIx::Custom->connect;
 
-test 'join';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
-$dbi->execute($create_table2);
-$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
-$dbi->execute('create table table3 (key3 int, key4 int);');
-$dbi->insert(table => 'table3', param => {key3 => 5, key4 => 4});
-$rows = $dbi->select(
-    table => 'table1',
-    column => 'table1.key1 as table1_key1, table2.key1 as table2_key1, key2, key3',
-    where   => {'table1.key2' => 2},
-    join  => ['left outer join table2 on table1.key1 = table2.key1']
-)->all;
-is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}]);
-
-$rows = $dbi->select(
-    table => 'table1',
-    where   => {'key1' => 1},
-    join  => ['left outer join table2 on table1.key1 = table2.key1']
-)->all;
-is_deeply($rows, [{key1 => 1, key2 => 2}]);
-
-eval {
-    $rows = $dbi->select(
-        table => 'table1',
-        column => 'table1.key1 as table1_key1, table2.key1 as table2_key1, key2, key3',
-        where   => {'table1.key2' => 2},
-        join  => {'table1.key1' => 'table2.key1'}
-    );
-};
-like ($@, qr/array/);
-
-$rows = $dbi->select(
-    table => 'table1',
-    where   => {'key1' => 1},
-    join  => ['left outer join table2 on table1.key1 = table2.key1',
-              'left outer join table3 on table2.key3 = table3.key3']
-)->all;
-is_deeply($rows, [{key1 => 1, key2 => 2}]);
-
-$rows = $dbi->select(
-    column => 'table3.key4 as table3__key4',
-    table => 'table1',
-    where   => {'table1.key1' => 1},
-    join  => ['left outer join table2 on table1.key1 = table2.key1',
-              'left outer join table3 on table2.key3 = table3.key3']
-)->all;
-is_deeply($rows, [{table3__key4 => 4}]);
-
-$rows = $dbi->select(
-    column => 'table1.key1 as table1__key1',
-    table => 'table1',
-    where   => {'table3.key4' => 4},
-    join  => ['left outer join table2 on table1.key1 = table2.key1',
-              'left outer join table3 on table2.key3 = table3.key3']
-)->all;
-is_deeply($rows, [{table1__key1 => 1}]);
-
-$dbi = DBIx::Custom->connect;
-$dbi->quote('"');
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->execute($create_table2);
-$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
-$rows = $dbi->select(
-    table => 'table1',
-    column => '"table1"."key1" as "table1_key1", "table2"."key1" as "table2_key1", "key2", "key3"',
-    where   => {'table1.key2' => 2},
-    join  => ['left outer join "table2" on "table1"."key1" = "table2"."key1"'],
-)->all;
-is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}],
-          'quote');
-
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$sql = <<"EOS";
-left outer join (
-  select * from table1 as t1
-  where t1.key2 = (
-    select max(t2.key2) from table1 as t2
-    where t1.key1 = t2.key1
-  )
-) as latest_table1 on table1.key1 = latest_table1.key1
-EOS
-$join = [$sql];
-$rows = $dbi->select(
-    table => 'table1',
-    column => 'latest_table1.key1 as latest_table1__key1',
-    join  => $join
-)->all;
-is_deeply($rows, [{latest_table1__key1 => 1}]);
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-eval { $dbi->execute('drop table table2') };
-$dbi->execute($create_table1);
-$dbi->execute($create_table2);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 4});
-$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
-$result = $dbi->select(
-    table => 'table1',
-    join => [
-        "left outer join table2 on table2.key2 = '4' and table1.key1 = table2.key1"
-    ]
-);
-is_deeply($result->all, [{key1 => 1, key2 => 2}]);
-$result = $dbi->select(
-    table => 'table1',
-    column => [{table2 => ['key3']}],
-    join => [
-        "left outer join table2 on table2.key3 = '4' and table1.key1 = table2.key1"
-    ]
-);
-is_deeply($result->all, [{'table2.key3' => 4}]);
-$result = $dbi->select(
-    table => 'table1',
-    column => [{table2 => ['key3']}],
-    join => [
-        "left outer join table2 on table1.key1 = table2.key1 and table2.key3 = '4'"
-    ]
-);
-is_deeply($result->all, [{'table2.key3' => 4}]);
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-eval { $dbi->execute('drop table table2') };
-$dbi->execute($create_table1);
-$dbi->execute($create_table2);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 4});
-$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
-$result = $dbi->select(
-    table => 'table1',
-    column => [{table2 => ['key3']}],
-    join => [
-        {
-            clause => "left outer join table2 on table2.key3 = '4' and table1.key1 = table2.key1",
-            table => ['table1', 'table2']
-        }
-    ]
-);
-is_deeply($result->all, [{'table2.key3' => 4}]);
-
-test 'mycolumn';
-$dbi = MyDBI8->connect;
-eval { $dbi->execute('drop table table1') };
-eval { $dbi->execute('drop table table2') };
-$dbi->execute($create_table1);
-$dbi->execute($create_table2);
-$dbi->setup_model;
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
-$model = $dbi->model('table1');
-$result = $model->select_at(
-    column => [
-        $model->mycolumn,
-        $model->column('table2')
-    ]
-);
-is_deeply($result->one,
-          {key1 => 1, key2 => 2, 'table2.key1' => 1, 'table2.key3' => 3});
-
-$result = $model->select_at(
-    column => [
-        $model->mycolumn(['key1']),
-        $model->column(table2 => ['key1'])
-    ]
-);
-is_deeply($result->one,
-          {key1 => 1, 'table2.key1' => 1});
-$result = $model->select_at(
-    column => [
-        $model->mycolumn(['key1']),
-        {table2 => ['key1']}
-    ]
-);
-is_deeply($result->one,
-          {key1 => 1, 'table2.key1' => 1});
-
-$result = $model->select_at(
-    column => [
-        $model->mycolumn(['key1']),
-        ['table2.key1', as => 'table2.key1']
-    ]
-);
-is_deeply($result->one,
-          {key1 => 1, 'table2.key1' => 1});
-
-$result = $model->select_at(
-    column => [
-        $model->mycolumn(['key1']),
-        ['table2.key1' => 'table2.key1']
-    ]
-);
-is_deeply($result->one,
-          {key1 => 1, 'table2.key1' => 1});
-
 test 'dbi method from model';
 $dbi = MyDBI9->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
+$dbi->setup_model;
 $model = $dbi->model('table1');
 eval{$model->execute('select * from table1')};
 ok(!$@);
@@ -413,6 +209,7 @@ test 'column table option';
 $dbi = MyDBI9->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
+eval { $dbi->execute('drop table table2') };
 $dbi->execute($create_table2);
 $dbi->setup_model;
 $dbi->execute('insert into table1 (key1, key2) values (1, 2);');
@@ -446,75 +243,6 @@ $result = $model->select(
 );
 is_deeply($result->one, 
           {'table2_alias-key1' => 1, 'table2_alias-key3' => 4});
-
-test 'type option'; # DEPRECATED!
-$dbi = DBIx::Custom->connect(
-    dbi_option => {
-        $DBD::SQLite::VERSION > 1.26 ? (sqlite_unicode => 1) : (unicode => 1)
-    }
-);
-$binary = pack("I3", 1, 2, 3);
-eval { $dbi->execute('drop table table1') };
-$dbi->execute('create table table1(key1, key2)');
-$dbi->insert(table => 'table1', param => {key1 => $binary, key2 => 'あ'}, type => [key1 => DBI::SQL_BLOB]);
-$result = $dbi->select(table => 'table1');
-$row   = $result->one;
-is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
-$result = $dbi->execute('select length(key1) as key1_length from table1');
-$row = $result->one;
-is($row->{key1_length}, length $binary);
-
-$dbi->insert(table => 'table1', param => {key1 => $binary, key2 => 'あ'}, type => [['key1'] => DBI::SQL_BLOB]);
-$result = $dbi->select(table => 'table1');
-$row   = $result->one;
-is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
-$result = $dbi->execute('select length(key1) as key1_length from table1');
-$row = $result->one;
-is($row->{key1_length}, length $binary);
-
-
-test 'bind_type option';
-$dbi = DBIx::Custom->connect(
-    dbi_option => {
-        $DBD::SQLite::VERSION > 1.26 ? (sqlite_unicode => 1) : (unicode => 1)
-    }
-);
-$binary = pack("I3", 1, 2, 3);
-eval { $dbi->execute('drop table table1') };
-$dbi->execute('create table table1(key1, key2)');
-$dbi->insert(table => 'table1', param => {key1 => $binary, key2 => 'あ'}, bind_type => [key1 => DBI::SQL_BLOB]);
-$result = $dbi->select(table => 'table1');
-$row   = $result->one;
-is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
-$result = $dbi->execute('select length(key1) as key1_length from table1');
-$row = $result->one;
-is($row->{key1_length}, length $binary);
-
-$dbi->insert(table => 'table1', param => {key1 => $binary, key2 => 'あ'}, bind_type => [['key1'] => DBI::SQL_BLOB]);
-$result = $dbi->select(table => 'table1');
-$row   = $result->one;
-is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
-$result = $dbi->execute('select length(key1) as key1_length from table1');
-$row = $result->one;
-is($row->{key1_length}, length $binary);
-
-test 'model type attribute';
-$dbi = DBIx::Custom->connect(
-    dbi_option => {
-        $DBD::SQLite::VERSION > 1.26 ? (sqlite_unicode => 1) : (unicode => 1)
-    }
-);
-$binary = pack("I3", 1, 2, 3);
-eval { $dbi->execute('drop table table1') };
-$dbi->execute('create table table1(key1, key2)');
-$model = $dbi->create_model(table => 'table1', bind_type => [key1 => DBI::SQL_BLOB]);
-$model->insert(param => {key1 => $binary, key2 => 'あ'});
-$result = $dbi->select(table => 'table1');
-$row   = $result->one;
-is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
-$result = $dbi->execute('select length(key1) as key1_length from table1');
-$row = $result->one;
-is($row->{key1_length}, length $binary);
 
 test 'create_model';
 $dbi = DBIx::Custom->connect;
@@ -586,6 +314,7 @@ eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
+eval { $dbi->execute('drop table table2') };
 $dbi->execute($create_table2);
 $dbi->insert(table => 'table2', param => {key1 => 1, key3 => 4});
 $dbi->insert(table => 'table2', param => {key1 => 2, key3 => 5});
@@ -1042,18 +771,6 @@ $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $rows = $dbi->select(prefix => 'key1,', column => 'key2', table => 'table1')->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "table");
-
-
-test 'separator';
-$dbi = DBIx::Custom->connect;
-is($dbi->separator, '.');
-$dbi->separator('-');
-is($dbi->separator, '-');
-$dbi->separator('__');
-is($dbi->separator, '__');
-eval { $dbi->separator('?') };
-like($@, qr/Separator/);
-
 
 test 'map_param';
 $dbi = DBIx::Custom->connect;
@@ -1519,6 +1236,157 @@ like($@, qr/unexpected "{"/, "error : 2");
 
 
 ### a little complex test
+test 'join';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+$dbi->execute($create_table2);
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
+$dbi->execute('create table table3 (key3 int, key4 int);');
+$dbi->insert(table => 'table3', param => {key3 => 5, key4 => 4});
+$rows = $dbi->select(
+    table => 'table1',
+    column => 'table1.key1 as table1_key1, table2.key1 as table2_key1, key2, key3',
+    where   => {'table1.key2' => 2},
+    join  => ['left outer join table2 on table1.key1 = table2.key1']
+)->all;
+is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}]);
+
+$rows = $dbi->select(
+    table => 'table1',
+    where   => {'key1' => 1},
+    join  => ['left outer join table2 on table1.key1 = table2.key1']
+)->all;
+is_deeply($rows, [{key1 => 1, key2 => 2}]);
+
+eval {
+    $rows = $dbi->select(
+        table => 'table1',
+        column => 'table1.key1 as table1_key1, table2.key1 as table2_key1, key2, key3',
+        where   => {'table1.key2' => 2},
+        join  => {'table1.key1' => 'table2.key1'}
+    );
+};
+like ($@, qr/array/);
+
+$rows = $dbi->select(
+    table => 'table1',
+    where   => {'key1' => 1},
+    join  => ['left outer join table2 on table1.key1 = table2.key1',
+              'left outer join table3 on table2.key3 = table3.key3']
+)->all;
+is_deeply($rows, [{key1 => 1, key2 => 2}]);
+
+$rows = $dbi->select(
+    column => 'table3.key4 as table3__key4',
+    table => 'table1',
+    where   => {'table1.key1' => 1},
+    join  => ['left outer join table2 on table1.key1 = table2.key1',
+              'left outer join table3 on table2.key3 = table3.key3']
+)->all;
+is_deeply($rows, [{table3__key4 => 4}]);
+
+$rows = $dbi->select(
+    column => 'table1.key1 as table1__key1',
+    table => 'table1',
+    where   => {'table3.key4' => 4},
+    join  => ['left outer join table2 on table1.key1 = table2.key1',
+              'left outer join table3 on table2.key3 = table3.key3']
+)->all;
+is_deeply($rows, [{table1__key1 => 1}]);
+
+$dbi = DBIx::Custom->connect;
+$dbi->quote('"');
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->execute($create_table2);
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
+$rows = $dbi->select(
+    table => 'table1',
+    column => '"table1"."key1" as "table1_key1", "table2"."key1" as "table2_key1", "key2", "key3"',
+    where   => {'table1.key2' => 2},
+    join  => ['left outer join "table2" on "table1"."key1" = "table2"."key1"'],
+)->all;
+is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}],
+          'quote');
+
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$sql = <<"EOS";
+left outer join (
+  select * from table1 as t1
+  where t1.key2 = (
+    select max(t2.key2) from table1 as t2
+    where t1.key1 = t2.key1
+  )
+) as latest_table1 on table1.key1 = latest_table1.key1
+EOS
+$join = [$sql];
+$rows = $dbi->select(
+    table => 'table1',
+    column => 'latest_table1.key1 as latest_table1__key1',
+    join  => $join
+)->all;
+is_deeply($rows, [{latest_table1__key1 => 1}]);
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+eval { $dbi->execute('drop table table2') };
+$dbi->execute($create_table1);
+$dbi->execute($create_table2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 4});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
+$result = $dbi->select(
+    table => 'table1',
+    join => [
+        "left outer join table2 on table2.key2 = '4' and table1.key1 = table2.key1"
+    ]
+);
+is_deeply($result->all, [{key1 => 1, key2 => 2}]);
+$result = $dbi->select(
+    table => 'table1',
+    column => [{table2 => ['key3']}],
+    join => [
+        "left outer join table2 on table2.key3 = '4' and table1.key1 = table2.key1"
+    ]
+);
+is_deeply($result->all, [{'table2.key3' => 4}]);
+$result = $dbi->select(
+    table => 'table1',
+    column => [{table2 => ['key3']}],
+    join => [
+        "left outer join table2 on table1.key1 = table2.key1 and table2.key3 = '4'"
+    ]
+);
+is_deeply($result->all, [{'table2.key3' => 4}]);
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+eval { $dbi->execute('drop table table2') };
+$dbi->execute($create_table1);
+$dbi->execute($create_table2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 4});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
+$result = $dbi->select(
+    table => 'table1',
+    column => [{table2 => ['key3']}],
+    join => [
+        {
+            clause => "left outer join table2 on table2.key3 = '4' and table1.key1 = table2.key1",
+            table => ['table1', 'table2']
+        }
+    ]
+);
+is_deeply($result->all, [{'table2.key3' => 4}]);
+
 
 test 'update_param';
 $dbi = DBIx::Custom->connect;

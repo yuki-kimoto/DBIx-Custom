@@ -133,7 +133,7 @@ use MyDBI1;
     sub connect {
         my $self = shift->SUPER::connect(@_);
         
-        $self->include_model('MyModel8')->setup_model;
+        $self->include_model('MyModel8');
         
         return $self;
     }
@@ -2173,6 +2173,60 @@ is($dbi->select(table => 'table1')->one->{key2}, 2);
 
 eval { $dbi->insert_param({";" => 1}) };
 like($@, qr/not safety/);
+
+test 'mycolumn';
+$dbi = MyDBI8->connect;
+eval { $dbi->execute('drop table table1') };
+eval { $dbi->execute('drop table table2') };
+$dbi->execute($create_table1);
+$dbi->execute($create_table2);
+$dbi->setup_model;
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
+$model = $dbi->model('table1');
+$result = $model->select_at(
+    column => [
+        $model->mycolumn,
+        $model->column('table2')
+    ]
+);
+is_deeply($result->one,
+          {key1 => 1, key2 => 2, 'table2.key1' => 1, 'table2.key3' => 3});
+
+$result = $model->select_at(
+    column => [
+        $model->mycolumn(['key1']),
+        $model->column(table2 => ['key1'])
+    ]
+);
+is_deeply($result->one,
+          {key1 => 1, 'table2.key1' => 1});
+$result = $model->select_at(
+    column => [
+        $model->mycolumn(['key1']),
+        {table2 => ['key1']}
+    ]
+);
+is_deeply($result->one,
+          {key1 => 1, 'table2.key1' => 1});
+
+$result = $model->select_at(
+    column => [
+        $model->mycolumn(['key1']),
+        ['table2.key1', as => 'table2.key1']
+    ]
+);
+is_deeply($result->one,
+          {key1 => 1, 'table2.key1' => 1});
+
+$result = $model->select_at(
+    column => [
+        $model->mycolumn(['key1']),
+        ['table2.key1' => 'table2.key1']
+    ]
+);
+is_deeply($result->one,
+          {key1 => 1, 'table2.key1' => 1});
 
 
 

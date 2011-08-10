@@ -54,6 +54,7 @@ has [qw/connector dsn password quote user/],
     query_builder => sub { DBIx::Custom::QueryBuilder->new(dbi => shift) },
     result_class  => 'DBIx::Custom::Result',
     safety_character => '\w',
+    separator => '.',
     stash => sub { {} },
     tag_parse => 1;
 
@@ -873,22 +874,6 @@ sub select {
     my $result = $self->execute($sql, $where_param, table => $tables, %args);
     
     return $result;
-}
-
-sub separator {
-    my $self = shift;
-    
-    if (@_) {
-        my $separator = $_[0] || '';
-        croak qq{Separator must be "." or "__" or "-" } . _subname
-          unless $separator eq '.' || $separator eq '__'
-              || $separator eq '-';
-        
-        $self->{separator} = $separator;
-    
-        return $self;
-    }
-    return $self->{separator} ||= '.';
 }
 
 sub setup_model {
@@ -1984,6 +1969,14 @@ Result class, default to L<DBIx::Custom::Result>.
 Regex of safety character for table and column name, default to '\w'.
 Note that you don't have to specify like '[\w]'.
 
+=head2 C<separator>
+
+    my $separator = $self->separator;
+    $dbi = $self->separator($separator);
+
+Separator whichi join table and column.
+This is used by C<column> and C<mycolumn> method.
+
 =head2 C<tag_parse>
 
     my $tag_parse = $dbi->tag_parse(0);
@@ -2038,7 +2031,7 @@ Create column clause. The follwoing column clause is created.
     book.author as "book.author",
     book.title as "book.title"
 
-You can change separator by C<separator> method.
+You can change separator by C<separator> attribute.
 
     # Separator is double underbar
     $dbi->separator('__');

@@ -1,3 +1,5 @@
+0.1712
+    - you can set any string as separator
 0.1711
     - renamed EXPERIMENTAL available_type_name to available_typename
     - renamed EXPERIMENTAL available_data_type to available_datatype
