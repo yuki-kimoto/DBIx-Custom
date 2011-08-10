@@ -1,11 +1,9 @@
 use Test::More;
 use strict;
 use warnings;
-use DBIx::Custom;
 use Encode qw/encode_utf8/;
 use FindBin;
 use lib "$FindBin::Bin/common";
-
 
 my $dbi;
 
@@ -14,6 +12,132 @@ plan skip_all => $ENV{DBIX_CUSTOM_SKIP_MESSAGE} || 'common.t is always skipped'
     && eval { $dbi = DBIx::Custom->connect; 1 };
 
 plan 'no_plan';
+
+use MyDBI1;
+{
+    package MyDBI4;
+
+    use strict;
+    use warnings;
+
+    use base 'DBIx::Custom';
+
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model(
+            MyModel2 => [
+                'book',
+                {class => 'Company', name => 'company'}
+            ]
+        );
+    }
+
+    package MyModel2::Base1;
+
+    use strict;
+    use warnings;
+
+    use base 'DBIx::Custom::Model';
+
+    package MyModel2::book;
+
+    use strict;
+    use warnings;
+
+    use base 'MyModel2::Base1';
+
+    sub insert {
+        my ($self, $param) = @_;
+        
+        return $self->SUPER::insert(param => $param);
+    }
+
+    sub list { shift->select; }
+
+    package MyModel2::Company;
+
+    use strict;
+    use warnings;
+
+    use base 'MyModel2::Base1';
+
+    sub insert {
+        my ($self, $param) = @_;
+        
+        return $self->SUPER::insert(param => $param);
+    }
+
+    sub list { shift->select; }
+}
+{
+     package MyDBI5;
+
+    use strict;
+    use warnings;
+
+    use base 'DBIx::Custom';
+
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel4');
+    }
+}
+{
+    package MyDBI6;
+    
+    use base 'DBIx::Custom';
+    
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel5');
+        
+        return $self;
+    }
+}
+{
+    package MyDBI7;
+    
+    use base 'DBIx::Custom';
+    
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel6');
+        
+        
+        return $self;
+    }
+}
+{
+    package MyDBI8;
+    
+    use base 'DBIx::Custom';
+    
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel7');
+        
+        return $self;
+    }
+}
+
+{
+    package MyDBI9;
+    
+    use base 'DBIx::Custom';
+    
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel8')->setup_model;
+        
+        return $self;
+    }
+}
 
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 sub test { print "# $_[0]\n" }
@@ -1078,49 +1202,20 @@ $rows = $dbi->select(
 is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
 test 'connect super';
-{
-    package MyDBI;
-    
-    use base 'DBIx::Custom';
-    sub connect {
-        my $self = shift->SUPER::connect(@_);
-        
-        return $self;
-    }
-    
-    sub new {
-        my $self = shift->SUPER::new(@_);
-        
-        return $self;
-    }
-}
-
-$dbi = MyDBI->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is($dbi->select(table => 'table1')->one->{key1}, 1);
 
-$dbi = MyDBI->new;
+$dbi = DBIx::Custom->new;
 $dbi->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is($dbi->select(table => 'table1')->one->{key1}, 1);
 
-{
-    package MyDBI2;
-    
-    use base 'DBIx::Custom';
-    sub connect {
-        my $self = shift->SUPER::new(@_);
-        $self->connect;
-        
-        return $self;
-    }
-}
-
-$dbi = MyDBI->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});

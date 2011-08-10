@@ -23,7 +23,7 @@ use DBIx::Custom;
     sub create_table2_2 { "create table table2 (key1 varchar(255), key2 varchar(255), key3 varchar(255)) engine=InnoDB" }
     sub create_table3 { "create table table3 (key1 varchar(255), key2 varchar(255), key3 varchar(255)) engine=InnoDB" }
     sub create_table_reserved {
-      'create table `table` (`select` varchar(255), `update` varchar(255)) engine=InnoDB;' }
+      'create table `table` (`select` varchar(255), `update` varchar(255)) engine=InnoDB' }
 }
 
 require "$FindBin::Bin/common.t";

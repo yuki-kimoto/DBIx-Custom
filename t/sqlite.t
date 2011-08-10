@@ -20,6 +20,10 @@ $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 sub test { print "# $_[0]\n" }
 
 use DBIx::Custom;
+{
+    package DBIx::Custom;
+    has dsn => sub { 'dbi:SQLite:dbname=:memory:' }
+}
 use MyDBI1;
 {
     package MyDBI4;
@@ -76,10 +80,6 @@ use MyDBI1;
     }
 
     sub list { shift->select; }
-}
-{
-    package DBIx::Custom;
-    has dsn => sub { 'dbi:SQLite:dbname=:memory:' }
 }
 {
      package MyDBI5;
