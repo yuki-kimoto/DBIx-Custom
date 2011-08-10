@@ -27,8 +27,8 @@ use MyDBI1;
         
         $self->include_model(
             MyModel2 => [
-                'book',
-                {class => 'Company', name => 'company'}
+                'table1',
+                'table2'
             ]
         );
     }
@@ -40,7 +40,7 @@ use MyDBI1;
 
     use base 'DBIx::Custom::Model';
 
-    package MyModel2::book;
+    package MyModel2::table1;
 
     use strict;
     use warnings;
@@ -55,7 +55,7 @@ use MyDBI1;
 
     sub list { shift->select; }
 
-    package MyModel2::Company;
+    package MyModel2::table2;
 
     use strict;
     use warnings;
@@ -2062,30 +2062,30 @@ is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
 
 $where = $dbi->where;
 $where->param({id => 1, author => 'Ken', price => 1900});
-$where->map(id => 'book.id',
-    author => ['book.author', sub { '%' . $_[0] . '%' }],
-    price => ['book.price', {if => sub { $_[0] eq 1900 }}]
+$where->map(id => 'table1.id',
+    author => ['table1.author', sub { '%' . $_[0] . '%' }],
+    price => ['table1.price', {if => sub { $_[0] eq 1900 }}]
 );
-is_deeply($where->param, {'book.id' => 1, 'book.author' => '%Ken%',
-  'book.price' => 1900});
+is_deeply($where->param, {'table1.id' => 1, 'table1.author' => '%Ken%',
+  'table1.price' => 1900});
 
 $where = $dbi->where;
 $where->param({id => 0, author => 0, price => 0});
 $where->map(
-    id => 'book.id',
-    author => ['book.author', sub { '%' . $_[0] . '%' }],
-    price => ['book.price', sub { '%' . $_[0] . '%' },
+    id => 'table1.id',
+    author => ['table1.author', sub { '%' . $_[0] . '%' }],
+    price => ['table1.price', sub { '%' . $_[0] . '%' },
       {if => sub { $_[0] eq 0 }}]
 );
-is_deeply($where->param, {'book.id' => 0, 'book.author' => '%0%', 'book.price' => '%0%'});
+is_deeply($where->param, {'table1.id' => 0, 'table1.author' => '%0%', 'table1.price' => '%0%'});
 
 $where = $dbi->where;
 $where->param({id => '', author => '', price => ''});
 $where->if('length');
 $where->map(
-    id => 'book.id',
-    author => ['book.author', sub { '%' . $_[0] . '%' }],
-    price => ['book.price', sub { '%' . $_[0] . '%' },
+    id => 'table1.id',
+    author => ['table1.author', sub { '%' . $_[0] . '%' }],
+    price => ['table1.price', sub { '%' . $_[0] . '%' },
       {if => sub { $_[0] eq 1 }}]
 );
 is_deeply($where->param, {});
@@ -2094,50 +2094,50 @@ $where = $dbi->where;
 $where->param({id => undef, author => undef, price => undef});
 $where->if('length');
 $where->map(
-    id => 'book.id',
-    price => ['book.price', {if => 'exists'}]
+    id => 'table1.id',
+    price => ['table1.price', {if => 'exists'}]
 );
-is_deeply($where->param, {'book.price' => undef});
+is_deeply($where->param, {'table1.price' => undef});
 
 $where = $dbi->where;
 $where->param({price => 'a'});
 $where->if('length');
 $where->map(
-    id => ['book.id', {if => 'exists'}],
-    price => ['book.price', sub { '%' . $_[0] }, {if => 'exists'}]
+    id => ['table1.id', {if => 'exists'}],
+    price => ['table1.price', sub { '%' . $_[0] }, {if => 'exists'}]
 );
-is_deeply($where->param, {'book.price' => '%a'});
+is_deeply($where->param, {'table1.price' => '%a'});
 
 $where = $dbi->where;
 $where->param({id => [1, 2], author => 'Ken', price => 1900});
 $where->map(
-    id => 'book.id',
-    author => ['book.author', sub { '%' . $_[0] . '%' }],
-    price => ['book.price', {if => sub { $_[0] eq 1900 }}]
+    id => 'table1.id',
+    author => ['table1.author', sub { '%' . $_[0] . '%' }],
+    price => ['table1.price', {if => sub { $_[0] eq 1900 }}]
 );
-is_deeply($where->param, {'book.id' => [1, 2], 'book.author' => '%Ken%',
-  'book.price' => 1900});
+is_deeply($where->param, {'table1.id' => [1, 2], 'table1.author' => '%Ken%',
+  'table1.price' => 1900});
 
 $where = $dbi->where;
 $where->if('length');
 $where->param({id => ['', ''], author => 'Ken', price => 1900});
 $where->map(
-    id => 'book.id',
-    author => ['book.author', sub { '%' . $_[0] . '%' }],
-    price => ['book.price', {if => sub { $_[0] eq 1900 }}]
+    id => 'table1.id',
+    author => ['table1.author', sub { '%' . $_[0] . '%' }],
+    price => ['table1.price', {if => sub { $_[0] eq 1900 }}]
 );
-is_deeply($where->param, {'book.id' => [$dbi->not_exists, $dbi->not_exists], 'book.author' => '%Ken%',
-  'book.price' => 1900});
+is_deeply($where->param, {'table1.id' => [$dbi->not_exists, $dbi->not_exists], 'table1.author' => '%Ken%',
+  'table1.price' => 1900});
 
 $where = $dbi->where;
 $where->param({id => ['', ''], author => 'Ken', price => 1900});
 $where->map(
-    id => ['book.id', {if => 'length'}],
-    author => ['book.author', sub { '%' . $_[0] . '%' }, {if => 'defined'}],
-    price => ['book.price', {if => sub { $_[0] eq 1900 }}]
+    id => ['table1.id', {if => 'length'}],
+    author => ['table1.author', sub { '%' . $_[0] . '%' }, {if => 'defined'}],
+    price => ['table1.price', {if => sub { $_[0] eq 1900 }}]
 );
-is_deeply($where->param, {'book.id' => [$dbi->not_exists, $dbi->not_exists], 'book.author' => '%Ken%',
-  'book.price' => 1900});
+is_deeply($where->param, {'table1.id' => [$dbi->not_exists, $dbi->not_exists], 'table1.author' => '%Ken%',
+  'table1.price' => 1900});
 
 test 'dbi_option default';
 $dbi = DBIx::Custom->new;
@@ -3074,44 +3074,44 @@ test 'map_param';
 $dbi = DBIx::Custom->connect;
 $param = $dbi->map_param(
     {id => 1, author => 'Ken', price => 1900},
-    id => 'book.id',
-    author => ['book.author', sub { '%' . $_[0] . '%' }],
-    price => ['book.price', {if => sub { $_[0] eq 1900 }}]
+    id => 'table1.id',
+    author => ['table1.author', sub { '%' . $_[0] . '%' }],
+    price => ['table1.price', {if => sub { $_[0] eq 1900 }}]
 );
-is_deeply($param, {'book.id' => 1, 'book.author' => '%Ken%',
-  'book.price' => 1900});
+is_deeply($param, {'table1.id' => 1, 'table1.author' => '%Ken%',
+  'table1.price' => 1900});
 
 $param = $dbi->map_param(
     {id => 0, author => 0, price => 0},
-    id => 'book.id',
-    author => ['book.author', sub { '%' . $_[0] . '%' }],
-    price => ['book.price', sub { '%' . $_[0] . '%' },
+    id => 'table1.id',
+    author => ['table1.author', sub { '%' . $_[0] . '%' }],
+    price => ['table1.price', sub { '%' . $_[0] . '%' },
       {if => sub { $_[0] eq 0 }}]
 );
-is_deeply($param, {'book.id' => 0, 'book.author' => '%0%', 'book.price' => '%0%'});
+is_deeply($param, {'table1.id' => 0, 'table1.author' => '%0%', 'table1.price' => '%0%'});
 
 $param = $dbi->map_param(
     {id => '', author => '', price => ''},
-    id => 'book.id',
-    author => ['book.author', sub { '%' . $_[0] . '%' }],
-    price => ['book.price', sub { '%' . $_[0] . '%' },
+    id => 'table1.id',
+    author => ['table1.author', sub { '%' . $_[0] . '%' }],
+    price => ['table1.price', sub { '%' . $_[0] . '%' },
       {if => sub { $_[0] eq 1 }}]
 );
 is_deeply($param, {});
 
 $param = $dbi->map_param(
     {id => undef, author => undef, price => undef},
-    id => 'book.id',
-    price => ['book.price', {if => 'exists'}]
+    id => 'table1.id',
+    price => ['table1.price', {if => 'exists'}]
 );
-is_deeply($param, {'book.price' => undef});
+is_deeply($param, {'table1.price' => undef});
 
 $param = $dbi->map_param(
     {price => 'a'},
-    id => ['book.id', {if => 'exists'}],
-    price => ['book.price', sub { '%' . $_[0] }, {if => 'exists'}]
+    id => ['table1.id', {if => 'exists'}],
+    price => ['table1.price', sub { '%' . $_[0] }, {if => 'exists'}]
 );
-is_deeply($param, {'book.price' => '%a'});
+is_deeply($param, {'table1.price' => '%a'});
 
 test 'order';
 $dbi = DBIx::Custom->connect;
