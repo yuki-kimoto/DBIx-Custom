@@ -988,6 +988,7 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
 eval { $dbi->execute('drop table table1') };
 eval { $dbi->execute('drop table table2') };
+eval { $dbi->execute('drop table table3') };
 $dbi->execute($create_table1_type);
 $dbi->execute($create_table2);
 
