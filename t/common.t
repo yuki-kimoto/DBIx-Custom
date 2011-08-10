@@ -2453,7 +2453,7 @@ like($@, qr/must be/);
 test 'columns';
 use MyDBI1;
 $dbi = MyDBI1->connect;
-$model = $dbi->model('book');
+$model = $dbi->model('table1');
 
 
 test 'model delete_at';
@@ -2468,11 +2468,11 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1')->delete_at(where => [1, 2]);
 is_deeply($dbi->select(table => 'table1')->all, []);
 $dbi->insert(table => 'table2', param => {key1 => 1, key2 => 2, key3 => 3});
-$dbi->model('table1_1')->delete_at(where => [1, 2]);
+$dbi->model('table1')->delete_at(where => [1, 2]);
 is_deeply($dbi->select(table => 'table1')->all, []);
 $dbi->insert(table => 'table3', param => {key1 => 1, key2 => 2, key3 => 3});
-$dbi->model('table1_3')->delete_at(where => [1, 2]);
-is_deeply($dbi->select(table => 'table1')->all, []);
+$dbi->model('table3')->delete_at(where => [1, 2]);
+is_deeply($dbi->select(table => 'table3')->all, []);
 
 test 'model insert_at';
 $dbi = MyDBI6->connect;
@@ -2895,11 +2895,11 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->model('table1')->delete(id => [1, 2]);
 is_deeply($dbi->select(table => 'table1')->all, []);
 $dbi->insert(table => 'table2', param => {key1 => 1, key2 => 2, key3 => 3});
-$dbi->model('table1_1')->delete(id => [1, 2]);
+$dbi->model('table1')->delete(id => [1, 2]);
 is_deeply($dbi->select(table => 'table1')->all, []);
 $dbi->insert(table => 'table3', param => {key1 => 1, key2 => 2, key3 => 3});
-$dbi->model('table1_3')->delete(id => [1, 2]);
-is_deeply($dbi->select(table => 'table1')->all, []);
+$dbi->model('table3')->delete(id => [1, 2]);
+is_deeply($dbi->select(table => 'table3')->all, []);
 
 
 test 'select and id option';

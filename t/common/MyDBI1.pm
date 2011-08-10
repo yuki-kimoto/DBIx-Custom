@@ -10,8 +10,8 @@ sub connect {
     
     $self->include_model(
         MyModel1 => [
-            'book',
-            {class => 'Company', name => 'company'}
+            'table1',
+            'table2'
         ]
     );
 }

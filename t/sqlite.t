@@ -38,8 +38,8 @@ use MyDBI1;
         
         $self->include_model(
             MyModel2 => [
-                'book',
-                {class => 'Company', name => 'company'}
+                'table1',
+                {class => 'table2', name => 'table2'}
             ]
         );
     }
@@ -51,7 +51,7 @@ use MyDBI1;
 
     use base 'DBIx::Custom::Model';
 
-    package MyModel2::book;
+    package MyModel2::table1;
 
     use strict;
     use warnings;
@@ -66,7 +66,7 @@ use MyDBI1;
 
     sub list { shift->select; }
 
-    package MyModel2::Company;
+    package MyModel2::table2;
 
     use strict;
     use warnings;
@@ -183,71 +183,67 @@ $dbi = DBIx::Custom->connect;
 test 'Model class';
 use MyDBI1;
 $dbi = MyDBI1->connect;
-eval { $dbi->execute('drop table book') };
-$dbi->execute("create table book (title, author)");
-$model = $dbi->model('book');
-$model->insert({title => 'a', author => 'b'});
-is_deeply($model->list->all, [{title => 'a', author => 'b'}], 'basic');
-$dbi->execute("create table company (name)");
-$model = $dbi->model('company');
-$model->insert({name => 'a'});
-is_deeply($model->list->all, [{name => 'a'}], 'basic');
-is($dbi->models->{'book'}, $dbi->model('book'));
-is($dbi->models->{'company'}, $dbi->model('company'));
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$model = $dbi->model('table1');
+$model->insert({key1 => 'a', key2 => 'b'});
+is_deeply($model->list->all, [{key1 => 'a', key2 => 'b'}], 'basic');
+eval { $dbi->execute('drop table table2') };
+$dbi->execute($create_table2);
+$model = $dbi->model('table2');
+$model->insert({key1 => 'a'});
+is_deeply($model->list->all, [{key1 => 'a', key3 => undef}], 'basic');
+is($dbi->models->{'table1'}, $dbi->model('table1'));
+is($dbi->models->{'table2'}, $dbi->model('table2'));
 
 $dbi = MyDBI4->connect;
-eval { $dbi->execute('drop table book') };
-$dbi->execute("create table book (title, author)");
-$model = $dbi->model('book');
-$model->insert({title => 'a', author => 'b'});
-is_deeply($model->list->all, [{title => 'a', author => 'b'}], 'basic');
-$dbi->execute("create table company (name)");
-$model = $dbi->model('company');
-$model->insert({name => 'a'});
-is_deeply($model->list->all, [{name => 'a'}], 'basic');
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$model = $dbi->model('table1');
+$model->insert({key1 => 'a', key2 => 'b'});
+is_deeply($model->list->all, [{key1 => 'a', key2 => 'b'}], 'basic');
+$dbi->execute($create_table2);
+$model = $dbi->model('table2');
+$model->insert({key1 => 'a'});
+is_deeply($model->list->all, [{key1 => 'a', key3 => undef}], 'basic');
 
 $dbi = MyDBI5->connect;
-eval { $dbi->execute('drop table company') };
 eval { $dbi->execute('drop table table1') };
-$dbi->execute("create table company (name)");
-$dbi->execute("create table table1 (key1)");
-$model = $dbi->model('company');
-$model->insert({name => 'a'});
-is_deeply($model->list->all, [{name => 'a'}], 'include all model');
+eval { $dbi->execute('drop table table2') };
+$dbi->execute($create_table1);
+$dbi->execute($create_table2);
+$model = $dbi->model('table2');
+$model->insert({key1 => 'a'});
+is_deeply($model->list->all, [{key1 => 'a', key3 => undef}], 'include all model');
 $dbi->insert(table => 'table1', param => {key1 => 1});
-$model = $dbi->model('book');
-is_deeply($model->list->all, [{key1 => 1}], 'include all model');
+$model = $dbi->model('table1');
+is_deeply($model->list->all, [{key1 => 1, key2 => undef}], 'include all model');
 
 test 'primary_key';
 use MyDBI1;
 $dbi = MyDBI1->connect;
-$model = $dbi->model('book');
-$model->primary_key(['id', 'number']);
-is_deeply($model->primary_key, ['id', 'number']);
+$model = $dbi->model('table1');
+$model->primary_key(['key1', 'key2']);
+is_deeply($model->primary_key, ['key1', 'key2']);
 
 test 'columns';
 use MyDBI1;
 $dbi = MyDBI1->connect;
-$model = $dbi->model('book');
-$model->columns(['id', 'number']);
-is_deeply($model->columns, ['id', 'number']);
+$model = $dbi->model('table1');
+$model->columns(['key1', 'key2']);
+is_deeply($model->columns, ['key1', 'key2']);
 
 test 'setup_model';
 use MyDBI1;
 $dbi = MyDBI1->connect;
-eval { $dbi->execute('drop table book') };
-eval { $dbi->execute('drop table company') };
-eval { $dbi->execute('drop table test') };
+eval { $dbi->execute('drop table table1') };
+eval { $dbi->execute('drop table table2') };
 
-$dbi->execute('create table book (id)');
-$dbi->execute('create table company (id, name);');
-$dbi->execute('create table test (id, name);');
+$dbi->execute($create_table1);
+$dbi->execute($create_table2);
 $dbi->setup_model;
-is_deeply($dbi->model('book')->columns, ['id']);
-is_deeply($dbi->model('company')->columns, ['id', 'name']);
-
-
-
+is_deeply($dbi->model('table1')->columns, ['key1', 'key2']);
+is_deeply($dbi->model('table2')->columns, ['key1', 'key3']);
 
 
 ### SQLite only test
@@ -384,32 +380,32 @@ is($result->one->{key1}, 'A');
 # DEPRECATED! test
 test 'filter __ expression';
 $dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table company') };
-eval { $dbi->execute('drop table location') };
-$dbi->execute('create table company (id, name, location_id)');
-$dbi->execute('create table location (id, name)');
-$dbi->apply_filter('location',
+eval { $dbi->execute('drop table table2') };
+eval { $dbi->execute('drop table table3') };
+$dbi->execute('create table table2 (id, name, table3_id)');
+$dbi->execute('create table table3 (id, name)');
+$dbi->apply_filter('table3',
   name => {in => sub { uc $_[0] } }
 );
 
-$dbi->insert(table => 'company', param => {id => 1, name => 'a', location_id => 2});
-$dbi->insert(table => 'location', param => {id => 2, name => 'b'});
+$dbi->insert(table => 'table2', param => {id => 1, name => 'a', table3_id => 2});
+$dbi->insert(table => 'table3', param => {id => 2, name => 'b'});
 
 $result = $dbi->select(
-    table => ['company', 'location'], relation => {'company.location_id' => 'location.id'},
-    column => ['location.name as location__name']
+    table => ['table2', 'table3'], relation => {'table2.table3_id' => 'table3.id'},
+    column => ['table3.name as table3__name']
 );
 is($result->fetch_first->[0], 'B');
 
 $result = $dbi->select(
-    table => 'company', relation => {'company.location_id' => 'location.id'},
-    column => ['location.name as location__name']
+    table => 'table2', relation => {'table2.table3_id' => 'table3.id'},
+    column => ['table3.name as table3__name']
 );
 is($result->fetch_first->[0], 'B');
 
 $result = $dbi->select(
-    table => 'company', relation => {'company.location_id' => 'location.id'},
-    column => ['location.name as "location.name"']
+    table => 'table2', relation => {'table2.table3_id' => 'table3.id'},
+    column => ['table3.name as "table3.name"']
 );
 is($result->fetch_first->[0], 'B');
 
