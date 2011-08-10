@@ -19,7 +19,7 @@ use Encode qw/encode encode_utf8 decode_utf8/;
 use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 
-has [qw/connector dsn password quote user system_table/],
+has [qw/connector dsn password quote user exclude_table/],
     cache => 0,
     cache_method => sub {
         sub {
@@ -301,7 +301,7 @@ sub create_model {
 sub each_column {
     my ($self, $cb) = @_;
 
-    my $re = $self->system_table;
+    my $re = $self->exclude_table;
     
     # Iterate all tables
     my $sth_tables = $self->dbh->table_info;
@@ -326,7 +326,7 @@ sub each_column {
 sub each_table {
     my ($self, $cb) = @_;
     
-    my $re = $self->system_table;
+    my $re = $self->exclude_table;
     
     # Iterate all tables
     my $sth_tables = $self->dbh->table_info;
@@ -2014,16 +2014,16 @@ Note that you don't have to specify like '[\w]'.
 Separator whichi join table and column.
 This is used by C<column> and C<mycolumn> method.
 
-=head2 C<system_table EXPERIMENTAL>
+=head2 C<exclude_table EXPERIMENTAL>
 
-    my $system_table = $self->system_table;
-    $dbi = $self->system_table(qr/pg_/);
+    my $exclude_table = $self->exclude_table;
+    $dbi = $self->exclude_table(qr/pg_/);
 
 Regex matching system table.
 this regex match is used by C<each_table> method and C<each_column> method
 System table is ignored.
 C<type_rule> method and C<setup_model> method call
-C<each_table>, so if you set C<system_table> properly,
+C<each_table>, so if you set C<exclude_table> properly,
 The performance is up.
 
 =head2 C<tag_parse>
