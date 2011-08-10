@@ -70,141 +70,6 @@ my $binary;
 # Prepare table
 $dbi = DBIx::Custom->connect;
 
-test 'Model class';
-use MyDBI1;
-$dbi = MyDBI1->connect;
-eval { $dbi->execute('drop table book') };
-$dbi->execute("create table book (title, author)");
-$model = $dbi->model('book');
-$model->insert({title => 'a', author => 'b'});
-is_deeply($model->list->all, [{title => 'a', author => 'b'}], 'basic');
-$dbi->execute("create table company (name)");
-$model = $dbi->model('company');
-$model->insert({name => 'a'});
-is_deeply($model->list->all, [{name => 'a'}], 'basic');
-is($dbi->models->{'book'}, $dbi->model('book'));
-is($dbi->models->{'company'}, $dbi->model('company'));
-
-{
-    package MyDBI4;
-
-    use strict;
-    use warnings;
-
-    use base 'DBIx::Custom';
-
-    sub connect {
-        my $self = shift->SUPER::connect(@_);
-        
-        $self->include_model(
-            MyModel2 => [
-                'book',
-                {class => 'Company', name => 'company'}
-            ]
-        );
-    }
-
-    package MyModel2::Base1;
-
-    use strict;
-    use warnings;
-
-    use base 'DBIx::Custom::Model';
-
-    package MyModel2::book;
-
-    use strict;
-    use warnings;
-
-    use base 'MyModel2::Base1';
-
-    sub insert {
-        my ($self, $param) = @_;
-        
-        return $self->SUPER::insert(param => $param);
-    }
-
-    sub list { shift->select; }
-
-    package MyModel2::Company;
-
-    use strict;
-    use warnings;
-
-    use base 'MyModel2::Base1';
-
-    sub insert {
-        my ($self, $param) = @_;
-        
-        return $self->SUPER::insert(param => $param);
-    }
-
-    sub list { shift->select; }
-}
-$dbi = MyDBI4->connect;
-eval { $dbi->execute('drop table book') };
-$dbi->execute("create table book (title, author)");
-$model = $dbi->model('book');
-$model->insert({title => 'a', author => 'b'});
-is_deeply($model->list->all, [{title => 'a', author => 'b'}], 'basic');
-$dbi->execute("create table company (name)");
-$model = $dbi->model('company');
-$model->insert({name => 'a'});
-is_deeply($model->list->all, [{name => 'a'}], 'basic');
-
-{
-     package MyDBI5;
-
-    use strict;
-    use warnings;
-
-    use base 'DBIx::Custom';
-
-    sub connect {
-        my $self = shift->SUPER::connect(@_);
-        
-        $self->include_model('MyModel4');
-    }
-}
-$dbi = MyDBI5->connect;
-eval { $dbi->execute('drop table company') };
-eval { $dbi->execute('drop table table1') };
-$dbi->execute("create table company (name)");
-$dbi->execute("create table table1 (key1)");
-$model = $dbi->model('company');
-$model->insert({name => 'a'});
-is_deeply($model->list->all, [{name => 'a'}], 'include all model');
-$dbi->insert(table => 'table1', param => {key1 => 1});
-$model = $dbi->model('book');
-is_deeply($model->list->all, [{key1 => 1}], 'include all model');
-
-test 'primary_key';
-use MyDBI1;
-$dbi = MyDBI1->connect;
-$model = $dbi->model('book');
-$model->primary_key(['id', 'number']);
-is_deeply($model->primary_key, ['id', 'number']);
-
-test 'columns';
-use MyDBI1;
-$dbi = MyDBI1->connect;
-$model = $dbi->model('book');
-$model->columns(['id', 'number']);
-is_deeply($model->columns, ['id', 'number']);
-
-test 'setup_model';
-use MyDBI1;
-$dbi = MyDBI1->connect;
-eval { $dbi->execute('drop table book') };
-eval { $dbi->execute('drop table company') };
-eval { $dbi->execute('drop table test') };
-
-$dbi->execute('create table book (id)');
-$dbi->execute('create table company (id, name);');
-$dbi->execute('create table test (id, name, primary key (id, name));');
-$dbi->setup_model;
-is_deeply($dbi->model('book')->columns, ['id']);
-is_deeply($dbi->model('company')->columns, ['id', 'name']);
 
 test 'delete_at';
 $dbi = DBIx::Custom->connect;
@@ -1940,7 +1805,33 @@ $source = "a {= {}";
 eval{$builder->build_query($source)};
 like($@, qr/unexpected "{"/, "error : 2");
 
-### SQLite test
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### a little complex test
 test 'type option'; # DEPRECATED!
 $dbi = DBIx::Custom->connect(
     data_source => 'dbi:SQLite:dbname=:memory:',
@@ -2375,20 +2266,156 @@ $result = $dbi->execute('select * from table1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
 
+test 'Model class';
+use MyDBI1;
+$dbi = MyDBI1->connect;
+eval { $dbi->execute('drop table book') };
+$dbi->execute("create table book (title, author)");
+$model = $dbi->model('book');
+$model->insert({title => 'a', author => 'b'});
+is_deeply($model->list->all, [{title => 'a', author => 'b'}], 'basic');
+$dbi->execute("create table company (name)");
+$model = $dbi->model('company');
+$model->insert({name => 'a'});
+is_deeply($model->list->all, [{name => 'a'}], 'basic');
+is($dbi->models->{'book'}, $dbi->model('book'));
+is($dbi->models->{'company'}, $dbi->model('company'));
 
-test 'reserved_word_quote';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table ${q}table$p") };
-$dbi->reserved_word_quote('"');
-$dbi->execute($create_table_reserved);
-$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
-$dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
-$dbi->insert(table => 'table', param => {select => 1});
-$dbi->update(table => 'table', where => {'table.select' => 1}, param => {update => 2});
-$result = $dbi->execute("select * from ${q}table$p");
-$rows   = $result->all;
-is_deeply($rows, [{select => 2, update => 6}], "reserved word");
+{
+    package MyDBI4;
 
+    use strict;
+    use warnings;
+
+    use base 'DBIx::Custom';
+
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model(
+            MyModel2 => [
+                'book',
+                {class => 'Company', name => 'company'}
+            ]
+        );
+    }
+
+    package MyModel2::Base1;
+
+    use strict;
+    use warnings;
+
+    use base 'DBIx::Custom::Model';
+
+    package MyModel2::book;
+
+    use strict;
+    use warnings;
+
+    use base 'MyModel2::Base1';
+
+    sub insert {
+        my ($self, $param) = @_;
+        
+        return $self->SUPER::insert(param => $param);
+    }
+
+    sub list { shift->select; }
+
+    package MyModel2::Company;
+
+    use strict;
+    use warnings;
+
+    use base 'MyModel2::Base1';
+
+    sub insert {
+        my ($self, $param) = @_;
+        
+        return $self->SUPER::insert(param => $param);
+    }
+
+    sub list { shift->select; }
+}
+$dbi = MyDBI4->connect;
+eval { $dbi->execute('drop table book') };
+$dbi->execute("create table book (title, author)");
+$model = $dbi->model('book');
+$model->insert({title => 'a', author => 'b'});
+is_deeply($model->list->all, [{title => 'a', author => 'b'}], 'basic');
+$dbi->execute("create table company (name)");
+$model = $dbi->model('company');
+$model->insert({name => 'a'});
+is_deeply($model->list->all, [{name => 'a'}], 'basic');
+
+{
+     package MyDBI5;
+
+    use strict;
+    use warnings;
+
+    use base 'DBIx::Custom';
+
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel4');
+    }
+}
+$dbi = MyDBI5->connect;
+eval { $dbi->execute('drop table company') };
+eval { $dbi->execute('drop table table1') };
+$dbi->execute("create table company (name)");
+$dbi->execute("create table table1 (key1)");
+$model = $dbi->model('company');
+$model->insert({name => 'a'});
+is_deeply($model->list->all, [{name => 'a'}], 'include all model');
+$dbi->insert(table => 'table1', param => {key1 => 1});
+$model = $dbi->model('book');
+is_deeply($model->list->all, [{key1 => 1}], 'include all model');
+
+test 'primary_key';
+use MyDBI1;
+$dbi = MyDBI1->connect;
+$model = $dbi->model('book');
+$model->primary_key(['id', 'number']);
+is_deeply($model->primary_key, ['id', 'number']);
+
+test 'columns';
+use MyDBI1;
+$dbi = MyDBI1->connect;
+$model = $dbi->model('book');
+$model->columns(['id', 'number']);
+is_deeply($model->columns, ['id', 'number']);
+
+test 'setup_model';
+use MyDBI1;
+$dbi = MyDBI1->connect;
+eval { $dbi->execute('drop table book') };
+eval { $dbi->execute('drop table company') };
+eval { $dbi->execute('drop table test') };
+
+$dbi->execute('create table book (id)');
+$dbi->execute('create table company (id, name);');
+$dbi->execute('create table test (id, name, primary key (id, name));');
+$dbi->setup_model;
+is_deeply($dbi->model('book')->columns, ['id']);
+is_deeply($dbi->model('company')->columns, ['id', 'name']);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### SQLite only test
 test 'quote';
 $dbi = DBIx::Custom->connect;
 $dbi->quote('"');
@@ -2400,21 +2427,6 @@ $dbi->delete(table => 'table', where => {select => 1});
 $result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
 is_deeply($rows, [], "reserved word");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2463,3 +2475,16 @@ $result = $dbi->select(
     column => ['location.name as "location.name"']
 );
 is($result->fetch_first->[0], 'B');
+
+test 'reserved_word_quote';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table ${q}table$p") };
+$dbi->reserved_word_quote('"');
+$dbi->execute($create_table_reserved);
+$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
+$dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
+$dbi->insert(table => 'table', param => {select => 1});
+$dbi->update(table => 'table', where => {'table.select' => 1}, param => {update => 2});
+$result = $dbi->execute("select * from ${q}table$p");
+$rows   = $result->all;
+is_deeply($rows, [{select => 2, update => 6}], "reserved word");
