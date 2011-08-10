@@ -298,33 +298,337 @@ is($result->fetch->[0], '2010-03-03');
 
 
 
+test 'type_rule and filter order';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    into1 => {
+        $date_typename => sub { my $v = shift; $v =~ s/4/5/; return $v }
+    },
+    into2 => {
+        $date_typename => sub { my $v = shift; $v =~ s/5/6/; return $v }
+    },
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/6/7/; return $v }
+    },
+    from2 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/7/8/; return $v }
+    }
+);
+$dbi->insert({key1 => '2010-01-03'}, 
+  table => 'table1', filter => {key1 => sub { my $v = shift; $v =~ s/3/4/; return $v }});
+$result = $dbi->select(table => 'table1');
+$result->filter(key1 => sub { my $v = shift; $v =~ s/8/9/; return $v });
+is($result->fetch_first->[0], '2010-01-09');
 
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/3/4/; return $v }
+    },
+    from2 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/4/5/; return $v }
+    },
+);
+$dbi->insert({key1 => '2010-01-03'}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+$result->type_rule(
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/3/6/; return $v }
+    },
+    from2 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/6/8/; return $v }
+    }
+);
+$result->filter(key1 => sub { my $v = shift; $v =~ s/8/9/; return $v });
+is($result->fetch_first->[0], '2010-01-09');
 
+test 'type_rule_off';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/3/5/; return $v }
+    },
+    into1 => {
+        $date_typename => sub { my $v = shift; $v =~ s/3/4/; return $v }
+    }
+);
+$dbi->insert({key1 => '2010-01-03'}, table => 'table1', type_rule_off => 1);
+$result = $dbi->select(table => 'table1', type_rule_off => 1);
+is($result->type_rule_off->fetch->[0], '2010-01-03');
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/3/4/; return $v }
+    },
+    into1 => {
+        $date_typename => sub { my $v = shift; $v =~ s/3/5/; return $v }
+    }
+);
+$dbi->insert({key1 => '2010-01-03'}, table => 'table1', type_rule_off => 1);
+$result = $dbi->select(table => 'table1', type_rule_off => 1);
+is($result->one->{key1}, '2010-01-04');
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/4/5/; return $v }
+    },
+    into1 => {
+        $date_typename => sub { my $v = shift; $v =~ s/3/4/; return $v }
+    }
+);
+$dbi->insert({key1 => '2010-01-03'}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+is($result->one->{key1}, '2010-01-05');
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/4/5/; return $v }
+    },
+    into1 => {
+        $date_typename => sub { my $v = shift; $v =~ s/3/4/; return $v }
+    }
+);
+$dbi->insert({key1 => '2010-01-03'}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+is($result->fetch->[0], '2010-01-05');
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->register_filter(ppp => sub { my $v = shift; $v =~ s/3/4/; return $v });
+$dbi->type_rule(
+    into1 => {
+        $date_typename => 'ppp'
+    }
+);
+$dbi->insert({key1 => '2010-01-03'}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+is($result->one->{key1}, '2010-01-04');
 
+eval{$dbi->type_rule(
+    into1 => {
+        $date_typename => 'pp'
+    }
+)};
+like($@, qr/not registered/);
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+eval {
+    $dbi->type_rule(
+        from1 => {
+            Date => sub { $_[0] * 2 },
+        }
+    );
+};
+like($@, qr/lower/);
 
+eval {
+    $dbi->type_rule(
+        into1 => {
+            Date => sub { $_[0] * 2 },
+        }
+    );
+};
+like($@, qr/lower/);
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/4/5/; return $v }
+    },
+    into1 => {
+        $date_typename => sub { my $v = shift; $v =~ s/3/4/; return $v }
+    }
+);
+$dbi->insert({key1 => '2010-01-03'}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+$result->type_rule_off;
+is($result->one->{key1}, '2010-01-04');
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/3/4/; return $v },
+        $datetime_datatype => sub { my $v = shift; $v =~ s/3/4/; return $v }
+    },
+);
+$dbi->insert({key1 => '2010-01-03', key2 => '2010-01-01 01:01:03'}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+$result->type_rule(
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/3/5/; return $v }
+    }
+);
+$row = $result->one;
+is($row->{key1}, '2010-01-05');
+is($row->{key2}, '2010-01-01 01:01:03');
 
+$result = $dbi->select(table => 'table1');
+$result->type_rule(
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/3/5/; return $v }
+    }
+);
+$row = $result->one;
+is($row->{key1}, '2010-01-05');
+is($row->{key2}, '2010-01-01 01:01:03');
 
+$result = $dbi->select(table => 'table1');
+$result->type_rule(
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/3/5/; return $v }
+    }
+);
+$row = $result->one;
+is($row->{key1}, '2010-01-05');
+is($row->{key2}, '2010-01-01 01:01:03');
 
+$result = $dbi->select(table => 'table1');
+$result->type_rule(
+    from1 => [$date_datatype => sub { my $v = shift; $v =~ s/3/5/; return $v }]
+);
+$row = $result->one;
+is($row->{key1}, '2010-01-05');
+is($row->{key2}, '2010-01-01 01:01:03');
 
+$dbi->register_filter(five => sub { my $v = shift; $v =~ s/3/5/; return $v });
+$result = $dbi->select(table => 'table1');
+$result->type_rule(
+    from1 => [$date_datatype => 'five']
+);
+$row = $result->one;
+is($row->{key1}, '2010-01-05');
+is($row->{key2}, '2010-01-01 01:01:03');
 
+$result = $dbi->select(table => 'table1');
+$result->type_rule(
+    from1 => [$date_datatype => undef]
+);
+$row = $result->one;
+is($row->{key1}, '2010-01-03');
+is($row->{key2}, '2010-01-01 01:01:03');
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/3/4/; return $v },
+    },
+);
+$dbi->insert({key1 => '2010-01-03'}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+$result->filter(key1 => sub { my $v = shift; $v =~ s/4/5/; return $v });
+is($result->one->{key1}, '2010-01-05');
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/3/4/; return $v }
+    },
+);
+$dbi->insert({key1 => '2010-01-03'}, table => 'table1');
+$result = $dbi->select(table => 'table1');
+$result->filter(key1 => sub { my $v = shift; $v =~ s/4/5/; return $v });
+is($result->fetch->[0], '2010-01-05');
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    into1 => {
+        $date_typename => sub { my $v = shift; $v =~ s/3/4/; return $v }
+    },
+    into2 => {
+        $date_typename => sub { my $v = shift; $v =~ s/3/5/; return $v }
+    },
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/3/6/; return $v }
+    },
+    from2 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/(3|6)/7/; return $v }
+    }
+);
+$dbi->insert({key1 => '2010-01-03'}, table => 'table1', type_rule_off => 1);
+$result = $dbi->select(table => 'table1');
+is($result->type_rule_off->fetch_first->[0], '2010-01-03');
+$result = $dbi->select(table => 'table1');
+is($result->type_rule_on->fetch_first->[0], '2010-01-07');
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    into1 => {
+        $date_typename => sub { my $v = shift; $v =~ s/3/4/; return $v }
+    },
+    into2 => {
+        $date_typename => sub { my $v = shift; $v =~ s/3/5/; return $v }
+    },
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/(3|5)/6/; return $v }
+    },
+    from2 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/6/7/; return $v }
+    }
+);
+$dbi->insert({key1 => '2010-01-03'}, table => 'table1', type_rule1_off => 1);
+$result = $dbi->select(table => 'table1');
+is($result->type_rule1_off->fetch_first->[0], '2010-01-05');
+$result = $dbi->select(table => 'table1');
+is($result->type_rule1_on->fetch_first->[0], '2010-01-07');
 
-
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_type);
+$dbi->type_rule(
+    into1 => {
+        $date_typename => sub { my $v = shift; $v =~ s/3/5/; return $v }
+    },
+    into2 => {
+        $date_typename => sub { my $v = shift; $v =~ s/3/4/; return $v }
+    },
+    from1 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/5/6/; return $v }
+    },
+    from2 => {
+        $date_datatype => sub { my $v = shift; $v =~ s/(3|6)/7/; return $v }
+    }
+);
+$dbi->insert({key1 => '2010-01-03'}, table => 'table1', type_rule2_off => 1);
+$result = $dbi->select(table => 'table1');
+is($result->type_rule2_off->fetch_first->[0], '2010-01-06');
+$result = $dbi->select(table => 'table1');
+is($result->type_rule2_on->fetch_first->[0], '2010-01-07');
 
 
 
 # Create table
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $model = $dbi->create_model(table => 'table1');
@@ -3484,18 +3788,5 @@ $result = $dbi->select(
 is_deeply($result->all, [{'table2.key3' => 4}]);
 
 
-test 'table_alias';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1_type);
-$dbi->type_rule(
-    into1 => {
-        $date_typename => sub { '2010-' . $_[0] }
-    }
-);
-$dbi->execute("insert into table1 (key1) values (:table2.key1)", {'table2.key1' => '01-01'},
-  table_alias => {table2 => 'table1'});
-$result = $dbi->select(table => 'table1');
-is($result->one->{key1}, '2010-01-01');
 
 1;
