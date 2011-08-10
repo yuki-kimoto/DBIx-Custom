@@ -57,13 +57,6 @@ my $join;
 # Prepare table
 $dbi = DBIx::Custom->connect(%memory);
 
-test 'Error case';
-eval {DBIx::Custom->connect(dsn => 'dbi:SQLit')};
-ok($@, "connect error");
-
-$dbi = DBIx::Custom->connect(%memory);
-eval{$dbi->execute("{p }", {}, query => 1)};
-ok($@, "create_query invalid SQL template");
 
 test 'insert';
 $dbi = DBIx::Custom->connect(%memory);

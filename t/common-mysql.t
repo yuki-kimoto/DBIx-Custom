@@ -9,10 +9,11 @@ $ENV{DBIX_CUSTOM_SKIP_MESSAGE} = 'mysql private test';
 use DBIx::Custom;
 {
     package DBIx::Custom;
+    
     no warnings 'redefine';
-    sub dsn { "dbi:mysql:database=dbix_custom" }
-    sub user { 'dbix_custom' }
-    sub password { 'dbix_custom' }
+    has dsn => "dbi:mysql:database=dbix_custom";
+    has user => 'dbix_custom';
+    has password => 'dbix_custom';
     
     sub create_table1 { 'create table table1 (key1 varchar(255), key2 varchar(255));' }
     sub create_table1_2 {'create table table1 (key1 varchar(255), key2 varchar(255), '

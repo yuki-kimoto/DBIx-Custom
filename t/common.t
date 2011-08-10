@@ -1,7 +1,7 @@
 use Test::More;
 use strict;
 use warnings;
-use DBIx::Custom;
+use DBIx::Custom; 
 
 my $dbi;
 
@@ -238,6 +238,12 @@ $result = $dbi->execute(
 $rows = $result->all;
 is_deeply($rows, [{key1 => 'a:b c:d', key2 => 2}]);
 
+test 'Error case';
+eval {DBIx::Custom->connect(dsn => 'dbi:SQLit')};
+ok($@, "connect error");
+
+eval{$dbi->execute("{p }", {}, query => 1)};
+ok($@, "create_query invalid SQL template");
 
 
 1;
