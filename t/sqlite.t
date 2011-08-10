@@ -27,27 +27,15 @@ use DBIx::Custom;
 
 # Constant
 my $create_table1 = 'create table table1 (key1 varchar, key2 varchar);';
-my $create_table1_2 = 'create table table1 (key1 varchar, key2 varchar, key3 varchar, key4 varchar, key5 varchar);';
-my $create_table2 = 'create table table2 (key1 varchar, key3 varchar);';
-my $create_table2_2 = "create table table2 (key1 varchar, key2 varchar, key3 varchar)";
-my $create_table3 = "create table table3 (key1 varchar, key2 varchar, key3 varchar)";
 my $create_table_reserved = 'create table "table" ("select" varchar, "update" varchar)';
-
 my $q = '"';
 my $p = '"';
 
 # Variables
 my $dbi;
-my $param;
-my $params;
-my $sql;
 my $result;
 my $row;
-my @rows;
 my $rows;
-my $model;
-my $model2;
-my $where;
 my $binary;
 
 # Prepare table
