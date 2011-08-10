@@ -196,190 +196,6 @@ my $binary;
 # Prepare table
 $dbi = DBIx::Custom->connect;
 
-test 'merge_param';
-$dbi = DBIx::Custom->new;
-$params = [
-    {key1 => 1, key2 => 2, key3 => 3},
-    {key1 => 1, key2 => 2},
-    {key1 => 1}
-];
-$param = $dbi->merge_param($params->[0], $params->[1], $params->[2]);
-is_deeply($param, {key1 => [1, 1, 1], key2 => [2, 2], key3 => 3});
-
-$params = [
-    {key1 => [1, 2], key2 => 1, key3 => [1, 2]},
-    {key1 => [3, 4], key2 => [2, 3], key3 => 3}
-];
-$param = $dbi->merge_param($params->[0], $params->[1]);
-is_deeply($param, {key1 => [1, 2, 3, 4], key2 => [1, 2, 3], key3 => [1, 2, 3]});
-
-test 'select() param option';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
-eval { $dbi->execute('drop table table2') };
-$dbi->execute($create_table2);
-$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 4});
-$dbi->insert(table => 'table2', param => {key1 => 2, key3 => 5});
-$rows = $dbi->select(
-    table => 'table1',
-    column => 'table1.key1 as table1_key1, key2, key3',
-    where   => {'table1.key2' => 3},
-    join  => ['inner join (select * from table2 where {= table2.key3})' . 
-              ' as table2 on table1.key1 = table2.key1'],
-    param => {'table2.key3' => 5}
-)->all;
-is_deeply($rows, [{table1_key1 => 2, key2 => 3, key3 => 5}]);
-
-
-test 'select() wrap option';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
-$rows = $dbi->select(
-    table => 'table1',
-    column => 'key1',
-    wrap => ['select * from (', ') as t where key1 = 1']
-)->all;
-is_deeply($rows, [{key1 => 1}]);
-
-eval {
-$dbi->select(
-    table => 'table1',
-    column => 'key1',
-    wrap => 'select * from ('
-)
-};
-like($@, qr/array/);
-
-test 'select() string where';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
-$rows = $dbi->select(
-    table => 'table1',
-    where => 'key1 = :key1 and key2 = :key2',
-    where_param => {key1 => 1, key2 => 2}
-)->all;
-is_deeply($rows, [{key1 => 1, key2 => 2}]);
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
-$rows = $dbi->select(
-    table => 'table1',
-    where => [
-        'key1 = :key1 and key2 = :key2',
-        {key1 => 1, key2 => 2}
-    ]
-)->all;
-is_deeply($rows, [{key1 => 1, key2 => 2}]);
-
-test 'delete() string where';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
-$dbi->delete(
-    table => 'table1',
-    where => 'key1 = :key1 and key2 = :key2',
-    where_param => {key1 => 1, key2 => 2}
-);
-$rows = $dbi->select(table => 'table1')->all;
-is_deeply($rows, [{key1 => 2, key2 => 3}]);
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
-$dbi->delete(
-    table => 'table1',
-    where => [
-        'key1 = :key1 and key2 = :key2',
-         {key1 => 1, key2 => 2}
-    ]
-);
-$rows = $dbi->select(table => 'table1')->all;
-is_deeply($rows, [{key1 => 2, key2 => 3}]);
-
-
-test 'update() string where';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->update(
-    table => 'table1',
-    param => {key1 => 5},
-    where => 'key1 = :key1 and key2 = :key2',
-    where_param => {key1 => 1, key2 => 2}
-);
-$rows = $dbi->select(table => 'table1')->all;
-is_deeply($rows, [{key1 => 5, key2 => 2}]);
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->update(
-    table => 'table1',
-    param => {key1 => 5},
-    where => [
-        'key1 = :key1 and key2 = :key2',
-        {key1 => 1, key2 => 2}
-    ]
-);
-$rows = $dbi->select(table => 'table1')->all;
-is_deeply($rows, [{key1 => 5, key2 => 2}]);
-
-test 'insert id and primary_key option';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1_2);
-$dbi->insert(
-    primary_key => ['key1', 'key2'], 
-    table => 'table1',
-    id => [1, 2],
-    param => {key3 => 3}
-);
-is($dbi->select(table => 'table1')->one->{key1}, 1);
-is($dbi->select(table => 'table1')->one->{key2}, 2);
-is($dbi->select(table => 'table1')->one->{key3}, 3);
-
-$dbi->delete_all(table => 'table1');
-$dbi->insert(
-    primary_key => 'key1', 
-    table => 'table1',
-    id => 0,
-    param => {key2 => 2, key3 => 3}
-);
-
-is($dbi->select(table => 'table1')->one->{key1}, 0);
-is($dbi->select(table => 'table1')->one->{key2}, 2);
-is($dbi->select(table => 'table1')->one->{key3}, 3);
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1_2);
-$dbi->insert(
-    {key3 => 3},
-    primary_key => ['key1', 'key2'], 
-    table => 'table1',
-    id => [1, 2],
-);
-is($dbi->select(table => 'table1')->one->{key1}, 1);
-is($dbi->select(table => 'table1')->one->{key2}, 2);
-is($dbi->select(table => 'table1')->one->{key3}, 3);
 
 
 test 'model insert id and primary_key option';
@@ -1141,6 +957,28 @@ like($@, qr/unexpected "{"/, "error : 2");
 
 
 ### a little complex test
+test 'select() wrap option';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
+$rows = $dbi->select(
+    table => 'table1',
+    column => 'key1',
+    wrap => ['select * from (', ') as t where key1 = 1']
+)->all;
+is_deeply($rows, [{key1 => 1}]);
+
+eval {
+$dbi->select(
+    table => 'table1',
+    column => 'key1',
+    wrap => 'select * from ('
+)
+};
+like($@, qr/array/);
+
 test 'dbi method from model';
 $dbi = MyDBI9->connect;
 eval { $dbi->execute('drop table table1') };
