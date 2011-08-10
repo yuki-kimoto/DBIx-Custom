@@ -3006,4 +3006,13 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{key1 => 1}]);
 
+eval {
+$dbi->select(
+    table => 'table1',
+    column => 'key1',
+    wrap => 'select * from ('
+)
+};
+like($@, qr/array/);
+
 1;

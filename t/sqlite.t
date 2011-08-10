@@ -211,28 +211,6 @@ $dbi->execute("insert into table1 (key1) values (:table2.key1)", {'table2.key1' 
 $result = $dbi->select(table => 'table1');
 is($result->one->{key1}, 'A');
 
-test 'select() wrap option';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
-$rows = $dbi->select(
-    table => 'table1',
-    column => 'key1',
-    wrap => ['select * from (', ') as t where key1 = 1']
-)->all;
-is_deeply($rows, [{key1 => 1}]);
-
-eval {
-$dbi->select(
-    table => 'table1',
-    column => 'key1',
-    wrap => 'select * from ('
-)
-};
-like($@, qr/array/);
-
 test 'dbi method from model';
 $dbi = MyDBI9->connect;
 eval { $dbi->execute('drop table table1') };
