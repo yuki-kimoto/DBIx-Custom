@@ -19,6 +19,11 @@ BEGIN {
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 sub test { print "# $_[0]\n" }
 
+{
+    package DBIx::Custom;
+    has dsn => sub { 'dbi:SQLite:dbname=:memory:' }
+}
+
 # Constant
 my %memory = (dsn => 'dbi:SQLite:dbname=:memory:');
 my $create_table1 = 'create table table1 (key1 char(255), key2 char(255));';
@@ -482,7 +487,7 @@ $result = $dbi->select(table => 'table1');
 ok(! $result->fetch_first, "rollback");
 
 test 'cache';
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->cache(1);
 $dbi->execute($create_table1);
 $source = 'select * from table1 where key1 = :key1 and key2 = :key2;';
@@ -490,7 +495,7 @@ $dbi->execute($source, {}, query => 1);
 is_deeply($dbi->{_cached}->{$source}, 
           {sql => "select * from table1 where key1 = ? and key2 = ?;", columns => ['key1', 'key2'], tables => []}, "cache");
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->{_cached} = {};
 $dbi->cache(0);
@@ -498,7 +503,7 @@ $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is(scalar keys %{$dbi->{_cached}}, 0, 'not cache');
 
 test 'execute';
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 {
     local $Carp::Verbose = 0;
@@ -570,7 +575,6 @@ $dbi->dbh->{AutoCommit} = 1;
 
 
 test 'method';
-$dbi = DBIx::Custom->connect(%memory);
 $dbi->method(
     one => sub { 1 }
 );
@@ -592,7 +596,8 @@ eval {$dbi->XXXXXX};
 ok($@, "not exists");
 
 test 'out filter';
-$dbi = DBIx::Custom->connect(%memory);
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->register_filter(three_times => sub { $_[0] * 3});
@@ -608,6 +613,7 @@ $row   = $result->one;
 is_deeply($row, {key1 => 6, key2 => 12}, "insert");
 
 $dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->register_filter(three_times => sub { $_[0] * 3});
@@ -623,6 +629,7 @@ $row   = $result->one;
 is_deeply($row, {key1 => 1, key2 => 6}, "insert");
 
 $dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
@@ -1432,7 +1439,7 @@ like($@, qr/not registered/);
 $dbi->method({one => sub { 1 }});
 is($dbi->one, 1);
 
-eval{DBIx::Custom->connect()};
+eval{DBIx::Custom->connect(dsn => undef)};
 like($@, qr/_connect/);
 
 $dbi = DBIx::Custom->connect(%memory);
