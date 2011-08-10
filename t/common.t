@@ -2146,6 +2146,33 @@ $result = $model->select(
 is_deeply($result->one,
           {key1 => 1, key2 => 2, 'table2__key1' => 1, 'table2__key3' => 3});
 
+test 'insert_param';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$param = {key1 => 1, key2 => 2};
+$insert_param = $dbi->insert_param($param);
+$sql = <<"EOS";
+insert into table1 $insert_param
+EOS
+$dbi->execute($sql, param => $param, table => 'table1');
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$param = {key1 => 1, key2 => 2};
+$insert_param = $dbi->insert_param($param);
+$sql = <<"EOS";
+insert into table1 $insert_param
+EOS
+$dbi->execute($sql, param => $param, table => 'table1');
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+
+eval { $dbi->insert_param({";" => 1}) };
+like($@, qr/not safety/);
 
 
 
