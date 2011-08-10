@@ -162,15 +162,7 @@ my $q = '"';
 my $p = '"';
 
 # Variables
-my $builder;
-my $datas;
 my $dbi;
-my $sth;
-my $source;
-my @sources;
-my $select_source;
-my $insert_source;
-my $update_source;
 my $param;
 my $params;
 my $sql;
@@ -178,19 +170,9 @@ my $result;
 my $row;
 my @rows;
 my $rows;
-my $query;
-my @queries;
-my $select_query;
-my $insert_query;
-my $update_query;
-my $ret_val;
-my $infos;
 my $model;
 my $model2;
 my $where;
-my $update_param;
-my $insert_param;
-my $join;
 my $binary;
 
 # Prepare table
