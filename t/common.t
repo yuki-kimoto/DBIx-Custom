@@ -3015,4 +3015,98 @@ $dbi->select(
 };
 like($@, qr/array/);
 
+test 'dbi method from model';
+$dbi = MyDBI9->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$dbi->setup_model;
+$model = $dbi->model('table1');
+eval{$model->execute('select * from table1')};
+ok(!$@);
+
+test 'column table option';
+$dbi = MyDBI9->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+eval { $dbi->execute('drop table table2') };
+$dbi->execute($create_table2);
+$dbi->setup_model;
+$dbi->execute('insert into table1 (key1, key2) values (1, 2);');
+$dbi->execute('insert into table2 (key1, key3) values (1, 4);');
+$model = $dbi->model('table1');
+$result = $model->select(
+    column => [
+        $model->column('table2', {alias => 'table2_alias'})
+    ],
+    where => {'table2_alias.key3' => 4}
+);
+is_deeply($result->one, 
+          {'table2_alias.key1' => 1, 'table2_alias.key3' => 4});
+
+$dbi->separator('__');
+$result = $model->select(
+    column => [
+        $model->column('table2', {alias => 'table2_alias'})
+    ],
+    where => {'table2_alias.key3' => 4}
+);
+is_deeply($result->one, 
+          {'table2_alias__key1' => 1, 'table2_alias__key3' => 4});
+
+$dbi->separator('-');
+$result = $model->select(
+    column => [
+        $model->column('table2', {alias => 'table2_alias'})
+    ],
+    where => {'table2_alias.key3' => 4}
+);
+is_deeply($result->one, 
+          {'table2_alias-key1' => 1, 'table2_alias-key3' => 4});
+
+test 'create_model';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+eval { $dbi->execute('drop table table2') };
+$dbi->execute($create_table1);
+$dbi->execute($create_table2);
+
+$dbi->create_model(
+    table => 'table1',
+    join => [
+       'left outer join table2 on table1.key1 = table2.key1'
+    ],
+    primary_key => ['key1']
+);
+$model2 = $dbi->create_model(
+    table => 'table2'
+);
+$dbi->create_model(
+    table => 'table3',
+    filter => [
+        key1 => {in => sub { uc $_[0] }}
+    ]
+);
+$dbi->setup_model;
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
+$model = $dbi->model('table1');
+$result = $model->select(
+    column => [$model->mycolumn, $model->column('table2')],
+    where => {'table1.key1' => 1}
+);
+is_deeply($result->one,
+          {key1 => 1, key2 => 2, 'table2.key1' => 1, 'table2.key3' => 3});
+is_deeply($model2->select->one, {key1 => 1, key3 => 3});
+
+test 'model method';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table2') };
+$dbi->execute($create_table2);
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
+$model = $dbi->create_model(
+    table => 'table2'
+);
+$model->method(foo => sub { shift->select(@_) });
+is_deeply($model->foo->one, {key1 => 1, key3 => 3});
+
 1;
