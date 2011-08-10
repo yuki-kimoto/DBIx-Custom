@@ -18,6 +18,8 @@ sub test { print "# $_[0]\n" }
 # Constant
 my $create_table1 = $dbi->create_table1;
 my $create_table1_2 = $dbi->create_table1_2;
+my $create_table2 = $dbi->create_table2;
+my $create_table_reserved = $dbi->create_table_reserved;
 my $q = substr($dbi->quote, 0, 1);
 my $p = substr($dbi->quote, 1, 1) || $q;
 
@@ -281,14 +283,13 @@ like($@, qr/noexist/, "invalid");
 eval{$dbi->insert(table => 'table', param => {';' => 1})};
 like($@, qr/safety/);
 
-$dbi->quote('"');
 eval { $dbi->execute("drop table ${q}table$p") };
-$dbi->execute("create table ${q}table$p (${q}select$p)");
+$dbi->execute($create_table_reserved);
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert(table => 'table', param => {select => 1});
 $result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
-is_deeply($rows, [{select => 2}], "reserved word");
+is_deeply($rows, [{select => 2, update => undef}], "reserved word");
 
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
@@ -297,14 +298,6 @@ $dbi->insert({key1 => 3, key2 => 4}, table => 'table1');
 $result = $dbi->execute('select * from table1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "basic");
-
-eval { $dbi->execute('drop table table1') };
-$dbi->execute("create table table1 (key1 char(255), key2 char(255), primary key(key1))");
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4}, prefix => 'or replace');
-$result = $dbi->execute('select * from table1;');
-$rows   = $result->all;
-is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
 
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
@@ -320,7 +313,7 @@ $dbi->execute($create_table1_2);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 $dbi->update(table => 'table1', param => {key2 => 11}, where => {key1 => 1});
-$result = $dbi->execute('select * from table1;');
+$result = $dbi->execute('select * from table1 order by key1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
@@ -330,14 +323,14 @@ $dbi->execute("delete from table1");
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 $dbi->update(table => 'table1', param => {key2 => 12}, where => {key2 => 2, key3 => 3});
-$result = $dbi->execute('select * from table1;');
+$result = $dbi->execute('select * from table1 order by key1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 12, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "update key same as search key");
 
 $dbi->update(table => 'table1', param => {key2 => [12]}, where => {key2 => 2, key3 => 3});
-$result = $dbi->execute('select * from table1;');
+$result = $dbi->execute('select * from table1 order by key1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 12, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
@@ -349,7 +342,7 @@ $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->update(table => 'table1', param => {key2 => 11}, where => {key1 => 1},
               filter => {key2 => sub { $_[0] * 2 }});
-$result = $dbi->execute('select * from table1;');
+$result = $dbi->execute('select * from table1 order by key1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 22, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
@@ -404,9 +397,8 @@ eval{$dbi->update(table => 'table1', param => {'key1' => 1}, where => {';' => 1}
 like($@, qr/safety/);
 
 eval { $dbi->execute('drop table table1') };
-$dbi->quote('"');
 eval { $dbi->execute("drop table ${q}table$p") };
-$dbi->execute("create table ${q}table$p (${q}select$p, ${q}update$p)");
+$dbi->execute($create_table_reserved);
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
 $dbi->insert(table => 'table', param => {select => 1});
@@ -419,8 +411,7 @@ eval {$dbi->update_all(table => 'table', param => {';' => 2}) };
 like($@, qr/safety/);
 
 eval { $dbi->execute("drop table ${q}table$p") };
-$dbi->reserved_word_quote('"');
-$dbi->execute("create table ${q}table$p (${q}select$p, ${q}update$p)");
+$dbi->execute($create_table_reserved);
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
 $dbi->insert(table => 'table', param => {select => 1});
@@ -434,27 +425,18 @@ $dbi->execute($create_table1_2);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 $dbi->update({key2 => 11}, table => 'table1', where => {key1 => 1});
-$result = $dbi->execute('select * from table1;');
+$result = $dbi->execute('select * from table1 order by key1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "basic");
 
 eval { $dbi->execute('drop table table1') };
-$dbi->execute("create table table1 (key1 char(255), key2 char(255), primary key(key1))");
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->update(table => 'table1', param => {key2 => 4},
-  where => {key1 => 1}, prefix => 'or replace');
-$result = $dbi->execute('select * from table1;');
-$rows   = $result->all;
-is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
-
-eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1_2);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
 $dbi->update(table => 'table1', param => {key2 => \"'11'"}, where => {key1 => 1});
-$result = $dbi->execute('select * from table1;');
+$result = $dbi->execute('select * from table1 order by key1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
@@ -531,7 +513,7 @@ $result = $dbi->select(table => 'table1');
 is_deeply($result->all, [{key1 => 3, key2 => 4}], 'delete() where');
 
 eval { $dbi->execute('drop table table1') };
-$dbi->execute("create table table1 (key1 char(255), key2 char(255), primary key(key1))");
+$dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->delete(table => 'table1', where => {key1 => 1}, prefix => '    ');
 $result = $dbi->execute('select * from table1;');
@@ -549,9 +531,8 @@ eval{$dbi->delete(table => 'table1', where => {';' => 1})};
 like($@, qr/safety/);
 
 $dbi = DBIx::Custom->connect;
-$dbi->quote('"');
 eval { $dbi->execute("drop table ${q}table$p") };
-$dbi->execute("create table ${q}table$p (${q}select$p, ${q}update$p)");
+$dbi->execute($create_table_reserved);
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert(table => 'table', param => {select => 1});
 $dbi->delete(table => 'table', where => {select => 1});
@@ -596,7 +577,8 @@ $rows = $dbi->select(table => 'table1', where => {key1 => 2}, filter => {key1 =>
             ->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], "filter");
 
-$dbi->execute('create table table2 (key1 char(255), key3 char(255));');
+eval { $dbi->execute("drop table table2") };
+$dbi->execute($create_table2);
 $dbi->insert(table => 'table2', param => {key1 => 1, key3 => 5});
 $rows = $dbi->select(
     table => [qw/table1 table2/],
@@ -617,8 +599,8 @@ eval{$dbi->select(table => 'table1', noexist => 1)};
 like($@, qr/noexist/, "invalid");
 
 $dbi = DBIx::Custom->connect;
-$dbi->quote('"');
-$dbi->execute("create table ${q}table$p (${q}select$p, ${q}update$p)");
+eval { $dbi->execute("drop table ${q}table$p") };
+$dbi->execute($create_table_reserved);
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert(table => 'table', param => {select => 1, update => 2});
 $result = $dbi->select(table => 'table', where => {select => 1});
