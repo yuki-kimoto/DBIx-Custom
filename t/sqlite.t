@@ -467,6 +467,7 @@ is($dbi->filters->{encode_utf8}->('あ'),
 
 test 'transaction';
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->dbh->begin_work;
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
@@ -477,6 +478,7 @@ is_deeply(scalar $result->all, [{key1 => 1, key2 => 2}, {key1 => 2, key2 => 3}],
           "commit");
 
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->dbh->begin_work(0);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
@@ -538,6 +540,7 @@ ok($@, "execute fail");
 
 test 'transaction';
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 
 $dbi->begin_work;
@@ -641,6 +644,7 @@ $row   = $result->one;
 is_deeply($row, {key1 => 4, key2 => 2}, "update");
 
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
@@ -653,6 +657,7 @@ $rows   = $result->all;
 is_deeply($rows, [], "delete");
 
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
@@ -665,6 +670,7 @@ $rows   = $result->all;
 is_deeply($rows, [{key1 => 4, key2 => 4}], "select");
 
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
@@ -678,6 +684,7 @@ $rows   = $result->all;
 is_deeply($rows, [{key1 => 4, key2 => 2}], "execute");
 
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->apply_filter(
@@ -690,6 +697,7 @@ $rows   = $result->all;
 is_deeply($rows, [{key1 => 4, key2 => 2}], "execute table tag");
 
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->execute('create table table2 (key1 char(255), key3 char(255));');
 $dbi->register_filter(twice => sub { $_[0] * 2 });
@@ -722,6 +730,8 @@ is_deeply($rows, [{key2 => 4, key3 => 18}], "select : join : omit");
 
 test 'each_column';
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+eval { $dbi->execute('drop table table2') };
 $dbi->execute('create table table2 (key1 char(255), key3 char(255));');
 $dbi->execute('create table table1 (key1 Date, key2 datetime);');
 
@@ -746,6 +756,8 @@ is_deeply($infos,
 );
 test 'each_table';
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+eval { $dbi->execute('drop table table2') };
 $dbi->execute('create table table2 (key1 char(255), key3 char(255));');
 $dbi->execute('create table table1 (key1 Date, key2 datetime);');
 
@@ -768,6 +780,7 @@ is_deeply($infos,
 
 test 'limit';
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4});
@@ -821,12 +834,14 @@ test 'connect super';
 }
 
 $dbi = MyDBI->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is($dbi->select(table => 'table1')->one->{key1}, 1);
 
 $dbi = MyDBI->new;
 $dbi->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is($dbi->select(table => 'table1')->one->{key1}, 1);
@@ -844,12 +859,14 @@ is($dbi->select(table => 'table1')->one->{key1}, 1);
 }
 
 $dbi = MyDBI->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 is($dbi->select(table => 'table1')->one->{key1}, 1);
 
 test 'end_filter';
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1');
@@ -859,6 +876,7 @@ $row = $result->fetch_first;
 is_deeply($row, [6, 40]);
 
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1');
@@ -868,6 +886,7 @@ $row = $result->fetch_first;
 is_deeply($row, [6, 12]);
 
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1');
@@ -907,6 +926,7 @@ is_deeply($row, {key1 => 1, key2 => 40}, 'apply_filter overwrite');
 
 test 'remove_end_filter and remove_filter';
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1');
@@ -920,6 +940,7 @@ is_deeply($row, [1, 2]);
 
 test 'empty where select';
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $result = $dbi->select(table => 'table1', where => {});
@@ -928,6 +949,7 @@ is_deeply($row, {key1 => 1, key2 => 2});
 
 test 'select query option';
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $query = $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, query => 1);
 is(ref $query, 'DBIx::Custom::Query');
@@ -940,6 +962,7 @@ is(ref $query, 'DBIx::Custom::Query');
 
 test 'where';
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -1414,6 +1437,7 @@ $dbi->apply_filter(
 
 );
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -1423,6 +1447,7 @@ $rows = $dbi->select(table => 'table1', where => {key2 => 1})->all;
 is_deeply($rows, [{key1 => 1, key2 => 6}]);
 
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -1442,6 +1467,7 @@ eval{DBIx::Custom->connect(dsn => undef)};
 like($@, qr/_connect/);
 
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2},
@@ -1469,6 +1495,7 @@ eval {$dbi->execute('select * from table1 {} {= author') };
 like($@, qr/Tag not finished/);
 
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->register_filter(one => sub { 1 });
 $result = $dbi->select(table => 'table1');
@@ -1495,6 +1522,8 @@ is($result->stash->{foo}, 1, 'get and set');
 
 test 'filter __ expression';
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table company') };
+eval { $dbi->execute('drop table location') };
 $dbi->execute('create table company (id, name, location_id)');
 $dbi->execute('create table location (id, name)');
 $dbi->apply_filter('location',
@@ -1525,6 +1554,7 @@ is($result->fetch_first->[0], 'B');
 test 'Model class';
 use MyDBI1;
 $dbi = MyDBI1->connect;
+eval { $dbi->execute('drop table book') };
 $dbi->execute("create table book (title, author)");
 $model = $dbi->model('book');
 $model->insert({title => 'a', author => 'b'});
@@ -1593,6 +1623,7 @@ is($dbi->models->{'company'}, $dbi->model('company'));
     sub list { shift->select; }
 }
 $dbi = MyDBI4->connect;
+eval { $dbi->execute('drop table book') };
 $dbi->execute("create table book (title, author)");
 $model = $dbi->model('book');
 $model->insert({title => 'a', author => 'b'});
@@ -1617,6 +1648,8 @@ is_deeply($model->list->all, [{name => 'a'}], 'basic');
     }
 }
 $dbi = MyDBI5->connect;
+eval { $dbi->execute('drop table company') };
+eval { $dbi->execute('drop table table1') };
 $dbi->execute("create table company (name)");
 $dbi->execute("create table table1 (key1)");
 $model = $dbi->model('company');
@@ -1643,6 +1676,10 @@ is_deeply($model->columns, ['id', 'number']);
 test 'setup_model';
 use MyDBI1;
 $dbi = MyDBI1->connect;
+eval { $dbi->execute('drop table book') };
+eval { $dbi->execute('drop table company') };
+eval { $dbi->execute('drop table test') };
+
 $dbi->execute('create table book (id)');
 $dbi->execute('create table company (id, name);');
 $dbi->execute('create table test (id, name, primary key (id, name));');
@@ -1652,6 +1689,7 @@ is_deeply($dbi->model('company')->columns, ['id', 'name']);
 
 test 'delete_at';
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1_2);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
 $dbi->delete_at(
@@ -1671,6 +1709,7 @@ is_deeply($dbi->select(table => 'table1')->all, []);
 
 test 'insert_at';
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1_2);
 $dbi->insert_at(
     primary_key => ['key1', 'key2'], 
@@ -1706,6 +1745,7 @@ eval {
 like($@, qr/must be/);
 
 $dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1_2);
 $dbi->insert_at(
     {key3 => 3},
