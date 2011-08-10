@@ -1180,5 +1180,504 @@ $result->end_filter(key1 => undef);
 $row = $result->one;
 is_deeply($row, {key1 => 1, key2 => 40}, 'apply_filter overwrite');
 
+test 'remove_end_filter and remove_filter';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$result = $dbi->select(table => 'table1');
+$row = $result
+       ->filter(key1 => sub { $_[0] * 2 }, key2 => sub { $_[0] * 4 })
+       ->remove_filter
+       ->end_filter(key1 => sub { $_[0] * 3 }, key2 => sub { $_[0] * 5 })
+       ->remove_end_filter
+       ->fetch_first;
+is_deeply($row, [1, 2]);
+
+test 'empty where select';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$result = $dbi->select(table => 'table1', where => {});
+$row = $result->one;
+is_deeply($row, {key1 => 1, key2 => 2});
+
+test 'select query option';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$query = $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, query => 1);
+is(ref $query, 'DBIx::Custom::Query');
+$query = $dbi->update(table => 'table1', where => {key1 => 1}, param => {key2 => 2}, query => 1);
+is(ref $query, 'DBIx::Custom::Query');
+$query = $dbi->delete(table => 'table1', where => {key1 => 1}, query => 1);
+is(ref $query, 'DBIx::Custom::Query');
+$query = $dbi->select(table => 'table1', where => {key1 => 1, key2 => 2}, query => 1);
+is(ref $query, 'DBIx::Custom::Query');
+
+test 'where';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+$where = $dbi->where->clause(['and', 'key1 = :key1', 'key2 = :key2']);
+is("$where", "where ( key1 = :key1 and key2 = :key2 )", 'no param');
+
+$where = $dbi->where
+             ->clause(['and', 'key1 = :key1', 'key2 = :key2'])
+             ->param({key1 => 1});
+
+$result = $dbi->select(
+    table => 'table1',
+    where => $where
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$result = $dbi->select(
+    table => 'table1',
+    where => [
+        ['and', 'key1 = :key1', 'key2 = :key2'],
+        {key1 => 1}
+    ]
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where
+             ->clause(['and', 'key1 = :key1', 'key2 = :key2'])
+             ->param({key1 => 1, key2 => 2});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where
+             ->clause(['and', 'key1 = :key1', 'key2 = :key2'])
+             ->param({});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$where = $dbi->where
+             ->clause(['and', ['or', 'key1 > :key1', 'key1 < :key1'], 'key2 = :key2'])
+             ->param({key1 => [0, 3], key2 => 2});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+); 
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where;
+$result = $dbi->select(
+    table => 'table1',
+    where => $where
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+eval {
+$where = $dbi->where
+             ->clause(['uuu']);
+$result = $dbi->select(
+    table => 'table1',
+    where => $where
+);
+};
+ok($@);
+
+$where = $dbi->where;
+is("$where", '');
+
+$where = $dbi->where
+             ->clause(['or', ('key1 = :key1') x 2])
+             ->param({key1 => [1, 3]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$where = $dbi->where
+             ->clause(['or', ('key1 = :key1') x 2])
+             ->param({key1 => [1]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where
+             ->clause(['or', ('key1 = :key1') x 2])
+             ->param({key1 => 1});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where
+             ->clause('key1 = :key1')
+             ->param({key1 => 1});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where
+             ->clause('key1 = :key1 key2 = :key2')
+             ->param({key1 => 1});
+eval{$where->to_string};
+like($@, qr/one column/);
+
+$where = $dbi->where
+             ->clause(['or', ('key1 = :key1') x 3])
+             ->param({key1 => [$dbi->not_exists, 1, 3]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('key1 = :key1') x 3])
+             ->param({key1 => [1, $dbi->not_exists, 3]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('key1 = :key1') x 3])
+             ->param({key1 => [1, 3, $dbi->not_exists]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('key1 = :key1') x 3])
+             ->param({key1 => [1, $dbi->not_exists, $dbi->not_exists]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('key1 = :key1') x 3])
+             ->param({key1 => [$dbi->not_exists, 1, $dbi->not_exists]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('key1 = :key1') x 3])
+             ->param({key1 => [$dbi->not_exists, $dbi->not_exists, 1]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('key1 = :key1') x 3])
+             ->param({key1 => [$dbi->not_exists, $dbi->not_exists, $dbi->not_exists]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['or', ('key1 = :key1') x 3])
+             ->param({key1 => []});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['and', '{> key1}', '{< key1}' ])
+             ->param({key1 => [2, $dbi->not_exists]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['and', '{> key1}', '{< key1}' ])
+             ->param({key1 => [$dbi->not_exists, 2]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['and', '{> key1}', '{< key1}' ])
+             ->param({key1 => [$dbi->not_exists, $dbi->not_exists]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2},{key1 => 3, key2 => 4}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['and', '{> key1}', '{< key1}' ])
+             ->param({key1 => [0, 2]});
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}], 'not_exists');
+
+$where = $dbi->where
+             ->clause(['and', 'key1 is not null', 'key2 is not null' ]);
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], 'not_exists');
+
+eval {$dbi->where(ppp => 1) };
+like($@, qr/invalid/);
+
+$where = $dbi->where(
+    clause => ['and', ['or'], ['and', 'key1 = :key1', 'key2 = :key2']],
+    param => {key1 => 1, key2 => 2}
+);
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+
+$where = $dbi->where(
+    clause => ['and', ['or'], ['or', ':key1', ':key2']],
+    param => {}
+);
+$result = $dbi->select(
+    table => 'table1',
+    where => $where,
+);
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => undef});
+$result = $dbi->execute("select * from table1 $where", {key1 => 1});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => undef});
+$where->if('defined');
+$where->map;
+$result = $dbi->execute("select * from table1 $where", {key1 => 1});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$where = $dbi->where;
+$where->clause(['or', ':key1{=}', ':key1{=}']);
+$where->param({key1 => [undef, undef]});
+$result = $dbi->execute("select * from table1 $where", {key1 => [1, 0]});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+$result = $dbi->execute("select * from table1 $where", {key1 => [0, 1]});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => [undef, undef]});
+$where->if('defined');
+$where->map;
+$result = $dbi->execute("select * from table1 $where", {key1 => [1, 0]});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+$result = $dbi->execute("select * from table1 $where", {key1 => [0, 1]});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => 0});
+$where->if('length');
+$where->map;
+$result = $dbi->execute("select * from table1 $where", {key1 => 1});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => ''});
+$where->if('length');
+$where->map;
+$result = $dbi->execute("select * from table1 $where", {key1 => 1});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => 5});
+$where->if(sub { ($_[0] || '') eq 5 });
+$where->map;
+$result = $dbi->execute("select * from table1 $where", {key1 => 1});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}]);
+
+$where = $dbi->where;
+$where->clause(['and', ':key1{=}']);
+$where->param({key1 => 7});
+$where->if(sub { ($_[0] || '') eq 5 });
+$where->map;
+$result = $dbi->execute("select * from table1 $where", {key1 => 1});
+$row = $result->all;
+is_deeply($row, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$where = $dbi->where;
+$where->param({id => 1, author => 'Ken', price => 1900});
+$where->map(id => 'book.id',
+    author => ['book.author', sub { '%' . $_[0] . '%' }],
+    price => ['book.price', {if => sub { $_[0] eq 1900 }}]
+);
+is_deeply($where->param, {'book.id' => 1, 'book.author' => '%Ken%',
+  'book.price' => 1900});
+
+$where = $dbi->where;
+$where->param({id => 0, author => 0, price => 0});
+$where->map(
+    id => 'book.id',
+    author => ['book.author', sub { '%' . $_[0] . '%' }],
+    price => ['book.price', sub { '%' . $_[0] . '%' },
+      {if => sub { $_[0] eq 0 }}]
+);
+is_deeply($where->param, {'book.id' => 0, 'book.author' => '%0%', 'book.price' => '%0%'});
+
+$where = $dbi->where;
+$where->param({id => '', author => '', price => ''});
+$where->if('length');
+$where->map(
+    id => 'book.id',
+    author => ['book.author', sub { '%' . $_[0] . '%' }],
+    price => ['book.price', sub { '%' . $_[0] . '%' },
+      {if => sub { $_[0] eq 1 }}]
+);
+is_deeply($where->param, {});
+
+$where = $dbi->where;
+$where->param({id => undef, author => undef, price => undef});
+$where->if('length');
+$where->map(
+    id => 'book.id',
+    price => ['book.price', {if => 'exists'}]
+);
+is_deeply($where->param, {'book.price' => undef});
+
+$where = $dbi->where;
+$where->param({price => 'a'});
+$where->if('length');
+$where->map(
+    id => ['book.id', {if => 'exists'}],
+    price => ['book.price', sub { '%' . $_[0] }, {if => 'exists'}]
+);
+is_deeply($where->param, {'book.price' => '%a'});
+
+$where = $dbi->where;
+$where->param({id => [1, 2], author => 'Ken', price => 1900});
+$where->map(
+    id => 'book.id',
+    author => ['book.author', sub { '%' . $_[0] . '%' }],
+    price => ['book.price', {if => sub { $_[0] eq 1900 }}]
+);
+is_deeply($where->param, {'book.id' => [1, 2], 'book.author' => '%Ken%',
+  'book.price' => 1900});
+
+$where = $dbi->where;
+$where->if('length');
+$where->param({id => ['', ''], author => 'Ken', price => 1900});
+$where->map(
+    id => 'book.id',
+    author => ['book.author', sub { '%' . $_[0] . '%' }],
+    price => ['book.price', {if => sub { $_[0] eq 1900 }}]
+);
+is_deeply($where->param, {'book.id' => [$dbi->not_exists, $dbi->not_exists], 'book.author' => '%Ken%',
+  'book.price' => 1900});
+
+$where = $dbi->where;
+$where->param({id => ['', ''], author => 'Ken', price => 1900});
+$where->map(
+    id => ['book.id', {if => 'length'}],
+    author => ['book.author', sub { '%' . $_[0] . '%' }, {if => 'defined'}],
+    price => ['book.price', {if => sub { $_[0] eq 1900 }}]
+);
+is_deeply($where->param, {'book.id' => [$dbi->not_exists, $dbi->not_exists], 'book.author' => '%Ken%',
+  'book.price' => 1900});
+
+test 'dbi_option default';
+$dbi = DBIx::Custom->new;
+is_deeply($dbi->dbi_option, {});
+
+test 'register_tag_processor';
+$dbi = DBIx::Custom->connect;
+$dbi->register_tag_processor(
+    a => sub { 1 }
+);
+is($dbi->query_builder->tag_processors->{a}->(), 1);
+
+test 'register_tag';
+$dbi = DBIx::Custom->connect;
+$dbi->register_tag(
+    b => sub { 2 }
+);
+is($dbi->query_builder->tags->{b}->(), 2);
+
+test 'table not specify exception';
+$dbi = DBIx::Custom->connect;
+eval {$dbi->insert};
+like($@, qr/table/);
+eval {$dbi->update};
+like($@, qr/table/);
+eval {$dbi->delete};
+like($@, qr/table/);
+eval {$dbi->select};
+like($@, qr/table/);
 
 1;
