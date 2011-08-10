@@ -2335,6 +2335,205 @@ is($dbi->select(table => 'table1')->one->{key1}, 1);
 is($dbi->select(table => 'table1')->one->{key2}, 2);
 is($dbi->select(table => 'table1')->one->{key3}, 3);
 
+test 'model insert id and primary_key option';
+$dbi = MyDBI6->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$dbi->model('table1')->insert(
+    id => [1, 2],
+    param => {key3 => 3}
+);
+$result = $dbi->model('table1')->select;
+$row = $result->one;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 3);
+
+$dbi = MyDBI6->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$dbi->model('table1')->insert(
+    {key3 => 3},
+    id => [1, 2]
+);
+$result = $dbi->model('table1')->select;
+$row = $result->one;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 3);
+
+test 'update and id option';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->update(
+    table => 'table1',
+    primary_key => ['key1', 'key2'],
+    id => [1, 2],
+    param => {key3 => 4}
+);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key3}, 4);
+
+$dbi->delete_all(table => 'table1');
+$dbi->insert(table => 'table1', param => {key1 => 0, key2 => 2, key3 => 3});
+$dbi->update(
+    table => 'table1',
+    primary_key => 'key1',
+    id => 0,
+    param => {key3 => 4}
+);
+is($dbi->select(table => 'table1')->one->{key1}, 0);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key3}, 4);
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->update(
+    {key3 => 4},
+    table => 'table1',
+    primary_key => ['key1', 'key2'],
+    id => [1, 2]
+);
+is($dbi->select(table => 'table1')->one->{key1}, 1);
+is($dbi->select(table => 'table1')->one->{key2}, 2);
+is($dbi->select(table => 'table1')->one->{key3}, 4);
+
+
+test 'model update and id option';
+$dbi = MyDBI6->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->model('table1')->update(
+    id => [1, 2],
+    param => {key3 => 4}
+);
+$result = $dbi->model('table1')->select;
+$row = $result->one;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 4);
+
+
+test 'delete and id option';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->delete(
+    table => 'table1',
+    primary_key => ['key1', 'key2'],
+    id => [1, 2],
+);
+is_deeply($dbi->select(table => 'table1')->all, []);
+
+$dbi->insert(table => 'table1', param => {key1 => 0, key2 => 2, key3 => 3});
+$dbi->delete(
+    table => 'table1',
+    primary_key => 'key1',
+    id => 0,
+);
+is_deeply($dbi->select(table => 'table1')->all, []);
+
+
+test 'model delete and id option';
+$dbi = MyDBI6->connect;
+eval { $dbi->execute('drop table table1') };
+eval { $dbi->execute('drop table table2') };
+eval { $dbi->execute('drop table table3') };
+$dbi->execute($create_table1_2);
+$dbi->execute($create_table2_2);
+$dbi->execute($create_table3);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->model('table1')->delete(id => [1, 2]);
+is_deeply($dbi->select(table => 'table1')->all, []);
+$dbi->insert(table => 'table2', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->model('table1_1')->delete(id => [1, 2]);
+is_deeply($dbi->select(table => 'table1')->all, []);
+$dbi->insert(table => 'table3', param => {key1 => 1, key2 => 2, key3 => 3});
+$dbi->model('table1_3')->delete(id => [1, 2]);
+is_deeply($dbi->select(table => 'table1')->all, []);
+
+
+test 'select and id option';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$result = $dbi->select(
+    table => 'table1',
+    primary_key => ['key1', 'key2'],
+    id => [1, 2]
+);
+$row = $result->one;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 3);
+
+$dbi->delete_all(table => 'table1');
+$dbi->insert(table => 'table1', param => {key1 => 0, key2 => 2, key3 => 3});
+$result = $dbi->select(
+    table => 'table1',
+    primary_key => 'key1',
+    id => 0,
+);
+$row = $result->one;
+is($row->{key1}, 0);
+is($row->{key2}, 2);
+is($row->{key3}, 3);
+
+$dbi->delete_all(table => 'table1');
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$result = $dbi->select(
+    table => 'table1',
+    primary_key => ['key1', 'key2'],
+    id => [1, 2]
+);
+$row = $result->one;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 3);
+
+
+test 'model select_at';
+$dbi = MyDBI6->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3});
+$result = $dbi->model('table1')->select(id => [1, 2]);
+$row = $result->one;
+is($row->{key1}, 1);
+is($row->{key2}, 2);
+is($row->{key3}, 3);
+
+test 'column separator is default .';
+$dbi = MyDBI7->connect;
+eval { $dbi->execute('drop table table1') };
+eval { $dbi->execute('drop table table2') };
+$dbi->execute($create_table1);
+$dbi->execute($create_table2);
+$dbi->setup_model;
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
+$model = $dbi->model('table1');
+$result = $model->select(
+    column => [$model->column('table2')],
+    where => {'table1.key1' => 1}
+);
+is_deeply($result->one,
+          {'table2.key1' => 1, 'table2.key3' => 3});
+
+$result = $model->select(
+    column => [$model->column('table2' => [qw/key1 key3/])],
+    where => {'table1.key1' => 1}
+);
+is_deeply($result->one,
+          {'table2.key1' => 1, 'table2.key3' => 3});
 
 
 
