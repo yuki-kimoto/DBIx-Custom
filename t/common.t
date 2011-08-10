@@ -17,7 +17,8 @@ sub test { print "# $_[0]\n" }
 # Constant
 my $create_table1 = $dbi->create_table1;
 my $create_table1_2 = $dbi->create_table1_2;
-
+my $q = substr($dbi->quote, 0, 1);
+my $p = substr($dbi->quote, 1, 1) || $q;
 
 # Variable
 # Variables
@@ -247,7 +248,8 @@ eval{$dbi->execute("{p }", {}, query => 1)};
 ok($@, "create_query invalid SQL template");
 
 test 'insert';
-$dbi->delete_all(table => 'table1');
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
 $result = $dbi->execute('select * from table1;');
@@ -266,7 +268,8 @@ $rows   = $result->all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "filter");
 $dbi->default_bind_filter(undef);
 
-$dbi->delete_all(table => 'table1');
+$dbi->execute('drop table table1');
+$dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2}, append => '   ');
 $rows = $dbi->select(table => 'table1')->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}], 'insert append');
@@ -277,16 +280,16 @@ like($@, qr/noexist/, "invalid");
 eval{$dbi->insert(table => 'table', param => {';' => 1})};
 like($@, qr/safety/);
 
-__END__
-
 $dbi->quote('"');
-$dbi->execute('create table "table" ("select")');
+eval { $dbi->execute("drop table ${q}table$p") };
+$dbi->execute("create table ${q}table$p (${q}select$p)");
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert(table => 'table', param => {select => 1});
-$result = $dbi->execute('select * from "table"');
+$result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
 is_deeply($rows, [{select => 2}], "reserved word");
 
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
 $dbi->insert({key1 => 3, key2 => 4}, table => 'table1');
@@ -294,6 +297,7 @@ $result = $dbi->execute('select * from table1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "basic");
 
+eval { $dbi->execute('drop table table1') };
 $dbi->execute("create table table1 (key1 char(255), key2 char(255), primary key(key1))");
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4}, prefix => 'or replace');
@@ -301,6 +305,7 @@ $result = $dbi->execute('select * from table1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
 
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => \"'1'", key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
