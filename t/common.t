@@ -49,6 +49,7 @@ my $where;
 my $update_param;
 my $insert_param;
 my $join;
+my $binary;
 
 # Drop table
 eval { $dbi->execute('drop table table1') };
