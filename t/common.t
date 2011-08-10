@@ -199,7 +199,6 @@ test 'type_rule into';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1_type);
-$DB::single = 1;
 $dbi->type_rule(
     into1 => {
         $date_typename => sub { '2010-' . $_[0] }
