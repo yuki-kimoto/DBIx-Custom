@@ -23,6 +23,8 @@ sub test { print "# $_[0]\n" }
 my %memory = (dsn => 'dbi:SQLite:dbname=:memory:');
 my $create_table1 = 'create table table1 (key1 char(255), key2 char(255));';
 my $create_table1_2 = 'create table table1 (key1 char(255), key2 char(255), key3 char(255), key4 char(255), key5 char(255));';
+my $q = '"';
+my $p = '"';
 
 # Variables
 my $builder;
@@ -58,9 +60,10 @@ my $join;
 # Prepare table
 $dbi = DBIx::Custom->connect(%memory);
 
+=pod
 
 test 'insert';
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -92,7 +95,6 @@ like($@, qr/noexist/, "invalid");
 eval{$dbi->insert(table => 'table', param => {';' => 1})};
 like($@, qr/safety/);
 
-$dbi = DBIx::Custom->connect(%memory);
 $dbi->quote('"');
 $dbi->execute('create table "table" ("select")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
@@ -101,7 +103,7 @@ $result = $dbi->execute('select * from "table"');
 $rows   = $result->all;
 is_deeply($rows, [{select => 2}], "reserved word");
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
 $dbi->insert({key1 => 3, key2 => 4}, table => 'table1');
@@ -109,7 +111,7 @@ $result = $dbi->execute('select * from table1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "basic");
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute("create table table1 (key1 char(255), key2 char(255), primary key(key1))");
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4}, prefix => 'or replace');
@@ -117,7 +119,7 @@ $result = $dbi->execute('select * from table1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => \"'1'", key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -125,8 +127,10 @@ $result = $dbi->execute('select * from table1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "basic");
 
+=cut
+
 test 'update';
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1_2);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -174,7 +178,7 @@ like($@, qr/noexist/, "invalid");
 eval{$dbi->update(table => 'table1')};
 like($@, qr/where/, "not contain where");
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $where = $dbi->where;
@@ -184,7 +188,7 @@ $dbi->update(table => 'table1', param => {key1 => 3}, where => $where);
 $result = $dbi->select(table => 'table1');
 is_deeply($result->all, [{key1 => 3, key2 => 2}], 'update() where');
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->update(
@@ -198,7 +202,7 @@ $dbi->update(
 $result = $dbi->select(table => 'table1');
 is_deeply($result->all, [{key1 => 3, key2 => 2}], 'update() where');
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $where = $dbi->where;
@@ -214,7 +218,7 @@ like($@, qr/safety/);
 eval{$dbi->update(table => 'table1', param => {'key1' => 1}, where => {';' => 1})};
 like($@, qr/safety/);
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->quote('"');
 $dbi->execute('create table "table" ("select", "update")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
@@ -228,7 +232,7 @@ is_deeply($rows, [{select => 2, update => 6}], "reserved word");
 eval {$dbi->update_all(table => 'table', param => {';' => 2}) };
 like($@, qr/safety/);
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->reserved_word_quote('"');
 $dbi->execute('create table "table" ("select", "update")');
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
@@ -239,7 +243,7 @@ $result = $dbi->execute('select * from "table"');
 $rows   = $result->all;
 is_deeply($rows, [{select => 2, update => 6}], "reserved word");
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1_2);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -250,7 +254,7 @@ is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
                   "basic");
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute("create table table1 (key1 char(255), key2 char(255), primary key(key1))");
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->update(table => 'table1', param => {key2 => 4},
@@ -259,7 +263,7 @@ $result = $dbi->execute('select * from table1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1_2);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -271,7 +275,7 @@ is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
                   "basic");
 
 test 'update_all';
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1_2);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
 $dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
@@ -285,7 +289,7 @@ is_deeply($rows, [{key1 => 1, key2 => 20, key3 => 3, key4 => 4, key5 => 5},
 
 
 test 'delete';
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -315,7 +319,7 @@ is_deeply($rows, [{key1 => 3, key2 => 4}], "delete multi key");
 eval{$dbi->delete(table => 'table1', where => {key1 => 1}, noexist => 1)};
 like($@, qr/noexist/, "invalid");
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -326,7 +330,7 @@ $dbi->delete(table => 'table1', where => $where);
 $result = $dbi->select(table => 'table1');
 is_deeply($result->all, [{key1 => 3, key2 => 4}], 'delete() where');
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -340,7 +344,7 @@ $dbi->delete(
 $result = $dbi->select(table => 'table1');
 is_deeply($result->all, [{key1 => 3, key2 => 4}], 'delete() where');
 
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute("create table table1 (key1 char(255), key2 char(255), primary key(key1))");
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->delete(table => 'table1', where => {key1 => 1}, prefix => '    ');
@@ -349,7 +353,7 @@ $rows   = $result->all;
 is_deeply($rows, [], "basic");
 
 test 'delete error';
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 eval{$dbi->delete(table => 'table1')};
 like($@, qr/"where" must be specified/,
@@ -369,7 +373,7 @@ $rows   = $result->all;
 is_deeply($rows, [], "reserved word");
 
 test 'delete_all';
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -380,7 +384,7 @@ is_deeply($rows, [], "basic");
 
 
 test 'select';
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
@@ -435,7 +439,7 @@ $rows   = $result->all;
 is_deeply($rows, [{select => 2, update => 2}], "reserved word");
 
 test 'fetch filter';
-$dbi = DBIx::Custom->connect(%memory);
+eval { $dbi->execute('drop table table1') };
 $dbi->register_filter(
     twice       => sub { $_[0] * 2 },
     three_times => sub { $_[0] * 3 }
