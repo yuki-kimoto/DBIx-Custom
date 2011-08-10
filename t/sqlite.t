@@ -168,36 +168,6 @@ is_deeply($result->stash, {}, 'default');
 $result->stash->{foo} = 1;
 is($result->stash->{foo}, 1, 'get and set');
 
-test 'filter __ expression';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table company') };
-eval { $dbi->execute('drop table location') };
-$dbi->execute('create table company (id, name, location_id)');
-$dbi->execute('create table location (id, name)');
-$dbi->apply_filter('location',
-  name => {in => sub { uc $_[0] } }
-);
-
-$dbi->insert(table => 'company', param => {id => 1, name => 'a', location_id => 2});
-$dbi->insert(table => 'location', param => {id => 2, name => 'b'});
-
-$result = $dbi->select(
-    table => ['company', 'location'], relation => {'company.location_id' => 'location.id'},
-    column => ['location.name as location__name']
-);
-is($result->fetch_first->[0], 'B');
-
-$result = $dbi->select(
-    table => 'company', relation => {'company.location_id' => 'location.id'},
-    column => ['location.name as location__name']
-);
-is($result->fetch_first->[0], 'B');
-
-$result = $dbi->select(
-    table => 'company', relation => {'company.location_id' => 'location.id'},
-    column => ['location.name as "location.name"']
-);
-is($result->fetch_first->[0], 'B');
 
 test 'Model class';
 use MyDBI1;
@@ -2529,3 +2499,66 @@ $dbi->delete(table => 'table', where => {select => 1});
 $result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
 is_deeply($rows, [], "reserved word");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# DEPRECATED! test
+test 'filter __ expression';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table company') };
+eval { $dbi->execute('drop table location') };
+$dbi->execute('create table company (id, name, location_id)');
+$dbi->execute('create table location (id, name)');
+$dbi->apply_filter('location',
+  name => {in => sub { uc $_[0] } }
+);
+
+$dbi->insert(table => 'company', param => {id => 1, name => 'a', location_id => 2});
+$dbi->insert(table => 'location', param => {id => 2, name => 'b'});
+
+$result = $dbi->select(
+    table => ['company', 'location'], relation => {'company.location_id' => 'location.id'},
+    column => ['location.name as location__name']
+);
+is($result->fetch_first->[0], 'B');
+
+$result = $dbi->select(
+    table => 'company', relation => {'company.location_id' => 'location.id'},
+    column => ['location.name as location__name']
+);
+is($result->fetch_first->[0], 'B');
+
+$result = $dbi->select(
+    table => 'company', relation => {'company.location_id' => 'location.id'},
+    column => ['location.name as "location.name"']
+);
+is($result->fetch_first->[0], 'B');
