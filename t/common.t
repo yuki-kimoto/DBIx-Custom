@@ -2535,33 +2535,140 @@ $result = $model->select(
 is_deeply($result->one,
           {'table2.key1' => 1, 'table2.key3' => 3});
 
+test 'separator';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+eval { $dbi->execute('drop table table2') };
+$dbi->execute($create_table1);
+$dbi->execute($create_table2);
+
+$dbi->create_model(
+    table => 'table1',
+    join => [
+       'left outer join table2 on table1.key1 = table2.key1'
+    ],
+    primary_key => ['key1'],
+);
+$model2 = $dbi->create_model(
+    table => 'table2',
+);
+$dbi->setup_model;
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 3});
+$model = $dbi->model('table1');
+$result = $model->select(
+    column => [
+        $model->mycolumn,
+        {table2 => [qw/key1 key3/]}
+    ],
+    where => {'table1.key1' => 1}
+);
+is_deeply($result->one,
+          {key1 => 1, key2 => 2, 'table2.key1' => 1, 'table2.key3' => 3});
+is_deeply($model2->select->one, {key1 => 1, key3 => 3});
+
+$dbi->separator('__');
+$model = $dbi->model('table1');
+$result = $model->select(
+    column => [
+        $model->mycolumn,
+        {table2 => [qw/key1 key3/]}
+    ],
+    where => {'table1.key1' => 1}
+);
+is_deeply($result->one,
+          {key1 => 1, key2 => 2, 'table2__key1' => 1, 'table2__key3' => 3});
+is_deeply($model2->select->one, {key1 => 1, key3 => 3});
+
+$dbi->separator('-');
+$model = $dbi->model('table1');
+$result = $model->select(
+    column => [
+        $model->mycolumn,
+        {table2 => [qw/key1 key3/]}
+    ],
+    where => {'table1.key1' => 1}
+);
+is_deeply($result->one,
+          {key1 => 1, key2 => 2, 'table2-key1' => 1, 'table2-key3' => 3});
+is_deeply($model2->select->one, {key1 => 1, key3 => 3});
 
 
+test 'filter_off';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+eval { $dbi->execute('drop table table2') };
+$dbi->execute($create_table1);
+$dbi->execute($create_table2);
+
+$dbi->create_model(
+    table => 'table1',
+    join => [
+       'left outer join table2 on table1.key1 = table2.key1'
+    ],
+    primary_key => ['key1'],
+);
+$dbi->setup_model;
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$model = $dbi->model('table1');
+$result = $model->select(column => 'key1');
+$result->filter(key1 => sub { $_[0] * 2 });
+is_deeply($result->one, {key1 => 2});
+
+test 'available_datetype';
+$dbi = DBIx::Custom->connect;
+ok($dbi->can('available_datatype'));
 
 
+test 'select prefix option';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$rows = $dbi->select(prefix => 'key1,', column => 'key2', table => 'table1')->all;
+is_deeply($rows, [{key1 => 1, key2 => 2}], "table");
 
+test 'map_param';
+$dbi = DBIx::Custom->connect;
+$param = $dbi->map_param(
+    {id => 1, author => 'Ken', price => 1900},
+    id => 'book.id',
+    author => ['book.author', sub { '%' . $_[0] . '%' }],
+    price => ['book.price', {if => sub { $_[0] eq 1900 }}]
+);
+is_deeply($param, {'book.id' => 1, 'book.author' => '%Ken%',
+  'book.price' => 1900});
 
+$param = $dbi->map_param(
+    {id => 0, author => 0, price => 0},
+    id => 'book.id',
+    author => ['book.author', sub { '%' . $_[0] . '%' }],
+    price => ['book.price', sub { '%' . $_[0] . '%' },
+      {if => sub { $_[0] eq 0 }}]
+);
+is_deeply($param, {'book.id' => 0, 'book.author' => '%0%', 'book.price' => '%0%'});
 
+$param = $dbi->map_param(
+    {id => '', author => '', price => ''},
+    id => 'book.id',
+    author => ['book.author', sub { '%' . $_[0] . '%' }],
+    price => ['book.price', sub { '%' . $_[0] . '%' },
+      {if => sub { $_[0] eq 1 }}]
+);
+is_deeply($param, {});
 
+$param = $dbi->map_param(
+    {id => undef, author => undef, price => undef},
+    id => 'book.id',
+    price => ['book.price', {if => 'exists'}]
+);
+is_deeply($param, {'book.price' => undef});
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+$param = $dbi->map_param(
+    {price => 'a'},
+    id => ['book.id', {if => 'exists'}],
+    price => ['book.price', sub { '%' . $_[0] }, {if => 'exists'}]
+);
+is_deeply($param, {'book.price' => '%a'});
 
 1;
