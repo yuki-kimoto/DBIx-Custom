@@ -19,9 +19,135 @@ BEGIN {
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 sub test { print "# $_[0]\n" }
 
+use DBIx::Custom;
+use MyDBI1;
+{
+    package MyDBI4;
+
+    use strict;
+    use warnings;
+
+    use base 'DBIx::Custom';
+
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model(
+            MyModel2 => [
+                'book',
+                {class => 'Company', name => 'company'}
+            ]
+        );
+    }
+
+    package MyModel2::Base1;
+
+    use strict;
+    use warnings;
+
+    use base 'DBIx::Custom::Model';
+
+    package MyModel2::book;
+
+    use strict;
+    use warnings;
+
+    use base 'MyModel2::Base1';
+
+    sub insert {
+        my ($self, $param) = @_;
+        
+        return $self->SUPER::insert(param => $param);
+    }
+
+    sub list { shift->select; }
+
+    package MyModel2::Company;
+
+    use strict;
+    use warnings;
+
+    use base 'MyModel2::Base1';
+
+    sub insert {
+        my ($self, $param) = @_;
+        
+        return $self->SUPER::insert(param => $param);
+    }
+
+    sub list { shift->select; }
+}
 {
     package DBIx::Custom;
     has dsn => sub { 'dbi:SQLite:dbname=:memory:' }
+}
+{
+     package MyDBI5;
+
+    use strict;
+    use warnings;
+
+    use base 'DBIx::Custom';
+
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel4');
+    }
+}
+{
+    package MyDBI6;
+    
+    use base 'DBIx::Custom';
+    
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel5');
+        
+        return $self;
+    }
+}
+{
+    package MyDBI7;
+    
+    use base 'DBIx::Custom';
+    
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel6');
+        
+        
+        return $self;
+    }
+}
+{
+    package MyDBI8;
+    
+    use base 'DBIx::Custom';
+    
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel7');
+        
+        return $self;
+    }
+}
+
+{
+    package MyDBI9;
+    
+    use base 'DBIx::Custom';
+    
+    sub connect {
+        my $self = shift->SUPER::connect(@_);
+        
+        $self->include_model('MyModel8')->setup_model;
+        
+        return $self;
+    }
 }
 
 # Constant
@@ -265,19 +391,6 @@ $model = $dbi->model('book');
 
 
 test 'model delete_at';
-{
-    package MyDBI6;
-    
-    use base 'DBIx::Custom';
-    
-    sub connect {
-        my $self = shift->SUPER::connect(@_);
-        
-        $self->include_model('MyModel5');
-        
-        return $self;
-    }
-}
 $dbi = MyDBI6->connect;
 eval { $dbi->execute('drop table table1') };
 eval { $dbi->execute('drop table table2') };
@@ -337,20 +450,6 @@ is($row->{key3}, 3);
 
 
 test 'mycolumn and column';
-{
-    package MyDBI7;
-    
-    use base 'DBIx::Custom';
-    
-    sub connect {
-        my $self = shift->SUPER::connect(@_);
-        
-        $self->include_model('MyModel6');
-        
-        
-        return $self;
-    }
-}
 $dbi = MyDBI7->connect;
 eval { $dbi->execute('drop table table1') };
 eval { $dbi->execute('drop table table2') };
@@ -560,19 +659,6 @@ $rows = $dbi->select(
 is_deeply($rows, [{table1_key1 => 1, table2_key1 => 1, key2 => 2, key3 => 5}],
           'quote');
 
-{
-    package MyDBI8;
-    
-    use base 'DBIx::Custom';
-    
-    sub connect {
-        my $self = shift->SUPER::connect(@_);
-        
-        $self->include_model('MyModel7');
-        
-        return $self;
-    }
-}
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
@@ -702,19 +788,6 @@ is_deeply($result->one,
           {key1 => 1, 'table2.key1' => 1});
 
 test 'dbi method from model';
-{
-    package MyDBI9;
-    
-    use base 'DBIx::Custom';
-    
-    sub connect {
-        my $self = shift->SUPER::connect(@_);
-        
-        $self->include_model('MyModel8')->setup_model;
-        
-        return $self;
-    }
-}
 $dbi = MyDBI9->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
@@ -2281,62 +2354,6 @@ is_deeply($model->list->all, [{name => 'a'}], 'basic');
 is($dbi->models->{'book'}, $dbi->model('book'));
 is($dbi->models->{'company'}, $dbi->model('company'));
 
-{
-    package MyDBI4;
-
-    use strict;
-    use warnings;
-
-    use base 'DBIx::Custom';
-
-    sub connect {
-        my $self = shift->SUPER::connect(@_);
-        
-        $self->include_model(
-            MyModel2 => [
-                'book',
-                {class => 'Company', name => 'company'}
-            ]
-        );
-    }
-
-    package MyModel2::Base1;
-
-    use strict;
-    use warnings;
-
-    use base 'DBIx::Custom::Model';
-
-    package MyModel2::book;
-
-    use strict;
-    use warnings;
-
-    use base 'MyModel2::Base1';
-
-    sub insert {
-        my ($self, $param) = @_;
-        
-        return $self->SUPER::insert(param => $param);
-    }
-
-    sub list { shift->select; }
-
-    package MyModel2::Company;
-
-    use strict;
-    use warnings;
-
-    use base 'MyModel2::Base1';
-
-    sub insert {
-        my ($self, $param) = @_;
-        
-        return $self->SUPER::insert(param => $param);
-    }
-
-    sub list { shift->select; }
-}
 $dbi = MyDBI4->connect;
 eval { $dbi->execute('drop table book') };
 $dbi->execute("create table book (title, author)");
@@ -2348,20 +2365,6 @@ $model = $dbi->model('company');
 $model->insert({name => 'a'});
 is_deeply($model->list->all, [{name => 'a'}], 'basic');
 
-{
-     package MyDBI5;
-
-    use strict;
-    use warnings;
-
-    use base 'DBIx::Custom';
-
-    sub connect {
-        my $self = shift->SUPER::connect(@_);
-        
-        $self->include_model('MyModel4');
-    }
-}
 $dbi = MyDBI5->connect;
 eval { $dbi->execute('drop table company') };
 eval { $dbi->execute('drop table table1') };
