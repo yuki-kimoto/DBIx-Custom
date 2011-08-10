@@ -760,7 +760,7 @@ is($dbi->filters->{decode_utf8}->(encode_utf8('あ')),
 is($dbi->filters->{encode_utf8}->('あ'),
    encode_utf8('あ'), "encode_utf8");
 
-test 'transaction';
+test 'transaction1';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
@@ -782,22 +782,6 @@ $dbi->dbh->rollback;
 $result = $dbi->select(table => 'table1');
 ok(! $result->fetch_first, "rollback");
 
-test 'cache';
-eval { $dbi->execute('drop table table1') };
-$dbi->cache(1);
-$dbi->execute($create_table1);
-$source = 'select * from table1 where key1 = :key1 and key2 = :key2;';
-$dbi->execute($source, {}, query => 1);
-is_deeply($dbi->{_cached}->{$source}, 
-          {sql => "select * from table1 where key1 = ? and key2 = ?;", columns => ['key1', 'key2'], tables => []}, "cache");
-
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->{_cached} = {};
-$dbi->cache(0);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-is(scalar keys %{$dbi->{_cached}}, 0, 'not cache');
-
 test 'execute';
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
@@ -833,7 +817,7 @@ ok($@, "execute fail");
 }
 
 
-test 'transaction';
+test 'transaction2';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
@@ -919,45 +903,6 @@ ok($@, "execute fail");
     eval{$dbi->execute('select * from table1 where {0 key1}', {}, query => 1)};
     like($@, qr/QueryBuilder.*\.t /s, "caller spec : not vebose");
 }
-
-
-test 'transaction';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-
-$dbi->begin_work;
-
-eval {
-    $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-    die "Error";
-    $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
-};
-
-$dbi->rollback if $@;
-
-$result = $dbi->select(table => 'table1');
-$rows = $result->all;
-is_deeply($rows, [], "rollback");
-
-$dbi->begin_work;
-
-eval {
-    $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-    $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
-};
-
-$dbi->commit unless $@;
-
-$result = $dbi->select(table => 'table1');
-$rows = $result->all;
-is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "commit");
-
-$dbi->dbh->{AutoCommit} = 0;
-eval{ $dbi->begin_work };
-ok($@, "exception");
-$dbi->dbh->{AutoCommit} = 1;
-
 
 test 'method';
 $dbi->method(

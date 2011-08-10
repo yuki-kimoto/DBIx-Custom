@@ -1063,7 +1063,6 @@ is_deeply($result->one,
 is_deeply($model2->select->one, {key1 => 1, key3 => 3});
 
 test 'model method';
-test 'create_model';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table2') };
 $dbi->execute($create_table2);
