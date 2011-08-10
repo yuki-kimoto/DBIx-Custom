@@ -65,8 +65,6 @@ my $binary;
 # Prepare table
 $dbi = DBIx::Custom->connect;
 
-=pod
-
 test 'insert';
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
@@ -101,10 +99,11 @@ eval{$dbi->insert(table => 'table', param => {';' => 1})};
 like($@, qr/safety/);
 
 $dbi->quote('"');
-$dbi->execute('create table "table" ("select")');
+eval { $dbi->execute("drop table ${q}table$p") };
+$dbi->execute("create table ${q}table$p (${q}select$p)");
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert(table => 'table', param => {select => 1});
-$result = $dbi->execute('select * from "table"');
+$result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
 is_deeply($rows, [{select => 2}], "reserved word");
 
@@ -131,8 +130,6 @@ $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
 $result = $dbi->execute('select * from table1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}], "basic");
-
-=cut
 
 test 'update';
 eval { $dbi->execute('drop table table1') };
@@ -225,12 +222,13 @@ like($@, qr/safety/);
 
 eval { $dbi->execute('drop table table1') };
 $dbi->quote('"');
-$dbi->execute('create table "table" ("select", "update")');
+eval { $dbi->execute("drop table ${q}table$p") };
+$dbi->execute("create table ${q}table$p (${q}select$p, ${q}update$p)");
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
 $dbi->insert(table => 'table', param => {select => 1});
 $dbi->update(table => 'table', where => {select => 1}, param => {update => 2});
-$result = $dbi->execute('select * from "table"');
+$result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
 is_deeply($rows, [{select => 2, update => 6}], "reserved word");
 
@@ -239,12 +237,12 @@ like($@, qr/safety/);
 
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->reserved_word_quote('"');
-$dbi->execute('create table "table" ("select", "update")');
+$dbi->execute("create table ${q}table$p (${q}select$p, ${q}update$p)");
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
 $dbi->insert(table => 'table', param => {select => 1});
 $dbi->update(table => 'table', where => {'table.select' => 1}, param => {update => 2});
-$result = $dbi->execute('select * from "table"');
+$result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
 is_deeply($rows, [{select => 2, update => 6}], "reserved word");
 
@@ -369,11 +367,12 @@ like($@, qr/safety/);
 
 $dbi = DBIx::Custom->connect;
 $dbi->quote('"');
-$dbi->execute('create table "table" ("select", "update")');
+eval { $dbi->execute("drop table ${q}table$p") };
+$dbi->execute("create table ${q}table$p (${q}select$p, ${q}update$p)");
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert(table => 'table', param => {select => 1});
 $dbi->delete(table => 'table', where => {select => 1});
-$result = $dbi->execute('select * from "table"');
+$result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
 is_deeply($rows, [], "reserved word");
 
@@ -436,7 +435,7 @@ like($@, qr/noexist/, "invalid");
 
 $dbi = DBIx::Custom->connect;
 $dbi->quote('"');
-$dbi->execute('create table "table" ("select", "update")');
+$dbi->execute("create table ${q}table$p (${q}select$p, ${q}update$p)");
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert(table => 'table', param => {select => 1, update => 2});
 $result = $dbi->select(table => 'table', where => {select => 1});
