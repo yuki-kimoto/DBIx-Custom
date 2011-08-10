@@ -179,78 +179,7 @@ my $binary;
 $dbi = DBIx::Custom->connect;
 
 ### a little complex test
-test 'type_rule into';
-$dbi = DBIx::Custom->connect;
-$dbi->execute("create table table1 (key1 Date, key2 datetime)");
-$dbi->type_rule(
-    into1 => {
-        date => sub { uc $_[0] }
-    }
-);
-$dbi->insert({key1 => 'a'}, table => 'table1');
-$result = $dbi->select(table => 'table1');
-is($result->one->{key1}, 'A');
 
-$dbi = DBIx::Custom->connect;
-$dbi->execute("create table table1 (key1 date, key2 datetime)");
-$dbi->type_rule(
-    into1 => [
-         [qw/date datetime/] => sub { uc $_[0] }
-    ]
-);
-$dbi->insert({key1 => 'a', key2 => 'b'}, table => 'table1');
-$result = $dbi->select(table => 'table1');
-$row = $result->one;
-is($row->{key1}, 'A');
-is($row->{key2}, 'B');
-
-$dbi = DBIx::Custom->connect;
-$dbi->execute("create table table1 (key1 Date, key2 datetime)");
-$dbi->insert({key1 => 'a', key2 => 'B'}, table => 'table1');
-$dbi->type_rule(
-    into1 => [
-        [qw/date datetime/] => sub { uc $_[0] }
-    ]
-);
-$result = $dbi->execute(
-    "select * from table1 where key1 = :key1 and key2 = :table1.key2;",
-    param => {key1 => 'a', 'table1.key2' => 'b'}
-);
-$row = $result->one;
-is($row->{key1}, 'a');
-is($row->{key2}, 'B');
-
-$dbi = DBIx::Custom->connect;
-$dbi->execute("create table table1 (key1 Date, key2 datetime)");
-$dbi->insert({key1 => 'A', key2 => 'B'}, table => 'table1');
-$dbi->type_rule(
-    into1 => [
-        [qw/date datetime/] => sub { uc $_[0] }
-    ]
-);
-$result = $dbi->execute(
-    "select * from table1 where key1 = :key1 and key2 = :table1.key2;",
-    param => {key1 => 'a', 'table1.key2' => 'b'},
-    table => 'table1'
-);
-$row = $result->one;
-is($row->{key1}, 'A');
-is($row->{key2}, 'B');
-
-$dbi = DBIx::Custom->connect;
-$dbi->execute("create table table1 (key1 date, key2 datetime)");
-$dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->type_rule(
-    from1 => {
-        date => 'twice',
-    },
-    into1 => {
-        date => 'twice',
-    }
-);
-$dbi->insert({key1 => 2}, table => 'table1');
-$result = $dbi->select(table => 'table1');
-is($result->fetch->[0], 8);
 
 test 'type_rule and filter order';
 $dbi = DBIx::Custom->connect;

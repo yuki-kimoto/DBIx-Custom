@@ -30,7 +30,7 @@ use DBIx::Custom;
     has dsn => "dbi:Pg:dbname=dbix_custom";
     has user  => 'dbix_custom';
     has password => 'dbix_custom';
-    has system_table => sub {
+    has exclude_table => sub {
 
         return qr/^(
             pg_|column_|role_|view_|sql_
@@ -45,6 +45,7 @@ use DBIx::Custom;
             |domains
             |element_types
             |enabled_roles
+            |information_schema
             |information_schema_catalog_name
             |key_column_usage
             |parameters

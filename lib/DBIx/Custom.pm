@@ -73,16 +73,6 @@ sub available_datatype {
     return $data_types;
 }
 
-sub show_datatype {
-    my ($self, $table) = @_;
-    
-    
-}
-
-sub show_typename {
-    
-}
-
 sub available_typename {
     my $self = shift;
     
@@ -319,9 +309,6 @@ sub each_column {
         }
     }
 }
-
-
-
 
 sub each_table {
     my ($self, $cb) = @_;
@@ -946,6 +933,39 @@ sub setup_model {
             }
         }
     );
+    return $self;
+}
+
+sub show_datatype {
+    my ($self, $table) = @_;
+    croak "Table name must be specified" unless defined $table;
+    print "$table\n";
+    
+    my $result = $self->select(table => $table, where => "'0' <> '0'");
+    my $sth = $result->sth;
+
+    my $columns = $sth->{NAME};
+    my $data_types = $sth->{TYPE};
+    
+    for (my $i = 0; $i < @$columns; $i++) {
+        my $column = $columns->[$i];
+        my $data_type = $data_types->[$i];
+        print "$column: $data_type\n";
+    }
+}
+
+sub show_typename {
+    my ($self, $t) = @_;
+    croak "Table name must be specified" unless defined $t;
+    print "$t\n";
+    
+    $self->each_column(sub {
+        my ($self, $table, $column, $infos) = @_;
+        return unless $table eq $t;
+        my $typename = $infos->{TYPE_NAME};
+        print "$column: $typename\n";
+    });
+    
     return $self;
 }
 
@@ -3124,6 +3144,30 @@ C<columns> of model object is automatically set, parsing database information.
 If environment variable C<DBIX_CUSTOM_DEBUG> is set to true,
 executed SQL and bind values are printed to STDERR.
 
+=head2 C<show_datatype EXPERIMENTAL>
+
+    $dbi->show_datatype($table);
+
+Show data type of the columns of specified table.
+
+    book
+    title: 5
+    issue_date: 91
+
+This data type is used in C<type_rule>'s C<from1> and C<from2>.
+
+=head2 C<show_typename EXPERIMENTAL>
+
+    $dbi->show_typename($table);
+
+Show type name of the columns of specified table.
+
+    book
+    title: varchar
+    issue_date: date
+
+This type name is used in C<type_rule>'s C<into1> and C<into2>.
+
 =head2 C<DBIX_CUSTOM_DEBUG_ENCODING>
 
 DEBUG output encoding. Default to UTF-8.
@@ -3150,6 +3194,7 @@ L<DBIx::Custom>
     default_bind_filter # will be removed at 2017/1/1
     default_fetch_filter # will be removed at 2017/1/1
     insert_param_tag # will be removed at 2017/1/1
+    register_tag # will be removed at 2017/1/1
     register_tag_processor # will be removed at 2017/1/1
     update_param_tag # will be removed at 2017/1/1
     
