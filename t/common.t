@@ -3109,4 +3109,89 @@ $model = $dbi->create_model(
 $model->method(foo => sub { shift->select(@_) });
 is_deeply($model->foo->one, {key1 => 1, key3 => 3});
 
+test 'update_param';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+
+$param = {key2 => 11};
+$update_param = $dbi->update_param($param);
+$sql = <<"EOS";
+update table1 $update_param
+where key1 = 1
+EOS
+$dbi->execute($sql, param => $param);
+$result = $dbi->execute('select * from table1 order by key1;', table => 'table1');
+$rows   = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
+                  "basic");
+
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+
+$param = {key2 => 11, key3 => 33};
+$update_param = $dbi->update_param($param);
+$sql = <<"EOS";
+update table1 $update_param
+where key1 = 1
+EOS
+$dbi->execute($sql, param => $param);
+$result = $dbi->execute('select * from table1 order by key1;', table => 'table1');
+$rows   = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 33, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
+                  "basic");
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+
+$param = {key2 => 11, key3 => 33};
+$update_param = $dbi->update_param($param, {no_set => 1});
+$sql = <<"EOS";
+update table1 set $update_param
+where key1 = 1
+EOS
+$dbi->execute($sql, param => $param);
+$result = $dbi->execute('select * from table1 order by key1;', table => 'table1');
+$rows   = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 33, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
+                  "update param no_set");
+
+            
+eval { $dbi->update_param({";" => 1}) };
+like($@, qr/not safety/);
+
+
+test 'update_param';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1_2);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2, key3 => 3, key4 => 4, key5 => 5});
+$dbi->insert(table => 'table1', param => {key1 => 6, key2 => 7, key3 => 8, key4 => 9, key5 => 10});
+
+$param = {key2 => 11};
+$update_param = $dbi->assign_param($param);
+$sql = <<"EOS";
+update table1 set $update_param
+where key1 = 1
+EOS
+$dbi->execute($sql, param => $param, table => 'table1');
+$result = $dbi->execute('select * from table1 order by key1;');
+$rows   = $result->all;
+is_deeply($rows, [{key1 => 1, key2 => 11, key3 => 3, key4 => 4, key5 => 5},
+                  {key1 => 6, key2 => 7,  key3 => 8, key4 => 9, key5 => 10}],
+                  "basic");
+
+
 1;
