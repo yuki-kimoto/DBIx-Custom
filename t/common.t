@@ -28,7 +28,7 @@ use MyDBI1;
         $self->include_model(
             MyModel2 => [
                 'table1',
-                'table2'
+                {class => 'table2', name => 'table2'}
             ]
         );
     }
