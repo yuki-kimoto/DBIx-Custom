@@ -15,6 +15,7 @@ use DBIx::Custom::Tag;
 use DBIx::Custom::Order;
 use DBIx::Custom::Util qw/_array_to_hash _subname/;
 use Encode qw/encode encode_utf8 decode_utf8/;
+use Scalar::Util qw/weaken isweak/;
 
 use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
@@ -268,6 +269,7 @@ sub create_model {
     
     # Create model
     my $model = $model_class->new($args);
+    weaken $self unless isweak $self;
     $model->name($model_name) unless $model->name;
     $model->table($model_table) unless $model->table;
     
