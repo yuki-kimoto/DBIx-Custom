@@ -1,3 +1,5 @@
+0.1713
+    - fixed memory leak and connection increasing bug when using model.
 0.1712
     - you can set any string as separator
     - fixed memory leak and connection increasing bug, and query_buider method return new object.
