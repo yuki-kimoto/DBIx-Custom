@@ -1,3 +1,5 @@
+0.1714
+    - fixed not backword compatible change in 0.1712 query_buider
 0.1713
     - fixed memory leak and connection increasing bug when using model.
 0.1712

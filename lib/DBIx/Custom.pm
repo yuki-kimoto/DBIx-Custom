@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1713';
+our $VERSION = '0.1714';
 use 5.008001;
 
 use Carp 'croak';
@@ -15,7 +15,7 @@ use DBIx::Custom::Tag;
 use DBIx::Custom::Order;
 use DBIx::Custom::Util qw/_array_to_hash _subname/;
 use Encode qw/encode encode_utf8 decode_utf8/;
-use Scalar::Util qw/weaken isweak/;
+use Scalar::Util qw/weaken/;
 
 use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
@@ -52,6 +52,12 @@ has [qw/connector dsn password quote user exclude_table/],
     },
     last_sql => '',
     models => sub { {} },
+    query_builder => sub {
+        my $self = shift;
+        my $builder = DBIx::Custom::QueryBuilder->new(dbi => $self);
+        weaken $builder->{dbi};
+        return $builder;
+    },
     result_class  => 'DBIx::Custom::Result',
     safety_character => '\w',
     separator => '.',
@@ -252,9 +258,7 @@ sub delete {
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
 
-sub DESTROY {
-
-}
+sub DESTROY { }
 
 sub create_model {
     my $self = shift;
@@ -269,7 +273,7 @@ sub create_model {
     
     # Create model
     my $model = $model_class->new($args);
-    weaken $self unless isweak $self;
+    weaken $model->{dbi};
     $model->name($model_name) unless $model->name;
     $model->table($model_table) unless $model->table;
     
@@ -746,24 +750,9 @@ sub new {
         croak qq{"$attr" is wrong name } . _subname
           unless $self->can($attr);
     }
-    
-    return $self;
-}
 
-my $not_exists = bless {}, 'DBIx::Custom::NotExists';
-sub not_exists { $not_exists }
-
-sub order {
-    my $self = shift;
-    return DBIx::Custom::Order->new(dbi => $self, @_);
-}
-
-sub query_builder {
-    my $self = shift;
-    my $builder = DBIx::Custom::QueryBuilder->new(dbi => $self);
-    
     # DEPRECATED
-    $builder->register_tag(
+    $self->{_tags} = {
         '?'     => \&DBIx::Custom::Tag::placeholder,
         '='     => \&DBIx::Custom::Tag::equal,
         '<>'    => \&DBIx::Custom::Tag::not_equal,
@@ -775,9 +764,17 @@ sub query_builder {
         'in'    => \&DBIx::Custom::Tag::in,
         'insert_param' => \&DBIx::Custom::Tag::insert_param,
         'update_param' => \&DBIx::Custom::Tag::update_param
-    );
-    $builder->register_tag($self->{_tags} || {});
-    return $builder;
+    };
+    
+    return $self;
+}
+
+my $not_exists = bless {}, 'DBIx::Custom::NotExists';
+sub not_exists { $not_exists }
+
+sub order {
+    my $self = shift;
+    return DBIx::Custom::Order->new(dbi => $self, @_);
 }
 
 sub register_filter {

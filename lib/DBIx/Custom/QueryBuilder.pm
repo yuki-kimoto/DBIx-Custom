@@ -248,8 +248,9 @@ sub _parse_tag {
                 next;
             }
             # Get tag
+            $self->dbi->{_tags} ||= {};
             my $tag = $self->tag_processors->{$tag_name}
-                             || $self->tags->{$tag_name};
+                             || $self->dbi->{_tags}->{$tag_name};
             # Tag is not registered
             croak qq{Tag "$tag_name" is not registered } . _subname
               unless $tag;

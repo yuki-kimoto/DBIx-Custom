@@ -4,6 +4,7 @@ use warnings;
 use Encode qw/encode_utf8/;
 use FindBin;
 use lib "$FindBin::Bin/common";
+use Scalar::Util 'isweak';
 
 my $dbi;
 
@@ -208,6 +209,7 @@ $dbi->insert({key1 => '01-01'}, table => 'table1');
 $result = $dbi->select(table => 'table1');
 is($result->one->{key1}, '2010-01-01');
 
+$DB::single = 1;
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1_type);
@@ -3142,6 +3144,7 @@ is_deeply($result->all, [{'table1-key1' => 1, 'table1-key2' => 3},
   {'table1-key1' => 2, 'table1-key2' => 2}]);
 
 test 'tag_parse';
+$DB::single = 1;
 $dbi = DBIx::Custom->connect;
 $dbi->tag_parse(0);
 eval { $dbi->execute('drop table table1') };
@@ -3327,14 +3330,16 @@ $datas = [
 
 for (my $i = 0; $i < @$datas; $i++) {
     my $data = $datas->[$i];
-    my $builder = DBIx::Custom->new->query_builder;
+    my $dbi = DBIx::Custom->new;
+    my $builder = $dbi->query_builder;
     my $query = $builder->build_query($data->{source});
     is($query->{sql}, $data->{sql_expected}, "$data->{name} : sql");
     is_deeply($query->columns, $data->{columns_expected}, "$data->{name} : columns");
 }
 
-$builder = DBIx::Custom->new->query_builder;
-$ret_val = $builder->register_tag(
+$dbi = DBIx::Custom->new;
+$builder = $dbi->query_builder;
+$dbi->register_tag(
     p => sub {
         my @args = @_;
         
@@ -3347,9 +3352,6 @@ $ret_val = $builder->register_tag(
 $query = $builder->build_query("{p a b}");
 is($query->{sql}, "? a b;", "register_tag sql");
 is_deeply($query->{columns}, [2], "register_tag columns");
-isa_ok($ret_val, 'DBIx::Custom::QueryBuilder');
-
-$builder = DBIx::Custom->new->query_builder;
 
 eval{$builder->build_query('{? }')};
 like($@, qr/\QColumn name must be specified in tag "{? }"/, "? not arguments");
@@ -3357,35 +3359,33 @@ like($@, qr/\QColumn name must be specified in tag "{? }"/, "? not arguments");
 eval{$builder->build_query("{a }")};
 like($@, qr/\QTag "a" is not registered/, "tag not exist");
 
-$builder->register_tag({
+$dbi->register_tag({
     q => 'string'
 });
 
 eval{$builder->build_query("{q}", {})};
 like($@, qr/Tag "q" must be sub reference/, "tag not code ref");
 
-$builder->register_tag({
+$dbi->register_tag({
    r => sub {} 
 });
 
 eval{$builder->build_query("{r}")};
 like($@, qr/\QTag "r" must return [STRING, ARRAY_REFERENCE]/, "tag return noting");
 
-$builder->register_tag({
+$dbi->register_tag({
    s => sub { return ["a", ""]} 
 });
 
 eval{$builder->build_query("{s}")};
 like($@, qr/\QTag "s" must return [STRING, ARRAY_REFERENCE]/, "tag return not array columns");
 
-$builder->register_tag(
+$dbi->register_tag(
     t => sub {return ["a", []]}
 );
 
 
-test 'General error case';
-$builder = DBIx::Custom->new->query_builder;
-$builder->register_tag(
+$dbi->register_tag(
     a => sub {
         return ["? ? ?", ['']];
     }
