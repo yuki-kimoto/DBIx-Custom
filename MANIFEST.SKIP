@@ -14,3 +14,4 @@
 ^\.git
 ^cover_db/
 \.db$
+\.run$
