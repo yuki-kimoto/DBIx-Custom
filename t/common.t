@@ -155,10 +155,8 @@ my $create_table_reserved = $dbi->create_table_reserved;
 my $q = substr($dbi->quote, 0, 1);
 my $p = substr($dbi->quote, 1, 1) || $q;
 my $date_typename = $dbi->date_typename;
-my $time_typename = $dbi->time_typename;
 my $datetime_typename = $dbi->datetime_typename;
 my $date_datatype = $dbi->date_datatype;
-my $time_datatype = $dbi->time_datatype;
 my $datetime_datatype = $dbi->datetime_datatype;
 
 # Variable
@@ -193,6 +191,7 @@ my $insert_param;
 my $join;
 my $binary;
 
+
 # Drop table
 eval { $dbi->execute('drop table table1') };
 
@@ -200,6 +199,7 @@ test 'type_rule into';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1_type);
+$DB::single = 1;
 $dbi->type_rule(
     into1 => {
         $date_typename => sub { '2010-' . $_[0] }
@@ -1143,9 +1143,6 @@ is_deeply($rows, [{key1 => 1, key2 => 2}], "table and columns and where key");
 $rows = $dbi->select(table => 'table1', column => ['key1'], where => {key1 => 3})->all;
 is_deeply($rows, [{key1 => 3}], "table and columns and where key");
 
-$rows = $dbi->select(table => 'table1', append => "order by key1 desc limit 1")->all;
-is_deeply($rows, [{key1 => 3, key2 => 4}], "append statement");
-
 $dbi->register_filter(decrement => sub { $_[0] - 1 });
 $rows = $dbi->select(table => 'table1', where => {key1 => 2}, filter => {key1 => 'decrement'})
             ->all;
@@ -1552,43 +1549,6 @@ is_deeply($infos,
         ['table2', 'table2'],
     ]
 );
-
-test 'limit';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute($create_table1);
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4});
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 6});
-$dbi->register_tag(
-    limit => sub {
-        my ($count, $offset) = @_;
-        
-        my $s = '';
-        $s .= "limit $count";
-        $s .= " offset $offset" if defined $offset;
-        
-        return [$s, []];
-    }
-);
-$rows = $dbi->select(
-  table => 'table1',
-  where => {key1 => 1},
-  append => "order by key2 {limit 1 0}"
-)->all;
-is_deeply($rows, [{key1 => 1, key2 => 2}]);
-$rows = $dbi->select(
-  table => 'table1',
-  where => {key1 => 1},
-  append => "order by key2 {limit 2 1}"
-)->all;
-is_deeply($rows, [{key1 => 1, key2 => 4},{key1 => 1, key2 => 6}]);
-$rows = $dbi->select(
-  table => 'table1',
-  where => {key1 => 1},
-  append => "order by key2 {limit 1}"
-)->all;
-is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
 test 'connect super';
 $dbi = DBIx::Custom->connect;

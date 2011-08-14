@@ -172,6 +172,16 @@ is($result->fetch_first->[0], 'A');
 $result = $dbi->select(table => 'table1');
 is($result->one->{key1}, 'A');
 
+test 'select limit';
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+$rows = $dbi->select(table => 'table1', append => "order by key1 desc limit 1")->all;
+is_deeply($rows, [{key1 => 3, key2 => 4}], "append statement");
+
+
+
 # DEPRECATED! test
 test 'filter __ expression';
 $dbi = DBIx::Custom->connect;
@@ -216,3 +226,40 @@ $dbi->update(table => 'table', where => {'table.select' => 1}, param => {update 
 $result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
 is_deeply($rows, [{select => 2, update => 6}], "reserved word");
+
+test 'limit tag';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute($create_table1);
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4});
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 6});
+$dbi->register_tag(
+    limit => sub {
+        my ($count, $offset) = @_;
+        
+        my $s = '';
+        $s .= "limit $count";
+        $s .= " offset $offset" if defined $offset;
+        
+        return [$s, []];
+    }
+);
+$rows = $dbi->select(
+  table => 'table1',
+  where => {key1 => 1},
+  append => "order by key2 {limit 1 0}"
+)->all;
+is_deeply($rows, [{key1 => 1, key2 => 2}]);
+$rows = $dbi->select(
+  table => 'table1',
+  where => {key1 => 1},
+  append => "order by key2 {limit 2 1}"
+)->all;
+is_deeply($rows, [{key1 => 1, key2 => 4},{key1 => 1, key2 => 6}]);
+$rows = $dbi->select(
+  table => 'table1',
+  where => {key1 => 1},
+  append => "order by key2 {limit 1}"
+)->all;
+is_deeply($rows, [{key1 => 1, key2 => 2}]);

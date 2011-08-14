@@ -299,13 +299,21 @@ sub each_column {
 
     my $re = $self->exclude_table;
     
+    my %tables;
+    
     # Iterate all tables
     my $sth_tables = $self->dbh->table_info;
     while (my $table_info = $sth_tables->fetchrow_hashref) {
-        
         # Table
         my $table = $table_info->{TABLE_NAME};
         next if defined $re && $table =~ /$re/;
+        $tables{$table}++;
+    }
+
+    # Iterate all tables
+    my @tables = sort keys %tables;
+    for (my $i = 0; $i < @tables; $i++) {
+        my $table = $tables[$i];
         
         # Iterate all columns
         my $sth_columns = $self->dbh->column_info(undef, undef, $table, '%');
