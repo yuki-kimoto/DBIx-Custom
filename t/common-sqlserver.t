@@ -22,9 +22,12 @@ use DBIx::Custom;
 
     sub date_datatype { lc $date_datatype }
     sub datetime_datatype { lc $datetime_datatype }
+
+    has datetime_suffix => '.000';
     
     my $dsn = "dbi:ODBC:driver={SQL Server};Server={localhost\\SQLEXPRESS};"
       . "Trusted_Connection=No;AutoTranslate=No;Database=dbix_custom;";
+
     has dsn => $dsn;
     has user  => 'dbix_custom';
     has password => 'dbix_custom';

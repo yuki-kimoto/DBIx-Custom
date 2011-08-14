@@ -158,6 +158,7 @@ my $date_typename = $dbi->date_typename;
 my $datetime_typename = $dbi->datetime_typename;
 my $date_datatype = $dbi->date_datatype;
 my $datetime_datatype = $dbi->datetime_datatype;
+my $datetime_suffix = $dbi->datetime_suffix;
 
 # Variable
 # Variables
@@ -226,7 +227,7 @@ $dbi->insert({key1 => '2010-01-02', key2 => '2010-01-01 01:01:02'}, table => 'ta
 $result = $dbi->select(table => 'table1');
 $row = $result->one;
 is($row->{key1}, '2010-01-03');
-is($row->{key2}, '2010-01-01 01:01:03');
+is($row->{key2}, '2010-01-01 01:01:03' . $datetime_suffix);
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
@@ -247,7 +248,7 @@ $result = $dbi->execute(
 );
 $row = $result->one;
 is($row->{key1}, '2010-01-03');
-is($row->{key2}, '2010-01-01 01:01:03');
+is($row->{key2}, '2010-01-01 01:01:03' . $datetime_suffix);
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
@@ -269,7 +270,7 @@ $result = $dbi->execute(
 );
 $row = $result->one;
 is($row->{key1}, '2010-01-03');
-is($row->{key2}, '2010-01-01 01:01:03');
+is($row->{key2}, '2010-01-01 01:01:03' . $datetime_suffix);
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
@@ -485,7 +486,7 @@ $result->type_rule(
 );
 $row = $result->one;
 is($row->{key1}, '2010-01-05');
-is($row->{key2}, '2010-01-01 01:01:03');
+is($row->{key2}, '2010-01-01 01:01:03' . $datetime_suffix);
 
 $result = $dbi->select(table => 'table1');
 $result->type_rule(
@@ -495,7 +496,7 @@ $result->type_rule(
 );
 $row = $result->one;
 is($row->{key1}, '2010-01-05');
-is($row->{key2}, '2010-01-01 01:01:03');
+is($row->{key2}, '2010-01-01 01:01:03' . $datetime_suffix);
 
 $result = $dbi->select(table => 'table1');
 $result->type_rule(
@@ -505,7 +506,7 @@ $result->type_rule(
 );
 $row = $result->one;
 is($row->{key1}, '2010-01-05');
-is($row->{key2}, '2010-01-01 01:01:03');
+is($row->{key2}, '2010-01-01 01:01:03' . $datetime_suffix);
 
 $result = $dbi->select(table => 'table1');
 $result->type_rule(
@@ -513,7 +514,7 @@ $result->type_rule(
 );
 $row = $result->one;
 is($row->{key1}, '2010-01-05');
-is($row->{key2}, '2010-01-01 01:01:03');
+is($row->{key2}, '2010-01-01 01:01:03' . $datetime_suffix);
 
 $dbi->register_filter(five => sub { my $v = shift; $v =~ s/3/5/; return $v });
 $result = $dbi->select(table => 'table1');
@@ -522,7 +523,7 @@ $result->type_rule(
 );
 $row = $result->one;
 is($row->{key1}, '2010-01-05');
-is($row->{key2}, '2010-01-01 01:01:03');
+is($row->{key2}, '2010-01-01 01:01:03' . $datetime_suffix);
 
 $result = $dbi->select(table => 'table1');
 $result->type_rule(
@@ -530,7 +531,7 @@ $result->type_rule(
 );
 $row = $result->one;
 is($row->{key1}, '2010-01-03');
-is($row->{key2}, '2010-01-01 01:01:03');
+is($row->{key2}, '2010-01-01 01:01:03' . $datetime_suffix);
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
@@ -804,7 +805,7 @@ $result = $dbi->execute(
 );
 
 $rows = $result->all;
-is_deeply($rows, [{key1 => '2011-10-14 12:19:18', key2 => 2}]);
+is_deeply($rows, [{key1 => '2011-10-14 12:19:18' . $datetime_suffix, key2 => 2}]);
 
 $dbi->delete_all(table => 'table1');
 $dbi->insert(table => 'table1', param => {key1 => 'a:b c:d', key2 => 2});

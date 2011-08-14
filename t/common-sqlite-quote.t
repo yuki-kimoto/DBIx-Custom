@@ -10,20 +10,18 @@ use DBIx::Custom;
     no warnings 'redefine';
 
     my $date_typename = 'Date';
-    my $time_typename = 'Time';
     my $datetime_typename = 'Datetime';
     
     sub date_typename { lc $date_typename }
-    sub time_typename { lc $time_typename }
     sub datetime_typename { lc $datetime_typename }
 
     my $date_datatype = 'Date';
-    my $time_datatype = 'Time';
     my $datetime_datatype = 'Datetime';
     
     sub date_datatype { lc $date_datatype }
-    sub time_datatype { lc $time_datatype }
     sub datetime_datatype { lc $datetime_datatype }
+
+    has datetime_suffix => '';
 
     has dsn => 'dbi:SQLite:dbname=:memory:';
     sub quote { '""' }

@@ -11,20 +11,18 @@ use DBIx::Custom;
     package DBIx::Custom;
 
     my $date_typename = 'Date';
-    my $time_typename = 'Time';
     my $datetime_typename = 'Datetime';
     
     sub date_typename { lc $date_typename }
-    sub time_typename { lc $time_typename }
     sub datetime_typename { lc $datetime_typename }
 
     my $date_datatype = 9;
-    my $time_datatype = 'Time';
     my $datetime_datatype = 11;
     
     sub date_datatype { lc $date_datatype }
-    sub time_datatype { lc $time_datatype }
     sub datetime_datatype { lc $datetime_datatype }
+
+    has datetime_suffix => '';
 
     no warnings 'redefine';
     has dsn => "dbi:mysql:database=dbix_custom";
