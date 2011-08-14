@@ -196,8 +196,10 @@ sub dbh {
         
         # Quote
         if (!defined $self->reserved_word_quote && !defined $self->quote) {
-            my $driver = $self->{dbh}->{Driver}->{Name};
-            my $quote = $driver eq 'mysql' ? '`' : '"';
+            my $driver = lc $self->{dbh}->{Driver}->{Name};
+            my $quote = $driver eq 'odbc' ? '[]'
+                       :$driver eq 'mysql' ? '`'
+                       : '"';
             $self->quote($quote);
         }
         
@@ -1393,7 +1395,7 @@ sub _quote {
 }
 
 sub _q {
-    my ($self, $value) = @_;
+    my ($self, $value, $quotemeta) = @_;
     
     my $quote = $self->_quote;
     my $q = substr($quote, 0, 1) || '';
@@ -1402,6 +1404,11 @@ sub _q {
         $p = substr($quote, 1, 1);
     }
     else { $p = $q }
+    
+    if ($quotemeta) {
+        $q = quotemeta($q);
+        $p = quotemeta($p);
+    }
     
     return "$q$value$p";
 }
@@ -1429,9 +1436,8 @@ sub _search_tables {
     my $tables = [];
     my $safety_character = $self->safety_character;
     my $q = $self->_quote;
-    my $q_re = quotemeta($q);
-    my $quoted_safety_character_re = $self->_q("?([$safety_character]+)");
-    my $table_re = $q ? qr/(?:^|[^$safety_character])$quoted_safety_character_re?\./
+    my $quoted_safety_character_re = $self->_q("?([$safety_character]+)", 1);
+    my $table_re = $q ? qr/(?:^|[^$safety_character])${quoted_safety_character_re}?\./
                       : qr/(?:^|[^$safety_character])([$safety_character]+)\./;
     while ($source =~ /$table_re/g) {
         push @$tables, $1;
@@ -1450,8 +1456,18 @@ sub _where_to_obj {
         my $clause = ['and'];
         my $q = $self->_quote;
         foreach my $column (keys %$where) {
-            my $column_quote = $self->_q($column);
-            $column_quote =~ s/\./$self->_q(".")/e;
+            my $table;
+            my $c;
+            if ($column =~ /(?:(.*?)\.)?(.*)/) {
+                $table = $1;
+                $c = $2;
+            }
+            
+            my $table_quote;
+            $table_quote = $self->_q($table) if defined $table;
+            my $column_quote = $self->_q($c);
+            $column_quote = $table_quote . '.' . $column_quote
+              if defined $table_quote;
             push @$clause, "$column_quote = :$column" for keys %$where;
         }
         $obj = $self->where(clause => $clause, param => $where);
