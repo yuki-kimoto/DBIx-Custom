@@ -205,7 +205,6 @@ $dbi->type_rule(
         $date_typename => sub { '2010-' . $_[0] }
     }
 );
-$DB::single = 1;
 $dbi->insert({key1 => '01-01'}, table => 'table1');
 $result = $dbi->select(table => 'table1');
 like($result->one->{key1}, qr/^2010-01-01/);
@@ -213,7 +212,6 @@ like($result->one->{key1}, qr/^2010-01-01/);
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1_type);
-$DB::single = 1;
 $dbi->type_rule(
     into1 => [
          [$date_typename, $datetime_typename] => sub {
@@ -1198,23 +1196,28 @@ test 'transaction1';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
-$dbi->dbh->begin_work;
+$dbi->begin_work;
+$dbi->dbh->{AutoCommit} = 0;
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
-$dbi->dbh->commit;
+$dbi->rollback;
+$dbi->dbh->{AutoCommit} = 1;
+
 $result = $dbi->select(table => 'table1');
-is_deeply(scalar $result->all, [{key1 => 1, key2 => 2}, {key1 => 2, key2 => 3}],
-          "commit");
+ok(! $result->fetch_first, "rollback");
+
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
-$dbi->dbh->begin_work(0);
+$dbi->begin_work;
+$dbi->dbh->{AutoCommit} = 0;
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->dbh->rollback;
-
+$dbi->insert(table => 'table1', param => {key1 => 2, key2 => 3});
+$dbi->commit;
+$dbi->dbh->{AutoCommit} = 1;
 $result = $dbi->select(table => 'table1');
-ok(! $result->fetch_first, "rollback");
+is_deeply(scalar $result->all, [{key1 => 1, key2 => 2}, {key1 => 2, key2 => 3}],
+          "commit");
 
 test 'execute';
 eval { $dbi->execute('drop table table1') };
@@ -3097,7 +3100,6 @@ is_deeply($result->all, [{'table1-key1' => 1, 'table1-key2' => 3},
   {'table1-key1' => 2, 'table1-key2' => 2}]);
 
 test 'tag_parse';
-$DB::single = 1;
 $dbi = DBIx::Custom->connect;
 $dbi->tag_parse(0);
 eval { $dbi->execute('drop table table1') };
