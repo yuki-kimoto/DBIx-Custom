@@ -1,6 +1,7 @@
 0.1715
     - default quote attribute in ODBC driver is changed to "[]"
     - fixed some bug in Microsoft SQL Server
+    - added EXPERIMENTAL execute method sqlfilter option
 0.1714
     - fixed not backword compatible change in 0.1712 query_buider
 0.1713
