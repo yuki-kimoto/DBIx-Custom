@@ -301,16 +301,9 @@ sub each_column {
 
     my $re = $self->exclude_table;
     
+    # Tables
     my %tables;
-    
-    # Iterate all tables
-    my $sth_tables = $self->dbh->table_info;
-    while (my $table_info = $sth_tables->fetchrow_hashref) {
-        # Table
-        my $table = $table_info->{TABLE_NAME};
-        next if defined $re && $table =~ /$re/;
-        $tables{$table}++;
-    }
+    $self->each_table(sub { $tables{$_[1]}++ });
 
     # Iterate all tables
     my @tables = sort keys %tables;
