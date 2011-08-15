@@ -56,7 +56,7 @@ use DBIx::Custom;
     sub create_table1_2 {"create table $table1 ($key1 varchar, $key2 varchar, $key3 varchar, key4 varchar, key5 varchar);" }
     sub create_table1_type { "create table $table1 ($key1 $date_typename, $key2 $datetime_typename);" }
     
-    sub create_table1_highperformance { "create table $table1 (ab varchar, bc varchar, ik varchar, hi varchar, ui varchar, pq varchar, dc varchar);" }
+    sub create_table1_highperformance { "create table $table1 (key1 varchar, key2 varchar, key3 varchar, key4 varchar, key5 varchar, key6 varchar, key7 varchar);" }
     
     sub create_table2 { "create table $table2 ($key1 varchar, $key3 varchar);" }
     sub create_table2_2 { "create table $table2 ($key1 varchar, $key2 varchar, $key3 varchar)" }
