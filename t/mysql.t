@@ -3,8 +3,12 @@ use strict;
 use warnings;
 
 use FindBin;
+use DBIx::Custom;
 
-plan skip_all => 'mysql private test' unless -f "$FindBin::Bin/run/mysql.run";
+my $dbi;
+
+plan skip_all => 'mysql private test' unless -f "$FindBin::Bin/run/mysql.run"
+  && eval { $dbi = DBIx::Custom->connect; 1 };
 plan 'no_plan';
 
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
@@ -18,7 +22,6 @@ require DBIx::Connector;
 sub test { print "# $_[0]\n" }
 
 # Varialbes for tests
-my $dbi;
 my $dbname;
 my $rows;
 my $result;
