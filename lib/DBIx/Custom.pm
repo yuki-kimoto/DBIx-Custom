@@ -1167,9 +1167,7 @@ sub _create_query {
     # Filter SQL
     if ($sqlfilter) {
         my $sql = $query->sql;
-        $sql =~ s/\s*;$//;
         $sql = $sqlfilter->($sql);
-        $sql .= ';';
         $query->sql($sql);
     }
         

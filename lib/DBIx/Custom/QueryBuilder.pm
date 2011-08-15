@@ -41,7 +41,6 @@ sub build_query {
     else { $query = $self->_parse_parameter($source) }
     
     my $sql = $query->sql;
-    $sql .= ';' unless $source =~ /;$/;
     $query->sql($sql);
 
     # Check placeholder count
