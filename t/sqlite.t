@@ -42,6 +42,11 @@ my $binary;
 $dbi = DBIx::Custom->connect;
 
 ### SQLite only test
+test 'dbi_option default';
+$dbi = DBIx::Custom->new;
+is_deeply($dbi->dbi_option, {});
+
+
 test 'prefix';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
