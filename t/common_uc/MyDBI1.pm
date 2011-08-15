@@ -10,10 +10,8 @@ sub connect {
     
     $self->include_model(
         MyModel1 => [
-            'table1',
-            'table2',
-            'TABLE1',
-            'TABLE2'
+            $self->table1,
+            $self->table2
         ]
     );
 }
