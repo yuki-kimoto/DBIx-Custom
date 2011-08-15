@@ -260,7 +260,7 @@ sub delete {
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
 
-sub DESTROY { }
+sub DESTROY {}
 
 sub create_model {
     my $self = shift;

@@ -36,6 +36,18 @@ eval {
 };
 ok(!$@);
 
+# Test memory leaks
+for (1 .. 200) {
+    $dbi = DBIx::Custom->connect(
+        dsn => "dbi:mysql:database=$database;host=localhost;port=10000",
+        user => $user,
+        password => $password
+    );
+    $dbi->query_builder;
+    $dbi->create_model(table => $table1);
+    $dbi->create_model(table => $table2);
+}
+
 test 'limit';
 $dbi = DBIx::Custom->connect(
     dsn => "dbi:mysql:database=$database",
