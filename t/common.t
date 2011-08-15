@@ -205,25 +205,17 @@ my $join;
 my $binary;
 
 
-# Drop table
-eval { $dbi->execute("drop table $table1") };
-
 test 'type_rule into';
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_type);
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
+$dbi->show_tables;
+
 $DB::single = 1;
-$dbi->each_table(sub {
-    my ($self, $table, $column, $cinfo) = @_;
 
-    $DB::single = 1;
-    
-    if (lc $table eq lc $table1) {
-        1;
-        
-    }
-});
-
+__END__
 
 $dbi->type_rule(
     into1 => {

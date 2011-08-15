@@ -1,3 +1,5 @@
+0.1716
+    - added EXPERIMENTAL show_tables method.
 0.1715
     - default quote attribute in ODBC driver is changed to "[]"
     - fixed some bug in Microsoft SQL Server

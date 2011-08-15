@@ -971,6 +971,15 @@ sub show_typename {
     return $self;
 }
 
+sub show_tables {
+    my $self = shift;
+    
+    my %tables;
+    $self->each_table(sub { $tables{$_[1]}++ });
+    print join("\n", sort keys %tables) . "\n";
+    return $self;
+}
+
 sub type_rule {
     my $self = shift;
     
@@ -3219,6 +3228,12 @@ Show data type of the columns of specified table.
     issue_date: 91
 
 This data type is used in C<type_rule>'s C<from1> and C<from2>.
+
+=head2 C<show_tables EXPERIMETNAL>
+
+    $dbi->show_tables;
+
+Show tables.
 
 =head2 C<show_typename EXPERIMENTAL>
 
