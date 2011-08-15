@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1715';
+our $VERSION = '0.1716';
 use 5.008001;
 
 use Carp 'croak';
@@ -196,7 +196,7 @@ sub dbh {
         
         # Quote
         if (!defined $self->reserved_word_quote && !defined $self->quote) {
-            my $driver = lc $self->{dbh}->{Driver}->{Name};
+            my $driver = $self->_driver;
             my $quote = $driver eq 'odbc' ? '[]'
                        :$driver eq 'mysql' ? '`'
                        : '"';
@@ -1317,6 +1317,8 @@ sub _croak {
         croak "$error$append";
     }
 }
+
+sub _driver { lc shift->{dbh}->{Driver}->{Name} }
 
 sub _need_tables {
     my ($self, $tree, $need_tables, $tables) = @_;

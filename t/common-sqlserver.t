@@ -3,8 +3,8 @@ use warnings;
 
 use FindBin;
 $ENV{DBIX_CUSTOM_TEST_RUN} = 1
-  if -f "$FindBin::Bin/run/common-postgresql.run";
-$ENV{DBIX_CUSTOM_SKIP_MESSAGE} = 'postgresql private test';
+  if -f "$FindBin::Bin/run/common-sqlserver.run";
+$ENV{DBIX_CUSTOM_SKIP_MESSAGE} = 'sqlserver private test';
 
 use DBIx::Custom;
 {
@@ -23,7 +23,6 @@ use DBIx::Custom;
     sub date_datatype { lc $date_datatype }
     sub datetime_datatype { lc $datetime_datatype }
 
-    has datetime_suffix => '.000';
     has exclude_table => sub {
         return qr/^(
           CHECK_CONSTRAINTS

@@ -22,8 +22,6 @@ use DBIx::Custom;
     sub date_datatype { lc $date_datatype }
     sub datetime_datatype { lc $datetime_datatype }
 
-    has datetime_suffix => '';
-
     no warnings 'redefine';
     has dsn => "dbi:mysql:database=dbix_custom";
     has user => 'dbix_custom';

@@ -21,8 +21,6 @@ use DBIx::Custom;
     sub date_datatype { lc $date_datatype }
     sub datetime_datatype { lc $datetime_datatype }
 
-    has datetime_suffix => '';
-    
     has dsn => 'dbi:SQLite:dbname=:memory:';
     sub create_table1 { 'create table table1 (key1 varchar, key2 varchar);' }
     sub create_table1_2 {'create table table1 (key1 varchar, key2 varchar, key3 varchar, key4 varchar, key5 varchar);' }

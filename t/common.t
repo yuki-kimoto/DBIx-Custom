@@ -158,7 +158,6 @@ my $date_typename = $dbi->date_typename;
 my $datetime_typename = $dbi->datetime_typename;
 my $date_datatype = $dbi->date_datatype;
 my $datetime_datatype = $dbi->datetime_datatype;
-my $datetime_suffix = $dbi->datetime_suffix;
 
 # Variable
 # Variables
@@ -199,6 +198,7 @@ eval { $dbi->execute('drop table table1') };
 test 'type_rule into';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
+$DB::single = 1;
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
     into1 => {
