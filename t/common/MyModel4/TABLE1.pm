@@ -1,8 +1,8 @@
-package MyModel4::table1;
+package MyModel4::TABLE1;
 
 use base 'MyModel4';
 
-sub table { 'table1' }
+sub table { 'TABLE1' }
 
 sub list { shift->select }
 

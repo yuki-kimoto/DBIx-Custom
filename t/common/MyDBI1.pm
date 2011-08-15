@@ -11,7 +11,9 @@ sub connect {
     $self->include_model(
         MyModel1 => [
             'table1',
-            'table2'
+            'table2',
+            'TABLE1',
+            'TABLE2'
         ]
     );
 }

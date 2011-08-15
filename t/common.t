@@ -131,6 +131,36 @@ use MyDBI1;
     }
 
     sub list { shift->select; }
+
+    package MyModel2::TABLE1;
+
+    use strict;
+    use warnings;
+
+    use base 'MyModel2::Base1';
+
+    sub insert {
+        my ($self, $param) = @_;
+        
+        return $self->SUPER::insert(param => $param);
+    }
+
+    sub list { shift->select; }
+
+    package MyModel2::TABLE2;
+
+    use strict;
+    use warnings;
+
+    use base 'MyModel2::Base1';
+
+    sub insert {
+        my ($self, $param) = @_;
+        
+        return $self->SUPER::insert(param => $param);
+    }
+
+    sub list { shift->select; }
 }
 {
      package MyDBI5;
@@ -2134,7 +2164,7 @@ $rows = $dbi->select(
     column => "$table1.$key1 as ${table1}_$key1, $key2, $key3",
     where   => {"$table1.$key2" => 3},
     join  => ["inner join (select * from $table2 where {= $table2.$key3})" . 
-              " as $table2 on $table1.$key1 = $table2.$key1"],
+              " $table2 on $table1.$key1 = $table2.$key1"],
     param => {"$table2.$key3" => 5}
 )->all;
 is_deeply($rows, [{"${table1}_$key1" => 2, $key2 => 3, $key3 => 5}]);
@@ -2927,7 +2957,7 @@ $dbi->insert(table => $table1, param => {$key1 => 2, $key2 => 3});
 $rows = $dbi->select(
     table => $table1,
     column => $key1,
-    wrap => ["select * from (", ") as t where $key1 = 1"]
+    wrap => ["select * from (", ") t where $key1 = 1"]
 )->all;
 is_deeply($rows, [{$key1 => 1}]);
 
@@ -2951,7 +2981,7 @@ $rows = $dbi->select(
     column => $key1,
     sqlfilter => sub {
         my $sql = shift;
-        $sql = "select * from ( $sql ) as t where $key1 = 1";
+        $sql = "select * from ( $sql ) t where $key1 = 1";
         return $sql;
     }
 )->all;
@@ -3221,12 +3251,12 @@ $dbi->execute($create_table1);
 $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
 $sql = <<"EOS";
 left outer join (
-  select * from $table1 as t1
+  select * from $table1 t1
   where t1.$key2 = (
-    select max(t2.$key2) from $table1 as t2
+    select max(t2.$key2) from $table1 t2
     where t1.$key1 = t2.$key1
   )
-) as latest_$table1 on $table1.$key1 = latest_$table1.$key1
+) latest_$table1 on $table1.$key1 = latest_$table1.$key1
 EOS
 $join = [$sql];
 $rows = $dbi->select(

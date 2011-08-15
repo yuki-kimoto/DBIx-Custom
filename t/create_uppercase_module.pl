@@ -16,6 +16,9 @@ for my $dir (@dirs) {
       };
       
       $content =~ s/table(\d)/TABLE$1/g;
+      $content =~ s/TABLE2_alias/TABLE2_ALIAS/g;
+      $content =~ s/key(\d)/KEY$1/g;
+      
       
       my $base_name = (fileparse($file, qr/\..+$/))[0];
       $base_name = uc $base_name;
