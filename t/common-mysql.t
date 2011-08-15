@@ -2,9 +2,12 @@ use strict;
 use warnings;
 
 use FindBin;
+use lib "$FindBin::Bin/common";
 $ENV{DBIX_CUSTOM_TEST_RUN} = 1
   if -f "$FindBin::Bin/run/common-mysql.run";
 $ENV{DBIX_CUSTOM_SKIP_MESSAGE} = 'mysql private test';
+
+
 
 use DBIx::Custom;
 {

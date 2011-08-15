@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use FindBin;
+use lib "$FindBin::Bin/common";
 $ENV{DBIX_CUSTOM_TEST_RUN} = 1
   if -f "$FindBin::Bin/run/common-sqlserver.run";
 $ENV{DBIX_CUSTOM_SKIP_MESSAGE} = 'sqlserver private test';

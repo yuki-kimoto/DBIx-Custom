@@ -4,7 +4,7 @@ use warnings;
 
 use FindBin;
 
-plan skip_all => 'mysql private test' unless -f "$FindBin::Bin/run/mysql.tmp";
+plan skip_all => 'mysql private test' unless -f "$FindBin::Bin/run/mysql.run";
 plan 'no_plan';
 
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};

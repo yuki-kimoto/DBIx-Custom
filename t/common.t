@@ -3,7 +3,6 @@ use strict;
 use warnings;
 use Encode qw/encode_utf8/;
 use FindBin;
-use lib "$FindBin::Bin/common";
 use Scalar::Util 'isweak';
 
 my $dbi;
@@ -75,7 +74,7 @@ my $insert_param;
 my $join;
 my $binary;
 
-use MyDBI1;
+require MyDBI1;
 {
     package MyDBI4;
 
@@ -1968,9 +1967,9 @@ eval {
 like($@, qr/must be/);
 
 test 'columns';
-use MyDBI1;
+$DB::single = 1;
 $dbi = MyDBI1->connect;
-$model = $dbi->model(lc $table1);
+$model = $dbi->model($table1);
 
 
 test 'model delete_at';
@@ -2682,7 +2681,7 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $result = $dbi->execute("select $key1 as h1, $key2 as h2 from $table1");
-is_deeply($result->header, [qw/h1 h2/]);
+is_deeply([map { lc } @{$result->header}], [qw/h1 h2/]);
 
 test 'Named placeholder :name(operater) syntax';
 $dbi->execute("drop table $table1");
@@ -3319,7 +3318,6 @@ $result = $dbi->select(
 is_deeply($result->all, [{"$table2.$key3" => 4}]);
 
 test 'Model class';
-use MyDBI1;
 $dbi = MyDBI1->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
@@ -3359,21 +3357,18 @@ $model = $dbi->model($table1);
 is_deeply($model->list->all, [{$key1 => 1, $key2 => undef}], 'include all model');
 
 test 'primary_key';
-use MyDBI1;
 $dbi = MyDBI1->connect;
 $model = $dbi->model($table1);
 $model->primary_key([$key1, $key2]);
 is_deeply($model->primary_key, [$key1, $key2]);
 
 test 'columns';
-use MyDBI1;
 $dbi = MyDBI1->connect;
 $model = $dbi->model($table1);
 $model->columns([$key1, $key2]);
 is_deeply($model->columns, [$key1, $key2]);
 
 test 'setup_model';
-use MyDBI1;
 $dbi = MyDBI1->connect;
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
@@ -3403,7 +3398,6 @@ $dbi->each_column(sub {
     }
 });
 $infos = [sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } @$infos];
-$DB::single = 1;
 is_deeply($infos, 
     [
         [$table1, $key1, $key1],
