@@ -1,4 +1,5 @@
 0.1716
+    - fixed bugs when using DBD::Oracle.
     - added EXPERIMENTAL show_tables method.
 0.1715
     - default quote attribute in ODBC driver is changed to "[]"
