@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1716';
+our $VERSION = '0.1717';
 use 5.008001;
 
 use Carp 'croak';
@@ -197,8 +197,9 @@ sub dbh {
         # Quote
         if (!defined $self->reserved_word_quote && !defined $self->quote) {
             my $driver = $self->_driver;
-            my $quote = $driver eq 'odbc' ? '[]'
-                       :$driver eq 'mysql' ? '`'
+            my $quote =  $driver eq 'odbc' ? '[]'
+                       : $driver eq 'ado' ? '[]'
+                       : $driver eq 'mysql' ? '`'
                        : '"';
             $self->quote($quote);
         }
@@ -320,9 +321,9 @@ sub each_column {
 }
 
 sub each_table {
-    my ($self, $cb) = @_;
+    my ($self, $cb, %option) = @_;
     
-    my $re = $self->exclude_table;
+    my $re = $self->exclude_table || $option{exclude};
     
     # Iterate all tables
     my $sth_tables = $self->dbh->table_info;
@@ -511,6 +512,18 @@ sub execute {
     
     # Not select statement
     else { return $affected }
+}
+
+sub find_tables {
+    my ($self, %args) = @_;
+    
+    my $exclude = delete $args{exclude};
+    croak qq/"$_" is wrong option/ for keys %args;
+    
+    my %tables;
+    $self->each_table(sub { push $table{$_[1]}++ }, exclude => $exclude);
+    
+    return [sort keys %tables];
 }
 
 sub insert {
@@ -2185,6 +2198,101 @@ the module is also used from C<model> method.
 Get L<DBI> database handle. if C<connector> is set, you can get
 database handle through C<connector> object.
 
+=head2 C<delete>
+
+    $dbi->delete(table => 'book', where => {title => 'Perl'});
+
+Execute delete statement.
+
+The following opitons are available.
+
+=over 4
+
+=item C<append>
+
+Same as C<select> method's C<append> option.
+
+=item C<filter>
+
+Same as C<execute> method's C<filter> option.
+
+=item C<id>
+
+    id => 4
+    id => [4, 5]
+
+ID corresponding to C<primary_key>.
+You can delete rows by C<id> and C<primary_key>.
+
+    $dbi->delete(
+        parimary_key => ['id1', 'id2'],
+        id => [4, 5],
+        table => 'book',
+    );
+
+The above is same as the followin one.
+
+    $dbi->delete(where => {id1 => 4, id2 => 5}, table => 'book');
+
+=item C<prefix>
+
+    prefix => 'some'
+
+prefix before table name section.
+
+    delete some from book
+
+=item C<query>
+
+Same as C<execute> method's C<query> option.
+
+=item C<sqlfilter EXPERIMENTAL>
+
+Same as C<execute> method's C<sqlfilter> option.
+
+=item C<table>
+
+    table => 'book'
+
+Table name.
+
+=item C<where>
+
+Same as C<select> method's C<where> option.
+
+=item C<primary_key>
+
+See C<id> option.
+
+=item C<bind_type>
+
+Same as C<execute> method's C<bind_type> option.
+
+=item C<type_rule_off> EXPERIMENTAL
+
+Same as C<execute> method's C<type_rule_off> option.
+
+=item C<type_rule1_off> EXPERIMENTAL
+
+    type_rule1_off => 1
+
+Same as C<execute> method's C<type_rule1_off> option.
+
+=item C<type_rule2_off> EXPERIMENTAL
+
+    type_rule2_off => 1
+
+Same as C<execute> method's C<type_rule2_off> option.
+
+=back
+
+=head2 C<delete_all>
+
+    $dbi->delete_all(table => $table);
+
+Execute delete statement for all rows.
+Options is same as C<delete>.
+
 =head2 C<each_column>
 
     $dbi->each_column(
@@ -2402,100 +2510,11 @@ Turn C<into2> type rule off.
 
 =back
 
-=head2 C<delete>
+=head2 C<find_tables EXPERIMENTAL>
 
-    $dbi->delete(table => 'book', where => {title => 'Perl'});
+    my $tables = $self->find_tables(exclude => qr/^system_/);
 
-Execute delete statement.
-
-The following opitons are available.
-
-=over 4
-
-=item C<append>
-
-Same as C<select> method's C<append> option.
-
-=item C<filter>
-
-Same as C<execute> method's C<filter> option.
-
-=item C<id>
-
-    id => 4
-    id => [4, 5]
-
-ID corresponding to C<primary_key>.
-You can delete rows by C<id> and C<primary_key>.
-
-    $dbi->delete(
-        parimary_key => ['id1', 'id2'],
-        id => [4, 5],
-        table => 'book',
-    );
-
-The above is same as the followin one.
-
-    $dbi->delete(where => {id1 => 4, id2 => 5}, table => 'book');
-
-=item C<prefix>
-
-    prefix => 'some'
-
-prefix before table name section.
-
-    delete some from book
-
-=item C<query>
-
-Same as C<execute> method's C<query> option.
-
-=item C<sqlfilter EXPERIMENTAL>
-
-Same as C<execute> method's C<sqlfilter> option.
-
-=item C<table>
-
-    table => 'book'
-
-Table name.
-
-=item C<where>
-
-Same as C<select> method's C<where> option.
-
-=item C<primary_key>
-
-See C<id> option.
-
-=item C<bind_type>
-
-Same as C<execute> method's C<bind_type> option.
-
-=item C<type_rule_off> EXPERIMENTAL
-
-Same as C<execute> method's C<type_rule_off> option.
-
-=item C<type_rule1_off> EXPERIMENTAL
-
-    type_rule1_off => 1
-
-Same as C<execute> method's C<type_rule1_off> option.
-
-=item C<type_rule2_off> EXPERIMENTAL
-
-    type_rule2_off => 1
-
-Same as C<execute> method's C<type_rule2_off> option.
-
-=back
-
-=head2 C<delete_all>
-
-    $dbi->delete_all(table => $table);
-
-Execute delete statement for all rows.
-Options is same as C<delete>.
+Find tables except for one which match C<exclude> pattern.
 
 =head2 C<insert>
 
