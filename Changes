@@ -1,5 +1,6 @@
 0.1717
-    - added EXPERIMENTAL find_tables
+    - added EXPERIMEfNTAL get_table_info
+    - added user_table_info attribute and each_table find in user_tables if set.
 0.1716
     - fixed bugs when using DBD::Oracle.
     - added EXPERIMENTAL show_tables method.

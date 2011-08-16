@@ -20,7 +20,7 @@ use Scalar::Util qw/weaken/;
 use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 
-has [qw/connector dsn password quote user exclude_table/],
+has [qw/connector dsn password quote user exclude_table user_tables/],
     cache => 0,
     cache_method => sub {
         sub {
@@ -323,16 +323,22 @@ sub each_column {
 sub each_table {
     my ($self, $cb, %option) = @_;
     
-    my $re = $self->exclude_table || $option{exclude};
+    my $user_table_infos = $self->user_tables;
     
-    # Iterate all tables
-    my $sth_tables = $self->dbh->table_info;
-    while (my $table_info = $sth_tables->fetchrow_hashref) {
-        
-        # Table
-        my $table = $table_info->{TABLE_NAME};
-        next if defined $re && $table =~ /$re/;
-        $self->$cb($table, $table_info);
+    # Iterate tables
+    if ($user_table_infos) {
+        $self->$cb($_->{table}, $_->{info}) for @$user_table_infos;
+    }
+    else {
+        my $re = $self->exclude_table || $option{exclude};
+        my $sth_tables = $self->dbh->table_info;
+        while (my $table_info = $sth_tables->fetchrow_hashref) {
+            
+            # Table
+            my $table = $table_info->{TABLE_NAME};
+            next if defined $re && $table =~ /$re/;
+            $self->$cb($table, $table_info);
+        }
     }
 }
 
@@ -514,16 +520,19 @@ sub execute {
     else { return $affected }
 }
 
-sub find_tables {
+sub get_table_info {
     my ($self, %args) = @_;
     
     my $exclude = delete $args{exclude};
     croak qq/"$_" is wrong option/ for keys %args;
     
-    my %tables;
-    $self->each_table(sub { push $table{$_[1]}++ }, exclude => $exclude);
+    my $table_info = [];
+    $self->each_table(
+        sub { push @$table_info, {table => $_[1], info => $_[2] } },
+        exclude => $exclude
+    );
     
-    return [sort keys %tables];
+    return $table_info;
 }
 
 sub insert {
@@ -2108,6 +2117,26 @@ If you want to disable tag parsing functionality, set to 0.
 
 User name, used when C<connect> method is executed.
 
+=head2 C<user_table_info EXPERIMENTAL>
+
+    my $user_table_info = $dbi->user_table_info;
+    $dbi = $dbi->user_table_info($user_table_info);
+
+You can set the following data.
+
+    [
+        {table => 'book', info => {...}},
+        {table => 'author', info => {...}}
+    ]
+
+Usually, you can set return value of C<get_table_info>.
+
+    my $user_table_info = $dbi->get_table_info(exclude => qr/^system/);
+    $dbi->user_table_info($user_table_info);
+
+If C<user_table_info> is set, C<each_table> use C<user_table_info>
+to find table info.
+
 =head1 METHODS
 
 L<DBIx::Custom> inherits all methods from L<Object::Simple>
@@ -2510,11 +2539,18 @@ Turn C<into2> type rule off.
 
 =back
 
-=head2 C<find_tables EXPERIMENTAL>
+=head2 C<get_table_info EXPERIMENTAL>
 
-    my $tables = $self->find_tables(exclude => qr/^system_/);
+    my $tables = $self->get_table_info(exclude => qr/^system_/);
 
-Find tables except for one which match C<exclude> pattern.
+get table infomation except for one which match C<exclude> pattern.
+
+    [
+        {table => 'book', info => {...}},
+        {table => 'author', info => {...}}
+    ]
+
+You can set this value to C<user_table_info>.
 
 =head2 C<insert>
 

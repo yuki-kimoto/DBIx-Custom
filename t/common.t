@@ -76,6 +76,7 @@ my $update_param;
 my $insert_param;
 my $join;
 my $binary;
+my $user_table_info;
 
 require MyDBI1;
 {
@@ -232,6 +233,16 @@ require MyDBI1;
         return $self;
     }
 }
+
+# Get user table info
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+eval { $dbi->execute("drop table $table2") };
+eval { $dbi->execute("drop table $table3") };
+$dbi->execute($create_table1);
+$dbi->execute($create_table2);
+$dbi->execute($create_table3);
+$user_table_info = $dbi->get_table_info(exclude => $dbi->exclude_table);
 
 # Create table
 $dbi = DBIx::Custom->connect;
