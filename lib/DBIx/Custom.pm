@@ -20,7 +20,7 @@ use Scalar::Util qw/weaken/;
 use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 
-has [qw/connector dsn password quote user exclude_table user_tables/],
+has [qw/connector dsn password quote user exclude_table user_table_info/],
     cache => 0,
     cache_method => sub {
         sub {
@@ -312,7 +312,9 @@ sub each_column {
         my $table = $tables[$i];
         
         # Iterate all columns
-        my $sth_columns = $self->dbh->column_info(undef, undef, $table, '%');
+        my $sth_columns;
+        eval {$sth_columns = $self->dbh->column_info(undef, undef, $table, '%')};
+        next if $@;
         while (my $column_info = $sth_columns->fetchrow_hashref) {
             my $column = $column_info->{COLUMN_NAME};
             $self->$cb($table, $column, $column_info);
@@ -323,7 +325,7 @@ sub each_column {
 sub each_table {
     my ($self, $cb, %option) = @_;
     
-    my $user_table_infos = $self->user_tables;
+    my $user_table_infos = $self->user_table_info;
     
     # Iterate tables
     if ($user_table_infos) {
@@ -532,7 +534,7 @@ sub get_table_info {
         exclude => $exclude
     );
     
-    return $table_info;
+    return [sort {$a->{table} cmp $b->{table} } @$table_info];
 }
 
 sub insert {

@@ -2038,11 +2038,13 @@ is($row->{$key3}, 3);
 
 test 'mycolumn and column';
 $dbi = MyDBI7->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
 $dbi->execute($create_table2);
 $dbi->separator('__');
+$DB::single = 1;
 $dbi->setup_model;
 $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
 $dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 3});
@@ -2084,6 +2086,7 @@ like($@, qr/not safety/);
 
 test 'mycolumn';
 $dbi = MyDBI8->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
@@ -2476,6 +2479,7 @@ is($row->{$key3}, 3);
 
 test 'column separator is default .';
 $dbi = MyDBI7->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
@@ -2500,6 +2504,7 @@ is_deeply($result->one,
 
 test 'separator';
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
@@ -2559,6 +2564,7 @@ is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
 
 test 'filter_off';
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
@@ -2976,6 +2982,7 @@ like($@, qr/array/);
 
 test 'select() sqlfilter option';
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
@@ -3002,6 +3009,7 @@ ok(!$@);
 
 test 'column table option';
 $dbi = MyDBI9->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 eval { $dbi->execute("drop table $table2") };
@@ -3041,6 +3049,7 @@ is_deeply($result->one,
 
 test 'create_model';
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
@@ -3222,6 +3231,7 @@ is_deeply($model->columns, [$key1, $key2]);
 
 test 'setup_model';
 $dbi = MyDBI1->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 
@@ -3259,6 +3269,7 @@ is_deeply($infos,
     ]
     
 );
+
 test 'each_table';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -3283,10 +3294,36 @@ is_deeply($infos,
     ]
 );
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+eval { $dbi->execute("drop table $table2") };
+$dbi->execute($create_table2);
+$dbi->execute($create_table1_type);
+
+$infos = [];
+$dbi->user_table_info($user_table_info);
+$dbi->each_table(sub {
+    my ($self, $table, $table_info) = @_;
+    
+    if ($table =~ /^table\d/i) {
+         my $info = [$table, $table_info->{TABLE_NAME}];
+         push @$infos, $info;
+    }
+});
+$infos = [sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } @$infos];
+is_deeply($infos, 
+    [
+        [$table1, $table1],
+        [$table2, $table2],
+        [$table3, $table3],
+    ]
+);
+
 test 'type_rule into';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 
@@ -3300,6 +3337,7 @@ $result = $dbi->select(table => $table1);
 like($result->one->{$key1}, qr/^2010-01-01/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
@@ -3318,6 +3356,7 @@ like($row->{$key1}, qr/^2010-01-03/);
 like($row->{$key2}, qr/^2010-01-01 01:01:03/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->insert({$key1 => '2010-01-03', $key2 => '2010-01-01 01:01:03'}, table => $table1);
@@ -3339,6 +3378,7 @@ like($row->{$key1}, qr/^2010-01-03/);
 like($row->{$key2}, qr/^2010-01-01 01:01:03/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->insert({$key1 => '2010-01-03', $key2 => '2010-01-01 01:01:03'}, table => $table1);
@@ -3361,6 +3401,7 @@ like($row->{$key1}, qr/^2010-01-03/);
 like($row->{$key2}, qr/2010-01-01 01:01:03/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->register_filter(convert => sub {
@@ -3382,6 +3423,7 @@ like($result->fetch->[0], qr/^2010-03-03/);
 
 test 'type_rule and filter order';
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
@@ -3406,6 +3448,7 @@ like($result->fetch_first->[0], qr/^2010-01-09/);
 
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
@@ -3431,6 +3474,7 @@ like($result->fetch_first->[0], qr/^2010-01-09/);
 
 test 'type_rule_off';
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
@@ -3446,6 +3490,7 @@ $result = $dbi->select(table => $table1, type_rule_off => 1);
 like($result->type_rule_off->fetch->[0], qr/^2010-01-03/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
@@ -3461,6 +3506,7 @@ $result = $dbi->select(table => $table1, type_rule_off => 1);
 like($result->one->{$key1}, qr/^2010-01-04/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
@@ -3476,6 +3522,7 @@ $result = $dbi->select(table => $table1);
 like($result->one->{$key1}, qr/^2010-01-05/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
@@ -3491,6 +3538,7 @@ $result = $dbi->select(table => $table1);
 like($result->fetch->[0], qr/2010-01-05/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->register_filter(ppp => sub { my $v = shift || ''; $v =~ s/3/4/; return $v });
@@ -3511,6 +3559,7 @@ eval{$dbi->type_rule(
 like($@, qr/not registered/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 eval {
@@ -3532,6 +3581,7 @@ eval {
 like($@, qr/lower/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
@@ -3548,6 +3598,7 @@ $result->type_rule_off;
 like($result->one->{$key1}, qr/^2010-01-04/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
@@ -3613,6 +3664,7 @@ like($row->{$key1}, qr/^2010-01-03/);
 like($row->{$key2}, qr/^2010-01-01 01:01:03/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
@@ -3626,6 +3678,7 @@ $result->filter($key1 => sub { my $v = shift || ''; $v =~ s/4/5/; return $v });
 like($result->one->{$key1}, qr/^2010-01-05/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
@@ -3639,6 +3692,7 @@ $result->filter($key1 => sub { my $v = shift || ''; $v =~ s/4/5/; return $v });
 like($result->fetch->[0], qr/^2010-01-05/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
@@ -3662,6 +3716,7 @@ $result = $dbi->select(table => $table1);
 like($result->type_rule_on->fetch_first->[0], qr/^2010-01-07/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
@@ -3685,6 +3740,7 @@ $result = $dbi->select(table => $table1);
 like($result->type_rule1_on->fetch_first->[0], qr/^2010-01-07/);
 
 $dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->type_rule(
