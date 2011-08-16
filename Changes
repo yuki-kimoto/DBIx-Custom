@@ -1,6 +1,10 @@
 0.1717
-    - added EXPERIMEfNTAL get_table_info
-    - added user_table_info attribute and each_table find in user_tables if set.
+    - added EXPERIMENTAL get_table_info
+    - added EXPERIMETNAL user_table_info attribute
+      and each_table find table info in user_table_info if set.
+    - added EXPERIMENTAL get_column_info
+    - added EXPERIMENTAL user_column_info attribute
+      and each_column find column info in user_column_info if set.
 0.1716
     - fixed bugs when using DBD::Oracle.
     - added EXPERIMENTAL show_tables method.

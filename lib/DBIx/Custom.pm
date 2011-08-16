@@ -20,7 +20,8 @@ use Scalar::Util qw/weaken/;
 use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
 use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 
-has [qw/connector dsn password quote user exclude_table user_table_info/],
+has [qw/connector dsn password quote user exclude_table user_table_info
+        user_column_info/],
     cache => 0,
     cache_method => sub {
         sub {
@@ -298,26 +299,33 @@ sub create_model {
 }
 
 sub each_column {
-    my ($self, $cb) = @_;
+    my ($self, $cb, %options) = @_;
 
-    my $re = $self->exclude_table;
+    my $user_column_info = $self->user_column_info;
     
-    # Tables
-    my %tables;
-    $self->each_table(sub { $tables{$_[1]}++ });
+    if ($user_column_info) {
+        $self->$cb($_->{table}, $_->{column}, $_->{info}) for @$user_column_info;
+    }
+    else {
+    
+        my $re = $self->exclude_table || $options{exclude_table};
+        # Tables
+        my %tables;
+        $self->each_table(sub { $tables{$_[1]}++ });
 
-    # Iterate all tables
-    my @tables = sort keys %tables;
-    for (my $i = 0; $i < @tables; $i++) {
-        my $table = $tables[$i];
-        
-        # Iterate all columns
-        my $sth_columns;
-        eval {$sth_columns = $self->dbh->column_info(undef, undef, $table, '%')};
-        next if $@;
-        while (my $column_info = $sth_columns->fetchrow_hashref) {
-            my $column = $column_info->{COLUMN_NAME};
-            $self->$cb($table, $column, $column_info);
+        # Iterate all tables
+        my @tables = sort keys %tables;
+        for (my $i = 0; $i < @tables; $i++) {
+            my $table = $tables[$i];
+            
+            # Iterate all columns
+            my $sth_columns;
+            eval {$sth_columns = $self->dbh->column_info(undef, undef, $table, '%')};
+            next if $@;
+            while (my $column_info = $sth_columns->fetchrow_hashref) {
+                my $column = $column_info->{COLUMN_NAME};
+                $self->$cb($table, $column, $column_info);
+            }
         }
     }
 }
@@ -535,6 +543,23 @@ sub get_table_info {
     );
     
     return [sort {$a->{table} cmp $b->{table} } @$table_info];
+}
+
+sub get_column_info {
+    my ($self, %args) = @_;
+    
+    my $exclude_table = delete $args{exclude_table};
+    croak qq/"$_" is wrong option/ for keys %args;
+    
+    my $column_info = [];
+    $self->each_column(
+        sub { push @$column_info, {table => $_[1], column => $_[2], info => $_[3] } },
+        exclude_table => $exclude_table
+    );
+    
+    return [
+      sort {$a->{table} cmp $b->{table} || $a->{column} cmp $b->{column} }
+        @$$column_info];
 }
 
 sub insert {
@@ -2119,6 +2144,27 @@ If you want to disable tag parsing functionality, set to 0.
 
 User name, used when C<connect> method is executed.
 
+=head2 C<user_column_info EXPERIMENTAL>
+
+    my $user_column_info = $dbi->user_column_info;
+    $dbi = $dbi->user_column_info($user_column_info);
+
+You can set the following data.
+
+    [
+        {table => 'book', column => 'title', info => {...}},
+        {table => 'author', column => 'name', info => {...}}
+    ]
+
+Usually, you can set return value of C<get_column_info>.
+
+    my $user_column_info
+      = $dbi->get_column_info(exclude_table => qr/^system/);
+    $dbi->user_column_info($user_column_info);
+
+If C<user_column_info> is set, C<each_column> use C<user_column_info>
+to find column info.
+
 =head2 C<user_table_info EXPERIMENTAL>
 
     my $user_table_info = $dbi->user_table_info;
@@ -2540,6 +2586,17 @@ Turn C<into1> type rule off.
 Turn C<into2> type rule off.
 
 =back
+
+=head2 C<get_column_info EXPERIMENTAL>
+
+    my $tables = $self->get_column_info(exclude_table => qr/^system_/);
+
+get column infomation except for one which match C<exclude_table> pattern.
+
+    [
+        {table => 'book', column => 'title', info => {...}},
+        {table => 'author', column => 'name' info => {...}}
+    ]
 
 =head2 C<get_table_info EXPERIMENTAL>
 
