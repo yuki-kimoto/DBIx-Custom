@@ -1,20 +1,26 @@
 use Test::More;
 use strict;
 use warnings;
+use utf8;
 
 use FindBin;
 use DBIx::Custom;
 
 my $dbi;
+my $dsn;
+my $args;
+my $user = 'dbix_custom';
+my $password = 'dbix_custom';
+my $database = 'dbix_custom';
 
-plan skip_all => 'mysql private test' unless -f "$FindBin::Bin/run/mysql.run"
-  && eval { $dbi = DBIx::Custom->connect; 1 };
+$dsn = "dbi:mysql:database=$database";
+$args = {dsn => $dsn, user => $user, password => $password,};
+
+plan skip_all => 'mysql private test' unless -f "$FindBin::Bin/run/mysql2.run"
+  && eval { $dbi = DBIx::Custom->connect($args); 1 };
 plan 'no_plan';
 
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
-
-# user password database
-our ($user, $password, $database) = qw/appuser 123456 usertest/;
 
 require DBIx::Connector;
 
@@ -44,8 +50,8 @@ for (1 .. 200) {
         password => $password
     );
     $dbi->query_builder;
-    $dbi->create_model(table => $table1);
-    $dbi->create_model(table => $table2);
+    $dbi->create_model(table => 'table1');
+    $dbi->create_model(table => 'table2');
 }
 
 test 'limit';
@@ -103,62 +109,6 @@ $rows = $dbi->select(
 )->fetch_hash_all;
 is_deeply($rows, [{key1 => 1, key2 => 4}]);
 $dbi->delete_all(table => 'table1');
-
-test 'type_rule';
-$dbi = DBIx::Custom->connect(
-    dsn => "dbi:mysql:database=$database",
-    user => $user,
-    password => $password
-);
-eval{$dbi->execute("create table date_test (date DATE, datetime DATETIME)")};
-$dbi->each_column(
-    sub {
-        my ($self, $table, $column, $column_info) = @_;
-    }
-);
-
-$dbi->type_rule(
-    into1 => {
-        date=> sub {
-            my $date = shift;
-            $date =~ s/aaaaa//g;
-            return $date;
-        },
-        datetime => sub {
-            my $date = shift;
-            $date =~ s/ccccc//g;
-            return $date;
-        },
-    },
-    from1 => {
-        # DATE
-        9 => sub {
-                my $date = shift;
-                $date .= 'bbbbb';
-                return $date;
-        },
-        # DATETIME or TIMPESTANM
-        11 => sub {
-                my $date = shift;
-                $date .= 'ddddd';
-                return $date;
-        }
-    }
-);
-
-$dbi->insert(
-    {
-        date => 'aaaaa2010-aaaaa11-12aaaaa',
-        datetime => '2010-11ccccc-12 10:ccccc55:56'
-    },
-    table => 'date_test'
-);
-is_deeply(
-    $dbi->select(table => 'date_test')->fetch,
-    ['2010-11-12bbbbb', '2010-11-12 10:55:56ddddd']
-);
-
-$dbi->execute("drop table date_test");
 
 test 'dbh';
 {

@@ -164,7 +164,21 @@ sub column {
 }
 
 sub connect {
-    my $self = ref $_[0] ? shift : shift->new(@_);;
+    my $self = ref $_[0] ? shift : shift->new(@_);
+    
+    my $connector = $self->connector;
+    
+    if (!ref $connector && $connector) {
+        require DBIx::Connector;
+        
+        my $dsn = $self->dsn;
+        my $user = $self->user;
+        my $password = $self->password;
+        my $dbi_option = {%{$self->dbi_options}, %{$self->dbi_option}};
+        my $connector = DBIx::Connector->new($dsn, $user, $password,
+          {%{$self->default_dbi_option} , %$dbi_option});
+        $self->connector($connector);
+    }
     
     # Connect
     $self->dbh;
@@ -559,7 +573,7 @@ sub get_column_info {
     
     return [
       sort {$a->{table} cmp $b->{table} || $a->{column} cmp $b->{column} }
-        @$$column_info];
+        @$column_info];
 }
 
 sub insert {
@@ -1038,6 +1052,7 @@ sub type_rule {
         # Into
         foreach my $i (1 .. 2) {
             my $into = "into$i";
+            my $exists_into = exists $type_rule->{$into};
             $type_rule->{$into} = _array_to_hash($type_rule->{$into});
             $self->{type_rule} = $type_rule;
             $self->{"_$into"} = {};
@@ -1045,6 +1060,7 @@ sub type_rule {
                 croak qq{type name of $into section must be lower case}
                   if $type_name =~ /[A-Z]/;
             }
+            
             $self->each_column(sub {
                 my ($dbi, $table, $column, $column_info) = @_;
                 
@@ -1330,16 +1346,18 @@ sub _connect {
     warn "dbi_options is DEPRECATED! use dbi_option instead\n"
       if keys %{$self->dbi_options};
     
+    $dbi_option = {%{$self->default_dbi_option}, %$dbi_option};
+    
     # Connect
-    my $dbh = eval {DBI->connect(
-        $dsn,
-        $user,
-        $password,
-        {
-            %{$self->default_dbi_option},
-            %$dbi_option
-        }
-    )};
+    my $dbh;
+    eval {
+        $dbh = DBI->connect(
+            $dsn,
+            $user,
+            $password,
+            $dbi_option
+        );
+    };
     
     # Connect error
     croak "$@ " . _subname if $@;
@@ -2010,13 +2028,23 @@ This is L<DBIx::Connector> example. Please pass
 C<default_dbi_option> to L<DBIx::Connector> C<new> method.
 
     my $connector = DBIx::Connector->new(
-        "dbi:mysql:database=$DATABASE",
-        $USER,
-        $PASSWORD,
+        "dbi:mysql:database=$database",
+        $user,
+        $password,
         DBIx::Custom->new->default_dbi_option
     );
     
     my $dbi = DBIx::Custom->connect(connector => $connector);
+
+If C<connector> is set to 1 when connect method is called,
+L<DBIx::Connector> is automatically set to C<connector>
+
+    my $dbi = DBIx::Custom->connect(
+      dsn => $dsn, user => $user, password => $password, connector => 1);
+    
+    my $connector = $dbi->connector; # DBIx::Connector
+
+Note that L<DBIx::Connector> must be installed.
 
 =head2 C<dsn>
 

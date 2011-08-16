@@ -5,6 +5,8 @@
     - added EXPERIMENTAL get_column_info
     - added EXPERIMENTAL user_column_info attribute
       and each_column find column info in user_column_info if set.
+    - connector is automatically set to DBDx::Connector object
+      if connector is set to 1 when connect method is called.
 0.1716
     - fixed bugs when using DBD::Oracle.
     - added EXPERIMENTAL show_tables method.
