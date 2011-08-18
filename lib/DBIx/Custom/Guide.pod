@@ -11,15 +11,39 @@ This module have the following features.
 
 =over 4
 
-=item * Execute INSERT, UPDATE, DELETE, SELECT statement easily
+=item *
 
-=item * You can specify bind values by hash reference
+Execute C<insert>, C<update>, C<delete>, or C<select> statement easily
 
-=item * Filtering by data type. and you can set filter to any column
+=item *
 
-=item * Creating where clause and order by clause flexibly
+Create C<where> clause flexibly
 
-=item * Support model
+=item *
+
+Named place holder support
+
+=item *
+
+Model support
+
+=item *
+
+Connection manager support
+
+=item *
+
+Choice your favorite relational database management system,
+C<MySQL>, C<SQLite>, C<PostgreSQL>, C<Oracle>,
+C<Microsoft SQL Server>, C<Microsoft Access>, C<DB2> or anything, 
+
+=item *
+
+Filtering by data type or column name(EXPERIMENTAL)
+
+=item *
+
+Create C<order by> clause flexibly(EXPERIMENTAL)
 
 =back
 
