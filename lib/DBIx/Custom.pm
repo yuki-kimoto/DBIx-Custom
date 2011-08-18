@@ -1903,7 +1903,7 @@ sub _add_relation_table {
 
 DBIx::Custom - Execute insert, update, delete, and select statement easily
 
-=head1 SYNOPSYS
+=head1 SYNOPSIS
 
     use DBIx::Custom;
     
@@ -1957,7 +1957,7 @@ DBIx::Custom - Execute insert, update, delete, and select statement easily
         {author => 'ken', title => '%Perl%'}
     );
     
-=head1 DESCRIPTIONS
+=head1 DESCRIPTION
 
 L<DBIx::Custom> is L<DBI> wrapper module to execute SQL easily.
 This module have the following features.
@@ -2000,7 +2000,7 @@ Create C<order by> clause flexibly(EXPERIMENTAL)
 
 =back
 
-=head1 DOCUMENTATIONS
+=head1 DOCUMENTATION
 
 L<DBIx::Custom::Guide> - How to use L<DBIx::Custom>
 
@@ -3352,7 +3352,7 @@ Create a new L<DBIx::Custom::Where> object.
 Setup all model objects.
 C<columns> of model object is automatically set, parsing database information.
 
-=head1 ENVIRONMENT VARIABLE
+=head1 ENVIRONMENTAL VARIABLES
 
 =head2 C<DBIX_CUSTOM_DEBUG>
 
@@ -3393,7 +3393,7 @@ This type name is used in C<type_rule>'s C<into1> and C<into2>.
 
 DEBUG output encoding. Default to UTF-8.
 
-=head1 DEPRECATED FUNCTIONALITIES
+=head1 DEPRECATED FUNCTIONALITY
 
 L<DBIx::Custom>
 
@@ -3477,7 +3477,7 @@ L<DBIx::Custom::Tag>
 
     This module is DEPRECATED! # will be removed at 2017/1/1
 
-=head1 BACKWORD COMPATIBLE POLICY
+=head1 BACKWARDS COMPATIBILITY POLICY
 
 If a functionality is DEPRECATED, you can know it by DEPRECATED warnings
 except for attribute method.
