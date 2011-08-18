@@ -813,7 +813,7 @@ sub new {
     # Check attributes
     my @attrs = keys %$self;
     foreach my $attr (@attrs) {
-        croak qq{"$attr" is wrong name } . _subname
+        croak qq{Invalid attribute: "$attr"} . _subname
           unless $self->can($attr);
     }
 
