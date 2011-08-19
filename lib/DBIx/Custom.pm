@@ -813,7 +813,7 @@ sub new {
     # Check attributes
     my @attrs = keys %$self;
     foreach my $attr (@attrs) {
-        croak qq{"$attr" is wrong name } . _subname
+        croak qq{Invalid attribute: "$attr"} . _subname
           unless $self->can($attr);
     }
 
@@ -865,8 +865,15 @@ sub select {
     my $where     = delete $args{where} || {};
     my $append    = delete $args{append};
     my $join      = delete $args{join} || [];
-    croak qq{"join" must be array reference } . _subname
-      unless ref $join eq 'ARRAY';
+    {
+      my $ref = ref $join;
+      if (not $ref) {
+	$join = [ $join ];
+      } else {
+	croak qq{"join" must be array reference } . _subname
+	  unless $ref eq 'ARRAY';
+      }
+    }
     my $relation = delete $args{relation};
     warn "select() relation option is DEPRECATED!"
       if $relation;

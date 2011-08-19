@@ -93,6 +93,18 @@ sub fetch {
     return \@row;
 }
 
+sub count {
+    my $self = shift;
+
+    # $self->{sth}->rows not recommended
+    # http://search.cpan.org/~timb/DBI-1.616/DBI.pm#rows
+
+    my $rows = $self->fetch_all;
+    scalar @$rows;
+}
+
+
+
 sub fetch_all {
     my $self = shift;
     
