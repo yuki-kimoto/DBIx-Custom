@@ -13,7 +13,7 @@ my $database = "$FindBin::Bin/access.mdb";
 
 $dsn = "dbi:ODBC:driver=Microsoft Access Driver (*.mdb);dbq=$database";
 
-plan skip_all => 'Microsoft access(ODBC, *.mdb) private test' unless -f "$FindBin::Bin/run/mysql2.run"
+plan skip_all => 'Microsoft access(ODBC, *.mdb) private test' unless -f "$FindBin::Bin/run/access.run"
   && eval { $dbi = DBIx::Custom->connect(dsn => $dsn); 1 };
 plan 'no_plan';
 
