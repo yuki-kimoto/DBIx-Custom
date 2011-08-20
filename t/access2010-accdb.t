@@ -11,7 +11,6 @@ my $dsn;
 my $database = "$FindBin::Bin/access2010.accdb";
 
 $dsn = "dbi:ODBC:Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=$database";
-$dbi = DBIx::Custom->connect(dsn => $dsn);
 
 plan skip_all => 'Microsoft access(ODBC, *.accdb(2010)) private test'
   unless -f "$FindBin::Bin/run/access2010-accdb.run"
