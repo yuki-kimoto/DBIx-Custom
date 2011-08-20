@@ -186,6 +186,8 @@ sub connect {
     return $self;
 }
 
+sub count { shift->select(column => 'count(*)', @_)->fetch_first->[0] }
+
 sub dbh {
     my $self = shift;
     
@@ -813,7 +815,7 @@ sub new {
     # Check attributes
     my @attrs = keys %$self;
     foreach my $attr (@attrs) {
-        croak qq{"$attr" is wrong name } . _subname
+        croak qq{Invalid attribute: "$attr" } . _subname
           unless $self->can($attr);
     }
 
@@ -2281,7 +2283,15 @@ L<DBIx::Custom> is a wrapper of L<DBI>.
 C<AutoCommit> and C<RaiseError> options are true, 
 and C<PrintError> option is false by default.
 
-=head2 create_model
+=head2 C<count> EXPERIMENTAL
+
+    my $count = $model->count(table => 'book');
+
+Get rows count.
+
+Options is same as C<select> method's ones.
+
+=head2 C<create_model>
 
     my $model = $dbi->create_model(
         table => 'book',

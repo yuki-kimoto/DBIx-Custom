@@ -1,3 +1,7 @@
+0.1718
+    - added EXPERIMENTAL DBIx::Custom::Model call_dbi method
+    - added EXPERIMENTAL count method
+    - added EXPERIMENTAL DBIx::Custom::Model count method
 0.1717
     - added EXPERIMENTAL get_table_info
     - added EXPERIMETNAL user_table_info attribute

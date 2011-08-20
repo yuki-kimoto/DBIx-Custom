@@ -3923,5 +3923,15 @@ test 'columns';
 $dbi = MyDBI1->connect;
 $model = $dbi->model($table1);
 
+test 'count';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 3});
+is($dbi->count(table => $table1), 2);
+is($dbi->count(table => $table1, where => {$key2 => 2}), 1);
+$model = $dbi->create_model(table => $table1);
+is($model->count, 2);
 
 1;

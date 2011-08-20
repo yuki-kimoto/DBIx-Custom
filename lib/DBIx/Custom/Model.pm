@@ -39,27 +39,32 @@ sub AUTOLOAD {
 }
 
 my @methods = qw/insert insert_at update update_at update_all
-                 delete delete_at delete_all select select_at/;
+                 delete delete_at delete_all select select_at count/;
 foreach my $method (@methods) {
 
     my $code = sub {
         my $self = shift;
-
-        my @args = (
-            table => $self->table,
-            bind_type => $self->bind_type,
-            primary_key => $self->primary_key,
-            type => $self->type, # DEPRECATED!
-        );
-        push @args, (join => $self->join) if $method =~ /^select/;
-        unshift @args, shift if @_ % 2;
-        
-        $self->dbi->$method(@args, @_);
+        my $args = [qw/table bind_type primary_key type/];
+        push @$args, 'join' if $method =~ /^select/;
+        $self->call_dbi($method, {args => $args}, @_);
     };
     
     no strict 'refs';
     my $class = __PACKAGE__;
     *{"${class}::$method"} = $code;
+}
+
+sub call_dbi {
+    my $self = shift;
+    my $method = shift;
+    my $options = shift;
+    my $arg_names = $options->{args};
+    
+    my @args;
+    push @args, ($_ => $self->$_) for @$arg_names;
+    unshift @args, shift if @_ % 2;
+    
+    return $self->dbi->$method(@args, @_);
 }
 
 sub DESTROY { }
@@ -162,6 +167,29 @@ C<select>, and C<execute> method
 L<DBIx::Custom::Model> inherits all methods from L<Object::Simple>,
 and you can use all methods of L<DBIx::Custom> and L<DBI>
 and implements the following new ones.
+
+=head2 C<call_dbi> EXPERIMENTAL
+
+    $model->call_dbi('insert',
+      {args => ['table', 'primary_key' 'bind_type']}, @_)
+
+Call L<DBIx::Custom>(or subclass) method. you can add
+attribute values of model to arguments by C<args> option.
+
+Generally this method is used when you want to added dbi method to model.
+
+    sub insert {
+        shift->call_dbi('insert',
+          {args => ['table', 'primary_key' 'bind_type']}, @_);
+    }
+
+=head2 C<count> EXPERIMENTAL
+
+    my $count = $model->count;
+
+Get rows count.
+
+Options is same as C<select> method's ones.
 
 =head2 C<delete>
 
