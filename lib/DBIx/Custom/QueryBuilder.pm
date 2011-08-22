@@ -42,26 +42,8 @@ sub build_query {
     
     my $sql = $query->sql;
     $query->sql($sql);
-
-    # Check placeholder count
-    croak qq{Placeholder count in "$sql" must be same as column count}
-        . _subname
-      unless $self->_placeholder_count($sql) eq @{$query->columns};
         
     return $query;
-}
-
-sub _placeholder_count {
-    my ($self, $sql) = @_;
-    
-    # Count
-    $sql ||= '';
-    my $count = 0;
-    my $pos   = -1;
-    while (($pos = index($sql, '?', $pos + 1)) != -1) {
-        $count++;
-    }
-    return $count;
 }
 
 sub _parse_parameter {

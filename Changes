@@ -1,3 +1,9 @@
+0.1720
+    - removed placeholder count check
+    - added EXPERIMENTAL execute method's id and primary key option.
+    - added EXPERIMENTAL DBIx::Custom::Model execute method
+0.1719
+    - DBIx::Custom support Microsoft Access through DBD::ODBC
 0.1718
     - added EXPERIMENTAL DBIx::Custom::Model call_dbi method
     - added EXPERIMENTAL count method

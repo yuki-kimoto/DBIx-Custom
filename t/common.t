@@ -2767,6 +2767,27 @@ $rows = [
     );
 }
 
+$dbi->execute("drop table $table1");
+$dbi->execute($create_table1_highperformance);
+$rows = [
+    {$key7 => 10, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5},
+    {$key7 => 11, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 6},
+];
+{
+    $model = $dbi->create_model(table => $table1, primary_key => $key1);
+    my $query;
+    foreach my $row (@$rows) {
+      $query ||= $model->insert($row, id => 1, query => 1);
+      $model->execute($query, $row, id => 1, filter => {$key7 => sub { $_[0] * 2 }});
+    }
+    is_deeply($dbi->select(table => $table1, append => 'order by key2')->all,
+      [
+          {$key7 => 20, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => 1},
+          {$key7 => 22, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 6, $key1 => 1},
+      ]
+    );
+}
+
 test 'result';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -2907,15 +2928,6 @@ like($@, qr/\QTag "s" must return [STRING, ARRAY_REFERENCE]/, "tag return not ar
 $dbi->register_tag(
     t => sub {return ["a", []]}
 );
-
-
-$dbi->register_tag(
-    a => sub {
-        return ["? ? ?", ['']];
-    }
-);
-eval{$builder->build_query("{a}")};
-like($@, qr/\QPlaceholder count/, "placeholder count is invalid");
 
 
 test 'Default tag Error case';

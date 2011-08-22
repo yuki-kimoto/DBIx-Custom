@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1718';
+our $VERSION = '0.1720';
 use 5.008001;
 
 use Carp 'croak';
@@ -397,6 +397,17 @@ sub execute {
     my $query_return = delete $args{query};
     my $table_alias = delete $args{table_alias} || {};
     my $sqlfilter = $args{sqlfilter};
+    my $id = delete $args{id};
+    my $primary_key = delete $args{primary_key};
+    croak "insert method primary_key option " .
+          "must be specified when id is specified " . _subname
+      if defined $id && !defined $primary_key;
+    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
+
+    if (defined $id) {
+        my $id_param = $self->_create_param_from_id($id, $primary_key);
+        $param = $self->merge_param($id_param, $param);
+    }
     
     # Check argument names
     foreach my $name (keys %args) {
@@ -2521,6 +2532,28 @@ registered by by C<register_filter>.
 This filter is executed before data is saved into database.
 and before type rule filter is executed.
 
+=item C<id>
+
+    id => 4
+    id => [4, 5]
+
+ID corresponding to C<primary_key>.
+You can delete rows by C<id> and C<primary_key>.
+
+    $dbi->execute(
+        "select * from book where id1 = :id1 and id2 = :id2",
+        {},
+        parimary_key => ['id1', 'id2'],
+        id => [4, 5],
+    );
+
+The above is same as the followin one.
+
+    $dbi->execute(
+        "select * from book where id1 = :id1 and id2 = :id2",
+        {id1 => 4, id2 => 5}
+    );
+
 =item C<query>
 
     query => 1
@@ -2557,6 +2590,10 @@ You can do the following way.
 Note that $row must be simple hash reference, such as
 {title => 'Perl', author => 'Ken'}.
 and don't forget to sort $row values by $row key asc order.
+
+=item C<primary_key>
+
+See C<id> option.
 
 =item C<sqlfilter EXPERIMENTAL> 
 

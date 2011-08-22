@@ -67,6 +67,12 @@ sub call_dbi {
     return $self->dbi->$method(@args, @_);
 }
 
+sub execute {
+    my $self = shift;
+    push @_, ($_ => $self->$_) for qw/table bind_type primary_key type/;
+    return $self->dbi->execute(@_);
+}
+
 sub DESTROY { }
 
 sub method {
@@ -116,9 +122,9 @@ DBIx::Custom::Model - Model
 
 =head1 SYNOPSIS
 
-use DBIx::Custom::Table;
+use DBIx::Custom::Model;
 
-my $table = DBIx::Custom::Model->new(table => 'books');
+my $model = DBIx::Custom::Model->new(table => 'books');
 
 =head1 ATTRIBUTES
 
@@ -148,7 +154,7 @@ C<delete>, and C<select> method.
 
 =head2 C<table>
 
-    my $table = $model->table;
+    my $model = $model->table;
     $model = $model->table('book');
 
 Table name, this is passed to C<select> method.
@@ -193,24 +199,31 @@ Options is same as C<select> method's ones.
 
 =head2 C<delete>
 
-    $table->delete(...);
+    $model->delete(...);
     
 Same as C<delete> of L<DBIx::Custom> except that
-you don't have to specify C<table> option.
+you don't have to specify C<table> and C<primary_key> option.
 
 =head2 C<delete_all>
 
-    $table->delete_all(...);
+    $model->delete_all(...);
     
 Same as C<delete_all> of L<DBIx::Custom> except that
-you don't have to specify C<table> option.
+you don't have to specify C<table> and C<primary_key> option.
+
+=head2 C<execute EXPERIMENTAL>
+
+    $model->execute(...);
+
+Same as C<execute> of L<DBIx::Custom> except that
+you don't have to specify C<table> and C<primary_key> option.
 
 =head2 C<insert>
 
-    $table->insert(...);
+    $model->insert(...);
     
 Same as C<insert> of L<DBIx::Custom> except that
-you don't have to specify C<table> option.
+you don't have to specify C<table> and C<primary_key> option.
 
 =head2 C<method>
 
@@ -247,29 +260,29 @@ If column names is omitted, C<columns> attribute of the model is used.
 
 =head2 C<new>
 
-    my $table = DBIx::Custom::Table->new;
+    my $model = DBIx::Custom::Model->new;
 
-Create a L<DBIx::Custom::Table> object.
+Create a L<DBIx::Custom::Model> object.
 
 =head2 C<select>
 
-    $table->select(...);
+    $model->select(...);
     
 Same as C<select> of L<DBIx::Custom> except that
-you don't have to specify C<table> option.
+you don't have to specify C<table>, C<primary_key> and C<jon> option.
 
 =head2 C<update>
 
-    $table->update(...);
+    $model->update(...);
     
 Same as C<update> of L<DBIx::Custom> except that
-you don't have to specify C<table> option.
+you don't have to specify C<table> and C<primary_key> option.
 
 =head2 C<update_all>
 
-    $table->update_all(param => \%param);
+    $model->update_all(param => \%param);
     
 Same as C<update_all> of L<DBIx::Custom> except that
-you don't have to specify table name.
+you don't have to specify C<table> and C<primary_key> option.
 
 =cut
