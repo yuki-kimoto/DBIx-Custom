@@ -1,3 +1,6 @@
+0.1721
+    - added EXPERIMENTAL DBIx::Custom::Mapper class
+    - added EXPERIMENTAL mapper method to DBIx::Custom
 0.1720
     - removed placeholder count check
     - added EXPERIMENTAL execute method's id and primary key option.

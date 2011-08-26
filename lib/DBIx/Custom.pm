@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1720';
+our $VERSION = '0.1721';
 use 5.008001;
 
 use Carp 'croak';
@@ -712,6 +712,11 @@ sub include_model {
     }
     
     return $self;
+}
+
+sub mapper {
+    my $self = shift;
+    return DBIx::Custom::Mapper->new(@_);
 }
 
 sub map_param {
