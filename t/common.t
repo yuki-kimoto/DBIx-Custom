@@ -2597,6 +2597,52 @@ $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
 $rows = $dbi->select(prefix => "$key1,", column => $key2, table => $table1)->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}], "table");
 
+test 'mapper';
+$DB::single = 1;
+$dbi = DBIx::Custom->connect;
+$param = $dbi->mapper(param => {id => 1, author => 'Ken', price => 1900})->map(
+    id => "$table1.id",
+    author => ["$table1.author", sub { '%' . $_[0] . '%' }],
+    price => ["$table1.price", {condition => sub { $_[0] eq 1900 }}]
+);
+is_deeply($param, {"$table1.id" => 1, "$table1.author" => '%Ken%',
+  "$table1.price" => 1900});
+
+$param = $dbi->mapper(param => {id => 0, author => 0, price => 0})->map(
+    id => "$table1.id",
+    author => ["$table1.author", sub { '%' . $_[0] . '%' }],
+    price => ["$table1.price", sub { '%' . $_[0] . '%' },
+      {condition => sub { $_[0] eq 0 }}]
+);
+is_deeply($param, {"$table1.id" => 0, "$table1.author" => '%0%', "$table1.price" => '%0%'});
+
+$param = $dbi->mapper(param => {id => '', author => '', price => ''})->map(
+    id => "$table1.id",
+    author => ["$table1.author", sub { '%' . $_[0] . '%' }],
+    price => ["$table1.price", sub { '%' . $_[0] . '%' },
+      {condition => sub { $_[0] eq 1 }}]
+);
+is_deeply($param, {});
+
+$DB::single = 1;
+$param = $dbi->mapper(param => {id => undef, author => undef, price => undef})->map(
+    id => "$table1.id",
+    price => ["$table1.price", {condition => 'exists'}]
+);
+is_deeply($param, {"$table1.price" => undef});
+
+$param = $dbi->mapper(param => {price => 'a'})->map(
+    id => ["$table1.id", {condition => 'exists'}],
+    price => ["$table1.price", sub { '%' . $_[0] }, {condition => 'exists'}]
+);
+is_deeply($param, {"$table1.price" => '%a'});
+
+$param = $dbi->mapper(param => {price => 'a'}, condition => 'exists')->map(
+    id => ["$table1.id"],
+    price => ["$table1.price", sub { '%' . $_[0] }]
+);
+is_deeply($param, {"$table1.price" => '%a'});
+
 test 'map_param';
 $dbi = DBIx::Custom->connect;
 $param = $dbi->map_param(

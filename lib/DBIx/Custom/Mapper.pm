@@ -1,13 +1,16 @@
 package DBIx::Custom::Mapper;
 use Object::Simple -base;
 
+use Carp 'croak';
 use DBIx::Custom::Util '_subname';
 
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-has [qw/param pass/]
-    condition => sub { defined $_[0] && length $_[0] };
+has [qw/param pass/],
+    condition => sub {
+        sub { defined $_[0] && length $_[0] }
+    };
 
 sub map {
     my ($self, %rule) = @_;
@@ -25,7 +28,7 @@ sub map {
         if (ref $rule{$key} eq 'ARRAY') {
             foreach my $some (@{$rule{$key}}) {
                 $new_key = $some unless ref $some;
-                $condition = $some->{if} if ref $some eq 'HASH';
+                $condition = $some->{condition} if ref $some eq 'HASH';
                 $value_cb = $some if ref $some eq 'CODE';
             }
         }

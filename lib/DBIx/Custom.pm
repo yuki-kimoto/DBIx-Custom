@@ -14,6 +14,7 @@ use DBIx::Custom::Model;
 use DBIx::Custom::Tag;
 use DBIx::Custom::Order;
 use DBIx::Custom::Util qw/_array_to_hash _subname/;
+use DBIx::Custom::Mapper;
 use Encode qw/encode encode_utf8 decode_utf8/;
 use Scalar::Util qw/weaken/;
 
