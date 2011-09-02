@@ -902,7 +902,6 @@ sub select {
     warn "select() param option is DEPRECATED!"
       if keys %$param;
     my $where_param = delete $args{where_param} || $param || {};
-    my $wrap = delete $args{wrap};
     my $id = delete $args{id};
     my $primary_key = delete $args{primary_key};
     croak "update method primary_key option " .
@@ -996,14 +995,6 @@ sub select {
     
     # Append
     push @sql, $append if defined $append;
-    
-    # Wrap
-    if ($wrap) {
-        croak "wrap option must be array refrence " . _subname
-          unless ref $wrap eq 'ARRAY';
-        unshift @sql, $wrap->[0];
-        push @sql, $wrap->[1];
-    }
     
     # SQL
     my $sql = join (' ', @sql);
@@ -3294,14 +3285,6 @@ Same as C<execute> method's C<type_rule2_off> option.
 
 Where clause.
     
-=item C<wrap> EXPERIMENTAL
-
-Wrap statement. This is array reference.
-
-    wrap => ['select * from (', ') as t where ROWNUM < 10']
-
-This option is for Oracle and SQL Server paging process.
-
 =back
 
 =head2 C<update>

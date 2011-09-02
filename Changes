@@ -1,4 +1,5 @@
 0.1722
+    - removed EXPERIMENTAL wrap option from select method
     - insert_param, update_param, and assign param can
       be wrapeed by DB function by C<wrap> option
     - added EXPERIMENTAL pass attribute to DBIx::Custom::Mapper
