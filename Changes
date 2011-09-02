@@ -1,4 +1,6 @@
 0.1722
+    - added {KEY => sub { VALUE }} syntax
+      to EXPERIMETNAL DBIx::Custom::Mapper map method
     - removed EXPERIMENTAL wrap option from select method
     - insert_param, update_param, and assign param can
       be wrapeed by DB function by C<wrap> option

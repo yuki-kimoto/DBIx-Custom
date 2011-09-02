@@ -29,6 +29,7 @@ sub map {
         my $new_key;
         
         # Get mapping information
+        $rule{$key} = [$key, $rule{$key}] if ref $rule{$key} eq 'CODE';
         if (ref $rule{$key} eq 'ARRAY') {
             foreach my $some (@{$rule{$key}}) {
                 $new_key = $some unless ref $some;

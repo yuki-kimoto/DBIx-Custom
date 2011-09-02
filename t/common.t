@@ -2663,6 +2663,11 @@ $param = $dbi->mapper(param => {price => 'a'}, condition => 'exists')->map(
 );
 is_deeply($param, {"$table1.price" => '%a'});
 
+$param = $dbi->mapper(param => {price => 'a'})->map(
+    price => sub { '%' . $_[0] }
+);
+is_deeply($param, {price => '%a'});
+
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
