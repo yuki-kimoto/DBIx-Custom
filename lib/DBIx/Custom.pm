@@ -65,7 +65,8 @@ has [qw/connector dsn password quote user exclude_table user_table_info
     safety_character => '\w',
     separator => '.',
     stash => sub { {} },
-    tag_parse => 1;
+    tag_parse => 1,
+    timestamp => sub { {} };
 
 sub available_datatype {
     my $self = shift;
@@ -374,8 +375,8 @@ sub each_table {
 
 our %VALID_ARGS = map { $_ => 1 } qw/append allow_delete_all
   allow_update_all bind_type column filter id join param prefix primary_key
-  query relation sqlfilter table table_alias type type_rule_off type_rule1_off
-  type_rule2_off wrap/;
+  query relation sqlfilter table table_alias timestamp type type_rule_off
+  type_rule1_off type_rule2_off wrap/;
 
 sub execute {
     my $self = shift;
@@ -614,6 +615,19 @@ sub insert {
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     my $prefix = delete $args{prefix};
     my $wrap = delete $args{wrap};
+    my $timestamp = $args{timestamp};
+    
+    # Timestamp
+    if ($timestamp) {
+        my $column = $self->timestamp->{insert}[0];
+        my $v   = $self->timestamp->{insert}[1];
+        my $value;
+        
+        if (defined $column && defined $v) {
+            $value = ref $v eq 'SCALAR' ? $v : \$v;
+            $param->{$column} = $value;
+        }
+    }
 
     # Merge parameter
     if (defined $id) {
@@ -1149,6 +1163,20 @@ sub update {
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     my $prefix = delete $args{prefix};
     my $wrap = delete $args{wrap};
+    my $timestamp = $args{timestamp};
+    
+    # Timestamp
+    if ($timestamp) {
+        my $column = $self->timestamp->{update}[0];
+        my $v   = $self->timestamp->{update}[1];
+        my $value;
+        
+        if (defined $column && defined $v) {
+            $value = ref $v eq 'SCALAR' ? $v : \$v;
+            $param->{$column} = $value;
+        }
+    }
+
 
     # Update clause
     my $update_clause = $self->update_param($param, {wrap => $wrap});
@@ -2185,6 +2213,27 @@ The performance is up.
 Enable DEPRECATED tag parsing functionality, default to 1.
 If you want to disable tag parsing functionality, set to 0.
 
+=head2 C<timestamp EXPERIMENTAL>
+
+    my $timestamp = $dbi->timestamp($timestamp);
+    $dbi = $dbi->timestamp;
+
+Timestamp information.
+
+    $dbi->timestamp({
+        insert => [created_at => 'NOW()'],
+        update => [updated_at => 'NOW()']
+    });
+
+This value is used when C<insert> or C<update> method's C<timestamp>
+option is specified.
+
+C<insert> is used by C<insert> method, and C<update> is
+used by C<update> method.
+
+Key, such as C<create_at> is column name.
+value such as C<NOW()> is DB function.
+
 =head2 C<user>
 
     my $user = $dbi->user;
@@ -2776,6 +2825,14 @@ Table name.
 
 Same as C<execute> method's C<type_rule_off> option.
 
+=item C<timestamp EXPERIMENTAL>
+
+    timestamp => 1
+
+If this value is set to 1,
+automatically created timestamp column is set based on
+C<timestamp> attribute's C<insert> value.
+
 =item C<type_rule1_off> EXPERIMENTAL
 
     type_rule1_off => 1
@@ -3365,6 +3422,14 @@ Same as C<execute> method's C<sqlfilter> option.
     table => 'book'
 
 Table name.
+
+=item C<timestamp EXPERIMENTAL>
+
+    timestamp => 1
+
+If this value is set to 1,
+automatically updated timestamp column is set based on
+C<timestamp> attribute's C<update> value.
 
 =item C<type_rule_off> EXPERIMENTAL
 

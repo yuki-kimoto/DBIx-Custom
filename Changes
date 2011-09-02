@@ -1,4 +1,7 @@
 0.1722
+    - added EXPERIMENTAL timestamp option to DBIx::Custom insert
+      and update method.
+    - added EXPERIMENTAL timestamp attribute to DBIx::Custom
     - added {KEY => {OPTION_KEY => OPTION_VALUE} syntax
       to EXPERIMENTAL DBIx::Custom::Mapper map method
     - added {KEY => sub { VALUE }} syntax
