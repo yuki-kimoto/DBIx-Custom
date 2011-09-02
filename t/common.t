@@ -497,6 +497,15 @@ $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "basic");
 
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2},
+  wrap => {$key1 => sub { "$_[0] - 1" }});
+$dbi->insert(table => $table1, param => {$key1 => 3, $key2 => 4});
+$result = $dbi->execute("select * from $table1");
+$rows   = $result->all;
+is_deeply($rows, [{$key1 => 0, $key2 => 2}, {$key1 => 3, $key2 => 4}], "basic");
+
 test 'update';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
@@ -618,6 +627,18 @@ $dbi->update({$key2 => 11}, table => $table1, where => {$key1 => 1});
 $result = $dbi->execute("select * from $table1 order by $key1");
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
+                  {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
+                  "basic");
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5});
+$dbi->insert(table => $table1, param => {$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10});
+$dbi->update(table => $table1, param => {$key2 => 11}, where => {$key1 => 1},
+wrap => {$key2 => sub { "$_[0] - 1" }});
+$result = $dbi->execute("select * from $table1 order by $key1");
+$rows   = $result->all;
+is_deeply($rows, [{$key1 => 1, $key2 => 10, $key3 => 3, $key4 => 4, $key5 => 5},
                   {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
                   "basic");
 

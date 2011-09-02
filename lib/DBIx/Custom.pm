@@ -120,7 +120,9 @@ sub AUTOLOAD {
 }
 
 sub assign_param {
-    my ($self, $param) = @_;
+    my ($self, $param, $opts) = @_;
+    
+    my $wrap = $opts->{wrap} || {};
     
     # Create set tag
     my @params;
@@ -130,10 +132,10 @@ sub assign_param {
           unless $column =~ /^[$safety\.]+$/;
         my $column_quote = $self->_q($column);
         $column_quote =~ s/\./$self->_q(".")/e;
-        push @params, ref $param->{$column} eq 'SCALAR'
-          ? "$column_quote = " . ${$param->{$column}}
-          : "$column_quote = :$column";
-
+        my $func = $wrap->{$column} || sub { $_[0] };
+        push @params,
+          ref $param->{$column} eq 'SCALAR' ? "$column_quote = " . ${$param->{$column}}
+        : "$column_quote = " . $func->(":$column");
     }
     my $tag = join(', ', @params);
     
@@ -611,6 +613,7 @@ sub insert {
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     my $prefix = delete $args{prefix};
+    my $wrap = delete $args{wrap};
 
     # Merge parameter
     if (defined $id) {
@@ -622,7 +625,8 @@ sub insert {
     my @sql;
     push @sql, "insert";
     push @sql, $prefix if defined $prefix;
-    push @sql, "into " . $self->_q($table) . " " . $self->insert_param($param);
+    push @sql, "into " . $self->_q($table) . " "
+      . $self->insert_param($param, {wrap => $wrap});
     push @sql, $append if defined $append;
     my $sql = join (' ', @sql);
     
@@ -631,7 +635,9 @@ sub insert {
 }
 
 sub insert_param {
-    my ($self, $param) = @_;
+    my ($self, $param, $opts) = @_;
+    
+    my $wrap = $opts->{wrap} || {};
     
     # Create insert parameter tag
     my $safety = $self->safety_character;
@@ -643,8 +649,11 @@ sub insert_param {
         my $column_quote = $self->_q($column);
         $column_quote =~ s/\./$self->_q(".")/e;
         push @columns, $column_quote;
-        push @placeholders, ref $param->{$column} eq 'SCALAR'
-          ? ${$param->{$column}} : ":$column";
+        
+        my $func = $wrap->{$column} || sub { $_[0] };
+        push @placeholders,
+          ref $param->{$column} eq 'SCALAR' ? ${$param->{$column}}
+        : $func->(":$column");
     }
     
     return '(' . join(', ', @columns) . ') ' . 'values ' .
@@ -1148,9 +1157,10 @@ sub update {
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     my $prefix = delete $args{prefix};
+    my $wrap = delete $args{wrap};
 
     # Update clause
-    my $update_clause = $self->update_param($param);
+    my $update_clause = $self->update_param($param, {wrap => $wrap});
 
     # Where
     $where = $self->_create_param_from_id($id, $primary_key) if defined $id;
@@ -1192,11 +1202,11 @@ sub update {
 sub update_all { shift->update(allow_update_all => 1, @_) };
 
 sub update_param {
-    my ($self, $param, $opt) = @_;
+    my ($self, $param, $opts) = @_;
     
     # Create update parameter tag
-    my $tag = $self->assign_param($param);
-    $tag = "set $tag" unless $opt->{no_set};
+    my $tag = $self->assign_param($param, $opts);
+    $tag = "set $tag" unless $opts->{no_set};
 
     return $tag;
 }
@@ -2787,6 +2797,21 @@ Same as C<execute> method's C<type_rule1_off> option.
 
 Same as C<execute> method's C<type_rule2_off> option.
 
+=item C<wrap EXPERIMENTAL>
+
+    wrap => {price => sub { "max($_[0])" }}
+
+placeholder wrapped string.
+
+If the following statement
+
+    $dbi->insert({price => 100}, table => 'book',
+      {price => sub { "$_[0] + 5" }});
+
+is executed, the following SQL is executed.
+
+    insert into book price values ( ? + 5 );
+
 =back
 
 =over 4
@@ -3377,6 +3402,21 @@ Same as C<execute> method's C<type_rule2_off> option.
 =item C<where>
 
 Same as C<select> method's C<where> option.
+
+=item C<wrap EXPERIMENTAL>
+
+    wrap => {price => sub { "max($_[0])" }}
+
+placeholder wrapped string.
+
+If the following statement
+
+    $dbi->update({price => 100}, table => 'book',
+      {price => sub { "$_[0] + 5" }});
+
+is executed, the following SQL is executed.
+
+    update book set price =  ? + 5;
 
 =back
 

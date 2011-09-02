@@ -1,4 +1,6 @@
 0.1722
+    - insert_param, update_param, and assign param can
+      be wrapeed by DB function by C<wrap> option
     - added EXPERIMENTAL pass attribute to DBIx::Custom::Mapper
     - removed EXPERIMENTAL ignore attribute from DBIx::Custom::Mapper
 0.1721

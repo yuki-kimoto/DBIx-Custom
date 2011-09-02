@@ -1,0 +1,5 @@
+# Create database
+create database dbix_custom;
+
+# Create User
+GRANT ALL PRIVILEGES ON dbix_custom.* TO dbix_custom@"localhost" IDENTIFIED BY 'dbix_custom';
