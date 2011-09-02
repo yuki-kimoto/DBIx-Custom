@@ -1,4 +1,6 @@
 0.1722
+    - added {KEY => {OPTION_KEY => OPTION_VALUE} syntax
+      to EXPERIMENTAL DBIx::Custom::Mapper map method
     - added {KEY => sub { VALUE }} syntax
       to EXPERIMETNAL DBIx::Custom::Mapper map method
     - removed EXPERIMENTAL wrap option from select method

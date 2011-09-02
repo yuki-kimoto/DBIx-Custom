@@ -29,21 +29,13 @@ sub map {
         my $new_key;
         
         # Get mapping information
-        $rule{$key} = [$key, $rule{$key}] if ref $rule{$key} eq 'CODE';
-        if (ref $rule{$key} eq 'ARRAY') {
-            foreach my $some (@{$rule{$key}}) {
-                $new_key = $some unless ref $some;
-                $condition = $some->{condition} if ref $some eq 'HASH';
-                $value_cb = $some if ref $some eq 'CODE';
-            }
+        $rule{$key} = [$rule{$key}] if ref $rule{$key} ne 'ARRAY';
+        foreach my $some (@{$rule{$key}}) {
+            $new_key = $some unless ref $some;
+            $condition = $some->{condition} if ref $some eq 'HASH';
+            $value_cb = $some if ref $some eq 'CODE';
         }
-        elsif (defined $rule{$key}) {
-            $new_key = $rule{$key};
-        }
-        else {
-            $new_key = $key;
-        }
-        
+        $new_key = $key unless defined $new_key;
         $value_cb ||= sub { $_[0] };
         $condition ||= $self->condition;
         $condition = $self->_condition_to_sub($condition);
