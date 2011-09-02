@@ -1,25 +1,29 @@
 package DBIx::Custom::Mapper;
 use Object::Simple -base;
 
+use DBIx::Custom::NotExists;
+
 use Carp 'croak';
 use DBIx::Custom::Util '_subname';
 
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-has [qw/param pass/],
+has [qw/param/],
     condition => sub {
         sub { defined $_[0] && length $_[0] }
-    };
+    },
+    pass => sub { [] };
 
 sub map {
     my ($self, %rule) = @_;
     my $param = $self->param;
+    $rule{$_} = $rule{$_} for @{$self->pass};
     
     # Mapping
     my $new_param = {};
-    foreach my $key (keys %$param) {
-    
+    foreach my $key (keys %rule) {
+        
         my $value_cb;
         my $condition;
         my $new_key;
@@ -51,7 +55,7 @@ sub map {
                 for (my $i = 0; $i < @{$param->{$key}}; $i++) {
                     $new_param->{$new_key}->[$i]
                       = $condition->($param->{$key}->[$i]) ? $param->{$key}->[$i]
-                      : $self->dbi->not_exists;
+                      : DBIx::Custom::NotExists->singleton;
                 }
             }
             else {
@@ -65,7 +69,7 @@ sub map {
                 for (my $i = 0; $i < @{$param->{$key}}; $i++) {
                     $new_param->{$new_key}->[$i]
                       = exists $param->{$key}->[$i] ? $param->{$key}->[$i]
-                      : $self->dbi->not_exists;
+                      : DBIx::Custom::NotExists->singleton;
                 }
             }
             else {
@@ -131,12 +135,12 @@ DBIx::Custom::Mapper - Mapper of parameter EXPERIMENTAL
 
 Parameter.
 
-=head2 C<ignore>
+=head2 C<pass>
 
-    my $pass = $mapper->ignore;
-    $mapper = $mapper->ignore([qw/title author/]);
+    my $pass = $mapper->pass;
+    $mapper = $mapper->pass([qw/title author/]);
 
-Ignored parameter keys when C<map> method is executed.
+the key and value is copied without change when C<map> method is executed.
 
 =head2 C<condition>
 
@@ -204,7 +208,6 @@ The following hash reference is returned.
         'book.price' => 1900,
         title => '%Perl%',
         'book.author' => '%Ken%',
-        issude_date => '2010-11-11'
     }
 
 By default, If the value has length, key and value is mapped.
@@ -226,11 +229,17 @@ Or you can set C<condtion> option for each key.
         author => ['book.author', sub { '%' . $_[0] . '%'}, condtion => 'exists']
     );
 
-If C<ignore> is set, the keys is ignored.
+If C<pass> attrivute is set, the keys and value is copied without change.
 
-    $mapper->ignore([qw/title author/]);
+    $mapper->pass([qw/title author/]);
+    my $new_param = $mapper->map(price => 'book.price');
+
+The following hash reference
     
     {title => 'Perl', author => 'Ken', price => 1900}
-      is mapped to {price => 1900}
+
+is mapped to
+
+    {title => 'Perl', author => 'Ken', 'book.price' => 1900}
 
 =cut

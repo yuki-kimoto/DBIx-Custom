@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1721';
+our $VERSION = '0.1722';
 use 5.008001;
 
 use Carp 'croak';
@@ -15,6 +15,7 @@ use DBIx::Custom::Tag;
 use DBIx::Custom::Order;
 use DBIx::Custom::Util qw/_array_to_hash _subname/;
 use DBIx::Custom::Mapper;
+use DBIx::Custom::NotExists;
 use Encode qw/encode encode_utf8 decode_utf8/;
 use Scalar::Util qw/weaken/;
 
@@ -854,8 +855,7 @@ sub new {
     return $self;
 }
 
-my $not_exists = bless {}, 'DBIx::Custom::NotExists';
-sub not_exists { $not_exists }
+sub not_exists { DBIx::Custom::NotExists->singleton }
 
 sub order {
     my $self = shift;
@@ -2843,6 +2843,12 @@ You can get model object by C<model>.
     my $company_model = $dbi->model('company');
 
 See L<DBIx::Custom::Model> to know model features.
+
+=head2 C<mapper EXPERIMETNAL>
+
+    my $mapper = $dbi->mapper(param => $param);
+
+Create a new L<DBIx::Custom::Mapper> object.
 
 =head2 C<map_param> EXPERIMENTAL
 

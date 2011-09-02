@@ -2597,8 +2597,8 @@ $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
 $rows = $dbi->select(prefix => "$key1,", column => $key2, table => $table1)->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}], "table");
 
+
 test 'mapper';
-$DB::single = 1;
 $dbi = DBIx::Custom->connect;
 $param = $dbi->mapper(param => {id => 1, author => 'Ken', price => 1900})->map(
     id => "$table1.id",
@@ -2624,7 +2624,6 @@ $param = $dbi->mapper(param => {id => '', author => '', price => ''})->map(
 );
 is_deeply($param, {});
 
-$DB::single = 1;
 $param = $dbi->mapper(param => {id => undef, author => undef, price => undef})->map(
     id => "$table1.id",
     price => ["$table1.price", {condition => 'exists'}]
@@ -2642,6 +2641,148 @@ $param = $dbi->mapper(param => {price => 'a'}, condition => 'exists')->map(
     price => ["$table1.price", sub { '%' . $_[0] }]
 );
 is_deeply($param, {"$table1.price" => '%a'});
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
+$dbi->insert(table => $table1, param => {$key1 => 3, $key2 => 4});
+
+$where = $dbi->where;
+$where->clause(['and', ":${key1}{=}"]);
+$param = $dbi->mapper(param => {$key1 => undef}, condition => 'defined')->map;
+$where->param($param);
+$result = $dbi->execute("select * from $table1 $where", {$key1 => 1});
+$row = $result->all;
+is_deeply($row, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
+
+$where = $dbi->where;
+$where->clause(['or', ":${key1}{=}", ":${key1}{=}"]);
+$param = $dbi->mapper(param => {$key1 => [undef, undef]}, condition => 'exists')->map;
+$result = $dbi->execute("select * from $table1 $where", {$key1 => [1, 0]});
+$row = $result->all;
+is_deeply($row, [{$key1 => 1, $key2 => 2}]);
+$result = $dbi->execute("select * from $table1 $where", {$key1 => [0, 1]});
+$row = $result->all;
+is_deeply($row, [{$key1 => 1, $key2 => 2}]);
+
+$where = $dbi->where;
+$where->clause(['and', ":${key1}{=}"]);
+$param = $dbi->mapper(param => {$key1 => [undef, undef]}, condition => 'defined')->map;
+$where->param($param);
+$result = $dbi->execute("select * from $table1 $where", {$key1 => [1, 0]});
+$row = $result->all;
+is_deeply($row, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
+$result = $dbi->execute("select * from $table1 $where", {$key1 => [0, 1]});
+$row = $result->all;
+is_deeply($row, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
+
+$where = $dbi->where;
+$where->clause(['and', ":${key1}{=}"]);
+$param = $dbi->mapper(param => {$key1 => 0}, condition => 'length')
+  ->pass([$key1, $key2])->map;
+$where->param($param);
+$result = $dbi->execute("select * from $table1 $where", {$key1 => 1});
+$row = $result->all;
+is_deeply($row, [{$key1 => 1, $key2 => 2}]);
+
+$where = $dbi->where;
+$where->clause(['and', ":${key1}{=}"]);
+$param = $dbi->mapper(param => {$key1 => ''}, condition => 'length')->map;
+$where->param($param);
+$result = $dbi->execute("select * from $table1 $where", {$key1 => 1});
+$row = $result->all;
+is_deeply($row, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
+
+$where = $dbi->where;
+$where->clause(['and', ":${key1}{=}"]);
+$param = $dbi->mapper(param => {$key1 => 5}, condition => sub { ($_[0] || '') eq 5 })
+  ->pass([$key1, $key2])->map;
+$where->param($param);
+$result = $dbi->execute("select * from $table1 $where", {$key1 => 1});
+$row = $result->all;
+is_deeply($row, [{$key1 => 1, $key2 => 2}]);
+
+$where = $dbi->where;
+$where->clause(['and', ":${key1}{=}"]);
+$param = $dbi->mapper(param => {$key1 => 7}, condition => sub { ($_[0] || '') eq 5 })->map;
+$where->param($param);
+$result = $dbi->execute("select * from $table1 $where", {$key1 => 1});
+$row = $result->all;
+is_deeply($row, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
+
+$where = $dbi->where;
+$param = $dbi->mapper(param => {id => 1, author => 'Ken', price => 1900})->map(
+    id => "$table1.id",
+    author => ["$table1.author", sub { '%' . $_[0] . '%' }],
+    price => ["$table1.price", {condition => sub { $_[0] eq 1900 }}]
+);
+$where->param($param);
+is_deeply($where->param, {"$table1.id" => 1, "$table1.author" => '%Ken%',
+  "$table1.price" => 1900});
+
+$where = $dbi->where;
+$param = $dbi->mapper(param => {id => 0, author => 0, price => 0})->map(
+    id => "$table1.id",
+    author => ["$table1.author", sub { '%' . $_[0] . '%' }],
+    price => ["$table1.price", sub { '%' . $_[0] . '%' }, {condition => sub { $_[0] eq 0 }}]
+);
+$where->param($param);
+is_deeply($where->param, {"$table1.id" => 0, "$table1.author" => '%0%', "$table1.price" => '%0%'});
+
+$where = $dbi->where;
+$param = $dbi->mapper(param => {id => '', author => '', price => ''})->map(
+    id => "$table1.id",
+    author => ["$table1.author", sub { '%' . $_[0] . '%' }],
+    price => ["$table1.price", sub { '%' . $_[0] . '%' }, {condition => sub { $_[0] eq 1 }}]
+);
+$where->param($param);
+is_deeply($where->param, {});
+
+$where = $dbi->where;
+$param = $dbi->mapper(param => {id => undef, author => undef, price => undef}, condition => 'exists')->map(
+    id => "$table1.id",
+    price => ["$table1.price", {condition => 'exists'}]
+);
+is_deeply($param, {"$table1.id"  => undef,"$table1.price" => undef});
+
+$where = $dbi->where;
+$param = $dbi->mapper(param => {price => 'a'})->map(
+    id => ["$table1.id", {condition => 'exists'}],
+    price => ["$table1.price", sub { '%' . $_[0] }, {condition => 'exists'}]
+);
+is_deeply($param, {"$table1.price" => '%a'});
+
+$where = $dbi->where;
+$param = $dbi->mapper(param => {id => [1, 2], author => 'Ken', price => 1900})->map(
+    id => "$table1.id",
+    author => ["$table1.author", sub { '%' . $_[0] . '%' }],
+    price => ["$table1.price", {condition => sub { $_[0] eq 1900 }}]
+);
+is_deeply($param, {"$table1.id" => [1, 2], "$table1.author" => '%Ken%',
+  "$table1.price" => 1900});
+
+$where = $dbi->where;
+$param = $dbi->mapper(param => {id => ['', ''], author => 'Ken', price => 1900}, condition => 'length')->map(
+    id => "$table1.id",
+    author => ["$table1.author", sub { '%' . $_[0] . '%' }],
+    price => ["$table1.price", {condition => sub { $_[0] eq 1900 }}]
+);
+is_deeply($param, {"$table1.id" => [$dbi->not_exists, $dbi->not_exists], "$table1.author" => '%Ken%',
+  "$table1.price" => 1900});
+
+$where = $dbi->where;
+$param = $dbi->mapper(param => {id => ['', ''], author => 'Ken', price => 1900})->map(
+    id => ["$table1.id", {condition => 'length'}],
+    author => ["$table1.author", sub { '%' . $_[0] . '%' }, {condition => 'defined'}],
+    price => ["$table1.price", {condition => sub { $_[0] eq 1900 }}]
+);
+is_deeply($param, {"$table1.id" => [$dbi->not_exists, $dbi->not_exists], "$table1.author" => '%Ken%',
+  "$table1.price" => 1900});
+
+$where = $dbi->where;
+$param = $dbi->mapper(param => {id => 'a', author => 'b', price => 'c'}, pass => [qw/id author/])
+  ->map(price => 'book.price');
+is_deeply($param, {id => 'a', author => 'b', 'book.price' => 'c'});
 
 test 'map_param';
 $dbi = DBIx::Custom->connect;

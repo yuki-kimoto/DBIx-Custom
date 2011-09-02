@@ -1,3 +1,6 @@
+0.1722
+    - added EXPERIMENTAL pass attribute to DBIx::Custom::Mapper
+    - removed EXPERIMENTAL ignore attribute from DBIx::Custom::Mapper
 0.1721
     - added EXPERIMENTAL DBIx::Custom::Mapper class
     - added EXPERIMENTAL mapper method to DBIx::Custom
