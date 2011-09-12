@@ -1,3 +1,7 @@
+0.1723
+    - added EXPERIMENTAL update_timestamp method to DBIx::Custom
+    - added EXPERIMENTAL insert_timestamp method to DBIx::Custom
+    - removed EXPERIMENTAL timestamp attribute from DBIx::Custom
 0.1722
     - added EXPERIMENTAL timestamp option to DBIx::Custom insert
       and update method.

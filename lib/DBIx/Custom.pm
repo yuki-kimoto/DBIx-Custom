@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1722';
+our $VERSION = '0.1723';
 use 5.008001;
 
 use Carp 'croak';
@@ -65,8 +65,7 @@ has [qw/connector dsn password quote user exclude_table user_table_info
     safety_character => '\w',
     separator => '.',
     stash => sub { {} },
-    tag_parse => 1,
-    timestamp => sub { {} };
+    tag_parse => 1;
 
 sub available_datatype {
     my $self = shift;
@@ -618,15 +617,12 @@ sub insert {
     my $timestamp = $args{timestamp};
     
     # Timestamp
-    if ($timestamp) {
-        my $column = $self->timestamp->{insert}[0];
-        my $v   = $self->timestamp->{insert}[1];
-        my $value;
-        
-        if (defined $column && defined $v) {
-            $value = ref $v eq 'SCALAR' ? $v : \$v;
-            $param->{$column} = $value;
-        }
+    if ($timestamp && (my $insert_timestamp = $self->insert_timestamp)) {
+        my $columns = $insert_timestamp->[0];
+        $columns = [$columns] unless ref $columns eq 'ARRAY';
+        my $value = $insert_timestamp->[1];
+        $value = $value->() if ref $value eq 'CODE';
+        $param->{$_} = $value for @$columns;
     }
 
     # Merge parameter
@@ -672,6 +668,17 @@ sub insert_param {
     
     return '(' . join(', ', @columns) . ') ' . 'values ' .
            '(' . join(', ', @placeholders) . ')'
+}
+
+sub insert_timestamp {
+    my $self = shift;
+    
+    if (@_) {
+        $self->{insert_timestamp} = [@_];
+        
+        return $self;
+    }
+    return $self->{insert_timestamp};
 }
 
 sub include_model {
@@ -1166,17 +1173,13 @@ sub update {
     my $timestamp = $args{timestamp};
     
     # Timestamp
-    if ($timestamp) {
-        my $column = $self->timestamp->{update}[0];
-        my $v   = $self->timestamp->{update}[1];
-        my $value;
-        
-        if (defined $column && defined $v) {
-            $value = ref $v eq 'SCALAR' ? $v : \$v;
-            $param->{$column} = $value;
-        }
+    if ($timestamp && (my $update_timestamp = $self->update_timestamp)) {
+        my $columns = $update_timestamp->[0];
+        $columns = [$columns] unless ref $columns eq 'ARRAY';
+        my $value = $update_timestamp->[1];
+        $value = $value->() if ref $value eq 'CODE';
+        $param->{$_} = $value for @$columns;
     }
-
 
     # Update clause
     my $update_clause = $self->update_param($param, {wrap => $wrap});
@@ -1228,6 +1231,17 @@ sub update_param {
     $tag = "set $tag" unless $opts->{no_set};
 
     return $tag;
+}
+
+sub update_timestamp {
+    my $self = shift;
+    
+    if (@_) {
+        $self->{update_timestamp} = [@_];
+        
+        return $self;
+    }
+    return $self->{update_timestamp};
 }
 
 sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
@@ -2213,27 +2227,6 @@ The performance is up.
 Enable DEPRECATED tag parsing functionality, default to 1.
 If you want to disable tag parsing functionality, set to 0.
 
-=head2 C<timestamp EXPERIMENTAL>
-
-    my $timestamp = $dbi->timestamp($timestamp);
-    $dbi = $dbi->timestamp;
-
-Timestamp information.
-
-    $dbi->timestamp({
-        insert => [created_at => 'NOW()'],
-        update => [updated_at => 'NOW()']
-    });
-
-This value is used when C<insert> or C<update> method's C<timestamp>
-option is specified.
-
-C<insert> is used by C<insert> method, and C<update> is
-used by C<update> method.
-
-Key, such as C<create_at> is column name.
-value such as C<NOW()> is DB function.
-
 =head2 C<user>
 
     my $user = $dbi->user;
@@ -2917,6 +2910,14 @@ You can get model object by C<model>.
 
 See L<DBIx::Custom::Model> to know model features.
 
+=head2 C<insert_timestamp EXPERIMENTAL>
+
+    $dbi->insert_timestamp(
+      [qw/created_at updated_at/] => sub { localtime });
+
+Parameter for timestamp columns when C<insert> method is executed
+with C<timestamp> option.
+
 =head2 C<mapper EXPERIMETNAL>
 
     my $mapper = $dbi->mapper(param => $param);
@@ -3483,6 +3484,13 @@ Create update parameter tag.
 
     set title = :title, author = :author
 
+=head2 C<insert_timestamp EXPERIMENTAL>
+
+    $dbi->update_timestamp(updated_at => sub { localtime });
+
+Parameter for timestamp columns when C<update> method is executed
+with C<timestamp> option.
+
 =head2 C<where>
 
     my $where = $dbi->where(
@@ -3498,13 +3506,6 @@ Create a new L<DBIx::Custom::Where> object.
 
 Setup all model objects.
 C<columns> of model object is automatically set, parsing database information.
-
-=head1 ENVIRONMENTAL VARIABLES
-
-=head2 C<DBIX_CUSTOM_DEBUG>
-
-If environment variable C<DBIX_CUSTOM_DEBUG> is set to true,
-executed SQL and bind values are printed to STDERR.
 
 =head2 C<show_datatype EXPERIMENTAL>
 
@@ -3535,6 +3536,13 @@ Show type name of the columns of specified table.
     issue_date: date
 
 This type name is used in C<type_rule>'s C<into1> and C<into2>.
+
+=head1 ENVIRONMENTAL VARIABLES
+
+=head2 C<DBIX_CUSTOM_DEBUG>
+
+If environment variable C<DBIX_CUSTOM_DEBUG> is set to true,
+executed SQL and bind values are printed to STDERR.
 
 =head2 C<DBIX_CUSTOM_DEBUG_ENCODING>
 

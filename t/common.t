@@ -508,13 +508,33 @@ is_deeply($rows, [{$key1 => 0, $key2 => 2}, {$key1 => 3, $key2 => 4}], "basic");
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
-$dbi->timestamp({
-    insert => [$key1 => '5']
-});
+$dbi->insert_timestamp(
+    $key1 => '5'
+);
 $dbi->insert(table => $table1, param => {$key2 => 2}, timestamp => 1);
 $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 5, $key2 => 2}], "basic");
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert_timestamp(
+    [$key1, $key2] => sub { 5 }
+);
+$dbi->insert(table => $table1, timestamp => 1);
+$result = $dbi->execute("select * from $table1");
+$rows   = $result->all;
+is_deeply($rows, [{$key1 => 5, $key2 => 5}], "basic");
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert_timestamp(
+    [$key1, $key2] => sub { "" . DBIx::Custom->new }
+);
+$dbi->insert(table => $table1, timestamp => 1);
+$result = $dbi->execute("select * from $table1");
+$rows   = $result->all;
+is($rows->[0]->{$key1}, $rows->[0]->{$key2});
 
 test 'update';
 eval { $dbi->execute("drop table $table1") };
@@ -665,14 +685,36 @@ is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
-$dbi->timestamp({
-    update => [$key1 => '5']
-});
+$dbi->update_timestamp(
+    $key1 => '5'
+);
 $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
 $dbi->update(table => $table1, timestamp => 1, where => {$key2 => 2});
 $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 5, $key2 => 2}], "basic");
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->update_timestamp(
+    [$key1, $key2] => sub { '5' }
+);
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
+$dbi->update_all(table => $table1, timestamp => 1);
+$result = $dbi->execute("select * from $table1");
+$rows   = $result->all;
+is_deeply($rows, [{$key1 => 5, $key2 => 5}], "basic");
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->update_timestamp(
+    [$key1, $key2] => sub { "" . DBIx::Custom->new }
+);
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
+$dbi->update_all(table => $table1, timestamp => 1);
+$result = $dbi->execute("select * from $table1");
+$rows   = $result->all;
+is($rows->[0]->{$key1}, $rows->[0]->{$key2});
 
 test 'update_all';
 eval { $dbi->execute("drop table $table1") };
