@@ -44,27 +44,20 @@ foreach my $method (@methods) {
 
     my $code = sub {
         my $self = shift;
-        my $args = [qw/table bind_type primary_key type/];
-        push @$args, 'join' if $method =~ /^select/;
-        $self->call_dbi($method, {args => $args}, @_);
+        $self->dbi->$method(
+            @_ % 2 ? shift : (),
+            table => $self->table,
+            bind_type => $self->bind_type,
+            primary_key => $self->primary_key,
+            type => $self->type,
+            $method =~ /^select/ ? (join => $self->join) : (), 
+            @_
+        )
     };
     
     no strict 'refs';
     my $class = __PACKAGE__;
     *{"${class}::$method"} = $code;
-}
-
-sub call_dbi {
-    my $self = shift;
-    my $method = shift;
-    my $options = shift;
-    my $arg_names = $options->{args};
-    
-    my @args;
-    push @args, ($_ => $self->$_) for @$arg_names;
-    unshift @args, shift if @_ % 2;
-    
-    return $self->dbi->$method(@args, @_);
 }
 
 sub execute {

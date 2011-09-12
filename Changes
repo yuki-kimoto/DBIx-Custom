@@ -1,4 +1,5 @@
 0.1723
+    - removed EXPERIMENTAL call_dbi method from DBIx::Custom::Model
     - removed EXPERIMENTAL map_param method from DBIx::Custom
     - removed EXPERIMENTAL flag from the following DBIx::Custom::Result mehotds
       filter_on, type_rule, type_rule_off, type_rule_on, type_rule1_off,
