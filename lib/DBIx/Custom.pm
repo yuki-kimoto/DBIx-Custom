@@ -2054,11 +2054,11 @@ C<Microsoft SQL Server>, C<Microsoft Access>, C<DB2> or anything,
 
 =item *
 
-Filtering by data type or column name(EXPERIMENTAL)
+Filtering by data type or column name
 
 =item *
 
-Create C<order by> clause flexibly(EXPERIMENTAL)
+Create C<order by> clause flexibly
 
 =back
 
@@ -2207,7 +2207,7 @@ Note that you don't have to specify like '[\w]'.
 Separator whichi join table and column.
 This is used by C<column> and C<mycolumn> method.
 
-=head2 C<exclude_table EXPERIMENTAL>
+=head2 C<exclude_table>
 
     my $exclude_table = $self->exclude_table;
     $dbi = $self->exclude_table(qr/pg_/);
@@ -2234,7 +2234,7 @@ If you want to disable tag parsing functionality, set to 0.
 
 User name, used when C<connect> method is executed.
 
-=head2 C<user_column_info EXPERIMENTAL>
+=head2 C<user_column_info>
 
     my $user_column_info = $dbi->user_column_info;
     $dbi = $dbi->user_column_info($user_column_info);
@@ -2253,9 +2253,9 @@ Usually, you can set return value of C<get_column_info>.
     $dbi->user_column_info($user_column_info);
 
 If C<user_column_info> is set, C<each_column> use C<user_column_info>
-to find column info.
+to find column info. this is very fast.
 
-=head2 C<user_table_info EXPERIMENTAL>
+=head2 C<user_table_info>
 
     my $user_table_info = $dbi->user_table_info;
     $dbi = $dbi->user_table_info($user_table_info);
@@ -2281,21 +2281,21 @@ L<DBIx::Custom> inherits all methods from L<Object::Simple>
 and use all methods of L<DBI>
 and implements the following new ones.
 
-=head2 C<available_datatype> EXPERIMENTAL
+=head2 C<available_datatype>
 
     print $dbi->available_datatype;
 
 Get available data types. You can use these data types
 in C<type rule>'s C<from1> and C<from2> section.
 
-=head2 C<available_typename> EXPERIMENTAL
+=head2 C<available_typename>
 
     print $dbi->available_typename;
 
 Get available type names. You can use these type names in
 C<type_rule>'s C<into1> and C<into2> section.
 
-=head2 C<assign_param> EXPERIMENTAL
+=head2 C<assign_param>
 
     my $assign_param = $dbi->assign_param({title => 'a', age => 2});
 
@@ -2343,7 +2343,7 @@ L<DBIx::Custom> is a wrapper of L<DBI>.
 C<AutoCommit> and C<RaiseError> options are true, 
 and C<PrintError> option is false by default.
 
-=head2 C<count> EXPERIMENTAL
+=head2 C<count>
 
     my $count = $model->count(table => 'book');
 
@@ -2421,7 +2421,7 @@ prefix before table name section.
 
 Same as C<execute> method's C<query> option.
 
-=item C<sqlfilter EXPERIMENTAL>
+=item C<sqlfilter>
 
 Same as C<execute> method's C<sqlfilter> option.
 
@@ -2443,17 +2443,17 @@ See C<id> option.
 
 Same as C<execute> method's C<bind_type> option.
 
-=item C<type_rule_off> EXPERIMENTAL
+=item C<type_rule_off>
 
 Same as C<execute> method's C<type_rule_off> option.
 
-=item C<type_rule1_off> EXPERIMENTAL
+=item C<type_rule1_off>
 
     type_rule1_off => 1
 
 Same as C<execute> method's C<type_rule1_off> option.
 
-=item C<type_rule2_off> EXPERIMENTAL
+=item C<type_rule2_off>
 
     type_rule2_off => 1
 
@@ -2644,7 +2644,7 @@ and don't forget to sort $row values by $row key asc order.
 
 See C<id> option.
 
-=item C<sqlfilter EXPERIMENTAL> 
+=item C<sqlfilter> 
 
 SQL filter function.
 
@@ -2683,7 +2683,7 @@ You must set C<table> option.
       "select * from book where title = :book.title and author = :book.author",
       {title => 'Perl', author => 'Ken');
 
-=item C<table_alias> EXPERIMENTAL
+=item C<table_alias>
 
     table_alias => {user => 'hiker'}
 
@@ -2691,19 +2691,19 @@ Table alias. Key is real table name, value is alias table name.
 If you set C<table_alias>, you can enable C<into1> and C<into2> type rule
 on alias table name.
 
-=item C<type_rule_off> EXPERIMENTAL
+=item C<type_rule_off>
 
     type_rule_off => 1
 
 Turn C<into1> and C<into2> type rule off.
 
-=item C<type_rule1_off> EXPERIMENTAL
+=item C<type_rule1_off>
 
     type_rule1_off => 1
 
 Turn C<into1> type rule off.
 
-=item C<type_rule2_off> EXPERIMENTAL
+=item C<type_rule2_off>
 
     type_rule2_off => 1
 
@@ -2711,7 +2711,7 @@ Turn C<into2> type rule off.
 
 =back
 
-=head2 C<get_column_info EXPERIMENTAL>
+=head2 C<get_column_info>
 
     my $tables = $self->get_column_info(exclude_table => qr/^system_/);
 
@@ -2722,7 +2722,7 @@ get column infomation except for one which match C<exclude_table> pattern.
         {table => 'author', column => 'name' info => {...}}
     ]
 
-=head2 C<get_table_info EXPERIMENTAL>
+=head2 C<get_table_info>
 
     my $tables = $self->get_table_info(exclude => qr/^system_/);
 
@@ -2804,7 +2804,7 @@ Primary key. This is used by C<id> option.
 
 Same as C<execute> method's C<query> option.
 
-=item C<sqlfilter EXPERIMENTAL>
+=item C<sqlfilter>
 
 Same as C<execute> method's C<sqlfilter> option.
 
@@ -2814,7 +2814,7 @@ Same as C<execute> method's C<sqlfilter> option.
 
 Table name.
 
-=item C<type_rule_off> EXPERIMENTAL
+=item C<type_rule_off>
 
 Same as C<execute> method's C<type_rule_off> option.
 
@@ -2826,19 +2826,19 @@ If this value is set to 1,
 automatically created timestamp column is set based on
 C<timestamp> attribute's C<insert> value.
 
-=item C<type_rule1_off> EXPERIMENTAL
+=item C<type_rule1_off>
 
     type_rule1_off => 1
 
 Same as C<execute> method's C<type_rule1_off> option.
 
-=item C<type_rule2_off> EXPERIMENTAL
+=item C<type_rule2_off>
 
     type_rule2_off => 1
 
 Same as C<execute> method's C<type_rule2_off> option.
 
-=item C<wrap EXPERIMENTAL>
+=item C<wrap>
 
     wrap => {price => sub { "max($_[0])" }}
 
@@ -3033,7 +3033,7 @@ Create a new L<DBIx::Custom> object.
 DBIx::Custom::NotExists object, indicating the column is not exists.
 This is used by C<clause> of L<DBIx::Custom::Where> .
 
-=head2 C<order> EXPERIMENTAL
+=head2 C<order>
 
     my $order = $dbi->order;
 
@@ -3056,7 +3056,7 @@ Create a new L<DBIx::Custom::Order> object.
     
 Register filters, used by C<filter> option of many methods.
 
-=head2 C<type_rule> EXPERIMENTAL
+=head2 C<type_rule>
 
     $dbi->type_rule(
         into1 => {
@@ -3264,7 +3264,7 @@ the following SQL is created
     where company.name = ?;
 
 You can specify two table by yourself. This is useful when join parser can't parse
-the join clause correctly. This is EXPERIMENTAL.
+the join clause correctly.
 
     $dbi->select(
         table => 'book',
@@ -3289,7 +3289,7 @@ Primary key. This is used by C<id> option.
 
 Same as C<execute> method's C<query> option.
 
-=item C<sqlfilter EXPERIMENTAL>
+=item C<sqlfilter>
 
 Same as C<execute> method's C<sqlfilter> option
 
@@ -3299,17 +3299,17 @@ Same as C<execute> method's C<sqlfilter> option
 
 Table name.
 
-=item C<type_rule_off> EXPERIMENTAL
+=item C<type_rule_off>
 
 Same as C<execute> method's C<type_rule_off> option.
 
-=item C<type_rule1_off> EXPERIMENTAL
+=item C<type_rule1_off>
 
     type_rule1_off => 1
 
 Same as C<execute> method's C<type_rule1_off> option.
 
-=item C<type_rule2_off> EXPERIMENTAL
+=item C<type_rule2_off>
 
     type_rule2_off => 1
 
@@ -3414,7 +3414,7 @@ Primary key. This is used by C<id> option.
 
 Same as C<execute> method's C<query> option.
 
-=item C<sqlfilter EXPERIMENTAL>
+=item C<sqlfilter>
 
 Same as C<execute> method's C<sqlfilter> option.
 
@@ -3432,17 +3432,17 @@ If this value is set to 1,
 automatically updated timestamp column is set based on
 C<timestamp> attribute's C<update> value.
 
-=item C<type_rule_off> EXPERIMENTAL
+=item C<type_rule_off>
 
 Same as C<execute> method's C<type_rule_off> option.
 
-=item C<type_rule1_off> EXPERIMENTAL
+=item C<type_rule1_off>
 
     type_rule1_off => 1
 
 Same as C<execute> method's C<type_rule1_off> option.
 
-=item C<type_rule2_off> EXPERIMENTAL
+=item C<type_rule2_off>
 
     type_rule2_off => 1
 
@@ -3452,7 +3452,7 @@ Same as C<execute> method's C<type_rule2_off> option.
 
 Same as C<select> method's C<where> option.
 
-=item C<wrap EXPERIMENTAL>
+=item C<wrap>
 
     wrap => {price => sub { "max($_[0])" }}
 
@@ -3507,7 +3507,7 @@ Create a new L<DBIx::Custom::Where> object.
 Setup all model objects.
 C<columns> of model object is automatically set, parsing database information.
 
-=head2 C<show_datatype EXPERIMENTAL>
+=head2 C<show_datatype>
 
     $dbi->show_datatype($table);
 
@@ -3525,7 +3525,7 @@ This data type is used in C<type_rule>'s C<from1> and C<from2>.
 
 Show tables.
 
-=head2 C<show_typename EXPERIMENTAL>
+=head2 C<show_typename>
 
     $dbi->show_typename($table);
 

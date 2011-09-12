@@ -1,4 +1,14 @@
 0.1723
+    - removed EXPERIMENTAL flag from the following options
+      sqlfilter, type_rule_off, type_rule1_off, type_rule2_off,
+      table_alias, wrap
+      
+    - removed EXPERIMENTAL flag from DBIx::Custom::Order
+    - removed EXPERIMETNAL flag from the following DBIx::Custom mehtods
+      exclude_table, user_column_info,
+      user_table_info, available_datatype, available_typename,
+      assign_param, count, get_column_info, get_table_info
+      order, show_datatype, show_typename methods, type_rule
     - added EXPERIMENTAL update_timestamp method to DBIx::Custom
     - added EXPERIMENTAL insert_timestamp method to DBIx::Custom
     - removed EXPERIMENTAL timestamp attribute from DBIx::Custom

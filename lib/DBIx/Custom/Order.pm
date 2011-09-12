@@ -47,7 +47,7 @@ sub to_string {
 
 =head1 NAME
 
-DBIx::Custom::Order - Order by EXPERIMENTAL
+DBIx::Custom::Order - Order by
 
 =head1 SYNOPSIS
 
