@@ -2876,7 +2876,7 @@ See L<DBIx::Custom::Model> to know model features.
 Parameter for timestamp columns when C<insert> method is executed
 with C<timestamp> option.
 
-=head2 C<mapper>
+=head2 C<mapper EXPERIMENTAL>
 
     my $mapper = $dbi->mapper(param => $param);
 
@@ -3429,7 +3429,7 @@ Show data type of the columns of specified table.
 
 This data type is used in C<type_rule>'s C<from1> and C<from2>.
 
-=head2 C<show_tables EXPERIMETNAL>
+=head2 C<show_tables>
 
     $dbi->show_tables;
 

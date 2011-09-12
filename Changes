@@ -1,6 +1,10 @@
 0.1723
     - removed EXPERIMENTAL call_dbi method from DBIx::Custom::Model
     - removed EXPERIMENTAL map_param method from DBIx::Custom
+    - removed EXPERIMENTAL the following methods from DBIx::Custom::Where
+      if, map
+    - removed EXPERIMENTAL flag from the following DBIx::Custom::Model methods
+      count, execute
     - removed EXPERIMENTAL flag from the following DBIx::Custom::Result mehotds
       filter_on, type_rule, type_rule_off, type_rule_on, type_rule1_off,
       type_rule1_on, type_rule2_off, type_rule2_on
@@ -12,8 +16,7 @@
       exclude_table, user_column_info,
       user_table_info, available_datatype, available_typename,
       assign_param, count, get_column_info, get_table_info
-      order, show_datatype, show_typename methods, type_rule,
-      mapper
+      order, show_datatype, show_typename methods, show_tables, type_rule,
     - added EXPERIMENTAL update_timestamp method to DBIx::Custom
     - added EXPERIMENTAL insert_timestamp method to DBIx::Custom
     - removed EXPERIMENTAL timestamp attribute from DBIx::Custom

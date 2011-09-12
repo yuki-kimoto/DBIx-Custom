@@ -12,114 +12,6 @@ push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 has [qw/dbi param/],
     clause => sub { [] };
 
-sub map {
-    my ($self, %map) = @_;
-    
-    if ($self->if ne 'exists' || keys %map) {
-        my $param = $self->_map_param($self->param, %map);
-        $self->param($param);
-    }
-    return $self;
-}
-
-sub _map_param {
-    my $self = shift;
-    my $param = shift;
-    
-    return $param if !defined $param;
-    
-    my %map = @_;
-    
-    # Mapping
-    my $map_param = {};
-    foreach my $key (keys %$param) {
-    
-        my $value_cb;
-        my $condition;
-        my $map_key;
-        
-        # Get mapping information
-        if (ref $map{$key} eq 'ARRAY') {
-            foreach my $some (@{$map{$key}}) {
-                $map_key = $some unless ref $some;
-                $condition = $some->{if} if ref $some eq 'HASH';
-                $value_cb = $some if ref $some eq 'CODE';
-            }
-        }
-        elsif (defined $map{$key}) {
-            $map_key = $map{$key};
-        }
-        else {
-            $map_key = $key;
-        }
-        
-        $value_cb ||= sub { $_[0] };
-        $condition ||= $self->if || 'exists';
-        $condition = $self->_if_to_sub($condition);
-
-        # Map parameter
-        my $value;
-        if (ref $condition eq 'CODE') {
-            if (ref $param->{$key} eq 'ARRAY') {
-                $map_param->{$map_key} = [];
-                for (my $i = 0; $i < @{$param->{$key}}; $i++) {
-                    $map_param->{$map_key}->[$i]
-                      = $condition->($param->{$key}->[$i]) ? $param->{$key}->[$i]
-                      : $self->dbi->not_exists;
-                }
-            }
-            else {
-                $map_param->{$map_key} = $value_cb->($param->{$key})
-                  if $condition->($param->{$key});
-            }
-        }
-        elsif ($condition eq 'exists') {
-            if (ref $param->{$key} eq 'ARRAY') {
-                $map_param->{$map_key} = [];
-                for (my $i = 0; $i < @{$param->{$key}}; $i++) {
-                    $map_param->{$map_key}->[$i]
-                      = exists $param->{$key}->[$i] ? $param->{$key}->[$i]
-                      : $self->dbi->not_exists;
-                }
-            }
-            else {
-                $map_param->{$map_key} = $value_cb->($param->{$key})
-                  if exists $param->{$key};
-            }
-        }
-        else { croak qq/Condition must be code reference or "exists" / . _subname }
-    }
-    
-    return $map_param;
-}
-
-sub if {
-    my $self = shift;
-    if (@_) {
-        my $if = $_[0];
-        
-        $if = $self->_if_to_sub($if);
-        $self->{if} = $if;
-        return $self;
-    }
-    $self->{if} = 'exists' unless exists $self->{if};
-    return $self->{if};
-}
-
-sub _if_to_sub {
-    my ($self, $if) = @_;
-    $if = $if eq 'exists' ? $if
-            : $if eq 'defined' ? sub { defined $_[0] }
-            : $if eq 'length'  ? sub { defined $_[0] && length $_[0] }
-            : ref $if eq 'CODE' ? $if
-            : undef;
-
-    croak "You can must specify right value to C<if> " . _subname
-      unless $if;
-    
-    return $if;
-}
-
 sub new {
     my $self = shift->SUPER::new(@_);
     
@@ -148,18 +40,6 @@ sub to_string {
     my $clause = $self->clause;
     $clause = ['and', $clause] unless ref $clause eq 'ARRAY';
     $clause->[0] = 'and' unless @$clause;
-    
-    # Map condition
-    my $if = $self->if || '';
-    $if = $if eq 'exists' ? $if
-            : $if eq 'defined' ? sub { defined $_[0] }
-            : $if eq 'length'  ? sub { length $_[0] }
-            : ref $if eq 'CODE' ? $if
-            : undef;
-    
-    croak "You can must specify right value to C<if> " . _subname
-      unless $if;
-    $self->{_if} = $if;
     
     # Parse
     my $where = [];
@@ -313,69 +193,6 @@ L<DBIx::Custom> object.
 
 L<DBIx::Custom::Where> inherits all methods from L<Object::Simple>
 and implements the following new ones.
-
-=head2 C<if EXPERIMENTAL>
-    
-    my $if = $where->if($condition);
-    $where->if($condition);
-
-C<if> is default of C<map> method C<if> option.
-
-=head2 C<map EXPERIMENTAL>
-
-Mapping parameter key and value. C<param> is converted based on,
-so this method must be called after C<param> is set.
-Set C<if> if you need before C<map> method call.
-
-    $where->map(
-        'id' => 'book.id',
-        'author' => ['book.author' => sub { '%' . $_[0] . '%' }],
-        'price' => [
-            'book.price', {if => sub { length $_[0] }
-        ]
-    );
-
-The followin parameter
-
-    {
-        id => 1,
-        auhtor => 'Ken',
-        price => 1000
-    }
-
-is converted to
-
-    {
-        'book.id' => 1,
-        'book.author' => '%Ken%',
-        'book.price' => 1000
-    }
-
-The following option is available.
-
-=over 4
-
-=item * C<if>
-
-By default, if parameter key is exists, mapping is done.
-    
-    if => 'exists';
-
-In case C<defined> is specified, if the value is defined,
-mapping is done.
-
-    if => 'defined';
-
-In case C<length> is specified, the value is defined
-and the length is bigger than 0, mappting is done.
-
-    if => 'length';
-
-You can also subroutine like C<sub { defined $_[0] }> for mappging.
-
-    if => sub { defined $_[0] }
-
-=back
 
 =head2 C<to_string>
 

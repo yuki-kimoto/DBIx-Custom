@@ -39,11 +39,11 @@ C<Microsoft SQL Server>, C<Microsoft Access>, C<DB2> or anything,
 
 =item *
 
-Filtering by data type or column name(EXPERIMENTAL)
+Filtering by data type or column name
 
 =item *
 
-Create C<order by> clause flexibly(EXPERIMENTAL)
+Create C<order by> clause flexibly
 
 =back
 
