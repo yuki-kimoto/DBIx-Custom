@@ -474,14 +474,14 @@ Set filter for column.
 You can use subroutine or filter name as filter.
 This filter is executed after C<type_rule> filter.
 
-=head2 C<filter_off> EXPERIMENTAL
+=head2 C<filter_off>
 
     $result = $result->filter_off;
 
 Turn filtering by C<filter> method off.
 By default, filterin is on.
 
-=head2 C<filter_on> EXPERIMENTAL
+=head2 C<filter_on>
 
     $result = $resutl->filter_on;
 
@@ -508,7 +508,7 @@ Same as C<fetch_hash_first>.
 
 Stash is hash reference for data.
 
-=head2 C<type_rule> EXPERIMENTAL
+=head2 C<type_rule>
     
     # Merge type rule
     $result->type_rule(
@@ -528,42 +528,42 @@ Stash is hash reference for data.
 
 This is same as L<DBIx::Custom>'s C<type_rule>'s <from>.
 
-=head2 C<type_rule_off> EXPERIMENTAL
+=head2 C<type_rule_off>
 
     $result = $result->type_rule_off;
 
 Turn C<from1> and C<from2> type rule off.
 By default, type rule is on.
 
-=head2 C<type_rule_on> EXPERIMENTAL
+=head2 C<type_rule_on>
 
     $result = $result->type_rule_on;
 
 Turn C<from1> and C<from2> type rule on.
 By default, type rule is on.
 
-=head2 C<type_rule1_off> EXPERIMENTAL
+=head2 C<type_rule1_off>
 
     $result = $result->type_rule1_off;
 
 Turn C<from1> type rule off.
 By default, type rule is on.
 
-=head2 C<type_rule1_on> EXPERIMENTAL
+=head2 C<type_rule1_on>
 
     $result = $result->type_rule1_on;
 
 Turn C<from1> type rule on.
 By default, type rule is on.
 
-=head2 C<type_rule2_off> EXPERIMENTAL
+=head2 C<type_rule2_off>
 
     $result = $result->type_rule2_off;
 
 Turn C<from2> type rule off.
 By default, type rule is on.
 
-=head2 C<type_rule2_on> EXPERIMENTAL
+=head2 C<type_rule2_on>
 
     $result = $result->type_rule2_on;
 

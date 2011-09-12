@@ -1,8 +1,10 @@
 0.1723
-    - removed EXPERIMENTAL flag from the following options
+    - removed EXPERIMENTAL flag from the following DBIx::Custom::Result mehotds
+      filter_on, type_rule, type_rule_off, type_rule_on, type_rule1_off,
+      type_rule1_on, type_rule2_off, type_rule2_on
+    - removed EXPERIMENTAL flag from the following DBIx::Custom method's options
       sqlfilter, type_rule_off, type_rule1_off, type_rule2_off,
       table_alias, wrap
-      
     - removed EXPERIMENTAL flag from DBIx::Custom::Order
     - removed EXPERIMETNAL flag from the following DBIx::Custom mehtods
       exclude_table, user_column_info,
