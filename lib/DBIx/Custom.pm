@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1723';
+our $VERSION = '0.1724';
 use 5.008001;
 
 use Carp 'croak';
@@ -372,7 +372,7 @@ sub each_table {
     }
 }
 
-our %VALID_ARGS = map { $_ => 1 } qw/append allow_delete_all
+our %VALID_ARGS = map { $_ => 1 } qw/append after_build_sql allow_delete_all
   allow_update_all bind_type column filter id join param prefix primary_key
   query relation sqlfilter table table_alias timestamp type type_rule_off
   type_rule1_off type_rule2_off wrap/;
@@ -400,7 +400,8 @@ sub execute {
     };
     my $query_return = delete $args{query};
     my $table_alias = delete $args{table_alias} || {};
-    my $sqlfilter = $args{sqlfilter};
+    my $after_build_sql = $args{after_build_sql} || $args{sqlfilter};
+    warn "sqlfilter option is DEPRECATED" if $args{sqlfilter};
     my $id = delete $args{id};
     my $primary_key = delete $args{primary_key};
     croak "insert method primary_key option " .
@@ -419,7 +420,7 @@ sub execute {
           unless $VALID_ARGS{$name};
     }
     
-    $query = $self->_create_query($query, $sqlfilter) unless ref $query;
+    $query = $self->_create_query($query, $after_build_sql) unless ref $query;
     
     # Save query
     $self->last_sql($query->sql);
@@ -1206,7 +1207,7 @@ sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
 
 sub _create_query {
     
-    my ($self, $source, $sqlfilter) = @_;
+    my ($self, $source, $after_build_sql) = @_;
     
     # Cache
     my $cache = $self->cache;
@@ -1252,9 +1253,9 @@ sub _create_query {
     }
 
     # Filter SQL
-    if ($sqlfilter) {
+    if ($after_build_sql) {
         my $sql = $query->sql;
-        $sql = $sqlfilter->($sql);
+        $sql = $after_build_sql->($sql);
         $query->sql($sql);
     }
         
@@ -2379,9 +2380,9 @@ prefix before table name section.
 
 Same as C<execute> method's C<query> option.
 
-=item C<sqlfilter>
+=item C<after_build_sql>
 
-Same as C<execute> method's C<sqlfilter> option.
+Same as C<execute> method's C<after_build_sql> option.
 
 =item C<table>
 
@@ -2602,28 +2603,25 @@ and don't forget to sort $row values by $row key asc order.
 
 See C<id> option.
 
-=item C<sqlfilter> 
+=item C<after_build_sql> 
 
-SQL filter function.
+You can filter sql after the sql is build.
 
-    sqlfilter => $code_ref
+    after_build_sql => $code_ref
 
-This option is generally for Oracle and SQL Server paging process.
-    
-    my $limit = sub {
-        my ($sql, $count, $offset) = @_;
-        
-        my $min = $offset + 1;
-        my $max = $offset + $count;
-        
-        $sql = "select * from ( $sql ) as t where rnum >= $min rnum <= $max";
-        
-        return $sql;
-    }
-    $dbi->select(... column => ['ROWNUM rnom'], sqlfilter => sub {
-        my $sql = shift;
-        return $limit->($sql, 100, 50);
-    })
+The following one is one example.
+
+    $dbi->select(
+        table => 'book',
+        column => 'distinct(name)',
+        after_build_sql => sub {
+            "select count(*) from ($_[0]) as t1"
+        }
+    );
+
+The following SQL is executed.
+
+    select count(*) from (select distinct(name) from book) as t1;
 
 =item C<table>
     
@@ -2762,9 +2760,9 @@ Primary key. This is used by C<id> option.
 
 Same as C<execute> method's C<query> option.
 
-=item C<sqlfilter>
+=item C<after_build_sql>
 
-Same as C<execute> method's C<sqlfilter> option.
+Same as C<execute> method's C<after_build_sql> option.
 
 =item C<table>
 
@@ -2776,7 +2774,7 @@ Table name.
 
 Same as C<execute> method's C<type_rule_off> option.
 
-=item C<timestamp EXPERIMENTAL>
+=item C<timestamp>
 
     timestamp => 1
 
@@ -2868,7 +2866,7 @@ You can get model object by C<model>.
 
 See L<DBIx::Custom::Model> to know model features.
 
-=head2 C<insert_timestamp EXPERIMENTAL>
+=head2 C<insert_timestamp>
 
     $dbi->insert_timestamp(
       [qw/created_at updated_at/] => sub { localtime });
@@ -2876,7 +2874,9 @@ See L<DBIx::Custom::Model> to know model features.
 Parameter for timestamp columns when C<insert> method is executed
 with C<timestamp> option.
 
-=head2 C<mapper EXPERIMENTAL>
+If multiple column are specified, same value is used.
+
+=head2 C<mapper>
 
     my $mapper = $dbi->mapper(param => $param);
 
@@ -3199,9 +3199,9 @@ Primary key. This is used by C<id> option.
 
 Same as C<execute> method's C<query> option.
 
-=item C<sqlfilter>
+=item C<after_build_sql>
 
-Same as C<execute> method's C<sqlfilter> option
+Same as C<execute> method's C<after_build_sql> option
 
 =item C<table>
 
@@ -3324,9 +3324,9 @@ Primary key. This is used by C<id> option.
 
 Same as C<execute> method's C<query> option.
 
-=item C<sqlfilter>
+=item C<after_build_sql>
 
-Same as C<execute> method's C<sqlfilter> option.
+Same as C<execute> method's C<after_build_sql> option.
 
 =item C<table>
 
@@ -3334,7 +3334,7 @@ Same as C<execute> method's C<sqlfilter> option.
 
 Table name.
 
-=item C<timestamp EXPERIMENTAL>
+=item C<timestamp>
 
     timestamp => 1
 
@@ -3394,7 +3394,7 @@ Create update parameter tag.
 
     set title = :title, author = :author
 
-=head2 C<insert_timestamp EXPERIMENTAL>
+=head2 C<update_timestamp>
 
     $dbi->update_timestamp(updated_at => sub { localtime });
 
@@ -3489,6 +3489,7 @@ L<DBIx::Custom>
     select method param option # will be removed at 2017/1/1
     select method column option [COLUMN, as => ALIAS] format
       # will be removed at 2017/1/1
+    execute method's sqlfilter option # will be removed at 2017/1/1
     
     # Others
     execute("select * from {= title}"); # execute method's

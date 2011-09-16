@@ -3085,6 +3085,24 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{$key1 => 1}]);
 
+test 'select() after_build_sql option';
+$dbi = DBIx::Custom->connect;
+$dbi->user_table_info($user_table_info);
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
+$dbi->insert(table => $table1, param => {$key1 => 2, $key2 => 3});
+$rows = $dbi->select(
+    table => $table1,
+    column => $key1,
+    after_build_sql => sub {
+        my $sql = shift;
+        $sql = "select * from ( $sql ) t where $key1 = 1";
+        return $sql;
+    }
+)->all;
+is_deeply($rows, [{$key1 => 1}]);
+
 test 'dbi method from model';
 $dbi = MyDBI9->connect;
 eval { $dbi->execute("drop table $table1") };

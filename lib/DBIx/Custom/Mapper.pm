@@ -108,7 +108,7 @@ sub _condition_to_sub {
 
 =head1 NAME
 
-DBIx::Custom::Mapper - Mapper of parameter EXPERIMENTAL
+DBIx::Custom::Mapper - Mapper of parameter
 
 =head1 SYNOPSYS
 

@@ -1,3 +1,10 @@
+0.1724
+    - sqlfilter option is renamed to after_build_sql, sqlfilter is DEPRECATED!
+    - removed EXPERIMENTAL flag from DBIx::Custom::Mapper
+    - removed EXPERIMENTAL flag from the following DBIx::Custom methods
+    insert_timestamp, mapper, update_timestamp
+    - removed EXPERIMENTAL flag from the following DBIx::Custom method's option
+    timestamp, 
 0.1723
     - removed EXPERIMENTAL call_dbi method from DBIx::Custom::Model
     - removed EXPERIMENTAL map_param method from DBIx::Custom
