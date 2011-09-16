@@ -747,6 +747,8 @@ sub include_model {
     return $self;
 }
 
+sub like_value { sub { "%$_[0]%" } }
+
 sub mapper {
     my $self = shift;
     return DBIx::Custom::Mapper->new(@_);
@@ -2875,6 +2877,14 @@ Parameter for timestamp columns when C<insert> method is executed
 with C<timestamp> option.
 
 If multiple column are specified, same value is used.
+
+=head2 C<like_value EXPERIMENTAL>
+
+    my $like_value = $dbi->like_value
+
+Constant code reference for the like value.
+
+    sub { "%$_[0]%" }
 
 =head2 C<mapper>
 

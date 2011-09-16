@@ -1,4 +1,5 @@
 0.1724
+    - added EXPERIMENTAL like_value method to DBIx::Custom
     - sqlfilter option is renamed to after_build_sql, sqlfilter is DEPRECATED!
     - removed EXPERIMENTAL flag from DBIx::Custom::Mapper
     - removed EXPERIMENTAL flag from the following DBIx::Custom methods

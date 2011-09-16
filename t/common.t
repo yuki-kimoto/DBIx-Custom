@@ -2556,6 +2556,15 @@ $param = $dbi->mapper(param => {id => 1, author => 'Ken', price => 1900})->map(
 is_deeply($param, {"$table1.id" => 1, "$table1.author" => '%Ken%',
   "$table1.price" => 1900});
 
+$dbi = DBIx::Custom->connect;
+$param = $dbi->mapper(param => {id => 1, author => 'Ken', price => 1900})->map(
+    id => "$table1.id",
+    author => ["$table1.author" => $dbi->like_value],
+    price => ["$table1.price", {condition => sub { $_[0] eq 1900 }}]
+);
+is_deeply($param, {"$table1.id" => 1, "$table1.author" => '%Ken%',
+  "$table1.price" => 1900});
+
 $param = $dbi->mapper(param => {id => 0, author => 0, price => 0})->map(
     id => "$table1.id",
     author => ["$table1.author", sub { '%' . $_[0] . '%' }],
