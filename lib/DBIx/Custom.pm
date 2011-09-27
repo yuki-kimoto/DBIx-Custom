@@ -2159,16 +2159,16 @@ Result class, default to L<DBIx::Custom::Result>.
 
 =head2 C<safety_character>
 
-    my $safety_character = $self->safety_character;
-    $dbi = $self->safety_character($character);
+    my $safety_character = $dbi->safety_character;
+    $dbi = $dbi->safety_character($character);
 
 Regex of safety character for table and column name, default to '\w'.
 Note that you don't have to specify like '[\w]'.
 
 =head2 C<separator>
 
-    my $separator = $self->separator;
-    $dbi = $self->separator('-');
+    my $separator = $dbi->separator;
+    $dbi = $dbi->separator('-');
 
 Separator which join table name and column name.
 This have effect to C<column> and C<mycolumn> method,
@@ -2178,8 +2178,8 @@ Default to C<.>.
 
 =head2 C<exclude_table>
 
-    my $exclude_table = $self->exclude_table;
-    $dbi = $self->exclude_table(qr/pg_/);
+    my $exclude_table = $dbi->exclude_table;
+    $dbi = $dbi->exclude_table(qr/pg_/);
 
 Excluded table regex.
 C<each_column>, C<each_table>, C<type_rule>,
@@ -2676,7 +2676,7 @@ Turn C<into2> type rule off.
 
 =head2 C<get_column_info>
 
-    my $tables = $self->get_column_info(exclude_table => qr/^system_/);
+    my $tables = $dbi->get_column_info(exclude_table => qr/^system_/);
 
 get column infomation except for one which match C<exclude_table> pattern.
 
@@ -2687,7 +2687,7 @@ get column infomation except for one which match C<exclude_table> pattern.
 
 =head2 C<get_table_info>
 
-    my $tables = $self->get_table_info(exclude => qr/^system_/);
+    my $tables = $dbi->get_table_info(exclude => qr/^system_/);
 
 get table infomation except for one which match C<exclude> pattern.
 
@@ -2933,7 +2933,7 @@ Get a L<DBIx::Custom::Model> object,
 
 =head2 C<mycolumn>
 
-    my $column = $self->mycolumn(book => ['author', 'title']);
+    my $column = $dbi->mycolumn(book => ['author', 'title']);
 
 Create column clause for myself. The follwoing column clause is created.
 
