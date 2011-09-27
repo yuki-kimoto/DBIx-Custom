@@ -2181,12 +2181,9 @@ Default to C<.>.
     my $exclude_table = $self->exclude_table;
     $dbi = $self->exclude_table(qr/pg_/);
 
-Regex matching system table.
-this regex match is used by C<each_table> method and C<each_column> method
-System table is ignored.
-C<type_rule> method and C<setup_model> method call
-C<each_table>, so if you set C<exclude_table> properly,
-The performance is up.
+Excluded table regex.
+C<each_column>, C<each_table>, C<type_rule>,
+and C<setup_model> methods ignore matching tables.
 
 =head2 C<tag_parse>
 
