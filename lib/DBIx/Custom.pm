@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1724';
+our $VERSION = '0.1725';
 use 5.008001;
 
 use Carp 'croak';
@@ -1457,11 +1457,16 @@ sub _push_join {
             $j_clause =~ s/'.+?'//g;
             my $q_re = quotemeta($q);
             $j_clause =~ s/[$q_re]//g;
+            
+            my @j_clauses = reverse split /\s(and|on)\s/, $j_clause;
             my $c = $self->safety_character;
-            my $join_re = qr/(?:^|\s)($c+)\.$c+\s+=\s+($c+)\.$c+/;
-            if ($j_clause =~ $join_re) {
-                $table1 = $1;
-                $table2 = $2;
+            my $join_re = qr/(?:^|\s)($c+)\.$c+\s.+\s($c+)\.$c+/;
+            for my $clause (@j_clauses) {
+                if ($clause =~ $join_re) {
+                    $table1 = $1;
+                    $table2 = $2;
+                    last;
+                }                
             }
         }
         croak qq{join clause must have two table name after "on" keyword. } .
@@ -2163,10 +2168,13 @@ Note that you don't have to specify like '[\w]'.
 =head2 C<separator>
 
     my $separator = $self->separator;
-    $dbi = $self->separator($separator);
+    $dbi = $self->separator('-');
 
-Separator whichi join table and column.
-This is used by C<column> and C<mycolumn> method.
+Separator which join table name and column name.
+This have effect to C<column> and C<mycolumn> method,
+and C<select> method's column option.
+
+Default to C<.>.
 
 =head2 C<exclude_table>
 

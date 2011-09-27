@@ -1,3 +1,5 @@
+0.1725
+    - improved join clause parsing.
 0.1724
     - added EXPERIMENTAL like_value method to DBIx::Custom
     - sqlfilter option is renamed to after_build_sql, sqlfilter is DEPRECATED!
