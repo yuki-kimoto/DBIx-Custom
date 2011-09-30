@@ -894,11 +894,10 @@ sub select {
     $self->_add_relation_table($tables, $relation);
     
     # Select statement
-    my @sql;
-    push @sql, 'select';
+    my $sql = 'select ';
     
     # Prefix
-    push @sql, $prefix if defined $prefix;
+    $sql .= "$prefix " if defined $prefix;
     
     # Column clause
     if ($columns) {
@@ -916,26 +915,26 @@ sub select {
                 $column = join(' ', $column->[0], 'as', $self->_q($column->[1]));
             }
             unshift @$tables, @{$self->_search_tables($column)};
-            push @sql, ($column, ',');
+            $sql .= "$column, ";
         }
-        pop @sql if $sql[-1] eq ',';
+        $sql =~ s/, $/ /;
     }
-    else { push @sql, '*' }
+    else { $sql .= '* ' }
     
     # Table
-    push @sql, 'from';
+    $sql .= 'from ';
     if ($relation) {
         my $found = {};
         foreach my $table (@$tables) {
-            push @sql, ($self->_q($table), ',') unless $found->{$table};
+            $sql .= $self->_q($table) . ', ' unless $found->{$table};
             $found->{$table} = 1;
         }
     }
     else {
         my $main_table = $tables->[-1] || '';
-        push @sql, $self->_q($main_table);
+        $sql .= $self->_q($main_table);
     }
-    pop @sql if ($sql[-1] || '') eq ',';
+    $sql =~ s/, $/ /;
     croak "Not found table name " . _subname
       unless $tables->[-1];
 
@@ -965,19 +964,17 @@ sub select {
     unshift @$tables, @{$self->_search_tables($where_clause)};
     
     # Push join
-    $self->_push_join(\@sql, $join, $tables);
+    $self->_push_join(\$sql, $join, $tables);
     
     # Add where clause
-    push @sql, $where_clause;
+    $sql .= "$where_clause ";
     
     # Relation(DEPRECATED!);
-    $self->_push_relation(\@sql, $tables, $relation, $where_clause eq '' ? 1 : 0);
+    $self->_push_relation(\$sql, $tables, $relation, $where_clause eq '' ? 1 : 0)
+      if $relation;
     
     # Append
-    push @sql, $append if defined $append;
-    
-    # SQL
-    my $sql = join (' ', @sql);
+    $sql .= $append if defined $append;
     
     # Execute query
     my $result = $self->execute($sql, $where_param, table => $tables, %args);
@@ -1483,7 +1480,7 @@ sub _push_join {
     
     # Add join clause
     foreach my $need_table (@need_tables) {
-        push @$sql, $tree->{$need_table}{join};
+        $$sql .= $tree->{$need_table}{join} . ' ';
     }
 }
 
@@ -1889,15 +1886,15 @@ sub _push_relation {
     my ($self, $sql, $tables, $relation, $need_where) = @_;
     
     if (keys %{$relation || {}}) {
-        push @$sql, $need_where ? 'where' : 'and';
+        $$sql .= $need_where ? 'where ' : 'and ';
         foreach my $rcolumn (keys %$relation) {
             my $table1 = (split (/\./, $rcolumn))[0];
             my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
             push @$tables, ($table1, $table2);
-            push @$sql, ("$rcolumn = " . $relation->{$rcolumn},  'and');
+            $$sql .= "$rcolumn = " . $relation->{$rcolumn} .  'and ';
         }
     }
-    pop @$sql if $sql->[-1] eq 'and';    
+    $$sql =~ s/and $/ /;
 }
 
 # DEPRECATED!
