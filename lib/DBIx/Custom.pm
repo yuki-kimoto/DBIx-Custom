@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1725';
+our $VERSION = '0.1726';
 use 5.008001;
 
 use Carp 'croak';
@@ -1460,7 +1460,7 @@ sub _push_join {
             
             my @j_clauses = reverse split /\s(and|on)\s/, $j_clause;
             my $c = $self->safety_character;
-            my $join_re = qr/(?:^|\s)($c+)\.$c+\s.+\s($c+)\.$c+/;
+            my $join_re = qr/(?:^|\s)($c+)\.$c+[^$c]+($c+)\.$c+/;
             for my $clause (@j_clauses) {
                 if ($clause =~ $join_re) {
                     $table1 = $1;
@@ -2205,14 +2205,14 @@ User name, used when C<connect> method is executed.
     my $user_column_info = $dbi->user_column_info;
     $dbi = $dbi->user_column_info($user_column_info);
 
-You can set the following data.
+You can set the date like the following one.
 
     [
         {table => 'book', column => 'title', info => {...}},
         {table => 'author', column => 'name', info => {...}}
     ]
 
-Usually, you can set return value of C<get_column_info>.
+Usually, you set return value of C<get_column_info>.
 
     my $user_column_info
       = $dbi->get_column_info(exclude_table => qr/^system/);
