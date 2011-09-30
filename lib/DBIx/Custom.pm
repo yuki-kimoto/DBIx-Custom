@@ -269,12 +269,11 @@ sub delete {
       if $where_clause eq '' && !$allow_delete_all;
 
     # Delete statement
-    my @sql;
-    push @sql, "delete";
-    push @sql, $prefix if defined $prefix;
-    push @sql, "from " . $self->_q($table) . " $where_clause";
-    push @sql, $append if defined $append;
-    my $sql = join(' ', @sql);
+    my $sql;
+    $sql .= "delete ";
+    $sql .= "$prefix " if defined $prefix;
+    $sql .= "from " . $self->_q($table) . " $where_clause ";
+    $sql .= $append if defined $append;
     
     # Execute query
     return $self->execute($sql, $where_param, table => $table, %args);
@@ -633,13 +632,12 @@ sub insert {
     }
 
     # Insert statement
-    my @sql;
-    push @sql, "insert";
-    push @sql, $prefix if defined $prefix;
-    push @sql, "into " . $self->_q($table) . " "
-      . $self->insert_param($param, {wrap => $wrap});
-    push @sql, $append if defined $append;
-    my $sql = join (' ', @sql);
+    my $sql;
+    $sql .= "insert ";
+    $sql .= "$prefix " if defined $prefix;
+    $sql .= "into " . $self->_q($table) . " "
+      . $self->insert_param($param, {wrap => $wrap}) . " ";
+    $sql .= $append if defined $append;
     
     # Execute query
     return $self->execute($sql, $param, table => $table, %args);
@@ -1169,14 +1167,11 @@ sub update {
     $param = $self->merge_param($param, $where_param) if keys %$where_param;
     
     # Update statement
-    my @sql;
-    push @sql, "update";
-    push @sql, $prefix if defined $prefix;
-    push @sql, $self->_q($table) . " $update_clause $where_clause";
-    push @sql, $append if defined $append;
-    
-    # SQL
-    my $sql = join(' ', @sql);
+    my $sql;
+    $sql .= "update ";
+    $sql .= "$prefix " if defined $prefix;
+    $sql .= $self->_q($table) . " $update_clause $where_clause ";
+    $sql .= $append if defined $append;
     
     # Execute query
     return $self->execute($sql, $param, table => $table, %args);
