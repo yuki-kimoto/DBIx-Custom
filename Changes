@@ -1,3 +1,9 @@
+0.1728
+    - update_param is DEPRECATED, use assing_clause instead.
+    - assing_param is renamed to assing_clause, assing_param is DEPRECATED!
+    - insert_param is renamed to values_clause, insert_param is DEPRECATED!
+0.1727
+    - improved join clause parsing
 0.1726
     - improved join clause parsing
 0.1725

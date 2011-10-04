@@ -282,7 +282,24 @@ $result = $dbi->select(
     table => 'table1',
     column => [{table2 => ['key3']}],
     join => [
-        "left outer join table2 on coalesce(table2.key3, 0) > '3' and table1.key1 = table2.key1"
+        "left outer join table2 on coalesce(table1.key1, 0) = coalesce(table2.key1, 0) and table2.key3 > '3'"
+    ]
+);
+is_deeply($result->all, [{"table2.key3" => 4}]);
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table table1") };
+eval { $dbi->execute("drop table table2") };
+$dbi->execute($create_table1);
+$dbi->execute("create table table2 (key1, key3)");
+$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 4});
+$dbi->insert(table => 'table2', param => {key1 => 1, key3 => 1});
+$result = $dbi->select(
+    table => 'table1',
+    column => [{table2 => ['key3']}],
+    join => [
+        "left outer join table2 on table2.key3 > '3' and coalesce(table1.key1, 0) = coalesce(table2.key1, 0)"
     ]
 );
 is_deeply($result->all, [{"table2.key3" => 4}]);

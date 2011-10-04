@@ -13,7 +13,7 @@ plan skip_all => $ENV{DBIX_CUSTOM_SKIP_MESSAGE} || 'common.t is always skipped'
 
 plan 'no_plan';
 
-$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
+#$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 sub test { print "# $_[0]\n" }
 
 # Constant
@@ -78,6 +78,8 @@ my $join;
 my $binary;
 my $user_table_info;
 my $user_column_info;
+my $values_clause;
+my $assign_clause;
 
 require MyDBI1;
 {
@@ -2004,14 +2006,14 @@ $result = $model->select(
 is_deeply($result->one,
           {$key1 => 1, $key2 => 2, "${table2}__$key1" => 1, "${table2}__$key3" => 3});
 
-test 'insert_param';
+test 'values_clause';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key1 => 1, $key2 => 2};
-$insert_param = $dbi->insert_param($param);
+$values_clause = $dbi->values_clause($param);
 $sql = <<"EOS";
-insert into $table1 $insert_param
+insert into $table1 $values_clause
 EOS
 $dbi->execute($sql, param => $param, table => $table1);
 is($dbi->select(table => $table1)->one->{$key1}, 1);
@@ -2021,15 +2023,15 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key1 => 1, $key2 => 2};
-$insert_param = $dbi->insert_param($param);
+$values_clause = $dbi->insert_param($param);
 $sql = <<"EOS";
-insert into $table1 $insert_param
+insert into $table1 $values_clause
 EOS
 $dbi->execute($sql, param => $param, table => $table1);
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 
-eval { $dbi->insert_param({";" => 1}) };
+eval { $dbi->values_clause({";" => 1}) };
 like($@, qr/not safety/);
 
 test 'mycolumn';
@@ -3208,7 +3210,7 @@ $model = $dbi->create_model(
 $model->method(foo => sub { shift->select(@_) });
 is_deeply($model->foo->one, {$key1 => 1, $key3 => 3});
 
-test 'update_param';
+test 'assign_clause';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
@@ -3216,9 +3218,9 @@ $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2, $key3 => 3, $ke
 $dbi->insert(table => $table1, param => {$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10});
 
 $param = {$key2 => 11};
-$update_param = $dbi->update_param($param);
+$assign_clause = $dbi->assign_clause($param);
 $sql = <<"EOS";
-update $table1 $update_param
+update $table1 set $assign_clause
 where $key1 = 1
 EOS
 $dbi->execute($sql, param => $param);
@@ -3236,9 +3238,9 @@ $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2, $key3 => 3, $ke
 $dbi->insert(table => $table1, param => {$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10});
 
 $param = {$key2 => 11, $key3 => 33};
-$update_param = $dbi->update_param($param);
+$assign_clause = $dbi->assign_clause($param);
 $sql = <<"EOS";
-update $table1 $update_param
+update $table1 set $assign_clause
 where $key1 = 1
 EOS
 $dbi->execute($sql, param => $param);
@@ -3255,9 +3257,9 @@ $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2, $key3 => 3, $ke
 $dbi->insert(table => $table1, param => {$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10});
 
 $param = {$key2 => 11, $key3 => 33};
-$update_param = $dbi->update_param($param, {no_set => 1});
+$assign_clause = $dbi->update_param($param, {no_set => 1});
 $sql = <<"EOS";
-update $table1 set $update_param
+update $table1 set $assign_clause
 where $key1 = 1
 EOS
 $dbi->execute($sql, param => $param);
@@ -3268,11 +3270,9 @@ is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 33, $key4 => 4, $key5 => 5}
                   "update param no_set");
 
             
-eval { $dbi->update_param({";" => 1}) };
+eval { $dbi->assign_clause({";" => 1}) };
 like($@, qr/not safety/);
 
-
-test 'update_param';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
@@ -3280,9 +3280,22 @@ $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2, $key3 => 3, $ke
 $dbi->insert(table => $table1, param => {$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10});
 
 $param = {$key2 => 11};
-$update_param = $dbi->assign_param($param);
+$assign_clause = $dbi->assign_param($param);
 $sql = <<"EOS";
-update $table1 set $update_param
+update $table1 set $assign_clause
+where $key1 = 1
+EOS
+$dbi->execute($sql, param => $param, table => $table1);
+$result = $dbi->execute("select * from $table1 order by $key1");
+$rows   = $result->all;
+is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
+                  {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
+                  "basic");
+
+$param = {$key2 => 11};
+$assign_clause = $dbi->assign_clause($param);
+$sql = <<"EOS";
+update $table1 set $assign_clause
 where $key1 = 1
 EOS
 $dbi->execute($sql, param => $param, table => $table1);

@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1726';
+our $VERSION = '0.1728';
 use 5.008001;
 
 use Carp 'croak';
@@ -119,7 +119,7 @@ sub AUTOLOAD {
     }
 }
 
-sub assign_param {
+sub assign_clause {
     my ($self, $param, $opts) = @_;
     
     my $wrap = $opts->{wrap} || {};
@@ -636,14 +636,14 @@ sub insert {
     $sql .= "insert ";
     $sql .= "$prefix " if defined $prefix;
     $sql .= "into " . $self->_q($table) . " "
-      . $self->insert_param($param, {wrap => $wrap}) . " ";
+      . $self->values_clause($param, {wrap => $wrap}) . " ";
     $sql .= $append if defined $append;
     
     # Execute query
     return $self->execute($sql, $param, table => $table, %args);
 }
 
-sub insert_param {
+sub values_clause {
     my ($self, $param, $opts) = @_;
     
     my $wrap = $opts->{wrap} || {};
@@ -1138,7 +1138,7 @@ sub update {
     }
 
     # Update clause
-    my $update_clause = $self->update_param($param, {wrap => $wrap});
+    my $assign_clause = $self->assign_clause($param, {wrap => $wrap});
 
     # Where
     $where = $self->_create_param_from_id($id, $primary_key) if defined $id;
@@ -1167,7 +1167,7 @@ sub update {
     my $sql;
     $sql .= "update ";
     $sql .= "$prefix " if defined $prefix;
-    $sql .= $self->_q($table) . " $update_clause $where_clause ";
+    $sql .= $self->_q($table) . " set $assign_clause $where_clause ";
     $sql .= $append if defined $append;
     
     # Execute query
@@ -1175,16 +1175,6 @@ sub update {
 }
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
-
-sub update_param {
-    my ($self, $param, $opts) = @_;
-    
-    # Create update parameter tag
-    my $tag = $self->assign_param($param, $opts);
-    $tag = "set $tag" unless $opts->{no_set};
-
-    return $tag;
-}
 
 sub update_timestamp {
     my $self = shift;
@@ -1452,7 +1442,7 @@ sub _push_join {
             
             my @j_clauses = reverse split /\s(and|on)\s/, $j_clause;
             my $c = $self->safety_character;
-            my $join_re = qr/(?:^|\s)($c+)\.$c+[^$c]+($c+)\.$c+/;
+            my $join_re = qr/($c+)\.$c+[^$c].*?($c+)\.$c+/sm;
             for my $clause (@j_clauses) {
                 if ($clause =~ $join_re) {
                     $table1 = $1;
@@ -1664,6 +1654,32 @@ sub _apply_filter {
 }
 
 # DEPRECATED!
+has 'data_source';
+has dbi_options => sub { {} };
+has filter_check  => 1;
+has 'reserved_word_quote';
+
+# DEPRECATED!
+sub assign_param {
+    my $self = shift;
+    warn "assing_param is DEPRECATED! use assign_clause instead";
+    return $self->assign_clause(@_);
+}
+
+# DEPRECATED
+sub update_param {
+    my ($self, $param, $opts) = @_;
+    
+    warn "update_param is DEPRECATED! use assing_clause instead.";
+    
+    # Create update parameter tag
+    my $tag = $self->assign_clause($param, $opts);
+    $tag = "set $tag" unless $opts->{no_set};
+
+    return $tag;
+}
+
+# DEPRECATED!
 sub create_query {
     warn "create_query is DEPRECATED! use query option of each method";
     shift->_create_query(@_);
@@ -1814,12 +1830,6 @@ sub register_tag_processor {
 }
 
 # DEPRECATED!
-has 'data_source';
-has dbi_options => sub { {} };
-has filter_check  => 1;
-has 'reserved_word_quote';
-
-# DEPRECATED!
 sub default_bind_filter {
     my $self = shift;
     
@@ -1866,6 +1876,13 @@ sub default_fetch_filter {
     }
     
     return $self->{default_in_filter};
+}
+
+# DEPRECATED!
+sub insert_param {
+    my $self = shift;
+    warn "insert_param is DEPRECATED! use values_clause instead";
+    return $self->values_clause(@_);
 }
 
 # DEPRECATED!
@@ -2253,15 +2270,17 @@ in C<type rule>'s C<from1> and C<from2> section.
 Get available type names. You can use these type names in
 C<type_rule>'s C<into1> and C<into2> section.
 
-=head2 C<assign_param>
+=head2 C<assign_clause>
 
-    my $assign_param = $dbi->assign_param({title => 'a', age => 2});
+    my $assign_clause = $dbi->assign_clause({title => 'a', age => 2});
 
-Create assign parameter.
+Create assign clause
 
     title = :title, author = :author
 
-This is equal to C<update_param> exept that set is not added.
+This is used to create update clause.
+
+    "update book set " . $dbi->assign_clause({title => 'a', age => 2});
 
 =head2 C<column>
 
@@ -2812,11 +2831,11 @@ is executed, the following SQL is executed.
 
 =over 4
 
-=head2 C<insert_param>
+=head2 C<values_clause>
 
-    my $insert_param = $dbi->insert_param({title => 'a', age => 2});
+    my $values_clause = $dbi->values_clause({title => 'a', age => 2});
 
-Create insert parameters.
+Create values clause.
 
     (title, author) values (title = :title, age = :age);
 
@@ -3477,6 +3496,9 @@ L<DBIx::Custom>
     cache_method # will be removed at 2017/1/1
     
     # Methods
+    assign_param # will be removed at 2017/1/1
+    update_param # will be removed at 2017/1/1
+    insert_param # will be removed at 2017/1/1
     create_query # will be removed at 2017/1/1
     apply_filter # will be removed at 2017/1/1
     select_at # will be removed at 2017/1/1
@@ -3560,8 +3582,6 @@ but if at least one person use the functionality and tell me that thing
 I extend one year each time he tell me it.
 
 EXPERIMENTAL functionality will be changed without warnings.
-
-This policy was changed at 2011/6/28
 
 =head1 BUGS
 
