@@ -1,4 +1,7 @@
 0.1728
+    
+    - added {key => ..., value => ...} syntax to DBIx::Custom::Mapper map method
+      ,and argument of string and code reference is DEPRECATED!
     - update_param is DEPRECATED, use assing_clause instead.
     - assing_param is renamed to assing_clause, assing_param is DEPRECATED!
     - insert_param is renamed to values_clause, insert_param is DEPRECATED!

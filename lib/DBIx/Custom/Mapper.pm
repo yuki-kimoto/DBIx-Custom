@@ -18,30 +18,45 @@ has [qw/param/],
 sub map {
     my ($self, %rule) = @_;
     my $param = $self->param;
-    $rule{$_} = $rule{$_} for @{$self->pass};
+    $rule{$_} = {key => $_} for @{$self->pass};
     
     # Mapping
     my $new_param = {};
     foreach my $key (keys %rule) {
         
-        my $value_cb;
-        my $condition;
-        my $new_key;
+        my $mapping = $rule{$key};
         
         # Get mapping information
-        $rule{$key} = [$rule{$key}] if ref $rule{$key} ne 'ARRAY';
-        foreach my $some (@{$rule{$key}}) {
-            $new_key = $some unless ref $some;
-            $condition = $some->{condition} if ref $some eq 'HASH';
-            $value_cb = $some if ref $some eq 'CODE';
+        my $new_key;
+        my $value;
+        my $condition;
+        
+        if (ref $mapping eq 'ARRAY') {
+            $new_key = $mapping->[0];
+            $value = $mapping->[1];
+            $condition = $mapping->[2];
         }
+        elsif (ref $mapping eq 'HASH') {
+            $new_key = $mapping->{key};
+            $value = $mapping->{value};
+            $condition = $mapping->{condition};
+        }
+        elsif (!ref $mapping) {
+            $new_key = $mapping;
+            warn qq/map method's string value "$mapping" is DEPRECATED. / .
+                 qq/use {key => ...} syntax instead/
+        }
+        elsif (ref $mapping eq 'CODE') {
+            $value = $mapping;
+            warn qq/map method's code reference value "$mapping" is DEPRECATED. / .
+                 qq/use {value => ...} syntax instead/
+        }
+        
         $new_key = $key unless defined $new_key;
-        $value_cb ||= sub { $_[0] };
         $condition ||= $self->condition;
         $condition = $self->_condition_to_sub($condition);
 
         # Map parameter
-        my $value;
         if (ref $condition eq 'CODE') {
             if (ref $param->{$key} eq 'ARRAY') {
                 $new_param->{$new_key} = [];
@@ -52,8 +67,11 @@ sub map {
                 }
             }
             else {
-                $new_param->{$new_key} = $value_cb->($param->{$key})
-                  if $condition->($param->{$key});
+              if ($condition->($param->{$key})) {
+                  $new_param->{$new_key} = defined $value
+                                         ? $value->($param->{$key})
+                                         : $param->{$key};
+              }
             }
         }
         elsif ($condition eq 'exists') {
@@ -66,8 +84,11 @@ sub map {
                 }
             }
             else {
-                $new_param->{$new_key} = $value_cb->($param->{$key})
-                  if exists $param->{$key};
+                if (exists $param->{$key}) {
+                    $new_param->{$new_key} = defined $value
+                                           ? $value->($param->{$key})
+                                           : $param->{$key};
+                }
             }
         }
         else { croak qq/Condition must be code reference or "exists" / . _subname }
@@ -179,12 +200,12 @@ and implements the following new ones.
 =head2 C<map>
 
     my $new_param = $mapper->map(
-        price => 'book.price', # Key
-        title => sub { '%' . $_[0] . '%'}, # Value
-        author => ['book.author', sub { '%' . $_[0] . '%'}] # Key and value
+        price => {key => 'book.price'}
+        title => {value => sub { '%' . $_[0] . '%'}}
+        author => ['book.author' => sub { '%' . $_[0] . '%'}] # Key and value
     );
 
-Map C<param>'s key and value and return new parameter.
+Map C<param> into new parameter.
 
 For example, if C<param> is set to
 
@@ -217,15 +238,15 @@ You can set change mapping condition by C<condition> attribute.
 Or you can set C<condtion> option for each key.
 
     my $new_param = $mapper->map(
-        price => ['book.price', {condition => 'defined'}]
-        title => [sub { '%' . $_[0] . '%'}, {condition => 'defined'}] # Value
-        author => ['book.author', sub { '%' . $_[0] . '%'}, condtion => 'exists']
+        price => {key => 'book.price', condition => 'defined'}]
+        title => {value => sub { '%' . $_[0] . '%'}, condition => 'defined'}
+        author => ['book.author', sub { '%' . $_[0] . '%'}, 'exists']
     );
 
 If C<pass> attrivute is set, the keys and value is copied without change.
 
     $mapper->pass([qw/title author/]);
-    my $new_param = $mapper->map(price => 'book.price');
+    my $new_param = $mapper->map(price => {key => 'book.price'});
 
 The following hash reference
     
