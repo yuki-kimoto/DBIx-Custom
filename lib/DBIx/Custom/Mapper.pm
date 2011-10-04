@@ -34,7 +34,7 @@ sub map {
         if (ref $mapping eq 'ARRAY') {
             $new_key = $mapping->[0];
             $value = $mapping->[1];
-            $condition = $mapping->[2];
+            $condition = ref $mapping->[2] eq 'HASH' ? $mapping->[2]->{condition} : $mapping->[2];
         }
         elsif (ref $mapping eq 'HASH') {
             $new_key = $mapping->{key};
