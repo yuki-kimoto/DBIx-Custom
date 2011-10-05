@@ -116,7 +116,7 @@ test 'dbh';
         "dbi:mysql:database=$database",
         $user,
         $password,
-        DBIx::Custom->new->default_dbi_option
+        DBIx::Custom->new->default_option
     );
 
     my $dbi = DBIx::Custom->connect(connector => $connector);
@@ -182,7 +182,7 @@ use Scalar::Util 'blessed';
         user => $user,
         password => $password,
         dsn => "dbi:mysql:dbname=$database",
-        dbi_options => {AutoCommit => 0, mysql_enable_utf8 => 1}
+        option => {AutoCommit => 0, mysql_enable_utf8 => 1}
     );
     $dbi->connect;
     ok(!$dbi->dbh->{AutoCommit});
@@ -195,7 +195,7 @@ test 'fork';
         "dbi:mysql:database=$database",
         $user,
         $password,
-        DBIx::Custom->new->default_dbi_option
+        DBIx::Custom->new->default_option
     );
     
     my $dbi = DBIx::Custom->new(connector => $connector);

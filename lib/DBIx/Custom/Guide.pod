@@ -56,13 +56,13 @@ Create C<order by> clause flexibly
         dsn => "dbi:mysql:database=bookshop",
         user => 'ken',
         password => '!LFKD%$&',
-        dbi_option => {mysql_enable_utf8 => 1}
+        option => {mysql_enable_utf8 => 1}
     );
 
 You can connect to database by C<connect> method.
 C<dsn> is data source name, C<user> is user name, C<password> is password.
 
-C<dbi_option> is L<DBI> option.
+C<option> is L<DBI> option.
 By default, the following option is set.
 Exeption is thrown when fatal error occur and commit mode is auto commit.
 

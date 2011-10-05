@@ -1729,7 +1729,9 @@ ok(!defined $result->default_filter);
 $result->default_filter('one');
 is($result->default_filter->(), 1);
 
-test 'dbi_option';
+test 'option';
+$dbi = DBIx::Custom->connect(option => {PrintError => 1});
+ok($dbi->dbh->{PrintError});
 $dbi = DBIx::Custom->connect(dbi_option => {PrintError => 1});
 ok($dbi->dbh->{PrintError});
 $dbi = DBIx::Custom->connect(dbi_options => {PrintError => 1});

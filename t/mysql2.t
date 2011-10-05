@@ -44,7 +44,7 @@ $dbi->execute('create table table1 (key1 varchar(255), key2 varchar(255))');
 test 'connector => 1';
 {
     my $dbi = DBIx::Custom->connect(dsn => $dsn, user => $user, password => $password,
-      dbi_option => {PrintError => 1}, connector => 1);
+      option => {PrintError => 1}, connector => 1);
     is(ref $dbi->connector, 'DBIx::Connector');
     ok($dbi->dbh->{PrintError});
     $dbi->delete_all(table => 'table1');

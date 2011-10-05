@@ -39,8 +39,8 @@ has [qw/connector dsn password quote user exclude_table user_table_info
             }
         }
     },
-    dbi_option => sub { {} },
-    default_dbi_option => sub {
+    option => sub { {} },
+    default_option => sub {
         {
             RaiseError => 1,
             PrintError => 0,
@@ -178,9 +178,9 @@ sub connect {
         my $dsn = $self->dsn;
         my $user = $self->user;
         my $password = $self->password;
-        my $dbi_option = {%{$self->dbi_options}, %{$self->dbi_option}};
+        my $option = $self->_option;
         my $connector = DBIx::Connector->new($dsn, $user, $password,
-          {%{$self->default_dbi_option} , %$dbi_option});
+          {%{$self->default_option} , %$option});
         $self->connector($connector);
     }
     
@@ -1347,11 +1347,8 @@ sub _connect {
       unless $dsn;
     my $user        = $self->user;
     my $password    = $self->password;
-    my $dbi_option = {%{$self->dbi_options}, %{$self->dbi_option}};
-    warn "dbi_options is DEPRECATED! use dbi_option instead\n"
-      if keys %{$self->dbi_options};
-    
-    $dbi_option = {%{$self->default_dbi_option}, %$dbi_option};
+    my $option = $self->_option;
+    $option = {%{$self->default_option}, %$option};
     
     # Connect
     my $dbh;
@@ -1360,7 +1357,7 @@ sub _connect {
             $dsn,
             $user,
             $password,
-            $dbi_option
+            $option
         );
     };
     
@@ -1402,6 +1399,16 @@ sub _need_tables {
             $self->_need_tables($tree, $need_tables, [$tree->{$table}{parent}])
         }
     }
+}
+
+sub _option {
+    my $self = shift;
+    my $option = {%{$self->dbi_options}, %{$self->dbi_option}, %{$self->option}};
+    warn "dbi_options is DEPRECATED! use option instead\n"
+      if keys %{$self->dbi_options};
+    warn "dbi_option is DEPRECATED! use option instead\n"
+      if keys %{$self->dbi_option};
+    return $option;
 }
 
 sub _push_join {
@@ -1658,6 +1665,12 @@ has 'data_source';
 has dbi_options => sub { {} };
 has filter_check  => 1;
 has 'reserved_word_quote';
+has dbi_option => sub { {} };
+has default_dbi_option => sub {
+    warn "default_dbi_option is DEPRECATED! use default_option instead";
+    return shift->default_option;
+};
+
 
 # DEPRECATED!
 sub assign_param {
@@ -1949,7 +1962,7 @@ DBIx::Custom - Execute insert, update, delete, and select statement easily
         dsn => "dbi:mysql:database=dbname",
         user => 'ken',
         password => '!LFKD%$&',
-        dbi_option => {mysql_enable_utf8 => 1}
+        option => {mysql_enable_utf8 => 1}
     );
 
     # Insert 
@@ -2062,13 +2075,13 @@ Connection manager object. if C<connector> is set, you can get C<dbh>
 through connection manager. Conection manager object must have C<dbh> mehtod.
 
 This is L<DBIx::Connector> example. Please pass
-C<default_dbi_option> to L<DBIx::Connector> C<new> method.
+C<default_option> to L<DBIx::Connector> C<new> method.
 
     my $connector = DBIx::Connector->new(
         "dbi:mysql:database=$database",
         $user,
         $password,
-        DBIx::Custom->new->default_dbi_option
+        DBIx::Custom->new->default_option
     );
     
     my $dbi = DBIx::Custom->connect(connector => $connector);
@@ -2090,18 +2103,18 @@ Note that L<DBIx::Connector> must be installed.
 
 Data source name, used when C<connect> method is executed.
 
-=head2 C<dbi_option>
+=head2 C<option>
 
-    my $dbi_option = $dbi->dbi_option;
-    $dbi = $dbi->dbi_option($dbi_option);
+    my $option = $dbi->option;
+    $dbi = $dbi->option($option);
 
 L<DBI> option, used when C<connect> method is executed.
-Each value in option override the value of C<default_dbi_option>.
+Each value in option override the value of C<default_option>.
 
-=head2 C<default_dbi_option>
+=head2 C<default_option>
 
-    my $default_dbi_option = $dbi->default_dbi_option;
-    $dbi = $dbi->default_dbi_option($default_dbi_option);
+    my $default_option = $dbi->default_option;
+    $dbi = $dbi->default_option($default_option);
 
 L<DBI> default option, used when C<connect> method is executed,
 default to the following values.
@@ -2293,12 +2306,6 @@ Create column clause. The follwoing column clause is created.
 
 You can change separator by C<separator> attribute.
 
-    # Separator is double underbar
-    $dbi->separator('__');
-    
-    book.author as "book__author",
-    book.title as "book__title"
-
     # Separator is hyphen
     $dbi->separator('-');
     
@@ -2311,7 +2318,7 @@ You can change separator by C<separator> attribute.
         dsn => "dbi:mysql:database=dbname",
         user => 'ken',
         password => '!LFKD%$&',
-        dbi_option => {mysql_enable_utf8 => 1}
+        option => {mysql_enable_utf8 => 1}
     );
 
 Connect to the database and create a new L<DBIx::Custom> object.
@@ -2957,7 +2964,7 @@ Create column clause for myself. The follwoing column clause is created.
         dsn => "dbi:mysql:database=dbname",
         user => 'ken',
         password => '!LFKD%$&',
-        dbi_option => {mysql_enable_utf8 => 1}
+        option => {mysql_enable_utf8 => 1}
     );
 
 Create a new L<DBIx::Custom> object.
@@ -3489,6 +3496,8 @@ DEBUG output encoding. Default to UTF-8.
 L<DBIx::Custom>
 
     # Attribute methods
+    default_dbi_option # will be removed 2017/1/1
+    dbi_option # will be removed 2017/1/1
     data_source # will be removed at 2017/1/1
     dbi_options # will be removed at 2017/1/1
     filter_check # will be removed at 2017/1/1
