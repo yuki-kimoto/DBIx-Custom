@@ -2806,7 +2806,7 @@ $result = $dbi->execute("select $key1 as h1, $key2 as h2 from $table1");
 is_deeply([map { lc } @{$result->header}], [qw/h1 h2/]);
 
 test 'Named placeholder :name(operater) syntax';
-$dbi->execute("drop table $table1");
+eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5});
 $dbi->insert(table => $table1, param => {$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10});
@@ -2836,7 +2836,7 @@ $rows = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}]);
 
 test 'high perfomance way';
-$dbi->execute("drop table $table1");
+eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_highperformance);
 $rows = [
     {$key7 => 1, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 6, $key1 => 7},
@@ -2856,7 +2856,7 @@ $rows = [
     );
 }
 
-$dbi->execute("drop table $table1");
+eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_highperformance);
 $rows = [
     {$key7 => 1, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 6, $key1 => 7},
@@ -2878,7 +2878,7 @@ $rows = [
     );
 }
 
-$dbi->execute("drop table $table1");
+eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_highperformance);
 $rows = [
     {$key7 => 10, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5},
@@ -2888,16 +2888,70 @@ $rows = [
     $model = $dbi->create_model(table => $table1, primary_key => $key1);
     my $query;
     foreach my $row (@$rows) {
-      $query ||= $model->insert($row, id => 1, query => 1);
-      $model->execute($query, $row, id => 1, filter => {$key7 => sub { $_[0] * 2 }});
+      $query ||= $model->insert($row, query => 1);
+      $model->execute($query, $row, filter => {$key7 => sub { $_[0] * 2 }});
     }
     is_deeply($dbi->select(table => $table1, append => 'order by key2')->all,
       [
-          {$key7 => 20, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => 1},
-          {$key7 => 22, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 6, $key1 => 1},
+          {$key7 => 20, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => undef},
+          {$key7 => 22, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 6, $key1 => undef},
       ]
     );
 }
+
+test 'id option more';
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_highperformance);
+$row = {
+    $key7 => 10, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => 2
+};
+$model = $dbi->create_model(table => $table1, primary_key => $key1);
+$model->insert($row);
+$query = $model->update({$key7 => 11}, id => 1, query => 1);
+$model->execute($query, {$key7 => 11}, id => 1, filter => {"$table1.$key1" => sub { $_[0] * 2 }});
+is_deeply($dbi->select(table => $table1)->one,
+    {$key7 => 11, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => 2},
+);
+
+eval { $dbi->execute("drop table $table1") };
+eval { $dbi->execute("drop table $table2") };
+$dbi->execute($create_table1);
+$dbi->execute($create_table2);
+$model = $dbi->create_model(table => $table1, primary_key => $key1);
+$model->insert({$key1 => 1, $key2 => 2});
+$model = $dbi->create_model(table => $table2, primary_key => $key1,
+    join => ["left outer join $table1 on $table2.$key1 = $table1.$key1"]);
+$model->insert({$key1 => 1, $key3 => 3});
+$result = $model->select(
+    column => {$table1 => ["$key2"]},
+    id => 1
+);
+$DB::single = 1;
+is_deeply($result->all, [{"$table1.$key2" => 2}]);
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_highperformance);
+$row = {
+    $key7 => 10, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => 2
+};
+$model = $dbi->create_model(table => $table1, primary_key => $key1);
+$model->insert($row);
+$query = $model->delete(id => 1, query => 1);
+$model->execute($query, {}, id => 1, , filter => {"$table1.$key1" => sub { $_[0] * 2 }});
+is_deeply($dbi->select(table => $table1)->all, []);
+
+eval { $dbi->execute("drop table $table1") };
+eval { $dbi->execute($create_table1_highperformance) };
+$row = {
+    $key7 => 10, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => 2
+};
+$model = $dbi->create_model(table => $table1, primary_key => $key1);
+$model->insert($row);
+$query = $model->select(id => 1, query => 1);
+$model->execute($query, {$key7 => 11}, id => 1, filter => {"$table1.$key1" => sub { $_[0] * 2 }});
+is_deeply($dbi->select(table => $table1)->one,
+    {$key7 => 10, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => 2},
+);
 
 test 'result';
 $dbi = DBIx::Custom->connect;

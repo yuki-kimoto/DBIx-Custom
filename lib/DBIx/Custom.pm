@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1728';
+our $VERSION = '0.1730';
 use 5.008001;
 
 use Carp 'croak';
@@ -249,7 +249,8 @@ sub delete {
     my $prefix = delete $args{prefix};
     
     # Where
-    $where = $self->_create_param_from_id($id, $primary_key) if defined $id;
+    $where = $self->_create_param_from_id($id, $primary_key, $table)
+      if defined $id;
     my $where_clause = '';
     if (ref $where eq 'ARRAY' && !ref $where->[0]) {
         $where_clause = "where " . $where->[0];
@@ -403,16 +404,11 @@ sub execute {
     warn "sqlfilter option is DEPRECATED" if $args{sqlfilter};
     my $id = delete $args{id};
     my $primary_key = delete $args{primary_key};
-    croak "insert method primary_key option " .
+    croak "execute method primary_key option " .
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
 
-    if (defined $id) {
-        my $id_param = $self->_create_param_from_id($id, $primary_key);
-        $param = $self->merge_param($id_param, $param);
-    }
-    
     # Check argument names
     foreach my $name (keys %args) {
         croak qq{"$name" is wrong option } . _subname
@@ -422,6 +418,7 @@ sub execute {
     $query = $self->_create_query($query, $after_build_sql) unless ref $query;
     
     # Save query
+    if (ref $query eq 'DBIx::Custom::Result') { $DB::single = 1 }
     $self->last_sql($query->sql);
 
     return $query if $query_return;
@@ -432,6 +429,11 @@ sub execute {
     # Tables
     unshift @$tables, @{$query->{tables} || []};
     my $main_table = @{$tables}[-1];
+
+    if (defined $id) {
+        my $id_param = $self->_create_param_from_id($id, $primary_key, $main_table);
+        $param = $self->merge_param($id_param, $param);
+    }
     
     # DEPRECATED! Cleanup tables
     $tables = $self->_remove_duplicate_table($tables, $main_table)
@@ -932,7 +934,7 @@ sub select {
     }
     else {
         my $main_table = $tables->[-1] || '';
-        $sql .= $self->_q($main_table);
+        $sql .= $self->_q($main_table) . ' ';
     }
     $sql =~ s/, $/ /;
     croak "Not found table name " . _subname
@@ -944,7 +946,8 @@ sub select {
     
     # Where
     my $where_clause = '';
-    $where = $self->_create_param_from_id($id, $primary_key) if defined $id;
+    $where = $self->_create_param_from_id($id, $primary_key, $tables->[-1])
+      if defined $id;
     if (ref $where eq 'ARRAY' && !ref $where->[0]) {
         $where_clause = "where " . $where->[0];
         $where_param = $where->[1];
@@ -1141,7 +1144,8 @@ sub update {
     my $assign_clause = $self->assign_clause($param, {wrap => $wrap});
 
     # Where
-    $where = $self->_create_param_from_id($id, $primary_key) if defined $id;
+    $where = $self->_create_param_from_id($id, $primary_key, $table)
+      if defined $id;
     my $where_clause = '';
     if (ref $where eq 'ARRAY' && !ref $where->[0]) {
         $where_clause = "where " . $where->[0];
@@ -1315,7 +1319,7 @@ sub _create_bind_values {
 }
 
 sub _create_param_from_id {
-    my ($self, $id, $primary_keys) = @_;
+    my ($self, $id, $primary_keys, $table) = @_;
     
     # Create parameter
     my $param = {};
@@ -1328,7 +1332,9 @@ sub _create_param_from_id {
             . " (" . (caller 1)[3] . ")"
           unless @$primary_keys eq @$id;
         for(my $i = 0; $i < @$primary_keys; $i ++) {
-           $param->{$primary_keys->[$i]} = $id->[$i];
+           my $key = $primary_keys->[$i];
+           $key = "$table." . $key if $table;
+           $param->{$key} = $id->[$i];
         }
     }
     
@@ -2329,7 +2335,7 @@ and C<PrintError> option is false by default.
 
 =head2 C<count>
 
-    my $count = $model->count(table => 'book');
+    my $count = $dbi->count(table => 'book');
 
 Get rows count.
 
