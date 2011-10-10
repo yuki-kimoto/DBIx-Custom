@@ -629,6 +629,7 @@ sub insert {
 
     # Merge parameter
     if (defined $id) {
+        warn "insert method's id option is DEPRECATED!";
         my $id_param = $self->_create_param_from_id($id, $primary_key);
         $param = $self->merge_param($id_param, $param);
     }
@@ -3529,6 +3530,7 @@ L<DBIx::Custom>
     update_param_tag # will be removed at 2017/1/1
     
     # Options
+    insert method id option # will be removed at 2017/1/1
     select method relation option # will be removed at 2017/1/1
     select method param option # will be removed at 2017/1/1
     select method column option [COLUMN, as => ALIAS] format

@@ -1,4 +1,5 @@
 0.1730
+    - insert method's id option is DEPRECATED!
     - fixed id option bug when column name is anbiguous
 0.1729
     - dbi_option attribute is renamed to option, dbi_option is DEPRECATED!
