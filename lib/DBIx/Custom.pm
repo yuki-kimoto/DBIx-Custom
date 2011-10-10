@@ -595,6 +595,16 @@ sub get_column_info {
         @$column_info];
 }
 
+sub helper {
+    my $self = shift;
+    
+    # Register method
+    my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $self->{_methods} = {%{$self->{_methods} || {}}, %$methods};
+    
+    return $self;
+}
+
 sub insert {
     my $self = shift;
     
@@ -644,32 +654,6 @@ sub insert {
     
     # Execute query
     return $self->execute($sql, $param, table => $table, %args);
-}
-
-sub values_clause {
-    my ($self, $param, $opts) = @_;
-    
-    my $wrap = $opts->{wrap} || {};
-    
-    # Create insert parameter tag
-    my $safety = $self->safety_character;
-    my @columns;
-    my @placeholders;
-    foreach my $column (sort keys %$param) {
-        croak qq{"$column" is not safety column name } . _subname
-          unless $column =~ /^[$safety\.]+$/;
-        my $column_quote = $self->_q($column);
-        $column_quote =~ s/\./$self->_q(".")/e;
-        push @columns, $column_quote;
-        
-        my $func = $wrap->{$column} || sub { $_[0] };
-        push @placeholders,
-          ref $param->{$column} eq 'SCALAR' ? ${$param->{$column}}
-        : $func->(":$column");
-    }
-    
-    return '(' . join(', ', @columns) . ') ' . 'values ' .
-           '(' . join(', ', @placeholders) . ')'
 }
 
 sub insert_timestamp {
@@ -777,16 +761,6 @@ sub merge_param {
     }
     
     return $merge;
-}
-
-sub method {
-    my $self = shift;
-    
-    # Register method
-    my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $self->{_methods} = {%{$self->{_methods} || {}}, %$methods};
-    
-    return $self;
 }
 
 sub model {
@@ -1190,6 +1164,32 @@ sub update_timestamp {
         return $self;
     }
     return $self->{update_timestamp};
+}
+
+sub values_clause {
+    my ($self, $param, $opts) = @_;
+    
+    my $wrap = $opts->{wrap} || {};
+    
+    # Create insert parameter tag
+    my $safety = $self->safety_character;
+    my @columns;
+    my @placeholders;
+    foreach my $column (sort keys %$param) {
+        croak qq{"$column" is not safety column name } . _subname
+          unless $column =~ /^[$safety\.]+$/;
+        my $column_quote = $self->_q($column);
+        $column_quote =~ s/\./$self->_q(".")/e;
+        push @columns, $column_quote;
+        
+        my $func = $wrap->{$column} || sub { $_[0] };
+        push @placeholders,
+          ref $param->{$column} eq 'SCALAR' ? ${$param->{$column}}
+        : $func->(":$column");
+    }
+    
+    return '(' . join(', ', @columns) . ') ' . 'values ' .
+           '(' . join(', ', @placeholders) . ')'
 }
 
 sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
@@ -1678,6 +1678,11 @@ has default_dbi_option => sub {
     return shift->default_option;
 };
 
+# DEPRECATED!
+sub method {
+    warn "method is DEPRECATED! use helper instead";
+    return shift->helper(@_);
+}
 
 # DEPRECATED!
 sub assign_param {
@@ -2930,9 +2935,9 @@ Merge parameters.
 
     {key1 => [1, 1], key2 => 2}
 
-=head2 C<method>
+=head2 C<helper>
 
-    $dbi->method(
+    $dbi->helper(
         update_or_insert => sub {
             my $self = shift;
             
@@ -2945,7 +2950,7 @@ Merge parameters.
         }
     );
 
-Register method. These method is called directly from L<DBIx::Custom> object.
+Register helper. These helper is called directly from L<DBIx::Custom> object.
 
     $dbi->update_or_insert;
     $dbi->find_or_create;
@@ -3512,6 +3517,7 @@ L<DBIx::Custom>
     cache_method # will be removed at 2017/1/1
     
     # Methods
+    method # will be removed at 2017/1/1
     assign_param # will be removed at 2017/1/1
     update_param # will be removed at 2017/1/1
     insert_param # will be removed at 2017/1/1
@@ -3546,6 +3552,7 @@ L<DBIx::Custom>
 L<DBIx::Custom::Model>
 
     # Attribute methods
+    method # will be removed at 2017/1/1
     filter # will be removed at 2017/1/1
     name # will be removed at 2017/1/1
     type # will be removed at 2017/1/1

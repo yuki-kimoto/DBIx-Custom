@@ -1054,10 +1054,10 @@ ok($@, "execute fail");
 }
 
 test 'method';
-$dbi->method(
+$dbi->helper(
     one => sub { 1 }
 );
-$dbi->method(
+$dbi->helper(
     two => sub { 2 }
 );
 $dbi->method({
@@ -3265,6 +3265,17 @@ $model = $dbi->create_model(
     table => $table2
 );
 $model->method(foo => sub { shift->select(@_) });
+is_deeply($model->foo->one, {$key1 => 1, $key3 => 3});
+
+test 'model helper';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table2") };
+$dbi->execute($create_table2);
+$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 3});
+$model = $dbi->create_model(
+    table => $table2
+);
+$model->helper(foo => sub { shift->select(@_) });
 is_deeply($model->foo->one, {$key1 => 1, $key3 => 3});
 
 test 'assign_clause';

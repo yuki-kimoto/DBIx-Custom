@@ -75,7 +75,7 @@ sub execute {
 
 sub DESTROY { }
 
-sub method {
+sub helper {
     my $self = shift;
     
     # Merge
@@ -113,6 +113,13 @@ sub new {
 has 'filter';
 has 'name';
 has type => sub { [] };
+
+
+# DEPRECATED!
+sub method {
+    warn "method method is DEPRECATED! use helper instead";
+    return shift->helper(@_);
+}
 
 1;
 
@@ -210,9 +217,9 @@ you don't have to specify C<table> and C<primary_key> option.
 Same as C<insert> of L<DBIx::Custom> except that
 you don't have to specify C<table> and C<primary_key> option.
 
-=head2 C<method>
+=head2 C<helper>
 
-    $model->method(
+    $model->helper(
         update_or_insert => sub {
             my $self = shift;
             
@@ -224,7 +231,7 @@ you don't have to specify C<table> and C<primary_key> option.
             # ...
     );
 
-Register method. These method is called directly from L<DBIx::Custom::Model> object.
+Register helper. These helper is called directly from L<DBIx::Custom::Model> object.
 
     $model->update_or_insert;
     $model->find_or_create;
