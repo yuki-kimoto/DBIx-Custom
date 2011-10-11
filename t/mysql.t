@@ -34,13 +34,28 @@ my $result;
 
 test 'connect';
 eval {
-    $dbi = DBIx::Custom->new(
+    $dbi = DBIx::Custom->connect(
         dsn => "dbi:mysql:database=$database;host=localhost;port=10000",
         user => $user,
         password => $password
     );
 };
 ok(!$@);
+
+eval { $dbi->do('drop table table1') };
+$dbi->do('create table table1 (key1 varchar(255), key2 varchar(255)) engine=InnoDB');
+
+test 'update_or_insert';
+$dbi->delete_all(table => 'table1');
+$dbi->update_or_insert(
+    {key1 => 1, key2 => 2},
+    table => 'table1',
+    where => {key1 => 1},
+    select_option => {append => 'for update'}
+);
+
+my $row = $dbi->select(id => 1, table => 'table1', primary_key => 'key1')->one;
+is_deeply($row, {key1 => 1, key2 => 2}, "basic");
 
 # Test memory leaks
 for (1 .. 200) {

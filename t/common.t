@@ -538,6 +538,51 @@ $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
 is($rows->[0]->{$key1}, $rows->[0]->{$key2});
 
+test 'update_or_insert';
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->update_or_insert(
+    {$key2 => 2},
+    table => $table1,
+    primary_key => $key1,
+    id => 1
+);
+$row = $dbi->select(id => 1, table => $table1, primary_key => $key1)->one;
+is_deeply($row, {$key1 => 1, $key2 => 2}, "basic");
+
+$dbi->update_or_insert(
+    {$key2 => 3},
+    table => $table1,
+    primary_key => $key1,
+    id => 1
+);
+$rows = $dbi->select(id => 1, table => $table1, primary_key => $key1)->all;
+is_deeply($rows, [{$key1 => 1, $key2 => 3}], "basic");
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->update_or_insert(
+    {$key1 => 1, $key2 => 2},
+    table => $table1,
+    where => {$key1 => 1}
+);
+$row = $dbi->select(id => 1, table => $table1, primary_key => $key1)->one;
+is_deeply($row, {$key1 => 1, $key2 => 2}, "basic");
+
+
+test 'default_bind_filter';
+$dbi->execute("delete from $table1");
+$dbi->register_filter(
+    twice       => sub { $_[0] * 2 },
+    three_times => sub { $_[0] * 3 }
+);
+$dbi->default_bind_filter('twice');
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2}, filter => {$key1 => 'three_times'});
+$result = $dbi->execute("select * from $table1");
+$rows   = $result->all;
+is_deeply($rows, [{$key1 => 3, $key2 => 4}], "filter");
+$dbi->default_bind_filter(undef);
+
 test 'update';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);

@@ -12,7 +12,7 @@ use DBIx::Custom;
     package DBIx::Custom;
     no warnings 'redefine';
     
-    has dbi_option => sub {
+    has option => sub {
         {
             Callbacks => {
               connected => sub {

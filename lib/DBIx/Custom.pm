@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1730';
+our $VERSION = '0.1731';
 use 5.008001;
 
 use Carp 'croak';
@@ -627,6 +627,7 @@ sub insert {
     my $prefix = delete $args{prefix};
     my $wrap = delete $args{wrap};
     my $timestamp = $args{timestamp};
+    delete $args{where};
     
     # Timestamp
     if ($timestamp && (my $insert_timestamp = $self->insert_timestamp)) {
@@ -639,7 +640,6 @@ sub insert {
 
     # Merge parameter
     if (defined $id) {
-        warn "insert method's id option is DEPRECATED!";
         my $id_param = $self->_create_param_from_id($id, $primary_key);
         $param = $self->merge_param($id_param, $param);
     }
@@ -654,6 +654,42 @@ sub insert {
     
     # Execute query
     return $self->execute($sql, $param, table => $table, %args);
+}
+
+sub update_or_insert {
+    my $self = shift;
+
+    # Arguments
+    my $param  = shift;
+    my %args = @_;
+    my $id = delete $args{id};
+    my $primary_key = delete $args{primary_key};
+    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
+    croak "update_or_insert method need primary_key option " .
+          "when id is specified" . _subname
+      if defined $id && !defined $primary_key;
+    my $table  = delete $args{table};
+    croak qq{"table" option must be specified } . _subname
+      unless defined $table;
+    my $select_option = delete $args{select_option};
+    
+    my $rows = $self->select(table => $table, id => $id,
+        primary_key => $primary_key, %$select_option)->all;
+    
+    croak "selected row count must be one or zero" . _subname
+      if @$rows > 1;
+    
+    my $row = $rows->[0];
+    my @options = (table => $table);
+    push @options, id => $id, primary_key => $primary_key if defined $id;
+    push @options, %args;
+    
+    if ($row) {
+        return $self->update($param, @options);
+    }
+    else {
+        return $self->insert($param, @options);
+    }
 }
 
 sub insert_timestamp {
@@ -3438,6 +3474,46 @@ Options is same as C<update> method.
 Create update parameter tag.
 
     set title = :title, author = :author
+
+=head2 C<update_or_insert EXPERIMENTAL>
+    
+    # Where
+    $dbi->update_or_insert(
+        {id => 1, title => 'Perl'},
+        table => 'book',
+        where => {id => 1},
+        select_option => {append => 'for update'}
+    );
+    
+    # ID
+    $dbi->update_or_insert(
+        {title => 'Perl'},
+        table => 'book',
+        id => 1,
+        primary_key => 'id',
+        select_option => {append => 'for update'}
+    );
+    
+Update or insert.
+
+In both examples, the following SQL is executed.
+
+    # In case insert
+    insert into book (id, title) values (?, ?)
+    
+    # In case update
+    update book set (id = ?, title = ?) where book.id = ?
+
+The following opitons are available adding to C<update> option.
+
+=over 4
+
+=item C<select_option>
+
+    select_option => {append => 'for update'}
+
+select method option,
+select method is used to check the row is already exists.
 
 =head2 C<update_timestamp>
 
