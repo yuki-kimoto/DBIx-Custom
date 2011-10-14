@@ -2514,10 +2514,18 @@ Options is same as C<delete>.
         }
     );
 
-Iterate all column informations of all table from database.
-Argument is callback when one column is found.
-Callback receive four arguments, dbi object, table name,
-column name and column information.
+Iterate all column informations in database.
+Argument is callback which is executed when one column is found.
+Callback receive four arguments. C<DBIx::Custom object>, C<table name>,
+C<column name>, and C<column information>.
+
+If C<user_column_info> is set, C<each_column> method use C<user_column_info>
+infromation, you can improve the performance of C<each_column> in
+the following way.
+
+    my $column_infos = $dbi->get_column_info(exclude_table => qr/^system_/);
+    $dbi->user_column_info($column_info);
+    $dbi->each_column(sub { ... });
 
 =head2 C<each_table>
 
@@ -2529,10 +2537,18 @@ column name and column information.
         }
     );
 
-Iterate all table informationsfrom database.
-Argument is callback when one table is found.
-Callback receive three arguments, dbi object, table name,
-table information.
+Iterate all table informationsfrom in database.
+Argument is callback which is executed when one table is found.
+Callback receive three arguments, C<DBIx::Custom object>, C<table name>,
+C<table information>.
+
+If C<user_table_info> is set, C<each_table> method use C<user_table_info>
+infromation, you can improve the performance of C<each_table> in
+the following way.
+
+    my $table_infos = $dbi->get_table_info(exclude => qr/^system_/);
+    $dbi->user_table_info($table_info);
+    $dbi->each_table(sub { ... });
 
 =head2 C<execute>
 
@@ -2742,7 +2758,7 @@ Turn C<into2> type rule off.
 
 =head2 C<get_column_info>
 
-    my $tables = $dbi->get_column_info(exclude_table => qr/^system_/);
+    my $column_infos = $dbi->get_column_info(exclude_table => qr/^system_/);
 
 get column infomation except for one which match C<exclude_table> pattern.
 
@@ -2753,7 +2769,7 @@ get column infomation except for one which match C<exclude_table> pattern.
 
 =head2 C<get_table_info>
 
-    my $tables = $dbi->get_table_info(exclude => qr/^system_/);
+    my $table_infos = $dbi->get_table_info(exclude => qr/^system_/);
 
 get table infomation except for one which match C<exclude> pattern.
 
@@ -3466,14 +3482,6 @@ is executed, the following SQL is executed.
 
 Execute update statement for all rows.
 Options is same as C<update> method.
-
-=head2 C<update_param>
-
-    my $update_param = $dbi->update_param({title => 'a', age => 2});
-
-Create update parameter tag.
-
-    set title = :title, author = :author
 
 =head2 C<update_or_insert EXPERIMENTAL>
     
