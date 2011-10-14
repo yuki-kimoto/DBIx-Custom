@@ -2902,14 +2902,6 @@ is executed, the following SQL is executed.
 
 =over 4
 
-=head2 C<values_clause>
-
-    my $values_clause = $dbi->values_clause({title => 'a', age => 2});
-
-Create values clause.
-
-    (title, author) values (title = :title, age = :age);
-
 =head2 C<include_model>
 
     $dbi->include_model('MyModel');
