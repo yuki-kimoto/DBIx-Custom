@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1731';
+our $VERSION = '0.1732';
 use 5.008001;
 
 use Carp 'croak';
@@ -2151,14 +2151,6 @@ Note that L<DBIx::Connector> must be installed.
 
 Data source name, used when C<connect> method is executed.
 
-=head2 C<option>
-
-    my $option = $dbi->option;
-    $dbi = $dbi->option($option);
-
-L<DBI> option, used when C<connect> method is executed.
-Each value in option override the value of C<default_option>.
-
 =head2 C<default_option>
 
     my $default_option = $dbi->default_option;
@@ -2172,6 +2164,15 @@ default to the following values.
         PrintError => 0,
         AutoCommit => 1,
     }
+
+=head2 C<exclude_table>
+
+    my $exclude_table = $dbi->exclude_table;
+    $dbi = $dbi->exclude_table(qr/pg_/);
+
+Excluded table regex.
+C<each_column>, C<each_table>, C<type_rule>,
+and C<setup_model> methods ignore matching tables.
 
 =head2 C<filters>
 
@@ -2193,6 +2194,14 @@ Get last successed SQL executed by C<execute> method.
     $dbi = $dbi->models(\%models);
 
 Models, included by C<include_model> method.
+
+=head2 C<option>
+
+    my $option = $dbi->option;
+    $dbi = $dbi->option($option);
+
+L<DBI> option, used when C<connect> method is executed.
+Each value in option override the value of C<default_option>.
 
 =head2 C<password>
 
@@ -2245,15 +2254,6 @@ This have effect to C<column> and C<mycolumn> method,
 and C<select> method's column option.
 
 Default to C<.>.
-
-=head2 C<exclude_table>
-
-    my $exclude_table = $dbi->exclude_table;
-    $dbi = $dbi->exclude_table(qr/pg_/);
-
-Excluded table regex.
-C<each_column>, C<each_table>, C<type_rule>,
-and C<setup_model> methods ignore matching tables.
 
 =head2 C<tag_parse>
 
@@ -2780,6 +2780,26 @@ get table infomation except for one which match C<exclude> pattern.
 
 You can set this value to C<user_table_info>.
 
+=head2 C<helper>
+
+    $dbi->helper(
+        update_or_insert => sub {
+            my $self = shift;
+            
+            # Process
+        },
+        find_or_create   => sub {
+            my $self = shift;
+            
+            # Process
+        }
+    );
+
+Register helper. These helper is called directly from L<DBIx::Custom> object.
+
+    $dbi->update_or_insert;
+    $dbi->find_or_create;
+
 =head2 C<insert>
 
     $dbi->insert({title => 'Perl', author => 'Ken'}, table  => 'book');
@@ -2949,13 +2969,19 @@ See L<DBIx::Custom::Model> to know model features.
 
 =head2 C<insert_timestamp>
 
-    $dbi->insert_timestamp(
-      [qw/created_at updated_at/] => sub { localtime });
+$dbi->insert_timestamp(
+  [qw/created_at updated_at/]
+    => sub { Time::Piece->localtime->strftime("%Y-%m-%d %H:%M:%S") }
+);
 
-Parameter for timestamp columns when C<insert> method is executed
+Timestamp value when C<insert> method is executed
 with C<timestamp> option.
 
-If multiple column are specified, same value is used.
+If C<insert_timestamp> is set and C<insert> method is executed
+with C<timestamp> option, column C<created_at> and C<update_at>
+is automatically set to the value like "2010-10-11 10:12:54".
+
+$dbi->insert($param, table => 'book', timestamp => 1);
 
 =head2 C<like_value EXPERIMENTAL>
 
@@ -2978,26 +3004,6 @@ Create a new L<DBIx::Custom::Mapper> object.
 Merge parameters.
 
     {key1 => [1, 1], key2 => 2}
-
-=head2 C<helper>
-
-    $dbi->helper(
-        update_or_insert => sub {
-            my $self = shift;
-            
-            # Process
-        },
-        find_or_create   => sub {
-            my $self = shift;
-            
-            # Process
-        }
-    );
-
-Register helper. These helper is called directly from L<DBIx::Custom> object.
-
-    $dbi->update_or_insert;
-    $dbi->find_or_create;
 
 =head2 C<model>
 
@@ -3054,80 +3060,6 @@ Create a new L<DBIx::Custom::Order> object.
     );
     
 Register filters, used by C<filter> option of many methods.
-
-=head2 C<type_rule>
-
-    $dbi->type_rule(
-        into1 => {
-            date => sub { ... },
-            datetime => sub { ... }
-        },
-        into2 => {
-            date => sub { ... },
-            datetime => sub { ... }
-        },
-        from1 => {
-            # DATE
-            9 => sub { ... },
-            # DATETIME or TIMESTAMP
-            11 => sub { ... },
-        }
-        from2 => {
-            # DATE
-            9 => sub { ... },
-            # DATETIME or TIMESTAMP
-            11 => sub { ... },
-        }
-    );
-
-Filtering rule when data is send into and get from database.
-This has a little complex problem.
-
-In C<into1> and C<into2> you can specify
-type name as same as type name defined
-by create table, such as C<DATETIME> or C<DATE>.
-
-Note that type name and data type don't contain upper case.
-If these contain upper case charactor, you convert it to lower case.
-
-C<into2> is executed after C<into1>.
-
-Type rule of C<into1> and C<into2> is enabled on the following
-column name.
-
-=over 4
-
-=item 1. column name
-
-    issue_date
-    issue_datetime
-
-This need C<table> option in each method.
-
-=item 2. table name and column name, separator is dot
-
-    book.issue_date
-    book.issue_datetime
-
-=back
-
-You get all type name used in database by C<available_typename>.
-
-    print $dbi->available_typename;
-
-In C<from1> and C<from2> you specify data type, not type name.
-C<from2> is executed after C<from1>.
-You get all data type by C<available_datatype>.
-
-    print $dbi->available_datatype;
-
-You can also specify multiple types at once.
-
-    $dbi->type_rule(
-        into1 => [
-            [qw/DATE DATETIME/] => sub { ... },
-        ],
-    );
 
 =head2 C<select>
 
@@ -3344,6 +3276,87 @@ Where clause.
     
 =back
 
+=head2 C<setup_model>
+
+    $dbi->setup_model;
+
+Setup all model objects.
+C<columns> of model object is automatically set, parsing database information.
+
+=head2 C<type_rule>
+
+    $dbi->type_rule(
+        into1 => {
+            date => sub { ... },
+            datetime => sub { ... }
+        },
+        into2 => {
+            date => sub { ... },
+            datetime => sub { ... }
+        },
+        from1 => {
+            # DATE
+            9 => sub { ... },
+            # DATETIME or TIMESTAMP
+            11 => sub { ... },
+        }
+        from2 => {
+            # DATE
+            9 => sub { ... },
+            # DATETIME or TIMESTAMP
+            11 => sub { ... },
+        }
+    );
+
+Filtering rule when data is send into and get from database.
+This has a little complex problem.
+
+In C<into1> and C<into2> you can specify
+type name as same as type name defined
+by create table, such as C<DATETIME> or C<DATE>.
+
+Note that type name and data type don't contain upper case.
+If these contain upper case charactor, you convert it to lower case.
+
+C<into2> is executed after C<into1>.
+
+Type rule of C<into1> and C<into2> is enabled on the following
+column name.
+
+=over 4
+
+=item 1. column name
+
+    issue_date
+    issue_datetime
+
+This need C<table> option in each method.
+
+=item 2. table name and column name, separator is dot
+
+    book.issue_date
+    book.issue_datetime
+
+=back
+
+You get all type name used in database by C<available_typename>.
+
+    print $dbi->available_typename;
+
+In C<from1> and C<from2> you specify data type, not type name.
+C<from2> is executed after C<from1>.
+You get all data type by C<available_datatype>.
+
+    print $dbi->available_datatype;
+
+You can also specify multiple types at once.
+
+    $dbi->type_rule(
+        into1 => [
+            [qw/DATE DATETIME/] => sub { ... },
+        ],
+    );
+
 =head2 C<update>
 
     $dbi->update({title => 'Perl'}, table  => 'book', where  => {id => 4});
@@ -3468,6 +3481,7 @@ is executed, the following SQL is executed.
 
 =back
 
+
 =head2 C<update_all>
 
     $dbi->update_all({title => 'Perl'}, table => 'book', );
@@ -3517,26 +3531,21 @@ select method is used to check the row is already exists.
 
 =head2 C<update_timestamp>
 
-    $dbi->update_timestamp(updated_at => sub { localtime });
-
-Parameter for timestamp columns when C<update> method is executed
-with C<timestamp> option.
-
-=head2 C<where>
-
-    my $where = $dbi->where(
-        clause => ['and', 'title = :title', 'author = :author'],
-        param => {title => 'Perl', author => 'Ken'}
+    $dbi->update_timestamp(
+      updated_at
+        => sub { Time::Piece->localtime->strftime("%Y-%m-%d %H:%M:%S") }
     );
 
-Create a new L<DBIx::Custom::Where> object.
+Timestamp value when C<update> method is executed
+with C<timestamp> option.
 
-=head2 C<setup_model>
+If C<insert_timestamp> is set and C<insert> method is executed
+with C<timestamp> option, column C<update_at>
+is automatically set to the value like "2010-10-11 10:12:54".
 
-    $dbi->setup_model;
-
-Setup all model objects.
-C<columns> of model object is automatically set, parsing database information.
+>|perl|
+$dbi->update($param, table => 'book', timestamp => 1);
+||<
 
 =head2 C<show_datatype>
 
@@ -3567,6 +3576,27 @@ Show type name of the columns of specified table.
     issue_date: date
 
 This type name is used in C<type_rule>'s C<into1> and C<into2>.
+
+=head2 C<values_clause>
+
+    my $values_clause = $dbi->values_clause({title => 'a', age => 2});
+
+Create values clause.
+
+    (title, author) values (title = :title, age = :age);
+
+You can use this in insert statement.
+
+    my $insert_sql = "insert into book $values_clause";
+
+=head2 C<where>
+
+    my $where = $dbi->where(
+        clause => ['and', 'title = :title', 'author = :author'],
+        param => {title => 'Perl', author => 'Ken'}
+    );
+
+Create a new L<DBIx::Custom::Where> object.
 
 =head1 ENVIRONMENTAL VARIABLES
 
