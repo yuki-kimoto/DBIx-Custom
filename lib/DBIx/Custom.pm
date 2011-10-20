@@ -377,7 +377,7 @@ our %VALID_ARGS = map { $_ => 1 } qw/append after_build_sql allow_delete_all
 
 sub execute {
     my $self = shift;
-    my $query = shift;
+    my $sql = shift;
     my $param;
     $param = shift if @_ % 2;
     my %args = @_;
@@ -407,7 +407,7 @@ sub execute {
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     my $append = delete $args{append};
-    $query .= $append if defined $append && !ref $query;
+    $sql .= $append if defined $append && !ref $sql;
 
     # Check argument names
     foreach my $name (keys %args) {
@@ -415,7 +415,8 @@ sub execute {
           unless $VALID_ARGS{$name};
     }
     
-    $query = $self->_create_query($query, $after_build_sql) unless ref $query;
+    my $query
+      = ref $sql ? $sql : $self->_create_query($sql, $after_build_sql);
     
     # Save query
     $self->last_sql($query->sql);
@@ -2404,15 +2405,12 @@ Execute delete statement.
 
 The following opitons are available.
 
+B<OPTIONS>
+
+C<delete> method use all of C<execute> method's options,
+and use the following new ones.
+
 =over 4
-
-=item C<append>
-
-Same as C<select> method's C<append> option.
-
-=item C<filter>
-
-Same as C<execute> method's C<filter> option.
 
 =item C<id>
 
@@ -2440,14 +2438,6 @@ prefix before table name section.
 
     delete some from book
 
-=item C<query>
-
-Same as C<execute> method's C<query> option.
-
-=item C<after_build_sql>
-
-Same as C<execute> method's C<after_build_sql> option.
-
 =item C<table>
 
     table => 'book'
@@ -2457,30 +2447,6 @@ Table name.
 =item C<where>
 
 Same as C<select> method's C<where> option.
-
-=item C<primary_key>
-
-See C<id> option.
-
-=item C<bind_type>
-
-Same as C<execute> method's C<bind_type> option.
-
-=item C<type_rule_off>
-
-Same as C<execute> method's C<type_rule_off> option.
-
-=item C<type_rule1_off>
-
-    type_rule1_off => 1
-
-Same as C<execute> method's C<type_rule1_off> option.
-
-=item C<type_rule2_off>
-
-    type_rule2_off => 1
-
-Same as C<execute> method's C<type_rule2_off> option.
 
 =back
 
@@ -2582,9 +2548,17 @@ If you want to use colon generally, you must escape it by C<\\>
 
     select * from where title = "aa\\:bb";
 
+B<OPTIONS>
+
 The following opitons are available.
 
 =over 4
+
+=item C<append>
+
+    append => 'order by name'
+
+Append some statement after SQL.
 
 =item C<bind_type>
 
@@ -2681,7 +2655,10 @@ and don't forget to sort $row values by $row key asc order.
 
 =item C<primary_key>
 
-See C<id> option.
+    primary_key => 'id'
+    primary_key => ['id1', 'id2']
+
+Priamry key. This is used when C<id> option find primary key.
 
 =item C<after_build_sql> 
 
@@ -2805,14 +2782,10 @@ as parameter value.
 
 B<options>
 
-C<insert> method use all of C<execute> method options,
+C<insert> method use all of C<execute> method's options,
 and use the following new ones.
 
 =over 4
-
-=item C<append>
-
-Same as C<select> method's C<append> option.
 
 =item C<id>
 
@@ -2850,10 +2823,6 @@ prefix before table name section
 
 Table name.
 
-=item C<type_rule_off>
-
-Same as C<execute> method's C<type_rule_off> option.
-
 =item C<timestamp>
 
     timestamp => 1
@@ -2861,18 +2830,6 @@ Same as C<execute> method's C<type_rule_off> option.
 If this value is set to 1,
 automatically created timestamp column is set based on
 C<timestamp> attribute's C<insert> value.
-
-=item C<type_rule1_off>
-
-    type_rule1_off => 1
-
-Same as C<execute> method's C<type_rule1_off> option.
-
-=item C<type_rule2_off>
-
-    type_rule2_off => 1
-
-Same as C<execute> method's C<type_rule2_off> option.
 
 =item C<wrap>
 
@@ -3045,20 +3002,13 @@ Register filters, used by C<filter> option of many methods.
     
 Execute select statement.
 
-The following opitons are available.
+B<OPTIONS>
+
+C<select> method use all of C<execute> method's options,
+and use the following new ones.
 
 =over 4
 
-=item C<append>
-
-    append => 'order by title'
-
-Append statement to last of SQL.
-
-=item C<bind_type>
-
-Same as C<execute> method's C<bind_type> option.
-    
 =item C<column>
     
     column => 'author'
@@ -3120,7 +3070,7 @@ The above is same as the followin one.
         table => 'book'
     );
     
-=item C<param> EXPERIMETNAL
+=item C<param>
 
     param => {'table2.key3' => 5}
 
@@ -3183,42 +3133,11 @@ the join clause correctly.
         ]
     );
 
-=item C<primary_key>
-
-    primary_key => 'id'
-    primary_key => ['id1', 'id2']
-
-Primary key. This is used by C<id> option.
-
-=item C<query>
-
-Same as C<execute> method's C<query> option.
-
-=item C<after_build_sql>
-
-Same as C<execute> method's C<after_build_sql> option
-
 =item C<table>
 
     table => 'book'
 
 Table name.
-
-=item C<type_rule_off>
-
-Same as C<execute> method's C<type_rule_off> option.
-
-=item C<type_rule1_off>
-
-    type_rule1_off => 1
-
-Same as C<execute> method's C<type_rule1_off> option.
-
-=item C<type_rule2_off>
-
-    type_rule2_off => 1
-
-Same as C<execute> method's C<type_rule2_off> option.
 
 =item C<where>
     
@@ -3246,7 +3165,7 @@ Same as C<execute> method's C<type_rule2_off> option.
     # String
     where => 'title is null'
 
-Where clause.
+Where clause. See L<DBIx::Custom::Where>.
     
 =back
 
@@ -3342,21 +3261,12 @@ as parameter value.
 
     {date => \"NOW()"}
 
-The following opitons are available.
+B<OPTIONS>
+
+C<update> method use all of C<execute> method's options,
+and use the following new ones.
 
 =over 4
-
-=item C<append>
-
-Same as C<select> method's C<append> option.
-
-=item C<bind_type>
-
-Same as C<execute> method's C<bind_type> option.
-
-=item C<filter>
-
-Same as C<execute> method's C<filter> option.
 
 =item C<id>
 
@@ -3389,21 +3299,6 @@ prefix before table name section
 
     update or replace book
 
-=item C<primary_key>
-
-    primary_key => 'id'
-    primary_key => ['id1', 'id2']
-
-Primary key. This is used by C<id> option.
-
-=item C<query>
-
-Same as C<execute> method's C<query> option.
-
-=item C<after_build_sql>
-
-Same as C<execute> method's C<after_build_sql> option.
-
 =item C<table>
 
     table => 'book'
@@ -3417,22 +3312,6 @@ Table name.
 If this value is set to 1,
 automatically updated timestamp column is set based on
 C<timestamp> attribute's C<update> value.
-
-=item C<type_rule_off>
-
-Same as C<execute> method's C<type_rule_off> option.
-
-=item C<type_rule1_off>
-
-    type_rule1_off => 1
-
-Same as C<execute> method's C<type_rule1_off> option.
-
-=item C<type_rule2_off>
-
-    type_rule2_off => 1
-
-Same as C<execute> method's C<type_rule2_off> option.
 
 =item C<where>
 
@@ -3454,7 +3333,6 @@ is executed, the following SQL is executed.
     update book set price =  ? + 5;
 
 =back
-
 
 =head2 C<update_all>
 

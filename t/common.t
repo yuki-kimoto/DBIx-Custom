@@ -2971,7 +2971,6 @@ $result = $model->select(
     column => {$table1 => ["$key2"]},
     id => 1
 );
-$DB::single = 1;
 is_deeply($result->all, [{"$table1.$key2" => 2}]);
 
 eval { $dbi->execute("drop table $table1") };
