@@ -2421,7 +2421,7 @@ ID corresponding to C<primary_key>.
 You can delete rows by C<id> and C<primary_key>.
 
     $dbi->delete(
-        parimary_key => ['id1', 'id2'],
+        primary_key => ['id1', 'id2'],
         id => [4, 5],
         table => 'book',
     );
@@ -2534,7 +2534,7 @@ Named placeholder such as C<:title> is replaced by placeholder C<?>.
     select * from where title = ? and author like ?;
 
 You can specify operator with named placeholder
- by C<name{operator}> syntax.
+by C<name{operator}> syntax.
 
     # Original
     select * from book where :title{=} and :author{like}
@@ -2605,7 +2605,7 @@ You can delete rows by C<id> and C<primary_key>.
     $dbi->execute(
         "select * from book where id1 = :id1 and id2 = :id2",
         {},
-        parimary_key => ['id1', 'id2'],
+        primary_key => ['id1', 'id2'],
         id => [4, 5],
     );
 
@@ -2797,7 +2797,7 @@ You can insert a row by C<id> and C<primary_key>.
 
     $dbi->insert(
         {title => 'Perl', author => 'Ken'}
-        parimary_key => ['id1', 'id2'],
+        primary_key => ['id1', 'id2'],
         id => [4, 5],
         table => 'book'
     );
@@ -3058,7 +3058,7 @@ ID corresponding to C<primary_key>.
 You can select rows by C<id> and C<primary_key>.
 
     $dbi->select(
-        parimary_key => ['id1', 'id2'],
+        primary_key => ['id1', 'id2'],
         id => [4, 5],
         table => 'book'
     );
@@ -3278,7 +3278,7 @@ You can update rows by C<id> and C<primary_key>.
 
     $dbi->update(
         {title => 'Perl', author => 'Ken'}
-        parimary_key => ['id1', 'id2'],
+        primary_key => ['id1', 'id2'],
         id => [4, 5],
         table => 'book'
     );
