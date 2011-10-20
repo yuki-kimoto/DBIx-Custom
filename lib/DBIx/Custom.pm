@@ -2632,7 +2632,7 @@ If you want to execute SQL fast, you can do the following way.
     my $query;
     foreach my $row (@$rows) {
       $query ||= $dbi->insert($row, table => 'table1', query => 1);
-      $dbi->execute($query, $row, filter => {ab => sub { $_[0] * 2 }});
+      $dbi->execute($query, $row);
     }
 
 Statement handle is reused and SQL parsing is finished,
@@ -2698,7 +2698,7 @@ You must set C<table> option.
 
 =item C<table_alias>
 
-    table_alias => {user => 'hiker'}
+    table_alias => {user => 'worker'}
 
 Table alias. Key is real table name, value is alias table name.
 If you set C<table_alias>, you can enable C<into1> and C<into2> type rule
