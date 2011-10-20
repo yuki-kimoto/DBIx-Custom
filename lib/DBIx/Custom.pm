@@ -237,7 +237,6 @@ sub delete {
     croak qq{"table" option must be specified. } . _subname
       unless $table;
     my $where            = delete $args{where} || {};
-    my $append           = delete $args{append};
     my $allow_delete_all = delete $args{allow_delete_all};
     my $where_param      = delete $args{where_param} || {};
     my $id = delete $args{id};
@@ -274,7 +273,6 @@ sub delete {
     $sql .= "delete ";
     $sql .= "$prefix " if defined $prefix;
     $sql .= "from " . $self->_q($table) . " $where_clause ";
-    $sql .= $append if defined $append;
     
     # Execute query
     return $self->execute($sql, $where_param, table => $table, %args);
@@ -408,6 +406,8 @@ sub execute {
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
+    my $append = delete $args{append};
+    $query .= $append if defined $append && !ref $query;
 
     # Check argument names
     foreach my $name (keys %args) {
@@ -418,7 +418,6 @@ sub execute {
     $query = $self->_create_query($query, $after_build_sql) unless ref $query;
     
     # Save query
-    if (ref $query eq 'DBIx::Custom::Result') { $DB::single = 1 }
     $self->last_sql($query->sql);
 
     return $query if $query_return;
@@ -617,7 +616,6 @@ sub insert {
       unless defined $table;
     my $p = delete $args{param} || {};
     $param  ||= $p;
-    my $append = delete $args{append} || '';
     my $id = delete $args{id};
     my $primary_key = delete $args{primary_key};
     croak "insert method primary_key option " .
@@ -650,7 +648,6 @@ sub insert {
     $sql .= "$prefix " if defined $prefix;
     $sql .= "into " . $self->_q($table) . " "
       . $self->values_clause($param, {wrap => $wrap}) . " ";
-    $sql .= $append if defined $append;
     
     # Execute query
     return $self->execute($sql, $param, table => $table, %args);
@@ -884,7 +881,6 @@ sub select {
                : [];
     my $columns   = delete $args{column};
     my $where     = delete $args{where} || {};
-    my $append    = delete $args{append};
     my $join      = delete $args{join} || [];
     croak qq{"join" must be array reference } . _subname
       unless ref $join eq 'ARRAY';
@@ -986,9 +982,6 @@ sub select {
     # Relation(DEPRECATED!);
     $self->_push_relation(\$sql, $tables, $relation, $where_clause eq '' ? 1 : 0)
       if $relation;
-    
-    # Append
-    $sql .= $append if defined $append;
     
     # Execute query
     my $result = $self->execute($sql, $where_param, table => $tables, %args);
@@ -1130,7 +1123,6 @@ sub update {
     $param  ||= $p;
     my $where = delete $args{where} || {};
     my $where_param = delete $args{where_param} || {};
-    my $append = delete $args{append} || '';
     my $allow_update_all = delete $args{allow_update_all};
     my $id = delete $args{id};
     my $primary_key = delete $args{primary_key};
@@ -1183,7 +1175,6 @@ sub update {
     $sql .= "update ";
     $sql .= "$prefix " if defined $prefix;
     $sql .= $self->_q($table) . " set $assign_clause $where_clause ";
-    $sql .= $append if defined $append;
     
     # Execute query
     return $self->execute($sql, $param, table => $table, %args);
@@ -2812,21 +2803,16 @@ as parameter value.
 
     {date => \"NOW()"}
 
-The following opitons are available.
+B<options>
+
+C<insert> method use all of C<execute> method options,
+and use the following new ones.
 
 =over 4
 
 =item C<append>
 
 Same as C<select> method's C<append> option.
-
-=item C<bind_type>
-
-Same as C<execute> method's C<bind_type> option.
-
-=item C<filter>
-
-Same as C<execute> method's C<filter> option.
 
 =item C<id>
 
@@ -2857,21 +2843,6 @@ The above is same as the followin one.
 prefix before table name section
 
     insert or replace into book
-
-=item C<primary_key>
-
-    primary_key => 'id'
-    primary_key => ['id1', 'id2']
-
-Primary key. This is used by C<id> option.
-
-=item C<query>
-
-Same as C<execute> method's C<query> option.
-
-=item C<after_build_sql>
-
-Same as C<execute> method's C<after_build_sql> option.
 
 =item C<table>
 
@@ -2983,11 +2954,11 @@ is automatically set to the value like "2010-10-11 10:12:54".
 
 $dbi->insert($param, table => 'book', timestamp => 1);
 
-=head2 C<like_value EXPERIMENTAL>
+=head2 C<like_value>
 
     my $like_value = $dbi->like_value
 
-Constant code reference for the like value.
+Code reference which return a value for the like value.
 
     sub { "%$_[0]%" }
 
@@ -3001,15 +2972,18 @@ Create a new L<DBIx::Custom::Mapper> object.
 
     my $param = $dbi->merge_param({key1 => 1}, {key1 => 1, key2 => 2});
 
-Merge parameters.
+Merge parameters. The following new parameter is created.
 
     {key1 => [1, 1], key2 => 2}
+
+If same keys contains, the value is converted to array reference.
 
 =head2 C<model>
 
     my $model = $dbi->model('book');
 
-Get a L<DBIx::Custom::Model> object,
+Get a L<DBIx::Custom::Model> object
+create by C<create_model> or C<include_model>
 
 =head2 C<mycolumn>
 
@@ -3036,7 +3010,7 @@ Create a new L<DBIx::Custom> object.
     my $not_exists = $dbi->not_exists;
 
 DBIx::Custom::NotExists object, indicating the column is not exists.
-This is used by C<clause> of L<DBIx::Custom::Where> .
+This is used in C<param> of L<DBIx::Custom::Where> .
 
 =head2 C<order>
 
