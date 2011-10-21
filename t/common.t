@@ -836,8 +836,7 @@ test 'delete error';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 eval{$dbi->delete(table => $table1)};
-like($@, qr/"where" must be specified/,
-         "where key-value pairs not specified");
+like($@, qr/where/, "where key-value pairs not specified");
 
 eval{$dbi->delete(table => $table1, where => {';' => 1})};
 like($@, qr/safety/);

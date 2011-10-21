@@ -1,4 +1,5 @@
 0.1733
+    - delete method where_param option is DEPRECATED!
     - update method where_param option is DEPRECATED!
     - update method param option is DEPRECATED!
     - insert method param option is DEPRECATED!

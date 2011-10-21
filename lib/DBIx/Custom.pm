@@ -229,42 +229,54 @@ sub dbh {
     }
 }
 
-sub delete {
-    my ($self, %opt) = @_;
-
-    # Arguments
-    my $where            = $opt{where} || {};
-    my $where_param      = $opt{where_param} || {};
-    
-    # Where
-    $where = $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table})
-      if defined $opt{id};
+sub _where_clause_and_param {
+    my ($self, $where, $param) = @_;
+ 
+    $where ||= {};
+    $param ||= {};
+    my $w = {};
     my $where_clause = '';
     if (ref $where eq 'ARRAY' && !ref $where->[0]) {
-        $where_clause = "where " . $where->[0];
-        $where_param = $where->[1];
+        $w->{clause} = "where " . $where->[0];
+        $w->{param} = $where->[1];
     }
     elsif (ref $where) {
         $where = $self->_where_to_obj($where);
-        $where_param = keys %$where_param
-                     ? $self->merge_param($where_param, $where->param)
-                     : $where->param;
-        
-        # String where
-        $where_clause = $where->to_string;
+        $w->{param} = keys %$param
+                    ? $self->merge_param($param, $where->param)
+                    : $where->param;
+        $w->{clause} = $where->to_string;
     }
-    elsif ($where) { $where_clause = "where $where" }
-    croak qq{"where" must be specified } . _subname
-      if $where_clause eq '' && !$opt{allow_delete_all};
+    elsif ($where) {
+        $w->{clause} = "where $where";
+        $w->{param} = $param;
+    }
+    
+    return $w;
+}
+
+sub delete {
+    my ($self, %opt) = @_;
+    warn "delete method where_param option is DEPRECATED!"
+      if $opt{where_param};
+    
+    # Don't allow delete all row
+    croak qq{delete method where or id option must be specified } . _subname
+      if !$opt{where} && !defined $opt{id} && !$opt{allow_delete_all};
+    
+    # Where
+    my $where = defined $opt{id}
+           ? $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table})
+           : $opt{where};
+    my $w = $self->_where_clause_and_param($where, $opt{where_param});
 
     # Delete statement
-    my $sql;
-    $sql .= "delete ";
+    my $sql = "delete ";
     $sql .= "$opt{prefix} " if defined $opt{prefix};
-    $sql .= "from " . $self->_q($opt{table}) . " $where_clause ";
+    $sql .= "from " . $self->_q($opt{table}) . " $w->{clause} ";
     
     # Execute query
-    return $self->execute($sql, $where_param, %opt);
+    return $self->execute($sql, $w->{param}, %opt);
 }
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
@@ -3427,6 +3439,7 @@ L<DBIx::Custom>
     update_param_tag # will be removed at 2017/1/1
     
     # Options
+    delete method where_param option # will be removed 2017/1/1
     update method where_param option # will be removed 2017/1/1
     insert method param option # will be removed at 2017/1/1
     insert method id option # will be removed at 2017/1/1
