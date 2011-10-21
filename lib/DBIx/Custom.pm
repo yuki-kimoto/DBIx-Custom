@@ -601,16 +601,9 @@ sub insert {
     my $param = @_ % 2 ? shift : undef;
     my %args = @_;
     $param ||= $args{param} || {};
-    my $id = $args{id};
-    my $primary_key = $args{primary_key};
-    croak "insert method primary_key option " .
-          "must be specified when id is specified " . _subname
-      if defined $id && !defined $primary_key;
-    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $timestamp = $args{timestamp};
     
     # Timestamp
-    if ($timestamp && (my $insert_timestamp = $self->insert_timestamp)) {
+    if ($args{timestamp} && (my $insert_timestamp = $self->insert_timestamp)) {
         my $columns = $insert_timestamp->[0];
         $columns = [$columns] unless ref $columns eq 'ARRAY';
         my $value = $insert_timestamp->[1];
@@ -619,8 +612,8 @@ sub insert {
     }
 
     # Merge parameter
-    if (defined $id) {
-        my $id_param = $self->_create_param_from_id($id, $primary_key);
+    if (defined $args{id}) {
+        my $id_param = $self->_create_param_from_id($args{id}, $args{primary_key});
         $param = $self->merge_param($id_param, $param);
     }
 
@@ -1331,6 +1324,11 @@ sub _create_bind_values {
 
 sub _create_param_from_id {
     my ($self, $id, $primary_keys, $table) = @_;
+
+    croak "primary_key option " .
+          "must be specified with id option " . _subname
+      unless defined $primary_keys;
+    $primary_keys = [$primary_keys] unless ref $primary_keys eq 'ARRAY';
     
     # Create parameter
     my $param = {};
