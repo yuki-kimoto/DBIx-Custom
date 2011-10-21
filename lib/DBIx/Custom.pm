@@ -868,25 +868,25 @@ sub select {
     my $tables = ref $table eq 'ARRAY' ? $table
                : defined $table ? [$table]
                : [];
-    my $columns   = delete $args{column};
-    my $where     = delete $args{where} || {};
-    my $join      = delete $args{join} || [];
+    my $columns   = $args{column};
+    my $where     = $args{where} || {};
+    my $join      = $args{join} || [];
     croak qq{"join" must be array reference } . _subname
       unless ref $join eq 'ARRAY';
-    my $relation = delete $args{relation};
+    my $relation = $args{relation};
     warn "select() relation option is DEPRECATED!"
       if $relation;
-    my $param = delete $args{param} || {}; # DEPRECATED!
+    my $param = $args{param} || {}; # DEPRECATED!
     warn "select() param option is DEPRECATED!"
       if keys %$param;
-    my $where_param = delete $args{where_param} || $param || {};
-    my $id = delete $args{id};
-    my $primary_key = delete $args{primary_key};
+    my $where_param = $args{where_param} || $param || {};
+    my $id = $args{id};
+    my $primary_key = $args{primary_key};
     croak "update method primary_key option " .
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $prefix = delete $args{prefix};
+    my $prefix = $args{prefix};
     
     # Add relation tables(DEPRECATED!);
     $self->_add_relation_table($tables, $relation);
