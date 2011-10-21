@@ -236,16 +236,16 @@ sub delete {
     my $table = $args{table} || '';
     croak qq{"table" option must be specified. } . _subname
       unless $table;
-    my $where            = delete $args{where} || {};
-    my $allow_delete_all = delete $args{allow_delete_all};
-    my $where_param      = delete $args{where_param} || {};
-    my $id = delete $args{id};
-    my $primary_key = delete $args{primary_key};
+    my $where            = $args{where} || {};
+    my $allow_delete_all = $args{allow_delete_all};
+    my $where_param      = $args{where_param} || {};
+    my $id = $args{id};
+    my $primary_key = $args{primary_key};
     croak "update method primary_key option " .
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $prefix = delete $args{prefix};
+    my $prefix = $args{prefix};
     
     # Where
     $where = $self->_create_param_from_id($id, $primary_key, $table)
@@ -378,30 +378,30 @@ sub execute {
     my %args = @_;
     
     # Arguments
-    my $p = delete $args{param} || {};
+    my $p = $args{param} || {};
     $param ||= $p;
-    my $tables = delete $args{table} || [];
+    my $tables = $args{table} || [];
     $tables = [$tables] unless ref $tables eq 'ARRAY';
-    my $filter = delete $args{filter};
+    my $filter = $args{filter};
     $filter = _array_to_hash($filter);
-    my $bind_type = delete $args{bind_type} || delete $args{type};
+    my $bind_type = $args{bind_type} || $args{type};
     $bind_type = _array_to_hash($bind_type);
-    my $type_rule_off = delete $args{type_rule_off};
+    my $type_rule_off = $args{type_rule_off};
     my $type_rule_off_parts = {
-        1 => delete $args{type_rule1_off},
-        2 => delete $args{type_rule2_off}
+        1 => $args{type_rule1_off},
+        2 => $args{type_rule2_off}
     };
-    my $query_return = delete $args{query};
-    my $table_alias = delete $args{table_alias} || {};
+    my $query_return = $args{query};
+    my $table_alias = $args{table_alias} || {};
     my $after_build_sql = $args{after_build_sql} || $args{sqlfilter};
     warn "sqlfilter option is DEPRECATED" if $args{sqlfilter};
-    my $id = delete $args{id};
-    my $primary_key = delete $args{primary_key};
+    my $id = $args{id};
+    my $primary_key = $args{primary_key};
     croak "execute method primary_key option " .
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $append = delete $args{append};
+    my $append = $args{append};
     $sql .= $append if defined $append && !ref $sql;
     
     my $query
@@ -601,21 +601,20 @@ sub insert {
     my $param;
     $param = shift if @_ % 2;
     my %args = @_;
-    my $table  = delete $args{table};
+    my $table  = $args{table};
     croak qq{"table" option must be specified } . _subname
       unless defined $table;
-    my $p = delete $args{param} || {};
+    my $p = $args{param} || {};
     $param  ||= $p;
-    my $id = delete $args{id};
-    my $primary_key = delete $args{primary_key};
+    my $id = $args{id};
+    my $primary_key = $args{primary_key};
     croak "insert method primary_key option " .
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $prefix = delete $args{prefix};
-    my $wrap = delete $args{wrap};
+    my $prefix = $args{prefix};
+    my $wrap = $args{wrap};
     my $timestamp = $args{timestamp};
-    delete $args{where};
     
     # Timestamp
     if ($timestamp && (my $insert_timestamp = $self->insert_timestamp)) {
@@ -649,16 +648,16 @@ sub update_or_insert {
     # Arguments
     my $param  = shift;
     my %args = @_;
-    my $id = delete $args{id};
-    my $primary_key = delete $args{primary_key};
+    my $id = $args{id};
+    my $primary_key = $args{primary_key};
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     croak "update_or_insert method need primary_key option " .
           "when id is specified" . _subname
       if defined $id && !defined $primary_key;
-    my $table  = delete $args{table};
+    my $table  = $args{table};
     croak qq{"table" option must be specified } . _subname
       unless defined $table;
-    my $select_option = delete $args{select_option};
+    my $select_option = $args{select_option};
     
     my $rows = $self->select(table => $table, id => $id,
         primary_key => $primary_key, %$select_option)->all;
