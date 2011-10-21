@@ -469,9 +469,6 @@ $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2}, append => '   
 $rows = $dbi->select(table => $table1)->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}], 'insert append');
 
-eval{$dbi->insert(table => $table1, noexist => 1)};
-like($@, qr/noexist/, "invalid");
-
 eval{$dbi->insert(table => 'table', param => {';' => 1})};
 like($@, qr/safety/);
 
@@ -625,9 +622,6 @@ is_deeply($rows, [{$key1 => 1, $key2 => 22, $key3 => 3, $key4 => 4, $key5 => 5},
                   "filter");
 
 $result = $dbi->update(table => $table1, param => {$key2 => 11}, where => {$key1 => 1}, append => '   ');
-
-eval{$dbi->update(table => $table1, where => {$key1 => 1}, noexist => 1)};
-like($@, qr/noexist/, "invalid");
 
 eval{$dbi->update(table => $table1)};
 like($@, qr/where/, "not contain where");
@@ -805,9 +799,6 @@ $dbi->delete(table => $table1, where => {$key1 => 1, $key2 => 2});
 $rows = $dbi->select(table => $table1)->all;
 is_deeply($rows, [{$key1 => 3, $key2 => 4}], "delete multi key");
 
-eval{$dbi->delete(table => $table1, where => {$key1 => 1}, noexist => 1)};
-like($@, qr/noexist/, "invalid");
-
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
@@ -914,9 +905,6 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}], "relation : no exists where");
 
-eval{$dbi->select(table => $table1, noexist => 1)};
-like($@, qr/noexist/, "invalid");
-
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->execute($create_table_reserved);
@@ -990,9 +978,6 @@ $dbi->execute($create_table1);
     eval{$dbi->execute("select * frm $table1")};
     like($@, qr/Custom.*\.t /s, "fail : verbose");
 }
-
-eval{$dbi->execute('select * from $table1', no_exists => 1)};
-like($@, qr/wrong/, "invald SQL");
 
 $query = $dbi->execute("select * from $table1 where $key1 = :$key1", {}, query => 1);
 $dbi->dbh->disconnect;
@@ -1075,12 +1060,9 @@ $dbi->execute($create_table1);
 }
 {
     local $Carp::Verbose = 1;
-    eval{$dbi->execute('select * frm $table1')};
+    eval{$dbi->execute("select * frm $table1")};
     like($@, qr/Custom.*\.t /s, "fail : verbose");
 }
-
-eval{$dbi->execute('select * from $table1', no_exists => 1)};
-like($@, qr/wrong/, "invald SQL");
 
 $query = $dbi->execute("select * from $table1 where $key1 = :$key1", {}, query => 1);
 $dbi->dbh->disconnect;

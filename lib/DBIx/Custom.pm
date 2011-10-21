@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1732';
+our $VERSION = '0.1733';
 use 5.008001;
 
 use Carp 'croak';
@@ -370,11 +370,6 @@ sub each_table {
     }
 }
 
-our %VALID_ARGS = map { $_ => 1 } qw/append after_build_sql allow_delete_all
-  allow_update_all bind_type column filter id join param prefix primary_key
-  query relation sqlfilter table table_alias timestamp type type_rule_off
-  type_rule1_off type_rule2_off wrap/;
-
 sub execute {
     my $self = shift;
     my $sql = shift;
@@ -408,12 +403,6 @@ sub execute {
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     my $append = delete $args{append};
     $sql .= $append if defined $append && !ref $sql;
-
-    # Check argument names
-    foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option } . _subname
-          unless $VALID_ARGS{$name};
-    }
     
     my $query
       = ref $sql ? $sql : $self->_create_query($sql, $after_build_sql);
@@ -1747,7 +1736,6 @@ sub apply_filter {
 }
 
 # DEPRECATED!
-our %SELECT_AT_ARGS = (%VALID_ARGS, where => 1, primary_key => 1);
 sub select_at {
     my ($self, %args) = @_;
 
@@ -1758,12 +1746,6 @@ sub select_at {
     $primary_keys = [$primary_keys] unless ref $primary_keys;
     my $where = delete $args{where};
     my $param = delete $args{param};
-    
-    # Check arguments
-    foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option } . _subname
-          unless $SELECT_AT_ARGS{$name};
-    }
     
     # Table
     croak qq{"table" option must be specified } . _subname
@@ -1777,7 +1759,6 @@ sub select_at {
 }
 
 # DEPRECATED!
-our %DELETE_AT_ARGS = (%VALID_ARGS, where => 1, primary_key => 1);
 sub delete_at {
     my ($self, %args) = @_;
 
@@ -1788,12 +1769,6 @@ sub delete_at {
     $primary_keys = [$primary_keys] unless ref $primary_keys;
     my $where = delete $args{where};
     
-    # Check arguments
-    foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option } . _subname
-          unless $DELETE_AT_ARGS{$name};
-    }
-    
     # Create where parameter
     my $where_param = $self->_create_param_from_id($where, $primary_keys);
     
@@ -1801,7 +1776,6 @@ sub delete_at {
 }
 
 # DEPRECATED!
-our %UPDATE_AT_ARGS = (%VALID_ARGS, where => 1, primary_key => 1);
 sub update_at {
     my $self = shift;
 
@@ -1817,12 +1791,6 @@ sub update_at {
     my $p = delete $args{param} || {};
     $param  ||= $p;
     
-    # Check arguments
-    foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option } . _subname
-          unless $UPDATE_AT_ARGS{$name};
-    }
-    
     # Create where parameter
     my $where_param = $self->_create_param_from_id($where, $primary_keys);
     
@@ -1830,7 +1798,6 @@ sub update_at {
 }
 
 # DEPRECATED!
-our %INSERT_AT_ARGS = (%VALID_ARGS, where => 1, primary_key => 1);
 sub insert_at {
     my $self = shift;
     
@@ -1845,12 +1812,6 @@ sub insert_at {
     my $where = delete $args{where};
     my $p = delete $args{param} || {};
     $param  ||= $p;
-    
-    # Check arguments
-    foreach my $name (keys %args) {
-        croak qq{"$name" is wrong option } . _subname
-          unless $INSERT_AT_ARGS{$name};
-    }
     
     # Create where parameter
     my $where_param = $self->_create_param_from_id($where, $primary_key);
