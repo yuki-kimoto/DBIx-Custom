@@ -660,7 +660,7 @@ $dbi->update(table => $table1, param => {$key1 => 3}, where => $where);
 $result = $dbi->select(table => $table1);
 is_deeply($result->all, [{$key1 => 3, $key2 => 2}], 'update() where');
 
-eval{$dbi->update(table => $table1, param => {';' => 1})};
+eval{$dbi->update(table => $table1, param => {';' => 1}, where => {$key1 => 1})};
 like($@, qr/safety/);
 
 eval{$dbi->update(table => $table1, param => {$key1 => 1}, where => {';' => 1})};

@@ -229,38 +229,12 @@ sub dbh {
     }
 }
 
-sub _where_clause_and_param {
-    my ($self, $where, $param) = @_;
- 
-    $where ||= {};
-    $param ||= {};
-    my $w = {};
-    my $where_clause = '';
-    if (ref $where eq 'ARRAY' && !ref $where->[0]) {
-        $w->{clause} = "where " . $where->[0];
-        $w->{param} = $where->[1];
-    }
-    elsif (ref $where) {
-        $where = $self->_where_to_obj($where);
-        $w->{param} = keys %$param
-                    ? $self->merge_param($param, $where->param)
-                    : $where->param;
-        $w->{clause} = $where->to_string;
-    }
-    elsif ($where) {
-        $w->{clause} = "where $where";
-        $w->{param} = $param;
-    }
-    
-    return $w;
-}
-
 sub delete {
     my ($self, %opt) = @_;
     warn "delete method where_param option is DEPRECATED!"
       if $opt{where_param};
     
-    # Don't allow delete all row
+    # Don't allow delete all rows
     croak qq{delete method where or id option must be specified } . _subname
       if !$opt{where} && !defined $opt{id} && !$opt{allow_delete_all};
     
@@ -626,42 +600,6 @@ sub insert {
     
     # Execute query
     return $self->execute($sql, $param, %opt);
-}
-
-sub update_or_insert {
-    my $self = shift;
-
-    # Arguments
-    my $param  = shift;
-    my %opt = @_;
-    my $id = $opt{id};
-    my $primary_key = $opt{primary_key};
-    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    croak "update_or_insert method need primary_key option " .
-          "when id is specified" . _subname
-      if defined $id && !defined $primary_key;
-    my $table  = $opt{table};
-    croak qq{"table" option must be specified } . _subname
-      unless defined $table;
-    my $select_option = $opt{select_option};
-    
-    my $rows = $self->select(table => $table, id => $id,
-        primary_key => $primary_key, %$select_option)->all;
-    
-    croak "selected row count must be one or zero" . _subname
-      if @$rows > 1;
-    
-    my $row = $rows->[0];
-    my @options = (table => $table);
-    push @options, id => $id, primary_key => $primary_key if defined $id;
-    push @options, %opt;
-    
-    if ($row) {
-        return $self->update($param, @options);
-    }
-    else {
-        return $self->insert($param, @options);
-    }
 }
 
 sub insert_timestamp {
@@ -1085,11 +1023,6 @@ sub type_rule {
     return $self->{type_rule} || {};
 }
 
-sub _create_where {
-    my $self = shift;
-    
-}
-
 sub update {
     my $self = shift;
 
@@ -1102,6 +1035,10 @@ sub update {
     $param ||= $opt{param} || {};
     my $where = $opt{where} || {};
     my $where_param = $opt{where_param} || {};
+    
+    # Don't allow update all rows
+    croak qq{update method where option must be specified } . _subname
+      if !$opt{where} && !defined $opt{id} && !$opt{allow_update_all};
     
     # Timestamp
     if ($opt{timestamp} && (my $update_timestamp = $self->update_timestamp)) {
@@ -1133,8 +1070,6 @@ sub update {
         $where_clause = $where->to_string;
     }
     elsif ($where) { $where_clause = "where $where" }
-    croak qq{"where" must be specified } . _subname
-      if "$where_clause" eq '' && !$opt{allow_update_all};
     
     # Merge where parameter to parameter
     $param = $self->merge_param($param, $where_param) if keys %$where_param;
@@ -1149,6 +1084,42 @@ sub update {
 }
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
+
+sub update_or_insert {
+    my $self = shift;
+
+    # Arguments
+    my $param  = shift;
+    my %opt = @_;
+    my $id = $opt{id};
+    my $primary_key = $opt{primary_key};
+    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
+    croak "update_or_insert method need primary_key option " .
+          "when id is specified" . _subname
+      if defined $id && !defined $primary_key;
+    my $table  = $opt{table};
+    croak qq{"table" option must be specified } . _subname
+      unless defined $table;
+    my $select_option = $opt{select_option};
+    
+    my $rows = $self->select(table => $table, id => $id,
+        primary_key => $primary_key, %$select_option)->all;
+    
+    croak "selected row count must be one or zero" . _subname
+      if @$rows > 1;
+    
+    my $row = $rows->[0];
+    my @opt = (table => $table);
+    push @opt, id => $id, primary_key => $primary_key if defined $id;
+    push @opt, %opt;
+    
+    if ($row) {
+        return $self->update($param, @opt);
+    }
+    else {
+        return $self->insert($param, @opt);
+    }
+}
 
 sub update_timestamp {
     my $self = shift;
@@ -1596,6 +1567,32 @@ sub _where_to_obj {
       unless ref $obj eq 'DBIx::Custom::Where';
     
     return $obj;
+}
+
+sub _where_clause_and_param {
+    my ($self, $where, $param) = @_;
+ 
+    $where ||= {};
+    $param ||= {};
+    my $w = {};
+    my $where_clause = '';
+    if (ref $where eq 'ARRAY' && !ref $where->[0]) {
+        $w->{clause} = "where " . $where->[0];
+        $w->{param} = $where->[1];
+    }
+    elsif (ref $where) {
+        $where = $self->_where_to_obj($where);
+        $w->{param} = keys %$param
+                    ? $self->merge_param($param, $where->param)
+                    : $where->param;
+        $w->{clause} = $where->to_string;
+    }
+    elsif ($where) {
+        $w->{clause} = "where $where";
+        $w->{param} = $param;
+    }
+    
+    return $w;
 }
 
 sub _apply_filter {
