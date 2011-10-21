@@ -1,4 +1,6 @@
 0.1733
+
+    - insert method param option is DEPRECATED!
     - removed argument checking logic because in database performance is more
       important.
 0.1732

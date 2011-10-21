@@ -248,7 +248,7 @@ sub delete {
     my $prefix = $args{prefix};
     
     # Where
-    $where = $self->_create_param_from_id($id, $primary_key, $table)
+    $where = $self->_id_to_param($id, $primary_key, $table)
       if defined $id;
     my $where_clause = '';
     if (ref $where eq 'ARRAY' && !ref $where->[0]) {
@@ -420,7 +420,7 @@ sub execute {
     my $main_table = @{$tables}[-1];
 
     if (defined $id) {
-        my $id_param = $self->_create_param_from_id($id, $primary_key, $main_table);
+        my $id_param = $self->_id_to_param($id, $primary_key, $main_table);
         $param = $self->merge_param($id_param, $param);
     }
     
@@ -600,7 +600,8 @@ sub insert {
     # Arguments
     my $param = @_ % 2 ? shift : undef;
     my %args = @_;
-    $param ||= $args{param} || {};
+    warn "insert method param option is DEPRECATED" if $args{param};
+    $param ||= delete $args{param} || {};
     
     # Timestamp
     if ($args{timestamp} && (my $insert_timestamp = $self->insert_timestamp)) {
@@ -610,16 +611,14 @@ sub insert {
         $value = $value->() if ref $value eq 'CODE';
         $param->{$_} = $value for @$columns;
     }
-
-    # Merge parameter
-    if (defined $args{id}) {
-        my $id_param = $self->_create_param_from_id($args{id}, $args{primary_key});
-        $param = $self->merge_param($id_param, $param);
-    }
-
+    
+    # Merge id to parameter
+    $param = $self->merge_param(
+        $self->_id_to_param($args{id}, $args{primary_key}), $param)
+      if defined $args{id};
+    
     # Insert statement
-    my $sql;
-    $sql .= "insert ";
+    my $sql = "insert ";
     $sql .= "$args{prefix} " if defined $args{prefix};
     $sql .= "into " . $self->_q($args{table}) . " "
       . $self->values_clause($param, {wrap => $args{wrap}}) . " ";
@@ -929,7 +928,7 @@ sub select {
     
     # Where
     my $where_clause = '';
-    $where = $self->_create_param_from_id($id, $primary_key, $tables->[-1])
+    $where = $self->_id_to_param($id, $primary_key, $tables->[-1])
       if defined $id;
     if (ref $where eq 'ARRAY' && !ref $where->[0]) {
         $where_clause = "where " . $where->[0];
@@ -1123,7 +1122,7 @@ sub update {
     my $assign_clause = $self->assign_clause($param, {wrap => $wrap});
 
     # Where
-    $where = $self->_create_param_from_id($id, $primary_key, $table)
+    $where = $self->_id_to_param($id, $primary_key, $table)
       if defined $id;
     my $where_clause = '';
     if (ref $where eq 'ARRAY' && !ref $where->[0]) {
@@ -1322,9 +1321,10 @@ sub _create_bind_values {
     return $bind;
 }
 
-sub _create_param_from_id {
+sub _id_to_param {
     my ($self, $id, $primary_keys, $table) = @_;
-
+    
+    # Check primary key
     croak "primary_key option " .
           "must be specified with id option " . _subname
       unless defined $primary_keys;
@@ -1744,7 +1744,7 @@ sub select_at {
     my $table = ref $args{table} ? $args{table}->[-1] : $args{table};
     
     # Create where parameter
-    my $where_param = $self->_create_param_from_id($where, $primary_keys);
+    my $where_param = $self->_id_to_param($where, $primary_keys);
     
     return $self->select(where => $where_param, %args);
 }
@@ -1761,7 +1761,7 @@ sub delete_at {
     my $where = delete $args{where};
     
     # Create where parameter
-    my $where_param = $self->_create_param_from_id($where, $primary_keys);
+    my $where_param = $self->_id_to_param($where, $primary_keys);
     
     return $self->delete(where => $where_param, %args);
 }
@@ -1783,7 +1783,7 @@ sub update_at {
     $param  ||= $p;
     
     # Create where parameter
-    my $where_param = $self->_create_param_from_id($where, $primary_keys);
+    my $where_param = $self->_id_to_param($where, $primary_keys);
     
     return $self->update(where => $where_param, param => $param, %args);
 }
@@ -1805,7 +1805,7 @@ sub insert_at {
     $param  ||= $p;
     
     # Create where parameter
-    my $where_param = $self->_create_param_from_id($where, $primary_key);
+    my $where_param = $self->_id_to_param($where, $primary_key);
     $param = $self->merge_param($where_param, $param);
     
     return $self->insert(param => $param, %args);
@@ -3446,6 +3446,7 @@ L<DBIx::Custom>
     update_param_tag # will be removed at 2017/1/1
     
     # Options
+    insert method param option # will be removed at 2017/1/1
     insert method id option # will be removed at 2017/1/1
     select method relation option # will be removed at 2017/1/1
     select method param option # will be removed at 2017/1/1
