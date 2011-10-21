@@ -2148,6 +2148,16 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{"${table1}_$key1" => 2, $key2 => 3, $key3 => 5}]);
 
+$rows = $dbi->select(
+    table => $table1,
+    column => "$table1.$key1 as ${table1}_$key1, $key2, $key3",
+    where   => {"$table1.$key2" => 3},
+    join  => "inner join (select * from $table2 where {= $table2.$key3})" . 
+             " $table2 on $table1.$key1 = $table2.$key1",
+    param => {"$table2.$key3" => 5}
+)->all;
+is_deeply($rows, [{"${table1}_$key1" => 2, $key2 => 3, $key3 => 5}]);
+
 test 'select() string where';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };

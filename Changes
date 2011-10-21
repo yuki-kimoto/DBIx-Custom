@@ -1,4 +1,6 @@
 0.1733
+    - select method join option can receive string.
+    - removed DEPRECATED status of select param option
     - select method where_param option is DEPRECATED!
       use where => [STRING, PARAM] syntax instead
     - delete method where_param option is DEPRECATED!

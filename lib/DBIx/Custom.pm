@@ -788,16 +788,11 @@ sub select {
     my ($self, %opt) = @_;
 
     # Options
-    my $table = $opt{table};
-    my $tables = ref $table eq 'ARRAY' ? $table
-               : defined $table ? [$table]
+    my $tables = ref $opt{table} eq 'ARRAY' ? $opt{table}
+               : defined $opt{table} ? [$opt{table}]
                : [];
     $opt{table} = $tables;
-    my $where     = $opt{where} || {};
-    my $param = $opt{param} || {}; # DEPRECATED!
-    warn "select() param option is DEPRECATED!"
-      if keys %$param;
-    my $where_param = $opt{where_param} || $param || {};
+    my $where_param = $opt{where_param} || delete $opt{param} || {};
     
     # Add relation tables(DEPRECATED!);
     if ($opt{relation}) {
@@ -811,7 +806,7 @@ sub select {
     # Prefix
     $sql .= "$opt{prefix} " if defined $opt{prefix};
     
-    # Column clause
+    # Column
     if (defined $opt{column}) {
         my $columns
           = ref $opt{column} eq 'ARRAY' ? $opt{column} : [$opt{column}];
@@ -848,7 +843,7 @@ sub select {
         $sql .= $self->_q($main_table) . ' ';
     }
     $sql =~ s/, $/ /;
-    croak "Not found table name " . _subname
+    croak "select method table option must be specified " . _subname
       unless $tables->[-1];
 
     # Add tables in parameter
@@ -856,39 +851,26 @@ sub select {
             @{$self->_search_tables(join(' ', keys %$where_param) || '')};
     
     # Where
-    my $where_clause = '';
-    $where = $self->_id_to_param($opt{id}, $opt{primary_key}, $tables->[-1])
-      if defined $opt{id};
-    if (ref $where eq 'ARRAY' && !ref $where->[0]) {
-        $where_clause = "where " . $where->[0];
-        $where_param = $where->[1];
-    }
-    elsif (ref $where) {
-        $where = $self->_where_to_obj($where);
-        $where_param = keys %$where_param
-                     ? $self->merge_param($where_param, $where->param)
-                     : $where->param;
-        
-        # String where
-        $where_clause = $where->to_string;
-    }
-    elsif ($where) { $where_clause = "where $where" }
+    my $where = defined $opt{id}
+              ? $self->_id_to_param($opt{id}, $opt{primary_key}, $tables->[-1])
+              : $opt{where};
+    my $w = $self->_where_clause_and_param($where, $where_param);
     
     # Add table names in where clause
-    unshift @$tables, @{$self->_search_tables($where_clause)};
+    unshift @$tables, @{$self->_search_tables($w->{clause})};
     
-    # Push join
+    # Join statement
     $self->_push_join(\$sql, $opt{join}, $tables) if defined $opt{join};
     
     # Add where clause
-    $sql .= "$where_clause ";
+    $sql .= "$w->{clause} ";
     
     # Relation(DEPRECATED!);
-    $self->_push_relation(\$sql, $tables, $opt{relation}, $where_clause eq '' ? 1 : 0)
+    $self->_push_relation(\$sql, $tables, $opt{relation}, $w->{clause} eq '' ? 1 : 0)
       if $opt{relation};
     
     # Execute query
-    my $result = $self->execute($sql, $where_param, %opt);
+    my $result = $self->execute($sql, $w->{param}, %opt);
     
     return $result;
 }
@@ -1370,7 +1352,7 @@ sub _option {
 sub _push_join {
     my ($self, $sql, $join, $join_tables) = @_;
     
-    $join ||= [];
+    $join = [$join] unless ref $join eq 'ARRAY';
     
     # No join
     return unless @$join;
@@ -1435,9 +1417,7 @@ sub _push_join {
       keys %$need_tables;
     
     # Add join clause
-    for my $need_table (@need_tables) {
-        $$sql .= $tree->{$need_table}{join} . ' ';
-    }
+    $$sql .= $tree->{$_}{join} . ' ' for @need_tables;
 }
 
 sub _quote {
@@ -1700,7 +1680,7 @@ sub apply_filter {
 sub select_at {
     my ($self, %opt) = @_;
 
-    warn "select_at is DEPRECATED! use update and id option instead";
+    warn "select_at is DEPRECATED! use select method id option instead";
 
     # Options
     my $primary_keys = delete $opt{primary_key};
@@ -1723,7 +1703,7 @@ sub select_at {
 sub delete_at {
     my ($self, %opt) = @_;
 
-    warn "delete_at is DEPRECATED! use update and id option instead";
+    warn "delete_at is DEPRECATED! use delete method id option instead";
     
     # Options
     my $primary_keys = delete $opt{primary_key};
@@ -1740,7 +1720,7 @@ sub delete_at {
 sub update_at {
     my $self = shift;
 
-    warn "update_at is DEPRECATED! use update and id option instead";
+    warn "update_at is DEPRECATED! use update method id option instead";
     
     # Options
     my $param;
@@ -1762,7 +1742,7 @@ sub update_at {
 sub insert_at {
     my $self = shift;
     
-    warn "insert_at is DEPRECATED! use insert and id option instead";
+    warn "insert_at is DEPRECATED! use insert method id option instead";
     
     # Options
     my $param;
@@ -3422,7 +3402,6 @@ L<DBIx::Custom>
     insert method param option # will be removed at 2017/1/1
     insert method id option # will be removed at 2017/1/1
     select method relation option # will be removed at 2017/1/1
-    select method param option # will be removed at 2017/1/1
     select method column option [COLUMN, as => ALIAS] format
       # will be removed at 2017/1/1
     execute method's sqlfilter option # will be removed at 2017/1/1
