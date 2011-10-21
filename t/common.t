@@ -2175,6 +2175,20 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
+$dbi->insert(table => $table1, param => {$key1 => 2, $key2 => 3});
+$rows = $dbi->select(
+    table => $table1,
+    where => [
+        "$key1 = :$key1 and $key2 = :$key2",
+        {$key1 => 1, $key2 => 2}
+    ]
+)->all;
+is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
+
 test 'delete() string where';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -4006,16 +4020,6 @@ $rows = $dbi->select(
     join  => ["left outer join $table2 on $table1.$key1 = $table2.$key1"]
 )->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
-
-eval {
-    $rows = $dbi->select(
-        table => $table1,
-        column => "$table1.$key1 as ${table1}_$key1, $table2.$key1 as ${table2}_$key1, $key2, $key3",
-        where   => {"$table1.$key2" => 2},
-        join  => {"$table1.$key1" => "$table2.$key1"}
-    );
-};
-like ($@, qr/array/);
 
 $rows = $dbi->select(
     table => $table1,

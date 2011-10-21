@@ -1,6 +1,10 @@
 0.1733
+    - select method where_param option is DEPRECATED!
+      use where => [STRING, PARAM] syntax instead
     - delete method where_param option is DEPRECATED!
+      use where => [STRING, PARAM] syntax instead
     - update method where_param option is DEPRECATED!
+      use where => [STRING, PARAM] syntax instead
     - update method param option is DEPRECATED!
     - insert method param option is DEPRECATED!
     - removed argument checking logic because in database performance is more

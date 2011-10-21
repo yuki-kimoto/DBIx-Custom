@@ -793,38 +793,28 @@ sub select {
                : defined $table ? [$table]
                : [];
     $opt{table} = $tables;
-    my $columns   = $opt{column};
     my $where     = $opt{where} || {};
-    my $join      = $opt{join} || [];
-    croak qq{"join" must be array reference } . _subname
-      unless ref $join eq 'ARRAY';
-    my $relation = $opt{relation};
-    warn "select() relation option is DEPRECATED!"
-      if $relation;
     my $param = $opt{param} || {}; # DEPRECATED!
     warn "select() param option is DEPRECATED!"
       if keys %$param;
     my $where_param = $opt{where_param} || $param || {};
-    my $id = $opt{id};
-    my $primary_key = $opt{primary_key};
-    croak "update method primary_key option " .
-          "must be specified when id is specified " . _subname
-      if defined $id && !defined $primary_key;
-    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $prefix = $opt{prefix};
     
     # Add relation tables(DEPRECATED!);
-    $self->_add_relation_table($tables, $relation);
+    if ($opt{relation}) {
+        warn "select() relation option is DEPRECATED!";
+        $self->_add_relation_table($tables, $opt{relation});
+    }
     
     # Select statement
     my $sql = 'select ';
     
     # Prefix
-    $sql .= "$prefix " if defined $prefix;
+    $sql .= "$opt{prefix} " if defined $opt{prefix};
     
     # Column clause
-    if ($columns) {
-        $columns = [$columns] unless ref $columns eq 'ARRAY';
+    if (defined $opt{column}) {
+        my $columns
+          = ref $opt{column} eq 'ARRAY' ? $opt{column} : [$opt{column}];
         foreach my $column (@$columns) {
             if (ref $column eq 'HASH') {
                 $column = $self->column(%$column) if ref $column eq 'HASH';
@@ -846,7 +836,7 @@ sub select {
     
     # Table
     $sql .= 'from ';
-    if ($relation) {
+    if ($opt{relation}) {
         my $found = {};
         foreach my $table (@$tables) {
             $sql .= $self->_q($table) . ', ' unless $found->{$table};
@@ -867,8 +857,8 @@ sub select {
     
     # Where
     my $where_clause = '';
-    $where = $self->_id_to_param($id, $primary_key, $tables->[-1])
-      if defined $id;
+    $where = $self->_id_to_param($opt{id}, $opt{primary_key}, $tables->[-1])
+      if defined $opt{id};
     if (ref $where eq 'ARRAY' && !ref $where->[0]) {
         $where_clause = "where " . $where->[0];
         $where_param = $where->[1];
@@ -888,14 +878,14 @@ sub select {
     unshift @$tables, @{$self->_search_tables($where_clause)};
     
     # Push join
-    $self->_push_join(\$sql, $join, $tables);
+    $self->_push_join(\$sql, $opt{join}, $tables) if defined $opt{join};
     
     # Add where clause
     $sql .= "$where_clause ";
     
     # Relation(DEPRECATED!);
-    $self->_push_relation(\$sql, $tables, $relation, $where_clause eq '' ? 1 : 0)
-      if $relation;
+    $self->_push_relation(\$sql, $tables, $opt{relation}, $where_clause eq '' ? 1 : 0)
+      if $opt{relation};
     
     # Execute query
     my $result = $self->execute($sql, $where_param, %opt);
@@ -1379,6 +1369,8 @@ sub _option {
 
 sub _push_join {
     my ($self, $sql, $join, $join_tables) = @_;
+    
+    $join ||= [];
     
     # No join
     return unless @$join;
@@ -3423,6 +3415,7 @@ L<DBIx::Custom>
     update_param_tag # will be removed at 2017/1/1
     
     # Options
+    select method where_param option # will be removed 2017/1/1
     delete method where_param option # will be removed 2017/1/1
     update method where_param option # will be removed 2017/1/1
     insert method param option # will be removed at 2017/1/1
