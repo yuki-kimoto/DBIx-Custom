@@ -230,22 +230,22 @@ sub dbh {
 }
 
 sub delete {
-    my ($self, %args) = @_;
+    my ($self, %opt) = @_;
 
     # Arguments
-    my $table = $args{table} || '';
+    my $table = $opt{table} || '';
     croak qq{"table" option must be specified. } . _subname
       unless $table;
-    my $where            = $args{where} || {};
-    my $allow_delete_all = $args{allow_delete_all};
-    my $where_param      = $args{where_param} || {};
-    my $id = $args{id};
-    my $primary_key = $args{primary_key};
+    my $where            = $opt{where} || {};
+    my $allow_delete_all = $opt{allow_delete_all};
+    my $where_param      = $opt{where_param} || {};
+    my $id = $opt{id};
+    my $primary_key = $opt{primary_key};
     croak "update method primary_key option " .
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $prefix = $args{prefix};
+    my $prefix = $opt{prefix};
     
     # Where
     $where = $self->_id_to_param($id, $primary_key, $table)
@@ -275,7 +275,7 @@ sub delete {
     $sql .= "from " . $self->_q($table) . " $where_clause ";
     
     # Execute query
-    return $self->execute($sql, $where_param, %args);
+    return $self->execute($sql, $where_param, %opt);
 }
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
@@ -286,15 +286,15 @@ sub create_model {
     my $self = shift;
     
     # Arguments
-    my $args = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $args->{dbi} = $self;
-    my $model_class = delete $args->{model_class} || 'DBIx::Custom::Model';
-    my $model_name  = delete $args->{name};
-    my $model_table = delete $args->{table};
+    my $opt = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    $opt->{dbi} = $self;
+    my $model_class = delete $opt->{model_class} || 'DBIx::Custom::Model';
+    my $model_name  = delete $opt->{name};
+    my $model_table = delete $opt->{table};
     $model_name ||= $model_table;
     
     # Create model
-    my $model = $model_class->new($args);
+    my $model = $model_class->new($opt);
     weaken $model->{dbi};
     $model->name($model_name) unless $model->name;
     $model->table($model_table) unless $model->table;
@@ -375,33 +375,33 @@ sub execute {
     my $sql = shift;
     my $param;
     $param = shift if @_ % 2;
-    my %args = @_;
+    my %opt = @_;
     
     # Arguments
-    my $p = $args{param} || {};
+    my $p = $opt{param} || {};
     $param ||= $p;
-    my $tables = $args{table} || [];
+    my $tables = $opt{table} || [];
     $tables = [$tables] unless ref $tables eq 'ARRAY';
-    my $filter = $args{filter};
+    my $filter = $opt{filter};
     $filter = _array_to_hash($filter);
-    my $bind_type = $args{bind_type} || $args{type};
+    my $bind_type = $opt{bind_type} || $opt{type};
     $bind_type = _array_to_hash($bind_type);
-    my $type_rule_off = $args{type_rule_off};
+    my $type_rule_off = $opt{type_rule_off};
     my $type_rule_off_parts = {
-        1 => $args{type_rule1_off},
-        2 => $args{type_rule2_off}
+        1 => $opt{type_rule1_off},
+        2 => $opt{type_rule2_off}
     };
-    my $query_return = $args{query};
-    my $table_alias = $args{table_alias} || {};
-    my $after_build_sql = $args{after_build_sql} || $args{sqlfilter};
-    warn "sqlfilter option is DEPRECATED" if $args{sqlfilter};
-    my $id = $args{id};
-    my $primary_key = $args{primary_key};
+    my $query_return = $opt{query};
+    my $table_alias = $opt{table_alias} || {};
+    my $after_build_sql = $opt{after_build_sql} || $opt{sqlfilter};
+    warn "sqlfilter option is DEPRECATED" if $opt{sqlfilter};
+    my $id = $opt{id};
+    my $primary_key = $opt{primary_key};
     croak "execute method primary_key option " .
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $append = $args{append};
+    my $append = $opt{append};
     $sql .= $append if defined $append && !ref $sql;
     
     my $query
@@ -553,10 +553,10 @@ sub execute {
 }
 
 sub get_table_info {
-    my ($self, %args) = @_;
+    my ($self, %opt) = @_;
     
-    my $exclude = delete $args{exclude};
-    croak qq/"$_" is wrong option/ for keys %args;
+    my $exclude = delete $opt{exclude};
+    croak qq/"$_" is wrong option/ for keys %opt;
     
     my $table_info = [];
     $self->each_table(
@@ -568,10 +568,10 @@ sub get_table_info {
 }
 
 sub get_column_info {
-    my ($self, %args) = @_;
+    my ($self, %opt) = @_;
     
-    my $exclude_table = delete $args{exclude_table};
-    croak qq/"$_" is wrong option/ for keys %args;
+    my $exclude_table = delete $opt{exclude_table};
+    croak qq/"$_" is wrong option/ for keys %opt;
     
     my $column_info = [];
     $self->each_column(
@@ -632,17 +632,17 @@ sub update_or_insert {
 
     # Arguments
     my $param  = shift;
-    my %args = @_;
-    my $id = $args{id};
-    my $primary_key = $args{primary_key};
+    my %opt = @_;
+    my $id = $opt{id};
+    my $primary_key = $opt{primary_key};
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     croak "update_or_insert method need primary_key option " .
           "when id is specified" . _subname
       if defined $id && !defined $primary_key;
-    my $table  = $args{table};
+    my $table  = $opt{table};
     croak qq{"table" option must be specified } . _subname
       unless defined $table;
-    my $select_option = $args{select_option};
+    my $select_option = $opt{select_option};
     
     my $rows = $self->select(table => $table, id => $id,
         primary_key => $primary_key, %$select_option)->all;
@@ -653,7 +653,7 @@ sub update_or_insert {
     my $row = $rows->[0];
     my @options = (table => $table);
     push @options, id => $id, primary_key => $primary_key if defined $id;
-    push @options, %args;
+    push @options, %opt;
     
     if ($row) {
         return $self->update($param, @options);
@@ -729,11 +729,11 @@ sub include_model {
         }
         
         # Create model
-        my $args = {};
-        $args->{model_class} = $mclass if $mclass;
-        $args->{name}        = $model_name if $model_name;
-        $args->{table}       = $model_table if $model_table;
-        $self->create_model($args);
+        my $opt = {};
+        $opt->{model_class} = $mclass if $mclass;
+        $opt->{name}        = $model_name if $model_name;
+        $opt->{table}       = $model_table if $model_table;
+        $self->create_model($opt);
     }
     
     return $self;
@@ -846,33 +846,33 @@ sub register_filter {
 }
 
 sub select {
-    my ($self, %args) = @_;
+    my ($self, %opt) = @_;
 
     # Arguments
-    my $table = $args{table};
+    my $table = $opt{table};
     my $tables = ref $table eq 'ARRAY' ? $table
                : defined $table ? [$table]
                : [];
-    $args{table} = $tables;
-    my $columns   = $args{column};
-    my $where     = $args{where} || {};
-    my $join      = $args{join} || [];
+    $opt{table} = $tables;
+    my $columns   = $opt{column};
+    my $where     = $opt{where} || {};
+    my $join      = $opt{join} || [];
     croak qq{"join" must be array reference } . _subname
       unless ref $join eq 'ARRAY';
-    my $relation = $args{relation};
+    my $relation = $opt{relation};
     warn "select() relation option is DEPRECATED!"
       if $relation;
-    my $param = $args{param} || {}; # DEPRECATED!
+    my $param = $opt{param} || {}; # DEPRECATED!
     warn "select() param option is DEPRECATED!"
       if keys %$param;
-    my $where_param = $args{where_param} || $param || {};
-    my $id = $args{id};
-    my $primary_key = $args{primary_key};
+    my $where_param = $opt{where_param} || $param || {};
+    my $id = $opt{id};
+    my $primary_key = $opt{primary_key};
     croak "update method primary_key option " .
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $prefix = $args{prefix};
+    my $prefix = $opt{prefix};
     
     # Add relation tables(DEPRECATED!);
     $self->_add_relation_table($tables, $relation);
@@ -959,7 +959,7 @@ sub select {
       if $relation;
     
     # Execute query
-    my $result = $self->execute($sql, $where_param, %args);
+    my $result = $self->execute($sql, $where_param, %opt);
     
     return $result;
 }
@@ -1090,25 +1090,25 @@ sub update {
     # Arguments
     my $param;
     $param = shift if @_ % 2;
-    my %args = @_;
-    my $table = $args{table} || '';
+    my %opt = @_;
+    my $table = $opt{table} || '';
     croak qq{"table" option must be specified } . _subname
       unless $table;
-    my $p = $args{param} || {};
+    my $p = $opt{param} || {};
     $param  ||= $p;
-    my $where = $args{where} || {};
-    my $where_param = $args{where_param} || {};
-    my $allow_update_all = $args{allow_update_all};
-    my $id = $args{id};
-    my $primary_key = $args{primary_key};
+    my $where = $opt{where} || {};
+    my $where_param = $opt{where_param} || {};
+    my $allow_update_all = $opt{allow_update_all};
+    my $id = $opt{id};
+    my $primary_key = $opt{primary_key};
     croak "update method primary_key option " .
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $prefix = $args{prefix};
+    my $prefix = $opt{prefix};
     
     # Timestamp
-    if ($args{timestamp} && (my $update_timestamp = $self->update_timestamp)) {
+    if ($opt{timestamp} && (my $update_timestamp = $self->update_timestamp)) {
         my $columns = $update_timestamp->[0];
         $columns = [$columns] unless ref $columns eq 'ARRAY';
         my $value = $update_timestamp->[1];
@@ -1117,7 +1117,7 @@ sub update {
     }
 
     # Update clause
-    my $assign_clause = $self->assign_clause($param, {wrap => $args{wrap}});
+    my $assign_clause = $self->assign_clause($param, {wrap => $opt{wrap}});
 
     # Where
     $where = $self->_id_to_param($id, $primary_key, $table)
@@ -1150,7 +1150,7 @@ sub update {
     $sql .= $self->_q($table) . " set $assign_clause $where_clause ";
     
     # Execute query
-    return $self->execute($sql, $param, %args);
+    return $self->execute($sql, $param, %opt);
 }
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
@@ -1726,42 +1726,42 @@ sub apply_filter {
 
 # DEPRECATED!
 sub select_at {
-    my ($self, %args) = @_;
+    my ($self, %opt) = @_;
 
     warn "select_at is DEPRECATED! use update and id option instead";
 
     # Arguments
-    my $primary_keys = delete $args{primary_key};
+    my $primary_keys = delete $opt{primary_key};
     $primary_keys = [$primary_keys] unless ref $primary_keys;
-    my $where = delete $args{where};
-    my $param = delete $args{param};
+    my $where = delete $opt{where};
+    my $param = delete $opt{param};
     
     # Table
     croak qq{"table" option must be specified } . _subname
-      unless $args{table};
-    my $table = ref $args{table} ? $args{table}->[-1] : $args{table};
+      unless $opt{table};
+    my $table = ref $opt{table} ? $opt{table}->[-1] : $opt{table};
     
     # Create where parameter
     my $where_param = $self->_id_to_param($where, $primary_keys);
     
-    return $self->select(where => $where_param, %args);
+    return $self->select(where => $where_param, %opt);
 }
 
 # DEPRECATED!
 sub delete_at {
-    my ($self, %args) = @_;
+    my ($self, %opt) = @_;
 
     warn "delete_at is DEPRECATED! use update and id option instead";
     
     # Arguments
-    my $primary_keys = delete $args{primary_key};
+    my $primary_keys = delete $opt{primary_key};
     $primary_keys = [$primary_keys] unless ref $primary_keys;
-    my $where = delete $args{where};
+    my $where = delete $opt{where};
     
     # Create where parameter
     my $where_param = $self->_id_to_param($where, $primary_keys);
     
-    return $self->delete(where => $where_param, %args);
+    return $self->delete(where => $where_param, %opt);
 }
 
 # DEPRECATED!
@@ -1773,17 +1773,17 @@ sub update_at {
     # Arguments
     my $param;
     $param = shift if @_ % 2;
-    my %args = @_;
-    my $primary_keys = delete $args{primary_key};
+    my %opt = @_;
+    my $primary_keys = delete $opt{primary_key};
     $primary_keys = [$primary_keys] unless ref $primary_keys;
-    my $where = delete $args{where};
-    my $p = delete $args{param} || {};
+    my $where = delete $opt{where};
+    my $p = delete $opt{param} || {};
     $param  ||= $p;
     
     # Create where parameter
     my $where_param = $self->_id_to_param($where, $primary_keys);
     
-    return $self->update(where => $where_param, param => $param, %args);
+    return $self->update(where => $where_param, param => $param, %opt);
 }
 
 # DEPRECATED!
@@ -1795,18 +1795,18 @@ sub insert_at {
     # Arguments
     my $param;
     $param = shift if @_ % 2;
-    my %args = @_;
-    my $primary_key = delete $args{primary_key};
+    my %opt = @_;
+    my $primary_key = delete $opt{primary_key};
     $primary_key = [$primary_key] unless ref $primary_key;
-    my $where = delete $args{where};
-    my $p = delete $args{param} || {};
+    my $where = delete $opt{where};
+    my $p = delete $opt{param} || {};
     $param  ||= $p;
     
     # Create where parameter
     my $where_param = $self->_id_to_param($where, $primary_key);
     $param = $self->merge_param($where_param, $param);
     
-    return $self->insert(param => $param, %args);
+    return $self->insert(param => $param, %opt);
 }
 
 # DEPRECATED!
