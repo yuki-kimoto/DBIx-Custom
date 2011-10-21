@@ -599,12 +599,12 @@ sub insert {
     
     # Arguments
     my $param = @_ % 2 ? shift : undef;
-    my %args = @_;
-    warn "insert method param option is DEPRECATED" if $args{param};
-    $param ||= delete $args{param} || {};
+    my %opt = @_;
+    warn "insert method param option is DEPRECATED" if $opt{param};
+    $param ||= delete $opt{param} || {};
     
     # Timestamp
-    if ($args{timestamp} && (my $insert_timestamp = $self->insert_timestamp)) {
+    if ($opt{timestamp} && (my $insert_timestamp = $self->insert_timestamp)) {
         my $columns = $insert_timestamp->[0];
         $columns = [$columns] unless ref $columns eq 'ARRAY';
         my $value = $insert_timestamp->[1];
@@ -614,17 +614,17 @@ sub insert {
     
     # Merge id to parameter
     $param = $self->merge_param(
-        $self->_id_to_param($args{id}, $args{primary_key}), $param)
-      if defined $args{id};
+        $self->_id_to_param($opt{id}, $opt{primary_key}), $param)
+      if defined $opt{id};
     
     # Insert statement
     my $sql = "insert ";
-    $sql .= "$args{prefix} " if defined $args{prefix};
-    $sql .= "into " . $self->_q($args{table}) . " "
-      . $self->values_clause($param, {wrap => $args{wrap}}) . " ";
+    $sql .= "$opt{prefix} " if defined $opt{prefix};
+    $sql .= "into " . $self->_q($opt{table}) . " "
+      . $self->values_clause($param, {wrap => $opt{wrap}}) . " ";
     
     # Execute query
-    return $self->execute($sql, $param, %args);
+    return $self->execute($sql, $param, %opt);
 }
 
 sub update_or_insert {
@@ -1106,11 +1106,9 @@ sub update {
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
     my $prefix = $args{prefix};
-    my $wrap = $args{wrap};
-    my $timestamp = $args{timestamp};
     
     # Timestamp
-    if ($timestamp && (my $update_timestamp = $self->update_timestamp)) {
+    if ($args{timestamp} && (my $update_timestamp = $self->update_timestamp)) {
         my $columns = $update_timestamp->[0];
         $columns = [$columns] unless ref $columns eq 'ARRAY';
         my $value = $update_timestamp->[1];
@@ -1119,7 +1117,7 @@ sub update {
     }
 
     # Update clause
-    my $assign_clause = $self->assign_clause($param, {wrap => $wrap});
+    my $assign_clause = $self->assign_clause($param, {wrap => $args{wrap}});
 
     # Where
     $where = $self->_id_to_param($id, $primary_key, $table)
