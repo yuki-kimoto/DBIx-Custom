@@ -1088,24 +1088,12 @@ sub update {
     my $self = shift;
 
     # Arguments
-    my $param;
-    $param = shift if @_ % 2;
+    my $param = @_ % 2 ? shift : undef;
     my %opt = @_;
-    my $table = $opt{table} || '';
-    croak qq{"table" option must be specified } . _subname
-      unless $table;
-    my $p = $opt{param} || {};
-    $param  ||= $p;
+    warn "update param option is DEPRECATED!" if $opt{param};
+    $param ||= $opt{param} || {};
     my $where = $opt{where} || {};
     my $where_param = $opt{where_param} || {};
-    my $allow_update_all = $opt{allow_update_all};
-    my $id = $opt{id};
-    my $primary_key = $opt{primary_key};
-    croak "update method primary_key option " .
-          "must be specified when id is specified " . _subname
-      if defined $id && !defined $primary_key;
-    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $prefix = $opt{prefix};
     
     # Timestamp
     if ($opt{timestamp} && (my $update_timestamp = $self->update_timestamp)) {
@@ -1116,12 +1104,12 @@ sub update {
         $param->{$_} = $value for @$columns;
     }
 
-    # Update clause
+    # Assign clause
     my $assign_clause = $self->assign_clause($param, {wrap => $opt{wrap}});
 
     # Where
-    $where = $self->_id_to_param($id, $primary_key, $table)
-      if defined $id;
+    $where = $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table})
+      if defined $opt{id};
     my $where_clause = '';
     if (ref $where eq 'ARRAY' && !ref $where->[0]) {
         $where_clause = "where " . $where->[0];
@@ -1138,16 +1126,15 @@ sub update {
     }
     elsif ($where) { $where_clause = "where $where" }
     croak qq{"where" must be specified } . _subname
-      if "$where_clause" eq '' && !$allow_update_all;
+      if "$where_clause" eq '' && !$opt{allow_update_all};
     
     # Merge param
     $param = $self->merge_param($param, $where_param) if keys %$where_param;
     
     # Update statement
-    my $sql;
-    $sql .= "update ";
-    $sql .= "$prefix " if defined $prefix;
-    $sql .= $self->_q($table) . " set $assign_clause $where_clause ";
+    my $sql = "update ";
+    $sql .= "$opt{prefix} " if defined $opt{prefix};
+    $sql .= $self->_q($opt{table}) . " set $assign_clause $where_clause ";
     
     # Execute query
     return $self->execute($sql, $param, %opt);
