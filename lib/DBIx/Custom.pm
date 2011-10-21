@@ -598,22 +598,15 @@ sub insert {
     my $self = shift;
     
     # Arguments
-    my $param;
-    $param = shift if @_ % 2;
+    my $param = @_ % 2 ? shift : undef;
     my %args = @_;
-    my $table  = $args{table};
-    croak qq{"table" option must be specified } . _subname
-      unless defined $table;
-    my $p = $args{param} || {};
-    $param  ||= $p;
+    $param ||= $args{param} || {};
     my $id = $args{id};
     my $primary_key = $args{primary_key};
     croak "insert method primary_key option " .
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $prefix = $args{prefix};
-    my $wrap = $args{wrap};
     my $timestamp = $args{timestamp};
     
     # Timestamp
@@ -634,9 +627,9 @@ sub insert {
     # Insert statement
     my $sql;
     $sql .= "insert ";
-    $sql .= "$prefix " if defined $prefix;
-    $sql .= "into " . $self->_q($table) . " "
-      . $self->values_clause($param, {wrap => $wrap}) . " ";
+    $sql .= "$args{prefix} " if defined $args{prefix};
+    $sql .= "into " . $self->_q($args{table}) . " "
+      . $self->values_clause($param, {wrap => $args{wrap}}) . " ";
     
     # Execute query
     return $self->execute($sql, $param, %args);
@@ -1109,19 +1102,19 @@ sub update {
     my $table = $args{table} || '';
     croak qq{"table" option must be specified } . _subname
       unless $table;
-    my $p = delete $args{param} || {};
+    my $p = $args{param} || {};
     $param  ||= $p;
-    my $where = delete $args{where} || {};
-    my $where_param = delete $args{where_param} || {};
-    my $allow_update_all = delete $args{allow_update_all};
-    my $id = delete $args{id};
-    my $primary_key = delete $args{primary_key};
+    my $where = $args{where} || {};
+    my $where_param = $args{where_param} || {};
+    my $allow_update_all = $args{allow_update_all};
+    my $id = $args{id};
+    my $primary_key = $args{primary_key};
     croak "update method primary_key option " .
           "must be specified when id is specified " . _subname
       if defined $id && !defined $primary_key;
     $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $prefix = delete $args{prefix};
-    my $wrap = delete $args{wrap};
+    my $prefix = $args{prefix};
+    my $wrap = $args{wrap};
     my $timestamp = $args{timestamp};
     
     # Timestamp

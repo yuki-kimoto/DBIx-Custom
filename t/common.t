@@ -1664,8 +1664,6 @@ is($dbi->{_tags}->{b}->(), 2);
 
 test 'table not specify exception';
 $dbi = DBIx::Custom->connect;
-eval {$dbi->insert};
-like($@, qr/table/);
 eval {$dbi->update};
 like($@, qr/table/);
 eval {$dbi->delete};
