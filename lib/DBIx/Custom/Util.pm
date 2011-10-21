@@ -20,7 +20,7 @@ sub _array_to_hash {
         my $f = $array->[$i + 1];
         
         if (ref $key eq 'ARRAY') {
-            foreach my $k (@$key) {
+            for my $k (@$key) {
                 $hash->{$k} = $f;
             }
         }

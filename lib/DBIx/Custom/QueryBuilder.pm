@@ -208,7 +208,7 @@ sub _parse_tag {
     # Tables
     my $tables = [];
     # Build SQL 
-    foreach my $node (@tree) {
+    for my $node (@tree) {
         # Text
         if ($node->{type} eq 'text') { $sql .= $node->{value} }
         # Parameter

@@ -40,7 +40,7 @@ sub AUTOLOAD {
 
 my @methods = qw/insert insert_at update update_at update_all
                  delete delete_at delete_all select select_at count/;
-foreach my $method (@methods) {
+for my $method (@methods) {
 
     my $code = sub {
         my $self = shift;
@@ -101,7 +101,7 @@ sub new {
     
     # Check attribute names
     my @attrs = keys %$self;
-    foreach my $attr (@attrs) {
+    for my $attr (@attrs) {
         croak qq{"$attr" is invalid attribute name } . _subname
           unless $self->can($attr);
     }

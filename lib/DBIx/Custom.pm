@@ -71,7 +71,7 @@ sub available_datatype {
     my $self = shift;
     
     my $data_types = '';
-    foreach my $i (-1000 .. 1000) {
+    for my $i (-1000 .. 1000) {
          my $type_info = $self->dbh->type_info($i);
          my $data_type = $type_info->{DATA_TYPE};
          my $type_name = $type_info->{TYPE_NAME};
@@ -127,7 +127,7 @@ sub assign_clause {
     # Create set tag
     my @params;
     my $safety = $self->safety_character;
-    foreach my $column (sort keys %$param) {
+    for my $column (sort keys %$param) {
         croak qq{"$column" is not safety column name } . _subname
           unless $column =~ /^[$safety\.]+$/;
         my $column_quote = $self->_q($column);
@@ -406,13 +406,13 @@ sub execute {
     # Type rule
     my $type_filters = {};
     unless ($type_rule_off) {
-        foreach my $i (1, 2) {
+        for my $i (1, 2) {
             unless ($type_rule_off_parts->{$i}) {
                 $type_filters->{$i} = {};
-                foreach my $alias (keys %$table_alias) {
+                for my $alias (keys %$table_alias) {
                     my $table = $table_alias->{$alias};
                     
-                    foreach my $column (keys %{$self->{"_into$i"}{key}{$table} || {}}) {
+                    for my $column (keys %{$self->{"_into$i"}{key}{$table} || {}}) {
                         $type_filters->{$i}->{"$alias.$column"} = $self->{"_into$i"}{key}{$table}{$column};
                     }
                 }
@@ -425,7 +425,7 @@ sub execute {
     # DEPRECATED! Applied filter
     if ($self->{filter}{on}) {
         my $applied_filter = {};
-        foreach my $table (@$tables) {
+        for my $table (@$tables) {
             $applied_filter = {
                 %$applied_filter,
                 %{$self->{filter}{out}->{$table} || {}}
@@ -435,7 +435,7 @@ sub execute {
     }
     
     # Replace filter name to code
-    foreach my $column (keys %$filter) {
+    for my $column (keys %$filter) {
         my $name = $filter->{$column};
         if (!defined $name) {
             $filter->{$column} = undef;
@@ -478,7 +478,7 @@ sub execute {
     if (DEBUG) {
         print STDERR "SQL:\n" . $query->sql . "\n";
         my @output;
-        foreach my $b (@$bind) {
+        for my $b (@$bind) {
             my $value = $b->{value};
             $value = 'undef' unless defined $value;
             $value = encode(DEBUG_ENCODING(), $value)
@@ -497,8 +497,8 @@ sub execute {
             $filter->{in}  = {};
             $filter->{end} = {};
             push @$tables, $main_table if $main_table;
-            foreach my $table (@$tables) {
-                foreach my $way (qw/in end/) {
+            for my $table (@$tables) {
+                for my $way (qw/in end/) {
                     $filter->{$way} = {
                         %{$filter->{$way}},
                         %{$self->{filter}{$way}{$table} || {}}
@@ -644,7 +644,7 @@ sub include_model {
     }
     
     # Include models
-    foreach my $model_info (@$model_infos) {
+    for my $model_info (@$model_infos) {
         
         # Load model
         my $model_class;
@@ -690,8 +690,8 @@ sub merge_param {
     
     # Merge parameters
     my $merge = {};
-    foreach my $param (@params) {
-        foreach my $column (keys %$param) {
+    for my $param (@params) {
+        for my $column (keys %$param) {
             my $param_is_array = ref $param->{$column} eq 'ARRAY' ? 1 : 0;
             
             if (exists $merge->{$column}) {
@@ -744,7 +744,7 @@ sub new {
     
     # Check attributes
     my @attrs = keys %$self;
-    foreach my $attr (@attrs) {
+    for my $attr (@attrs) {
         croak qq{Invalid attribute: "$attr" } . _subname
           unless $self->can($attr);
     }
@@ -815,7 +815,7 @@ sub select {
     if (defined $opt{column}) {
         my $columns
           = ref $opt{column} eq 'ARRAY' ? $opt{column} : [$opt{column}];
-        foreach my $column (@$columns) {
+        for my $column (@$columns) {
             if (ref $column eq 'HASH') {
                 $column = $self->column(%$column) if ref $column eq 'HASH';
             }
@@ -838,7 +838,7 @@ sub select {
     $sql .= 'from ';
     if ($opt{relation}) {
         my $found = {};
-        foreach my $table (@$tables) {
+        for my $table (@$tables) {
             $sql .= $self->_q($table) . ', ' unless $found->{$table};
             $found->{$table} = 1;
         }
@@ -957,13 +957,13 @@ sub type_rule {
         my $type_rule = ref $_[0] eq 'HASH' ? $_[0] : {@_};
         
         # Into
-        foreach my $i (1 .. 2) {
+        for my $i (1 .. 2) {
             my $into = "into$i";
             my $exists_into = exists $type_rule->{$into};
             $type_rule->{$into} = _array_to_hash($type_rule->{$into});
             $self->{type_rule} = $type_rule;
             $self->{"_$into"} = {};
-            foreach my $type_name (keys %{$type_rule->{$into} || {}}) {
+            for my $type_name (keys %{$type_rule->{$into} || {}}) {
                 croak qq{type name of $into section must be lower case}
                   if $type_name =~ /[A-Z]/;
             }
@@ -992,9 +992,9 @@ sub type_rule {
         }
 
         # From
-        foreach my $i (1 .. 2) {
+        for my $i (1 .. 2) {
             $type_rule->{"from$i"} = _array_to_hash($type_rule->{"from$i"});
-            foreach my $data_type (keys %{$type_rule->{"from$i"} || {}}) {
+            for my $data_type (keys %{$type_rule->{"from$i"} || {}}) {
                 croak qq{data type of from$i section must be lower case or number}
                   if $data_type =~ /[A-Z]/;
                 my $fname = $type_rule->{"from$i"}{$data_type};
@@ -1118,7 +1118,7 @@ sub values_clause {
     my $safety = $self->safety_character;
     my @columns;
     my @placeholders;
-    foreach my $column (sort keys %$param) {
+    for my $column (sort keys %$param) {
         croak qq{"$column" is not safety column name } . _subname
           unless $column =~ /^[$safety\.]+$/;
         my $column_quote = $self->_q($column);
@@ -1219,7 +1219,7 @@ sub _create_bind_values {
     my $bind = [];
     my $count = {};
     my $not_exists = {};
-    foreach my $column (@$columns) {
+    for my $column (@$columns) {
         
         # Value
         my $value;
@@ -1246,7 +1246,7 @@ sub _create_bind_values {
         $value = $f->($value) if $f;
         
         # Type rule
-        foreach my $i (1 .. 2) {
+        for my $i (1 .. 2) {
             my $type_filter = $type_filters->{$i};
             my $tf = $self->{"_into$i"}->{dot}->{$column} || $type_filter->{$column};
             $value = $tf->($value) if $tf;
@@ -1349,7 +1349,7 @@ sub _need_tables {
     my ($self, $tree, $need_tables, $tables) = @_;
     
     # Get needed tables
-    foreach my $table (@$tables) {
+    for my $table (@$tables) {
         if ($tree->{$table}) {
             $need_tables->{$table} = 1;
             $self->_need_tables($tree, $need_tables, [$tree->{$table}{parent}])
@@ -1431,10 +1431,11 @@ sub _push_join {
     # Search need tables
     my $need_tables = {};
     $self->_need_tables($tree, $need_tables, $join_tables);
-    my @need_tables = sort { $tree->{$a}{position} <=> $tree->{$b}{position} } keys %$need_tables;
+    my @need_tables = sort { $tree->{$a}{position} <=> $tree->{$b}{position} }
+      keys %$need_tables;
     
     # Add join clause
-    foreach my $need_table (@need_tables) {
+    for my $need_table (@need_tables) {
         $$sql .= $tree->{$need_table}{join} . ' ';
     }
 }
@@ -1508,7 +1509,7 @@ sub _where_to_obj {
     if (ref $where eq 'HASH') {
         my $clause = ['and'];
         my $q = $self->_quote;
-        foreach my $column (keys %$where) {
+        for my $column (keys %$where) {
             my $table;
             my $c;
             if ($column =~ /(?:(.*?)\.)?(.*)/) {
@@ -1595,7 +1596,7 @@ sub _apply_filter {
         # Column
         my $column = $cinfos[$i];
         if (ref $column eq 'ARRAY') {
-            foreach my $c (@$column) {
+            for my $c (@$column) {
                 push @cinfos, $c, $cinfos[$i + 1];
             }
             next;
@@ -1605,13 +1606,13 @@ sub _apply_filter {
         my $finfo = $cinfos[$i + 1] || {};
         croak "$usage (table: $table) " . _subname
           unless  ref $finfo eq 'HASH';
-        foreach my $ftype (keys %$finfo) {
+        for my $ftype (keys %$finfo) {
             croak "$usage (table: $table) " . _subname
               unless $ftype eq 'in' || $ftype eq 'out' || $ftype eq 'end'; 
         }
         
         # Set filters
-        foreach my $way (qw/in out end/) {
+        for my $way (qw/in out end/) {
         
             # Filter
             my $filter = $finfo->{$way};
@@ -1878,7 +1879,7 @@ sub _push_relation {
     
     if (keys %{$relation || {}}) {
         $$sql .= $need_where ? 'where ' : 'and ';
-        foreach my $rcolumn (keys %$relation) {
+        for my $rcolumn (keys %$relation) {
             my $table1 = (split (/\./, $rcolumn))[0];
             my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
             push @$tables, ($table1, $table2);
@@ -1893,12 +1894,12 @@ sub _add_relation_table {
     my ($self, $tables, $relation) = @_;
     
     if (keys %{$relation || {}}) {
-        foreach my $rcolumn (keys %$relation) {
+        for my $rcolumn (keys %$relation) {
             my $table1 = (split (/\./, $rcolumn))[0];
             my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
             my $table1_exists;
             my $table2_exists;
-            foreach my $table (@$tables) {
+            for my $table (@$tables) {
                 $table1_exists = 1 if $table eq $table1;
                 $table2_exists = 1 if $table eq $table2;
             }
@@ -2551,7 +2552,7 @@ You can check SQL or get statment handle.
 If you want to execute SQL fast, you can do the following way.
 
     my $query;
-    foreach my $row (@$rows) {
+    for my $row (@$rows) {
       $query ||= $dbi->insert($row, table => 'table1', query => 1);
       $dbi->execute($query, $row);
     }
@@ -2564,7 +2565,7 @@ You can do the following way.
     
     my $query;
     my $sth;
-    foreach my $row (@$rows) {
+    for my $row (@$rows) {
       $query ||= $dbi->insert($row, table => 'book', query => 1);
       $sth ||= $query->sth;
       $sth->execute(map { $row->{$_} } sort keys %$row);

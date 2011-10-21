@@ -11,7 +11,7 @@ has 'dbi',
 sub prepend {
     my $self = shift;
     
-    foreach my $order (reverse @_) {
+    for my $order (reverse @_) {
         if (ref $order eq 'ARRAY') {
             my $column = shift @$order;
             $column = $self->dbi->_q($column) if defined $column;
@@ -30,7 +30,7 @@ sub to_string {
     
     my $exists = {};
     my @orders;
-    foreach my $order (@{$self->orders}) {
+    for my $order (@{$self->orders}) {
         next unless defined $order;
         $order =~ s/^\s+//;
         $order =~ s/\s+$//;

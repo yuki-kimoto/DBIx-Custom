@@ -18,7 +18,7 @@ sub filter {
         # Convert filter name to subroutine
         my $filter = @_ == 1 ? $_[0] : [@_];
         $filter = _array_to_hash($filter);
-        foreach my $column (keys %$filter) {
+        for my $column (keys %$filter) {
             my $fname = $filter->{$column};
             if  (exists $filter->{$column}
               && defined $fname
@@ -230,9 +230,9 @@ sub type_rule {
         my $type_rule = ref $_[0] eq 'HASH' ? $_[0] : {@_};
 
         # From
-        foreach my $i (1 .. 2) {
+        for my $i (1 .. 2) {
             $type_rule->{"from$i"} = _array_to_hash($type_rule->{"from$i"});
-            foreach my $data_type (keys %{$type_rule->{"from$i"} || {}}) {
+            for my $data_type (keys %{$type_rule->{"from$i"} || {}}) {
                 croak qq{data type of from$i section must be lower case or number}
                   if $data_type =~ /[A-Z]/;
                 my $fname = $type_rule->{"from$i"}{$data_type};
@@ -300,7 +300,7 @@ sub end_filter {
                 @_ > 1 ? [@_] : $_[0]
             );
         }
-        foreach my $column (keys %$end_filter) {
+        for my $column (keys %$end_filter) {
             my $fname = $end_filter->{$column};
             if  (exists $end_filter->{$column}
               && defined $fname

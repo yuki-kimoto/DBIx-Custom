@@ -17,7 +17,7 @@ sub new {
     
     # Check attribute names
     my @attrs = keys %$self;
-    foreach my $attr (@attrs) {
+    for my $attr (@attrs) {
         croak qq{"$attr" is invalid attribute name (} . _subname . ")"
           unless $self->can($attr);
     }
@@ -31,7 +31,7 @@ sub to_string {
     # Check if column name is safety character;
     my $safety = $self->dbi->safety_character;
     if (ref $self->param eq 'HASH') {
-        foreach my $column (keys %{$self->param}) {
+        for my $column (keys %{$self->param}) {
             croak qq{"$column" is not safety column name (} . _subname . ")"
               unless $column =~ /^[$safety\.]+$/;
         }

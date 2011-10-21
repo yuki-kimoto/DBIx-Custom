@@ -2878,7 +2878,7 @@ $rows = [
 ];
 {
     my $query;
-    foreach my $row (@$rows) {
+    for my $row (@$rows) {
       $query ||= $dbi->insert($row, table => $table1, query => 1);
       $dbi->execute($query, $row, filter => {$key7 => sub { $_[0] * 2 }});
     }
@@ -2899,7 +2899,7 @@ $rows = [
 {
     my $query;
     my $sth;
-    foreach my $row (@$rows) {
+    for my $row (@$rows) {
       $query ||= $dbi->insert($row, table => $table1, query => 1);
       $sth ||= $query->sth;
       $sth->execute(map { $row->{$_} } sort keys %$row);
@@ -2921,7 +2921,7 @@ $rows = [
 {
     $model = $dbi->create_model(table => $table1, primary_key => $key1);
     my $query;
-    foreach my $row (@$rows) {
+    for my $row (@$rows) {
       $query ||= $model->insert($row, query => 1);
       $model->execute($query, $row, filter => {$key7 => sub { $_[0] * 2 }});
     }

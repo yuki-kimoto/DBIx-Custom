@@ -22,7 +22,7 @@ sub map {
     
     # Mapping
     my $new_param = {};
-    foreach my $key (keys %rule) {
+    for my $key (keys %rule) {
         
         my $mapping = $rule{$key};
         
@@ -102,7 +102,7 @@ sub new {
     
     # Check attribute names
     my @attrs = keys %$self;
-    foreach my $attr (@attrs) {
+    for my $attr (@attrs) {
         croak qq{"$attr" is invalid attribute name (} . _subname . ")"
           unless $self->can($attr);
     }

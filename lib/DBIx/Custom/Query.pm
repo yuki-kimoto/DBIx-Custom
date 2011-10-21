@@ -46,7 +46,7 @@ sub filter {
                 my $column = $ef->[$i];
                 my $f = $ef->[$i + 1];
                 if (ref $column eq 'ARRAY') {
-                    foreach my $c (@$column) {
+                    for my $c (@$column) {
                         $filter->{$c} = $f;
                     }
                 }
@@ -55,7 +55,7 @@ sub filter {
                 }
             }
         }
-        foreach my $column (keys %$filter) {
+        for my $column (keys %$filter) {
             my $fname = $filter->{$column};
             if  (exists $filter->{$column}
               && defined $fname
