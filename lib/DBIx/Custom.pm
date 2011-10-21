@@ -275,7 +275,7 @@ sub delete {
     $sql .= "from " . $self->_q($table) . " $where_clause ";
     
     # Execute query
-    return $self->execute($sql, $where_param, table => $table, %args);
+    return $self->execute($sql, $where_param, %args);
 }
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
@@ -639,7 +639,7 @@ sub insert {
       . $self->values_clause($param, {wrap => $wrap}) . " ";
     
     # Execute query
-    return $self->execute($sql, $param, table => $table, %args);
+    return $self->execute($sql, $param, %args);
 }
 
 sub update_or_insert {
@@ -864,10 +864,11 @@ sub select {
     my ($self, %args) = @_;
 
     # Arguments
-    my $table = delete $args{table};
+    my $table = $args{table};
     my $tables = ref $table eq 'ARRAY' ? $table
                : defined $table ? [$table]
                : [];
+    $args{table} = $tables;
     my $columns   = $args{column};
     my $where     = $args{where} || {};
     my $join      = $args{join} || [];
@@ -973,7 +974,7 @@ sub select {
       if $relation;
     
     # Execute query
-    my $result = $self->execute($sql, $where_param, table => $tables, %args);
+    my $result = $self->execute($sql, $where_param, %args);
     
     return $result;
 }
@@ -1105,7 +1106,7 @@ sub update {
     my $param;
     $param = shift if @_ % 2;
     my %args = @_;
-    my $table = delete $args{table} || '';
+    my $table = $args{table} || '';
     croak qq{"table" option must be specified } . _subname
       unless $table;
     my $p = delete $args{param} || {};
@@ -1166,7 +1167,7 @@ sub update {
     $sql .= $self->_q($table) . " set $assign_clause $where_clause ";
     
     # Execute query
-    return $self->execute($sql, $param, table => $table, %args);
+    return $self->execute($sql, $param, %args);
 }
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
