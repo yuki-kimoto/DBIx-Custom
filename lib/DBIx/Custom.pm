@@ -260,7 +260,7 @@ sub DESTROY {}
 sub create_model {
     my $self = shift;
     
-    # Arguments
+    # Options
     my $opt = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $opt->{dbi} = $self;
     my $model_class = delete $opt->{model_class} || 'DBIx::Custom::Model';
@@ -352,7 +352,7 @@ sub execute {
     $param = shift if @_ % 2;
     my %opt = @_;
     
-    # Arguments
+    # Options
     my $p = $opt{param} || {};
     $param ||= $p;
     my $tables = $opt{table} || [];
@@ -572,7 +572,7 @@ sub helper {
 sub insert {
     my $self = shift;
     
-    # Arguments
+    # Options
     my $param = @_ % 2 ? shift : undef;
     my %opt = @_;
     warn "insert method param option is DEPRECATED" if $opt{param};
@@ -787,7 +787,7 @@ sub register_filter {
 sub select {
     my ($self, %opt) = @_;
 
-    # Arguments
+    # Options
     my $table = $opt{table};
     my $tables = ref $table eq 'ARRAY' ? $table
                : defined $table ? [$table]
@@ -1026,15 +1026,13 @@ sub type_rule {
 sub update {
     my $self = shift;
 
-    # Arguments
+    # Options
     my $param = @_ % 2 ? shift : undef;
     my %opt = @_;
     warn "update param option is DEPRECATED!" if $opt{param};
     warn "update method where_param option is DEPRECATED!"
       if $opt{where_param};
     $param ||= $opt{param} || {};
-    my $where = $opt{where} || {};
-    my $where_param = $opt{where_param} || {};
     
     # Don't allow update all rows
     croak qq{update method where option must be specified } . _subname
@@ -1051,33 +1049,22 @@ sub update {
 
     # Assign clause
     my $assign_clause = $self->assign_clause($param, {wrap => $opt{wrap}});
+    
+    # Convert id to where parameter
+    my $where = defined $opt{id}
+      ? $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table})
+      : $opt{where};
 
     # Where
-    $where = $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table})
-      if defined $opt{id};
-    my $where_clause = '';
-    if (ref $where eq 'ARRAY' && !ref $where->[0]) {
-        $where_clause = "where " . $where->[0];
-        $where_param = $where->[1];
-    }
-    elsif (ref $where) {
-        $where = $self->_where_to_obj($where);
-        $where_param = keys %$where_param
-                     ? $self->merge_param($where_param, $where->param)
-                     : $where->param;
-        
-        # String where
-        $where_clause = $where->to_string;
-    }
-    elsif ($where) { $where_clause = "where $where" }
+    my $w = $self->_where_clause_and_param($where, $opt{where_param});
     
     # Merge where parameter to parameter
-    $param = $self->merge_param($param, $where_param) if keys %$where_param;
+    $param = $self->merge_param($param, $w->{param}) if keys %{$w->{param}};
     
     # Update statement
     my $sql = "update ";
     $sql .= "$opt{prefix} " if defined $opt{prefix};
-    $sql .= $self->_q($opt{table}) . " set $assign_clause $where_clause ";
+    $sql .= $self->_q($opt{table}) . " set $assign_clause $w->{clause} ";
     
     # Execute query
     return $self->execute($sql, $param, %opt);
@@ -1088,7 +1075,7 @@ sub update_all { shift->update(allow_update_all => 1, @_) };
 sub update_or_insert {
     my $self = shift;
 
-    # Arguments
+    # Options
     my $param  = shift;
     my %opt = @_;
     my $id = $opt{id};
@@ -1722,7 +1709,7 @@ sub select_at {
 
     warn "select_at is DEPRECATED! use update and id option instead";
 
-    # Arguments
+    # Options
     my $primary_keys = delete $opt{primary_key};
     $primary_keys = [$primary_keys] unless ref $primary_keys;
     my $where = delete $opt{where};
@@ -1745,7 +1732,7 @@ sub delete_at {
 
     warn "delete_at is DEPRECATED! use update and id option instead";
     
-    # Arguments
+    # Options
     my $primary_keys = delete $opt{primary_key};
     $primary_keys = [$primary_keys] unless ref $primary_keys;
     my $where = delete $opt{where};
@@ -1762,7 +1749,7 @@ sub update_at {
 
     warn "update_at is DEPRECATED! use update and id option instead";
     
-    # Arguments
+    # Options
     my $param;
     $param = shift if @_ % 2;
     my %opt = @_;
@@ -1784,7 +1771,7 @@ sub insert_at {
     
     warn "insert_at is DEPRECATED! use insert and id option instead";
     
-    # Arguments
+    # Options
     my $param;
     $param = shift if @_ % 2;
     my %opt = @_;
