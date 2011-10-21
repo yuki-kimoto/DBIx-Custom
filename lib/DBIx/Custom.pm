@@ -233,23 +233,12 @@ sub delete {
     my ($self, %opt) = @_;
 
     # Arguments
-    my $table = $opt{table} || '';
-    croak qq{"table" option must be specified. } . _subname
-      unless $table;
     my $where            = $opt{where} || {};
-    my $allow_delete_all = $opt{allow_delete_all};
     my $where_param      = $opt{where_param} || {};
-    my $id = $opt{id};
-    my $primary_key = $opt{primary_key};
-    croak "update method primary_key option " .
-          "must be specified when id is specified " . _subname
-      if defined $id && !defined $primary_key;
-    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $prefix = $opt{prefix};
     
     # Where
-    $where = $self->_id_to_param($id, $primary_key, $table)
-      if defined $id;
+    $where = $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table})
+      if defined $opt{id};
     my $where_clause = '';
     if (ref $where eq 'ARRAY' && !ref $where->[0]) {
         $where_clause = "where " . $where->[0];
@@ -266,13 +255,13 @@ sub delete {
     }
     elsif ($where) { $where_clause = "where $where" }
     croak qq{"where" must be specified } . _subname
-      if $where_clause eq '' && !$allow_delete_all;
+      if $where_clause eq '' && !$opt{allow_delete_all};
 
     # Delete statement
     my $sql;
     $sql .= "delete ";
-    $sql .= "$prefix " if defined $prefix;
-    $sql .= "from " . $self->_q($table) . " $where_clause ";
+    $sql .= "$opt{prefix} " if defined $opt{prefix};
+    $sql .= "from " . $self->_q($opt{table}) . " $where_clause ";
     
     # Execute query
     return $self->execute($sql, $where_param, %opt);
@@ -1084,6 +1073,11 @@ sub type_rule {
     return $self->{type_rule} || {};
 }
 
+sub _create_where {
+    my $self = shift;
+    
+}
+
 sub update {
     my $self = shift;
 
@@ -1091,6 +1085,8 @@ sub update {
     my $param = @_ % 2 ? shift : undef;
     my %opt = @_;
     warn "update param option is DEPRECATED!" if $opt{param};
+    warn "update method where_param option is DEPRECATED!"
+      if $opt{where_param};
     $param ||= $opt{param} || {};
     my $where = $opt{where} || {};
     my $where_param = $opt{where_param} || {};
@@ -1128,7 +1124,7 @@ sub update {
     croak qq{"where" must be specified } . _subname
       if "$where_clause" eq '' && !$opt{allow_update_all};
     
-    # Merge param
+    # Merge where parameter to parameter
     $param = $self->merge_param($param, $where_param) if keys %$where_param;
     
     # Update statement
@@ -3431,6 +3427,7 @@ L<DBIx::Custom>
     update_param_tag # will be removed at 2017/1/1
     
     # Options
+    update method where_param option # will be removed 2017/1/1
     insert method param option # will be removed at 2017/1/1
     insert method id option # will be removed at 2017/1/1
     select method relation option # will be removed at 2017/1/1

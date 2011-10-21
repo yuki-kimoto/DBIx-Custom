@@ -118,7 +118,7 @@ require MyDBI1;
     sub insert {
         my ($self, $param) = @_;
         
-        return $self->SUPER::insert(param => $param);
+        return $self->SUPER::insert($param);
     }
 
     sub list { shift->select; }
@@ -133,7 +133,7 @@ require MyDBI1;
     sub insert {
         my ($self, $param) = @_;
         
-        return $self->SUPER::insert(param => $param);
+        return $self->SUPER::insert($param);
     }
 
     sub list { shift->select; }
@@ -148,7 +148,7 @@ require MyDBI1;
     sub insert {
         my ($self, $param) = @_;
         
-        return $self->SUPER::insert(param => $param);
+        return $self->SUPER::insert($param);
     }
 
     sub list { shift->select; }
@@ -163,7 +163,7 @@ require MyDBI1;
     sub insert {
         my ($self, $param) = @_;
         
-        return $self->SUPER::insert(param => $param);
+        return $self->SUPER::insert($param);
     }
 
     sub list { shift->select; }
@@ -258,7 +258,7 @@ is_deeply($model->select->all, [{$key1 => 1, $key2 => 2}]);
 test 'DBIx::Custom::Result test';
 $dbi->delete_all(table => $table1);
 $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
-$dbi->insert(table => $table1, param => {$key1 => 3, $key2 => 4});
+$dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
 $source = "select $key1, $key2 from $table1";
 $query = $dbi->create_query($source);
 $result = $dbi->execute($query);
@@ -1664,8 +1664,6 @@ is($dbi->{_tags}->{b}->(), 2);
 
 test 'table not specify exception';
 $dbi = DBIx::Custom->connect;
-eval {$dbi->delete};
-like($@, qr/table/);
 eval {$dbi->select};
 like($@, qr/table/);
 

@@ -1,5 +1,6 @@
 0.1733
-
+    - update method where_param option is DEPRECATED!
+    - update method param option is DEPRECATED!
     - insert method param option is DEPRECATED!
     - removed argument checking logic because in database performance is more
       important.
