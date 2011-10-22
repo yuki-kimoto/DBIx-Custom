@@ -1080,11 +1080,15 @@ sub values_clause {
     my $safety = $self->safety_character;
     my @columns;
     my @placeholders;
+    my $qp = $self->_q('');
+    my $q = substr($qp, 0, 1);
+    my $p = substr($qp, 1, 1);
+    
     for my $column (sort keys %$param) {
         croak qq{"$column" is not safety column name } . _subname
           unless $column =~ /^[$safety\.]+$/;
-        my $column_quote = $self->_q($column);
-        $column_quote =~ s/\./$self->_q(".")/e;
+        my $column_quote = "$q$column$p";
+        $column_quote =~ s/\./$p.$q/;
         push @columns, $column_quote;
         
         my $func = $wrap->{$column} || sub { $_[0] };
