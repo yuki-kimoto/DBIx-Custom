@@ -363,10 +363,15 @@ sub execute {
     $sql .= $opt{append} if defined $opt{append} && !ref $sql;
     
     # Query
-    my $query = ref $sql ? $sql
-      : $self->_create_query($sql,$opt{after_build_sql} || $opt{sqlfilter},
-          $opt{reuse_sth});
-    
+    my $query;
+    if (ref $sql) { $query = $sql }
+    else {
+        $query = $opt{reuse}->{$sql} if $opt{reuse};
+        $query = $self->_create_query($sql,$opt{after_build_sql} || $opt{sqlfilter})
+          unless $query;
+        $opt{reuse}->{$sql} = $query if $opt{reuse};
+    }
+        
     # Save query
     $self->last_sql($query->sql);
 
@@ -1096,7 +1101,7 @@ sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
 
 sub _create_query {
     
-    my ($self, $source, $after_build_sql, $reuse_sth) = @_;
+    my ($self, $source, $after_build_sql) = @_;
     
     # Cache
     my $cache = $self->cache;
@@ -1153,9 +1158,7 @@ sub _create_query {
     
     # Prepare statement handle
     my $sth;
-    $sth = $reuse_sth->{$query->{sql}} if $reuse_sth;
-    eval { $sth = $self->dbh->prepare($query->{sql}) } unless $sth;
-    $reuse_sth->{$query->{sql}} = $sth if $reuse_sth;
+    eval { $sth = $self->dbh->prepare($query->{sql}) };
     
     if ($@) {
         $self->_croak($@, qq{. Following SQL is executed.\n}
@@ -2581,17 +2584,17 @@ Table alias. Key is real table name, value is alias table name.
 If you set C<table_alias>, you can enable C<into1> and C<into2> type rule
 on alias table name.
 
-=item C<reuse_sth EXPERIMENTAL>
+=item C<reuse EXPERIMENTAL>
     
-    reuse_sth => $has_ref
+    reuse_query => $has_ref
 
-Reuse statament handle if the hash reference variable is set.
+Reuse query object if the hash reference variable is set.
     
-    my $sth = {};
-    $dbi->execute($sql, $param, sth => $sth);
+    my $queries = {};
+    $dbi->execute($sql, $param, reuse => $queries);
 
-This will improved performance when same sql is executed repeatedly
-because generally creating statement handle is slow.
+This will improved performance when you want to execute same query repeatedly
+because generally creating query object is slow.
 
 =item C<type_rule_off>
 

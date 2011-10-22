@@ -80,7 +80,7 @@ my $user_table_info;
 my $user_column_info;
 my $values_clause;
 my $assign_clause;
-my $reuse_sth;
+my $reuse;
 
 require MyDBI1;
 {
@@ -238,12 +238,12 @@ require MyDBI1;
     }
 }
 
-test 'execute reuse_sth option';
+test 'execute reuse option';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
-$reuse_sth = {};
+$reuse = {};
 for my $i (1 .. 2) {
-  $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2}, reuse_sth => $reuse_sth);
+  $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2}, reuse => $reuse);
 }
 $rows = $dbi->select(table => $table1)->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 1, $key2 => 2}]);
