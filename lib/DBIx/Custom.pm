@@ -447,11 +447,9 @@ sub execute {
     my $sth = $query->sth;
     my $affected;
     eval {
-        for (my $i = 0; $i < @$bind; $i++) {
-            my $bind_type = $bind->[$i]->{bind_type};
-            $sth->bind_param($i + 1, $bind->[$i]->{value},
-              $bind_type ? $bind_type : ());
-        }
+        $sth->bind_param($_ + 1, $bind->[$_]->{value},
+            $bind->[$_]->{bind_type} ? $bind->[$_]->{bind_type} : ())
+          for (0 .. @$bind - 1);
         $affected = $sth->execute;
     };
     
