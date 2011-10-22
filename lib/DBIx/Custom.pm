@@ -1205,12 +1205,13 @@ sub _create_bind_values {
         $value = $f->($value) if $f;
         
         # Type rule
-        for my $i (1 .. 2) {
-            my $type_filter = $type_filters->{$i};
-            my $tf = $self->{"_into$i"}->{dot}->{$column} || $type_filter->{$column};
-            $value = $tf->($value) if $tf;
-        }
-        
+        my $tf1 = $self->{"_into1"}->{dot}->{$column}
+          || $type_filters->{1}->{$column};
+        $value = $tf1->($value) if $tf1;
+        my $tf2 = $self->{"_into2"}->{dot}->{$column}
+          || $type_filters->{2}->{$column};
+        $value = $tf2->($value) if $tf2;
+       
         # Bind values
         push @$bind, {value => $value, bind_type => $bind_type->{$column}};
         
