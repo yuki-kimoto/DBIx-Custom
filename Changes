@@ -1,5 +1,5 @@
 0.1744
-    - improved performance
+    - added EXPERIMENTAL reuse_sth option to execute method
     - moved DBIx::Custom::Guide to wiki
 0.1733
     - select method join option can receive string.

@@ -363,9 +363,9 @@ sub execute {
     $sql .= $opt{append} if defined $opt{append} && !ref $sql;
     
     # Query
-    my $query = ref $sql
-              ? $sql
-              : $self->_create_query($sql,$opt{after_build_sql} || $opt{sqlfilter});
+    my $query = ref $sql ? $sql
+      : $self->_create_query($sql,$opt{after_build_sql} || $opt{sqlfilter},
+          $opt{reuse_sth});
     
     # Save query
     $self->last_sql($query->sql);
@@ -1096,7 +1096,7 @@ sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
 
 sub _create_query {
     
-    my ($self, $source, $after_build_sql) = @_;
+    my ($self, $source, $after_build_sql, $reuse_sth) = @_;
     
     # Cache
     my $cache = $self->cache;
@@ -1153,7 +1153,9 @@ sub _create_query {
     
     # Prepare statement handle
     my $sth;
-    eval { $sth = $self->dbh->prepare($query->{sql})};
+    $sth = $reuse_sth->{$query->{sql}} if $reuse_sth;
+    eval { $sth = $self->dbh->prepare($query->{sql}) } unless $sth;
+    $reuse_sth->{$query->{sql}} = $sth if $reuse_sth;
     
     if ($@) {
         $self->_croak($@, qq{. Following SQL is executed.\n}
@@ -2429,6 +2431,26 @@ The following opitons are available.
 
 =over 4
 
+=item C<after_build_sql> 
+
+You can filter sql after the sql is build.
+
+    after_build_sql => $code_ref
+
+The following one is one example.
+
+    $dbi->select(
+        table => 'book',
+        column => 'distinct(name)',
+        after_build_sql => sub {
+            "select count(*) from ($_[0]) as t1"
+        }
+    );
+
+The following SQL is executed.
+
+    select count(*) from (select distinct(name) from book) as t1;
+
 =item C<append>
 
     append => 'order by name'
@@ -2535,26 +2557,6 @@ and don't forget to sort $row values by $row key asc order.
 
 Priamry key. This is used when C<id> option find primary key.
 
-=item C<after_build_sql> 
-
-You can filter sql after the sql is build.
-
-    after_build_sql => $code_ref
-
-The following one is one example.
-
-    $dbi->select(
-        table => 'book',
-        column => 'distinct(name)',
-        after_build_sql => sub {
-            "select count(*) from ($_[0]) as t1"
-        }
-    );
-
-The following SQL is executed.
-
-    select count(*) from (select distinct(name) from book) as t1;
-
 =item C<table>
     
     table => 'author'
@@ -2578,6 +2580,18 @@ You must set C<table> option.
 Table alias. Key is real table name, value is alias table name.
 If you set C<table_alias>, you can enable C<into1> and C<into2> type rule
 on alias table name.
+
+=item C<reuse_sth EXPERIMENTAL>
+    
+    reuse_sth => $has_ref
+
+Reuse statament handle if the hash reference variable is set.
+    
+    my $sth = {};
+    $dbi->execute($sql, $param, sth => $sth);
+
+This will improved performance when same sql is executed repeatedly
+because generally creating statement handle is slow.
 
 =item C<type_rule_off>
 

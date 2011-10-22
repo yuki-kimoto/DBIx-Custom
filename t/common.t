@@ -80,6 +80,7 @@ my $user_table_info;
 my $user_column_info;
 my $values_clause;
 my $assign_clause;
+my $reuse_sth;
 
 require MyDBI1;
 {
@@ -237,6 +238,16 @@ require MyDBI1;
     }
 }
 
+test 'execute reuse_sth option';
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$reuse_sth = {};
+for my $i (1 .. 2) {
+  $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2}, reuse_sth => $reuse_sth);
+}
+$rows = $dbi->select(table => $table1)->all;
+is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 1, $key2 => 2}]);
+
 # Get user table info
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -324,7 +335,7 @@ $rows = $result->all;
 is_deeply($rows, [{$key1 => 2, $key2 => 4}], "filter");
 
 test 'DBIx::Custom::SQLTemplate basic tag';
-$dbi->execute("drop table $table1");
+eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5});
 $dbi->insert(table => $table1, param => {$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10});
@@ -348,7 +359,7 @@ $rows = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}], "basic tag2");
 
 test 'DIB::Custom::SQLTemplate in tag';
-$dbi->execute("drop table $table1");
+eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5});
 $dbi->insert(table => $table1, param => {$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10});
@@ -383,7 +394,7 @@ is_deeply($rows, [{$key1 => 1, $key2 => 1, $key3 => 1, $key4 => 1, $key5 => 5},
                   {$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}], "basic");
 
 test 'Named placeholder';
-$dbi->execute("drop table $table1");
+eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5});
 $dbi->insert(table => $table1, param => {$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10});
@@ -412,7 +423,7 @@ $result = $dbi->execute(
 $rows = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}]);
 
-$dbi->execute("drop table $table1");
+eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert(table => $table1, param => {$key1 => '2011-10-14 12:19:18', $key2 => 2});
 $source = "select * from $table1 where $key1 = '2011-10-14 12:19:18' and $key2 = :$key2";
@@ -463,7 +474,7 @@ $rows   = $result->all;
 is_deeply($rows, [{$key1 => 3, $key2 => 4}], "filter");
 $dbi->default_bind_filter(undef);
 
-$dbi->execute("drop table $table1");
+eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2}, append => '   ');
 $rows = $dbi->select(table => $table1)->all;
