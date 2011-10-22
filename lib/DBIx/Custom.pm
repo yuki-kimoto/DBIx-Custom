@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1733';
+our $VERSION = '0.1734';
 use 5.008001;
 
 use Carp 'croak';
@@ -1399,10 +1399,7 @@ sub _push_join {
 
 sub _quote {
     my $self = shift;
-    
-    return defined $self->reserved_word_quote ? $self->reserved_word_quote
-         : defined $self->quote ? $self->quote
-         : '';
+    return $self->{reserved_word_quote} || $self->quote || '';
 }
 
 sub _q {

@@ -1,4 +1,5 @@
 0.1744
+    - improved performance
     - moved DBIx::Custom::Guide to wiki
 0.1733
     - select method join option can receive string.
