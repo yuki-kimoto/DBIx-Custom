@@ -240,7 +240,7 @@ sub delete {
     
     # Where
     my $where = defined $opt{id}
-           ? $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table})
+           ? $self->_id_to_param(delete $opt{id}, $opt{primary_key}, $opt{table})
            : $opt{where};
     my $w = $self->_where_clause_and_param($where, $opt{where_param});
 
@@ -348,67 +348,59 @@ sub each_table {
 sub execute {
     my $self = shift;
     my $sql = shift;
+
+    # Options
     my $param;
     $param = shift if @_ % 2;
     my %opt = @_;
-    
-    # Options
-    my $p = $opt{param} || {};
-    $param ||= $p;
+    warn "sqlfilter option is DEPRECATED" if $opt{sqlfilter};
+    $param ||= $opt{param} || {};
     my $tables = $opt{table} || [];
     $tables = [$tables] unless ref $tables eq 'ARRAY';
-    my $filter = $opt{filter};
-    $filter = _array_to_hash($filter);
-    my $bind_type = $opt{bind_type} || $opt{type};
-    $bind_type = _array_to_hash($bind_type);
-    my $type_rule_off = $opt{type_rule_off};
-    my $type_rule_off_parts = {
-        1 => $opt{type_rule1_off},
-        2 => $opt{type_rule2_off}
-    };
-    my $query_return = $opt{query};
-    my $table_alias = $opt{table_alias} || {};
-    my $after_build_sql = $opt{after_build_sql} || $opt{sqlfilter};
-    warn "sqlfilter option is DEPRECATED" if $opt{sqlfilter};
-    my $id = $opt{id};
-    my $primary_key = $opt{primary_key};
-    croak "execute method primary_key option " .
-          "must be specified when id is specified " . _subname
-      if defined $id && !defined $primary_key;
-    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    my $append = $opt{append};
-    $sql .= $append if defined $append && !ref $sql;
+    my $filter = _array_to_hash($opt{filter});
     
-    my $query
-      = ref $sql ? $sql : $self->_create_query($sql, $after_build_sql);
+    # Append
+    $sql .= $opt{append} if defined $opt{append} && !ref $sql;
+    
+    # Query
+    my $query = ref $sql
+              ? $sql
+              : $self->_create_query($sql,$opt{after_build_sql} || $opt{sqlfilter});
     
     # Save query
     $self->last_sql($query->sql);
 
-    return $query if $query_return;
+    # Return query
+    return $query if $opt{query};
     
-    # DEPRECATED! Merge query filter
+    # Merge query filter(DEPRECATED!)
     $filter ||= $query->{filter} || {};
     
     # Tables
     unshift @$tables, @{$query->{tables} || []};
     my $main_table = @{$tables}[-1];
-
-    if (defined $id) {
-        my $id_param = $self->_id_to_param($id, $primary_key, $main_table);
+    
+    # Convert id to parameter
+    if (defined $opt{id}) {
+        my $id_param = $self->_id_to_param($opt{id}, $opt{primary_key}, $main_table);
         $param = $self->merge_param($id_param, $param);
     }
     
-    # DEPRECATED! Cleanup tables
+    # Cleanup tables(DEPRECATED!)
     $tables = $self->_remove_duplicate_table($tables, $main_table)
       if @$tables > 1;
     
     # Type rule
     my $type_filters = {};
-    unless ($type_rule_off) {
+    unless ($opt{type_rule_off}) {
+        my $type_rule_off_parts = {
+            1 => $opt{type_rule1_off},
+            2 => $opt{type_rule2_off}
+        };
         for my $i (1, 2) {
             unless ($type_rule_off_parts->{$i}) {
                 $type_filters->{$i} = {};
+                my $table_alias = $opt{table_alias} || {};
                 for my $alias (keys %$table_alias) {
                     my $table = $table_alias->{$alias};
                     
@@ -422,7 +414,7 @@ sub execute {
         }
     }
     
-    # DEPRECATED! Applied filter
+    # Applied filter(DEPRECATED!)
     if ($self->{filter}{on}) {
         my $applied_filter = {};
         for my $table (@$tables) {
@@ -448,13 +440,8 @@ sub execute {
     }
     
     # Create bind values
-    my $bind = $self->_create_bind_values(
-        $param,
-        $query->columns,
-        $filter,
-        $type_filters,
-        $bind_type
-    );
+    my $bind = $self->_create_bind_values($param, $query->columns,
+      $filter, $type_filters, _array_to_hash($opt{bind_type} || $opt{type}));
 
     # Execute
     my $sth = $query->sth;
@@ -462,11 +449,8 @@ sub execute {
     eval {
         for (my $i = 0; $i < @$bind; $i++) {
             my $bind_type = $bind->[$i]->{bind_type};
-            $sth->bind_param(
-                $i + 1,
-                $bind->[$i]->{value},
-                $bind_type ? $bind_type : ()
-            );
+            $sth->bind_param($i + 1, $bind->[$i]->{value},
+              $bind_type ? $bind_type : ());
         }
         $affected = $sth->execute;
     };
@@ -491,7 +475,7 @@ sub execute {
     # Select statement
     if ($sth->{NUM_OF_FIELDS}) {
         
-        # DEPRECATED! Filter
+        # Filter(DEPRECATED!)
         my $filter = {};
         if ($self->{filter}{on}) {
             $filter->{in}  = {};
@@ -499,10 +483,8 @@ sub execute {
             push @$tables, $main_table if $main_table;
             for my $table (@$tables) {
                 for my $way (qw/in end/) {
-                    $filter->{$way} = {
-                        %{$filter->{$way}},
-                        %{$self->{filter}{$way}{$table} || {}}
-                    };
+                    $filter->{$way} = {%{$filter->{$way}},
+                      %{$self->{filter}{$way}{$table} || {}}};
                 }
             }
         }
@@ -519,10 +501,8 @@ sub execute {
                 from2 => $self->type_rule->{from2}
             },
         );
-
         return $result;
     }
-    
     # Not select statement
     else { return $affected }
 }
@@ -589,7 +569,7 @@ sub insert {
     
     # Merge id to parameter
     $param = $self->merge_param(
-        $self->_id_to_param($opt{id}, $opt{primary_key}), $param)
+        $self->_id_to_param(delete $opt{id}, $opt{primary_key}), $param)
       if defined $opt{id};
     
     # Insert statement
@@ -838,10 +818,7 @@ sub select {
             $found->{$table} = 1;
         }
     }
-    else {
-        my $main_table = $tables->[-1] || '';
-        $sql .= $self->_q($main_table) . ' ';
-    }
+    else { $sql .= $self->_q($tables->[-1] || '') . ' ' }
     $sql =~ s/, $/ /;
     croak "select method table option must be specified " . _subname
       unless $tables->[-1];
@@ -852,7 +829,7 @@ sub select {
     
     # Where
     my $where = defined $opt{id}
-              ? $self->_id_to_param($opt{id}, $opt{primary_key}, $tables->[-1])
+              ? $self->_id_to_param(delete $opt{id}, $opt{primary_key}, $tables->[-1])
               : $opt{where};
     my $w = $self->_where_clause_and_param($where, $where_param);
     
@@ -1024,7 +1001,7 @@ sub update {
     
     # Convert id to where parameter
     my $where = defined $opt{id}
-      ? $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table})
+      ? $self->_id_to_param(delete $opt{id}, $opt{primary_key}, $opt{table})
       : $opt{where};
 
     # Where
@@ -1893,7 +1870,7 @@ sub _add_relation_table {
 
 =head1 NAME
 
-DBIx::Custom - Execute insert, update, delete, and select statement easily
+DBIx::Custom - DBI extension to execute insert, update, delete, and select easily
 
 =head1 SYNOPSIS
 
@@ -2799,10 +2776,10 @@ See L<DBIx::Custom::Model> to know model features.
 
 =head2 C<insert_timestamp>
 
-$dbi->insert_timestamp(
-  [qw/created_at updated_at/]
-    => sub { Time::Piece->localtime->strftime("%Y-%m-%d %H:%M:%S") }
-);
+    $dbi->insert_timestamp(
+      [qw/created_at updated_at/]
+        => sub { Time::Piece->localtime->strftime("%Y-%m-%d %H:%M:%S") }
+    );
 
 Timestamp value when C<insert> method is executed
 with C<timestamp> option.
@@ -2811,7 +2788,7 @@ If C<insert_timestamp> is set and C<insert> method is executed
 with C<timestamp> option, column C<created_at> and C<update_at>
 is automatically set to the value like "2010-10-11 10:12:54".
 
-$dbi->insert($param, table => 'book', timestamp => 1);
+    $dbi->insert($param, table => 'book', timestamp => 1);
 
 =head2 C<like_value>
 
