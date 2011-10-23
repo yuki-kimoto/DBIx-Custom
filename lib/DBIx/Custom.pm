@@ -136,7 +136,7 @@ sub assign_clause {
         }
     }
     
-    # Create set tag
+    # Assign clause (performance is important)
     join(
       ', ',
       map {
@@ -255,7 +255,7 @@ sub delete {
     $sql .= "from " . $self->_q($opt{table}) . " $w->{clause} ";
     
     # Execute query
-    return $self->execute($sql, $w->{param}, %opt);
+    $self->execute($sql, $w->{param}, %opt);
 }
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
@@ -568,7 +568,7 @@ sub insert {
     # Options
     my $param = @_ % 2 ? shift : undef;
     my %opt = @_;
-    warn "insert method param option is DEPRECATED" if $opt{param};
+    warn "insert method param option is DEPRECATED!" if $opt{param};
     $param ||= delete $opt{param} || {};
     
     # Timestamp
@@ -592,7 +592,7 @@ sub insert {
       . $self->values_clause($param, {wrap => $opt{wrap}}) . " ";
     
     # Execute query
-    return $self->execute($sql, $param, %opt);
+    $self->execute($sql, $param, %opt);
 }
 
 sub insert_timestamp {
@@ -862,7 +862,7 @@ sub select {
     # Execute query
     my $result = $self->execute($sql, $w->{param}, %opt);
     
-    return $result;
+    $result;
 }
 
 sub setup_model {
@@ -1031,7 +1031,7 @@ sub update {
     $sql .= $self->_q($opt{table}) . " set $assign_clause $w->{clause} ";
     
     # Execute query
-    return $self->execute($sql, $param, %opt);
+    $self->execute($sql, $param, %opt);
 }
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
@@ -1102,7 +1102,7 @@ sub values_clause {
         }
     }
     
-    # Assign clause(performance is important)
+    # values clause(performance is important)
     '(' .
     join(
       ', ',
