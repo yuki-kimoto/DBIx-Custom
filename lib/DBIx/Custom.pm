@@ -1095,10 +1095,15 @@ sub values_clause {
     my $q = substr($qp, 0, 1) || '';
     my $p = substr($qp, 1, 1) || '';
     
-    my $safety_re = qr/^[$safety\.]+$/;
+    # Check unsafety keys
+    unless ((join('', keys %$param) || '') =~ /^[$safety\.]+$/) {
+        for my $column (keys %$param) {
+            croak qq{"$column" is not safety column name } . _subname
+              unless $column =~ /^[$safety\.]+$/;
+        }
+    }
+
     for my $column (sort keys %$param) {
-        croak qq{"$column" is not safety column name } . _subname
-          unless $column =~ /$safety_re/;
         push @columns, "$q$column$p";
         push @placeholders,
           ref $param->{$column} eq 'SCALAR' ? ${$param->{$column}} :
