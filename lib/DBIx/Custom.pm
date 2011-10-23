@@ -1088,28 +1088,26 @@ sub values_clause {
     my $wrap = $opts->{wrap} || {};
     
     # Create insert parameter tag
-    my $safety = $self->safety_character;
+    my $safety = $self->{safety_character} || $self->safety_character;
     my @columns;
     my @placeholders;
     my $qp = $self->_q('');
     my $q = substr($qp, 0, 1) || '';
     my $p = substr($qp, 1, 1) || '';
     
+    my $safety_re = qr/^[$safety\.]+$/;
     for my $column (sort keys %$param) {
         croak qq{"$column" is not safety column name } . _subname
-          unless $column =~ /^[$safety\.]+$/;
-        my $column_quote = "$q$column$p";
-        $column_quote =~ s/\./$p.$q/;
-        push @columns, $column_quote;
-        
-        my $func = $wrap->{$column} || sub { $_[0] };
+          unless $column =~ /$safety_re/;
+        push @columns, "$q$column$p";
         push @placeholders,
-          ref $param->{$column} eq 'SCALAR' ? ${$param->{$column}}
-        : $func->(":$column");
+          ref $param->{$column} eq 'SCALAR' ? ${$param->{$column}} :
+          $wrap->{$column} ? $wrap->{$column}->(":$column") :
+          ":$column"
     }
     
-    return '(' . join(', ', @columns) . ') ' . 'values ' .
-           '(' . join(', ', @placeholders) . ')'
+    '(' . join(', ', @columns) . ') ' . 'values ' .
+      '(' . join(', ', @placeholders) . ')'
 }
 
 sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
