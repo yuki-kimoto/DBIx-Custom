@@ -1204,7 +1204,7 @@ sub _create_bind_values {
     my $not_exists = {};
     for my $column (@$columns) {
         
-        # Value
+        # Bind value
         if(ref $params->{$column} eq 'ARRAY') {
             my $i = $count->{$column} || 0;
             $i += $not_exists->{$column} || 0;
@@ -1238,7 +1238,7 @@ sub _create_bind_values {
             $bind->[-1] = $tf2->($bind->[-1]) if $tf2;
         }
        
-        # Bind values
+        # Bind types
         push @$types, $bind_type->{$column};
         
         # Count up 
