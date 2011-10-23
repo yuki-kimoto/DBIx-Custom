@@ -1,5 +1,6 @@
-0.1744
+0.1735
     - added EXPERIMENTAL reuse_query option to execute method
+0.1734
     - moved DBIx::Custom::Guide to wiki
 0.1733
     - select method join option can receive string.

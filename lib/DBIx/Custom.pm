@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1734';
+our $VERSION = '0.1735';
 use 5.008001;
 
 use Carp 'croak';
@@ -1417,7 +1417,11 @@ sub _quote {
 sub _q {
     my ($self, $value, $quotemeta) = @_;
     
-    my $quote = $self->_quote;
+    my $quote = $self->{reserved_word_quote}
+      || $self->{quote} || $self->quote || '';
+    return "$quote$value$quote"
+      if !$quotemeta && ($quote eq '`' || $quote eq '"');
+    
     my $q = substr($quote, 0, 1) || '';
     my $p;
     if (defined $quote && length $quote > 1) {
