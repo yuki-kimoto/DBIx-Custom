@@ -3003,6 +3003,7 @@ $model = $dbi->create_model(table => $table1, primary_key => $key1);
 $model->insert($row);
 $query = $model->select(id => 1, query => 1);
 $model->execute($query, {$key7 => 11}, id => 1, filter => {"$table1.$key1" => sub { $_[0] * 2 }});
+$query = undef;
 is_deeply($dbi->select(table => $table1)->one,
     {$key7 => 10, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => 2},
 );
