@@ -1205,7 +1205,6 @@ sub _create_bind_values {
     for my $column (@$columns) {
         
         # Value
-        my $value;
         if(ref $params->{$column} eq 'ARRAY') {
             my $i = $count->{$column} || 0;
             $i += $not_exists->{$column} || 0;
@@ -1215,29 +1214,31 @@ sub _create_bind_values {
                     $not_exists->{$column}++;
                 }
                 else  {
-                    $value = $params->{$column}->[$k];
+                    push @$bind, $params->{$column}->[$k];
                     $found = 1;
                     last
                 }
             }
             next unless $found;
         }
-        else { $value = $params->{$column} }
+        else { push @$bind, $params->{$column} }
         
         # Filter
-        my $f = $filter->{$column} || $self->{default_out_filter} || '';
-        $value = $f->($value) if $f;
+        if (my $f = $filter->{$column} || $self->{default_out_filter} || '') {
+            $bind->[-1] = $f->($bind->[-1]);
+        }
         
         # Type rule
-        my $tf1 = $self->{"_into1"}->{dot}->{$column}
-          || $type_filters->{1}->{$column};
-        $value = $tf1->($value) if $tf1;
-        my $tf2 = $self->{"_into2"}->{dot}->{$column}
-          || $type_filters->{2}->{$column};
-        $value = $tf2->($value) if $tf2;
+        if ($self->{_type_rule_is_called}) {
+            my $tf1 = $self->{"_into1"}->{dot}->{$column}
+              || $type_filters->{1}->{$column};
+            $bind->[-1] = $tf1->($bind->[-1]) if $tf1;
+            my $tf2 = $self->{"_into2"}->{dot}->{$column}
+              || $type_filters->{2}->{$column};
+            $bind->[-1] = $tf2->($bind->[-1]) if $tf2;
+        }
        
         # Bind values
-        push @$bind, $value;
         push @$types, $bind_type->{$column};
         
         # Count up 
