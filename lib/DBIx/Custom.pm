@@ -123,27 +123,28 @@ sub assign_clause {
     my ($self, $param, $opts) = @_;
     
     my $wrap = $opts->{wrap} || {};
-
+    my $safety = $self->{safety_character} || $self->safety_character;
     my $qp = $self->_q('');
     my $q = substr($qp, 0, 1) || '';
     my $p = substr($qp, 1, 1) || '';
     
-    # Create set tag
-    my @params;
-    my $safety = $self->safety_character;
-    for my $column (sort keys %$param) {
-        croak qq{"$column" is not safety column name } . _subname
-          unless $column =~ /^[$safety\.]+$/;
-        my $column_quote = "$q$column$p";
-        $column_quote =~ s/\./$p.$q/;
-        my $func = $wrap->{$column} || sub { $_[0] };
-        push @params,
-          ref $param->{$column} eq 'SCALAR' ? "$column_quote = " . ${$param->{$column}}
-        : "$column_quote = " . $func->(":$column");
+    # Check unsafety keys
+    unless ((join('', keys %$param) || '') =~ /^[$safety\.]+$/) {
+        for my $column (keys %$param) {
+            croak qq{"$column" is not safety column name } . _subname
+              unless $column =~ /^[$safety\.]+$/;
+        }
     }
-    my $tag = join(', ', @params);
     
-    return $tag;
+    # Create set tag
+    join(
+      ', ',
+      map {
+          ref $param->{$_} eq 'SCALAR' ? "$q$_$p = " . ${$param->{$_}}
+          : $wrap->{$_} ? "$q$_$p = " . $wrap->{$_}->(":$_")
+          : "$q$_$p = :$_";
+      } sort keys %$param
+    );
 }
 
 sub column {
@@ -1089,8 +1090,6 @@ sub values_clause {
     
     # Create insert parameter tag
     my $safety = $self->{safety_character} || $self->safety_character;
-    my @columns;
-    my @placeholders;
     my $qp = $self->_q('');
     my $q = substr($qp, 0, 1) || '';
     my $p = substr($qp, 1, 1) || '';
@@ -1102,17 +1101,23 @@ sub values_clause {
               unless $column =~ /^[$safety\.]+$/;
         }
     }
-
-    for my $column (sort keys %$param) {
-        push @columns, "$q$column$p";
-        push @placeholders,
-          ref $param->{$column} eq 'SCALAR' ? ${$param->{$column}} :
-          $wrap->{$column} ? $wrap->{$column}->(":$column") :
-          ":$column"
-    }
     
-    '(' . join(', ', @columns) . ') ' . 'values ' .
-      '(' . join(', ', @placeholders) . ')'
+    # Assign clause(performance is important)
+    '(' .
+    join(
+      ', ',
+      map { "$q$_$p" } sort keys %$param
+    ) .
+    ') values (' .
+    join(
+      ', ',
+      map {
+          ref $param->{$_} eq 'SCALAR' ? ${$param->{$_}} :
+          $wrap->{$_} ? $wrap->{$_}->(":$_") :
+          ":$_";
+      } sort keys %$param
+    ) .
+    ')'
 }
 
 sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
@@ -1658,7 +1663,7 @@ sub assign_param {
 sub update_param {
     my ($self, $param, $opts) = @_;
     
-    warn "update_param is DEPRECATED! use assing_clause instead.";
+    warn "update_param is DEPRECATED! use assign_clause instead.";
     
     # Create update parameter tag
     my $tag = $self->assign_clause($param, $opts);
