@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1735';
+our $VERSION = '0.1736';
 use 5.008001;
 
 use Carp 'croak';
@@ -393,7 +393,9 @@ sub execute {
     
     # Convert id to parameter
     if (defined $opt{id}) {
-        my $id_param = $self->_id_to_param($opt{id}, $opt{primary_key}, $main_table);
+        $opt{statement} ||= '';
+        my $id_param = $self->_id_to_param($opt{id}, $opt{primary_key},
+          $opt{statement} eq 'insert' ? undef : $main_table);
         $param = $self->merge_param($id_param, $param);
     }
     
@@ -581,18 +583,39 @@ sub insert {
     }
     
     # Merge id to parameter
-    $param = $self->merge_param(
-        $self->_id_to_param(delete $opt{id}, $opt{primary_key}), $param)
-      if defined $opt{id};
+    if (defined $opt{id}) {
+        croak "insert primary_key option must be specified with id option"
+          unless $opt{primary_key};
+        $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key};
+        $opt{id} = [$opt{id}] unless ref $opt{id};
+        for (my $i = 0; $i < @{$opt{primary_key}}; $i++) {
+           my $key = $opt{primary_key}->[$i];
+           croak "id already contain in parameter" if exists $param->{$key};
+           $param->{$key} = $opt{id}->[$i];
+        }
+    }
     
     # Insert statement
     my $sql = "insert ";
     $sql .= "$opt{prefix} " if defined $opt{prefix};
     $sql .= "into " . $self->_q($opt{table}) . " "
       . $self->values_clause($param, {wrap => $opt{wrap}}) . " ";
+
+    # Remove id from parameter
+    if (defined $opt{id}) { delete $param->{$_} for @{$opt{primary_key}} }
     
     # Execute query
+    $opt{statement} = 'insert';
     $self->execute($sql, $param, %opt);
+}
+
+sub _merge_id_to_param {
+    my ($self, $id, $primary_keys, $param) = @_;
+    
+    # Create parameter
+    $id = [$id] unless ref $id;
+    
+    return $param;
 }
 
 sub insert_timestamp {
@@ -2618,7 +2641,7 @@ on alias table name.
 
 =item C<reuse EXPERIMENTAL>
     
-    reuse_query => $has_ref
+    reuse => $has_ref
 
 Reuse query object if the hash reference variable is set.
     
