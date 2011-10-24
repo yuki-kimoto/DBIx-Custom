@@ -13,13 +13,11 @@ push @DBIx::Custom::Where::CARP_NOT, __PACKAGE__;
 has 'dbi';
 
 sub build_query {
-    my ($self, $source) = @_;
-    
-    my $query;
+    my ($self, $sql) = @_;
     
     # Parse tag. tag is DEPRECATED!
-    if ($self->dbi->tag_parse && $source =~ /(\s|^)\{/) {
-        $query = $self->_parse_tag($source);
+    if ($sql =~ /(\s|^)\{/ && $self->dbi->tag_parse) {
+        my $query = $self->_parse_tag($sql);
         my $tag_count = delete $query->{tag_count};
         warn qq/Tag system such as {? name} is DEPRECATED! / .
              qq/use parameter system such as :name instead/
@@ -35,15 +33,23 @@ sub build_query {
                 $query->columns->[$i] = $column2;
             }
         }
+        return $query;
     }
     
-    # Parse parameter
-    else { $query = $self->_parse_parameter($source) }
-    
-    my $sql = $query->sql;
-    $query->sql($sql);
-        
-    return $query;
+    $sql ||= '';
+    my $columns = [];
+    my $c = ($self->{dbi} || {})->{safety_character}
+      || $self->dbi->safety_character;
+    # Parameter regex
+    $sql =~ s/([0-9]):/$1\\:/g;
+    while ($sql =~ /(^|.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/sg) {
+        push @$columns, $2;
+        $sql = defined $3 ? "$1$2 $3 ?$4" : "$1?$4";
+    }
+    $sql =~ s/\\:/:/g if index($sql, "\\:") != -1;
+
+    # Create query
+    bless {sql => $sql, columns => $columns}, 'DBIx::Custom::Query';
 }
 
 sub _parse_parameter {

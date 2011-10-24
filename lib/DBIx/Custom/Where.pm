@@ -44,8 +44,20 @@ sub to_string {
     # Parse
     my $where = [];
     my $count = {};
+    $self->{_query_builder} = $self->dbi->query_builder;
+    $self->{_safety_character} = $self->dbi->safety_character;
+    $self->{_quote} = $self->dbi->_quote;
     $self->_parse($clause, $where, $count, 'and');
-    
+
+        
+    # Check safety
+    unless (join('', keys %$count) =~ /^[$self->{_safety_character}\.]+$/) {
+        for my $column (keys %$count) {
+            croak qq{"$column" is not safety column name (} . _subname . ")"
+              unless $column =~ /^[$self->{_safety_character}\.]+$/;
+        }
+    }
+
     # Stringify
     unshift @$where, 'where' if @$where;
     return join(' ', @$where);
@@ -53,7 +65,7 @@ sub to_string {
 
 our %VALID_OPERATIONS = map { $_ => 1 } qw/and or/;
 sub _parse {
-    my ($self, $clause, $where, $count, $op) = @_;
+    my ($self, $clause, $where, $count, $op, $info) = @_;
     
     # Array
     if (ref $clause eq 'ARRAY') {
@@ -93,7 +105,7 @@ sub _parse {
         my $pushed;
         
         # Column
-        my $columns = $self->dbi->query_builder->build_query($clause)->columns;
+        my $columns = $self->{_query_builder}->build_query($clause)->{columns};
         if (@$columns == 0) {
             push @$where, $clause;
             $pushed = 1;
@@ -106,21 +118,16 @@ sub _parse {
         
         # Remove quote
         my $column = $columns->[0];
-        if (my $q = $self->dbi->_quote) {
+        if (my $q = $self->{_quote}) {
             $q = quotemeta($q);
             $column =~ s/[$q]//g;
         }
-        
-        # Check safety
-        my $safety = $self->dbi->safety_character;
-        croak qq{"$column" is not safety column name (} . _subname . ")"
-          unless $column =~ /^[$safety\.]+$/;
         
         # Column count up
         my $count = ++$count->{$column};
         
         # Push
-        my $param = $self->param;
+        my $param = $self->{param};
         if (ref $param eq 'HASH') {
             if (exists $param->{$column}) {
                 my $if = $self->{_if};
