@@ -41,6 +41,7 @@ my $binary;
 # Prepare table
 $dbi = DBIx::Custom->connect;
 
+
 ### SQLite only test
 test 'dbi_option default';
 $dbi = DBIx::Custom->new;
@@ -67,6 +68,18 @@ $result = $dbi->execute('select * from table1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
 
+test 'DBIX_CUSTOM_DEBUG ok';
+{
+    local $ENV{DBIX_CUSTOM_DEBUG} = 1;
+    $dbi = DBIx::Custom->connect;
+    eval { $dbi->execute('drop table table1') };
+    my $error;
+    local $SIG{__WARN__} = sub {
+        $error = shift;
+    };
+    $dbi->execute('create table table1 (key1 varchar, key2 varchar, primary key(key1));');
+    ok($error);
+}
 
 test 'quote';
 $dbi = DBIx::Custom->connect;

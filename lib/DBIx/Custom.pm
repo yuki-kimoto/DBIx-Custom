@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1736';
+our $VERSION = '0.1737';
 use 5.008001;
 
 use Carp 'croak';
@@ -18,9 +18,6 @@ use DBIx::Custom::Mapper;
 use DBIx::Custom::NotExists;
 use Encode qw/encode encode_utf8 decode_utf8/;
 use Scalar::Util qw/weaken/;
-
-use constant DEBUG => $ENV{DBIX_CUSTOM_DEBUG} || 0;
-use constant DEBUG_ENCODING => $ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8';
 
 has [qw/connector dsn password quote user exclude_table user_table_info
         user_column_info/],
@@ -477,17 +474,16 @@ sub execute {
       . qq{$query->{sql}\n} . _subname) if $@;
     
     # DEBUG message
-    if (DEBUG) {
-        print STDERR "SQL:\n" . $query->sql . "\n";
+    if ($ENV{DBIX_CUSTOM_DEBUG}) {
+        warn "SQL:\n" . $query->sql . "\n";
         my @output;
-        for my $b (@$bind) {
-            my $value = $b->{value};
+        for my $value (@$bind) {
             $value = 'undef' unless defined $value;
-            $value = encode(DEBUG_ENCODING(), $value)
+            $value = encode($ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8', $value)
               if utf8::is_utf8($value);
             push @output, $value;
         }
-        print STDERR "Bind values: " . join(', ', @output) . "\n\n";
+        warn "Bind values: " . join(', ', @output) . "\n\n";
     }
     
     # Not select statement
