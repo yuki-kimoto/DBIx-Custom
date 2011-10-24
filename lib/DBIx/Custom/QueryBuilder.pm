@@ -52,6 +52,7 @@ sub build_query {
     bless {sql => $sql, columns => $columns}, 'DBIx::Custom::Query';
 }
 
+# DEPRECATED!
 sub _parse_parameter {
     my ($self, $source) = @_;
     
