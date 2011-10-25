@@ -2311,7 +2311,6 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key3 => 3, $key2 => 4};
-$DB::single = 1;
 $dbi->insert(
     $param,
     primary_key => [$key1, $key2], 
@@ -2327,7 +2326,6 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key3 => 3, $key2 => 4};
-$DB::single = 1;
 $query = $dbi->insert(
     $param,
     primary_key => [$key1, $key2], 

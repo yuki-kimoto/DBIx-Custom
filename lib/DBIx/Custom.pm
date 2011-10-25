@@ -241,19 +241,17 @@ sub delete {
       if !$opt{where} && !defined $opt{id} && !$opt{allow_delete_all};
     
     # Where
-    my $where = defined $opt{id}
-           ? $self->_id_to_param(delete $opt{id}, $opt{primary_key}, $opt{table})
-           : $opt{where};
-    my $w = $self->_where_clause_and_param($where, $opt{where_param});
+    my $wcp = $self->_where_clause_and_param($opt{where}, $opt{where_param},
+      delete $opt{id}, $opt{primary_key}, $opt{table});
 
     # Delete statement
     my $sql = "delete ";
     $sql .= "$opt{prefix} " if defined $opt{prefix};
-    $sql .= "from " . $self->_q($opt{table}) . " $w->{clause} ";
+    $sql .= "from " . $self->_q($opt{table}) . " $wcp->{clause} ";
     
     # Execute query
     $opt{statement} = 'delete';
-    $self->execute($sql, $w->{param}, %opt);
+    $self->execute($sql, $wcp->{param}, %opt);
 }
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
@@ -1578,12 +1576,14 @@ sub _where_to_obj {
 }
 
 sub _where_clause_and_param {
-    my ($self, $where, $param) = @_;
- 
+    my ($self, $where, $param, $id, $primary_key, $table) = @_;
+
     $where ||= {};
+    $where = $self->_id_to_param($id, $primary_key, $table) if defined $id;
     $param ||= {};
     my $w = {};
     my $where_clause = '';
+
     if (ref $where eq 'ARRAY' && !ref $where->[0]) {
         $w->{clause} = "where " . $where->[0];
         $w->{param} = $where->[1];
