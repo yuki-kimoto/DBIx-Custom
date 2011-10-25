@@ -4,7 +4,7 @@ use Object::Simple -base;
 use Carp 'croak';
 use DBIx::Custom::Util '_subname';
 
-has 'sth',
+has [qw/sth statement/],
     sql => '',
     columns => sub { [] };
 

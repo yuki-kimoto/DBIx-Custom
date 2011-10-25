@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1737';
+our $VERSION = '0.1738';
 use 5.008001;
 
 use Carp 'croak';
@@ -252,6 +252,7 @@ sub delete {
     $sql .= "from " . $self->_q($opt{table}) . " $w->{clause} ";
     
     # Execute query
+    $opt{statement} = 'delete';
     $self->execute($sql, $w->{param}, %opt);
 }
 
@@ -372,6 +373,7 @@ sub execute {
         $query = $opt{reuse}->{$sql} if $opt{reuse};
         $query = $self->_create_query($sql,$opt{after_build_sql} || $opt{sqlfilter})
           unless $query;
+        $query->statement($opt{statement} || '');
         $opt{reuse}->{$sql} = $query if $opt{reuse};
     }
         
@@ -387,13 +389,23 @@ sub execute {
     # Tables
     unshift @$tables, @{$query->{tables} || []};
     my $main_table = @{$tables}[-1];
-    
-    # Convert id to parameter
+
+    # Merge id to parameter
+    my @cleanup;
     if (defined $opt{id}) {
-        $opt{statement} ||= '';
-        my $id_param = $self->_id_to_param($opt{id}, $opt{primary_key},
-          $opt{statement} eq 'insert' ? undef : $main_table);
-        $param = $self->merge_param($id_param, $param);
+        croak "execute id option must be specified with primary_key option"
+          unless $opt{primary_key};
+        $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key};
+        $opt{id} = [$opt{id}] unless ref $opt{id};
+        my $statement = $query->statement;
+        for (my $i = 0; $i < @{$opt{primary_key}}; $i++) {
+           my $key = $opt{primary_key}->[$i];
+           $key = "$main_table.$key" if $statement eq 'update' ||
+             $statement eq 'delete' || $statement eq 'select';
+           next if exists $param->{$key};
+           $param->{$key} = $opt{id}->[$i];
+           push @cleanup, $key;
+        }
     }
     
     # Cleanup tables(DEPRECATED!)
@@ -472,6 +484,9 @@ sub execute {
     
     $self->_croak($@, qq{. Following SQL is executed.\n}
       . qq{$query->{sql}\n} . _subname) if $@;
+
+    # Remove id from parameter
+    delete $param->{$_} for @cleanup;
     
     # DEBUG message
     if ($ENV{DBIX_CUSTOM_DEBUG}) {
@@ -579,15 +594,17 @@ sub insert {
     }
     
     # Merge id to parameter
+    my @cleanup;
     if (defined $opt{id}) {
-        croak "insert primary_key option must be specified with id option"
+        croak "insert id option must be specified with primary_key option"
           unless $opt{primary_key};
         $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key};
         $opt{id} = [$opt{id}] unless ref $opt{id};
         for (my $i = 0; $i < @{$opt{primary_key}}; $i++) {
            my $key = $opt{primary_key}->[$i];
-           croak "id already contain in parameter" if exists $param->{$key};
+           next if exists $param->{$key};
            $param->{$key} = $opt{id}->[$i];
+           push @cleanup, $key;
         }
     }
     
@@ -598,7 +615,7 @@ sub insert {
       . $self->values_clause($param, {wrap => $opt{wrap}}) . " ";
 
     # Remove id from parameter
-    if (defined $opt{id}) { delete $param->{$_} for @{$opt{primary_key}} }
+    delete $param->{$_} for @cleanup;
     
     # Execute query
     $opt{statement} = 'insert';
@@ -879,6 +896,7 @@ sub select {
       if $opt{relation};
     
     # Execute query
+    $opt{statement} = 'select';
     my $result = $self->execute($sql, $w->{param}, %opt);
     
     $result;
@@ -1050,6 +1068,7 @@ sub update {
     $sql .= $self->_q($opt{table}) . " set $assign_clause $w->{clause} ";
     
     # Execute query
+    $opt{statement} = 'update';
     $self->execute($sql, $param, %opt);
 }
 

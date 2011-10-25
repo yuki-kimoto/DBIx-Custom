@@ -577,7 +577,6 @@ $dbi->update_or_insert(
 $row = $dbi->select(id => 1, table => $table1, primary_key => $key1)->one;
 is_deeply($row, {$key1 => 1, $key2 => 2}, "basic");
 
-
 test 'default_bind_filter';
 $dbi->execute("delete from $table1");
 $dbi->register_filter(
@@ -2307,6 +2306,22 @@ $dbi->insert(
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 is($dbi->select(table => $table1)->one->{$key3}, 3);
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key3 => 3, $key2 => 4};
+$DB::single = 1;
+$dbi->insert(
+    $param,
+    primary_key => [$key1, $key2], 
+    table => $table1,
+    id => [1, 2],
+);
+is($dbi->select(table => $table1)->one->{$key1}, 1);
+is($dbi->select(table => $table1)->one->{$key2}, 4);
+is($dbi->select(table => $table1)->one->{$key3}, 3);
+is_deeply($param, {$key3 => 3, $key2 => 4});
 
 test 'model insert id and primary_key option';
 $dbi = MyDBI6->connect;
