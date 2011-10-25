@@ -2323,6 +2323,21 @@ is($dbi->select(table => $table1)->one->{$key2}, 4);
 is($dbi->select(table => $table1)->one->{$key3}, 3);
 is_deeply($param, {$key3 => 3, $key2 => 4});
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key3 => 3, $key2 => 4};
+$DB::single = 1;
+$query = $dbi->insert(
+    $param,
+    primary_key => [$key1, $key2], 
+    table => $table1,
+    id => [1, 2],
+    query => 1
+);
+is(ref $query, 'DBIx::Custom::Query');
+is_deeply($param, {$key3 => 3, $key2 => 4});
+
 test 'model insert id and primary_key option';
 $dbi = MyDBI6->connect;
 eval { $dbi->execute("drop table $table1") };

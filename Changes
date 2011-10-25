@@ -1,7 +1,6 @@
 0.1738
     - insert method id value is not copied to parameter
       if the key exists in parameter
-    
 0.1737
     - micro optimization
     - fixed DEBUG messsage bug
