@@ -1,4 +1,7 @@
 0.1738
+    - removed example that query pass execute method in documentation
+      this is many bug reason much more than I have expected
+      and passing query to execute method is DEPRECATED!
     - insert method id value is not copied to parameter
       if the key exists in parameter
 0.1737

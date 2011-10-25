@@ -361,12 +361,35 @@ sub execute {
     my $filter = ref $opt{filter} eq 'ARRAY' ?
       _array_to_hash($opt{filter}) : $opt{filter};
     
+    # Merge second parameter
+    my @cleanup;
+    if (ref $param eq 'ARRAY') {
+        my $param2 = $param->[1];
+        $param = $param->[0];
+        for my $column (keys %$param2) {
+            if (!exists $param->{$column}) {
+                $param->{$column} = $param2->{$column};
+                push @cleanup, $column;
+            }
+            else {
+                delete $param->{$_} for @cleanup;
+                @cleanup = ();
+                $param = $self->merge_param($param, $param2);
+                last;
+            }
+        }
+    }
+    
     # Append
     $sql .= $opt{append} if defined $opt{append} && !ref $sql;
     
     # Query
     my $query;
-    if (ref $sql) { $query = $sql }
+    if (ref $sql) {
+        $query = $sql;
+        warn "execute method receiving query object as first parameter is DEPRECATED!" .
+             "because this is very buggy.";
+    }
     else {
         $query = $opt{reuse}->{$sql} if $opt{reuse};
         $query = $self->_create_query($sql,$opt{after_build_sql} || $opt{sqlfilter})
@@ -389,7 +412,6 @@ sub execute {
     my $main_table = @{$tables}[-1];
 
     # Merge id to parameter
-    my @cleanup;
     if (defined $opt{id}) {
         croak "execute id option must be specified with primary_key option"
           unless $opt{primary_key};
@@ -402,7 +424,7 @@ sub execute {
              $statement eq 'delete' || $statement eq 'select';
            next if exists $param->{$key};
            $param->{$key} = $opt{id}->[$i];
-           push @cleanup, $key;
+           push @cleanup, $key;1
         }
     }
     
@@ -485,6 +507,7 @@ sub execute {
 
     # Remove id from parameter
     delete $param->{$_} for @cleanup;
+
     
     # DEBUG message
     if ($ENV{DBIX_CUSTOM_DEBUG}) {
@@ -593,6 +616,7 @@ sub insert {
     
     # Merge id to parameter
     my @cleanup;
+    my $id_param = {};
     if (defined $opt{id}) {
         croak "insert id option must be specified with primary_key option"
           unless $opt{primary_key};
@@ -1051,9 +1075,6 @@ sub update {
     my $w = $self->_where_clause_and_param($opt{where}, $opt{where_param},
       delete $opt{id}, $opt{primary_key}, $opt{table});
     
-    # Merge where parameter to parameter
-    $param = $self->merge_param($param, $w->{param}) if keys %{$w->{param}};
-    
     # Update statement
     my $sql = "update ";
     $sql .= "$opt{prefix} " if defined $opt{prefix};
@@ -1061,7 +1082,7 @@ sub update {
     
     # Execute query
     $opt{statement} = 'update';
-    $self->execute($sql, $param, %opt);
+    $self->execute($sql, [$param, $w->{param}], %opt);
 }
 
 sub update_all { shift->update(allow_update_all => 1, @_) };
@@ -2580,38 +2601,12 @@ The above is same as the followin one.
     query => 1
 
 C<execute> method return L<DBIx::Custom::Query> object, not executing SQL.
-You can check SQL or get statment handle.
+You can check SQL, column, or get statment handle.
 
     my $sql = $query->sql;
     my $sth = $query->sth;
     my $columns = $query->columns;
     
-If you want to execute SQL fast, you can do the following way.
-
-    my $query;
-    for my $row (@$rows) {
-      $query ||= $dbi->insert($row, table => 'table1', query => 1);
-      $dbi->execute($query, $row);
-    }
-
-Statement handle is reused and SQL parsing is finished,
-so you can get more performance than normal way.
-
-If you want to execute SQL as possible as fast and don't need filtering.
-You can do the following way.
-    
-    my $query;
-    my $sth;
-    for my $row (@$rows) {
-      $query ||= $dbi->insert($row, table => 'book', query => 1);
-      $sth ||= $query->sth;
-      $sth->execute(map { $row->{$_} } sort keys %$row);
-    }
-
-Note that $row must be simple hash reference, such as
-{title => 'Perl', author => 'Ken'}.
-and don't forget to sort $row values by $row key asc order.
-
 =item C<primary_key>
 
     primary_key => 'id'
@@ -3456,6 +3451,8 @@ L<DBIx::Custom>
     execute method's sqlfilter option # will be removed at 2017/1/1
     
     # Others
+    execute($query, ...) # execute method receiving query object.
+                         # this is removed at 2017/1/1
     execute("select * from {= title}"); # execute method's
                                         # tag parsing functionality
                                         # will be removed at 2017/1/1
