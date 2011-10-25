@@ -52,6 +52,14 @@ has [qw/connector dsn password quote user exclude_table user_table_info
     },
     last_sql => '',
     models => sub { {} },
+    now => sub {
+        sub {
+            my ($sec, $min, $hour, $mday, $mon, $year) = localtime;
+            $mon++;
+            $year += 1900;
+            return sprintf("%04d-%02d-%02d %02d:%02d:%02d");
+        }
+    },
     query_builder => sub {
         my $self = shift;
         my $builder = DBIx::Custom::QueryBuilder->new(dbi => $self);
@@ -428,6 +436,19 @@ sub execute {
         }
     }
     
+    # Created time and updated time
+    if (defined $opt{created_at} || defined $opt{updated_at}) {
+        my $now = $self->now->();
+        if (defined $opt{create_at}) {
+            $param->{$opt{created_at}} = $now;
+            push @cleanup, $opt{created_at};
+        }
+        if (defined $opt{updated_at}) {
+            $param->{$opt{updated_at}} = $now;
+            push @cleanup, $opt{updated_at};
+        }
+    }
+    
     # Cleanup tables(DEPRECATED!)
     $tables = $self->_remove_duplicate_table($tables, $main_table)
       if @$tables > 1;
@@ -607,6 +628,7 @@ sub insert {
     
     # Timestamp
     if ($opt{timestamp} && (my $insert_timestamp = $self->insert_timestamp)) {
+        warn "insert timestamp option is DEPRECATED! use created_at with now attribute";
         my $columns = $insert_timestamp->[0];
         $columns = [$columns] unless ref $columns eq 'ARRAY';
         my $value = $insert_timestamp->[1];
@@ -655,6 +677,8 @@ sub _merge_id_to_param {
 
 sub insert_timestamp {
     my $self = shift;
+    
+    warn "insert_timestamp method is DEPRECATED! use now attribute";
     
     if (@_) {
         $self->{insert_timestamp} = [@_];
@@ -1063,6 +1087,7 @@ sub update {
     
     # Timestamp
     if ($opt{timestamp} && (my $update_timestamp = $self->update_timestamp)) {
+        warn "update timestamp option is DEPRECATED! use updated_at and now method";
         my $columns = $update_timestamp->[0];
         $columns = [$columns] unless ref $columns eq 'ARRAY';
         my $value = $update_timestamp->[1];
@@ -1127,6 +1152,8 @@ sub update_or_insert {
 
 sub update_timestamp {
     my $self = shift;
+    
+    warn "update_timestamp method is DEPRECATED! use now method";
     
     if (@_) {
         $self->{update_timestamp} = [@_];
@@ -2142,6 +2169,22 @@ Filters, registered by C<register_filter> method.
 
 Get last successed SQL executed by C<execute> method.
 
+=head2 C<now EXPERIMENTAL>
+
+    my $now = $dbi->now;
+    $dbi = $dbi->now($now);
+
+Code reference which return time now, default to the following code reference.
+
+    sub {
+        my ($sec, $min, $hour, $mday, $mon, $year) = localtime;
+        $mon++;
+        $year += 1900;
+        return sprintf("%04d-%02d-%02d %02d:%02d:%02d");
+    }
+
+This return the time like "2011-10-14 05:05:27".
+
 =head2 C<models>
 
     my $models = $dbi->models;
@@ -2553,6 +2596,14 @@ This is used to bind parameter by C<bind_param> of statment handle.
 
     $sth->bind_param($pos, $value, DBI::SQL_BLOB);
 
+=item C<created_at EXPERIMETNAL>
+
+    created_at => 'created_datetime'
+
+Created timestamp column name. time when row is created is set to the column.
+default time format is "YYYY-mm-dd HH:MM:SS", which can be changed by
+C<now> attribute.
+
 =item C<filter>
     
     filter => {
@@ -2670,6 +2721,14 @@ Turn C<into1> type rule off.
 
 Turn C<into2> type rule off.
 
+=item C<updated_at EXPERIMETNAL>
+
+    updated_at => 'updated_datetime'
+
+Updated timestamp column name. time when row is updated is set to the column.
+default time format is C<YYYY-mm-dd HH:MM:SS>, which can be changed by
+C<now> attribute.
+
 =back
 
 =head2 C<get_column_info>
@@ -2771,14 +2830,6 @@ prefix before table name section
 
 Table name.
 
-=item C<timestamp>
-
-    timestamp => 1
-
-If this value is set to 1,
-automatically created timestamp column is set based on
-C<timestamp> attribute's C<insert> value.
-
 =item C<wrap>
 
     wrap => {price => sub { "max($_[0])" }}
@@ -2842,22 +2893,6 @@ You can get model object by C<model>.
     my $company_model = $dbi->model('company');
 
 See L<DBIx::Custom::Model> to know model features.
-
-=head2 C<insert_timestamp>
-
-    $dbi->insert_timestamp(
-      [qw/created_at updated_at/]
-        => sub { Time::Piece->localtime->strftime("%Y-%m-%d %H:%M:%S") }
-    );
-
-Timestamp value when C<insert> method is executed
-with C<timestamp> option.
-
-If C<insert_timestamp> is set and C<insert> method is executed
-with C<timestamp> option, column C<created_at> and C<update_at>
-is automatically set to the value like "2010-10-11 10:12:54".
-
-    $dbi->insert($param, table => 'book', timestamp => 1);
 
 =head2 C<like_value>
 
@@ -3253,14 +3288,6 @@ prefix before table name section
 
 Table name.
 
-=item C<timestamp>
-
-    timestamp => 1
-
-If this value is set to 1,
-automatically updated timestamp column is set based on
-C<timestamp> attribute's C<update> value.
-
 =item C<where>
 
 Same as C<select> method's C<where> option.
@@ -3328,24 +3355,6 @@ The following opitons are available adding to C<update> option.
 
 select method option,
 select method is used to check the row is already exists.
-
-=head2 C<update_timestamp>
-
-    $dbi->update_timestamp(
-      updated_at
-        => sub { Time::Piece->localtime->strftime("%Y-%m-%d %H:%M:%S") }
-    );
-
-Timestamp value when C<update> method is executed
-with C<timestamp> option.
-
-If C<insert_timestamp> is set and C<insert> method is executed
-with C<timestamp> option, column C<update_at>
-is automatically set to the value like "2010-10-11 10:12:54".
-
->|perl|
-$dbi->update($param, table => 'book', timestamp => 1);
-||<
 
 =head2 C<show_datatype>
 
@@ -3423,6 +3432,8 @@ L<DBIx::Custom>
     cache_method # will be removed at 2017/1/1
     
     # Methods
+    update_timestamp # will be removed at 2017/1/1
+    insert_timestamp # will be removed at 2017/1/1
     method # will be removed at 2017/1/1
     assign_param # will be removed at 2017/1/1
     update_param # will be removed at 2017/1/1
@@ -3442,6 +3453,8 @@ L<DBIx::Custom>
     update_param_tag # will be removed at 2017/1/1
     
     # Options
+    update timestamp option # will be removed 2017/1/1
+    insert timestamp option # will be removed 2017/1/1
     select method where_param option # will be removed 2017/1/1
     delete method where_param option # will be removed 2017/1/1
     update method where_param option # will be removed 2017/1/1
