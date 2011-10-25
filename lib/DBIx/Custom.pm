@@ -241,17 +241,17 @@ sub delete {
       if !$opt{where} && !defined $opt{id} && !$opt{allow_delete_all};
     
     # Where
-    my $wcp = $self->_where_clause_and_param($opt{where}, $opt{where_param},
+    my $w = $self->_where_clause_and_param($opt{where}, $opt{where_param},
       delete $opt{id}, $opt{primary_key}, $opt{table});
 
     # Delete statement
     my $sql = "delete ";
     $sql .= "$opt{prefix} " if defined $opt{prefix};
-    $sql .= "from " . $self->_q($opt{table}) . " $wcp->{clause} ";
+    $sql .= "from " . $self->_q($opt{table}) . " $w->{clause} ";
     
     # Execute query
     $opt{statement} = 'delete';
-    $self->execute($sql, $wcp->{param}, %opt);
+    $self->execute($sql, $w->{param}, %opt);
 }
 
 sub delete_all { shift->delete(allow_delete_all => 1, @_) }
@@ -1049,13 +1049,9 @@ sub update {
     # Assign clause
     my $assign_clause = $self->assign_clause($param, {wrap => $opt{wrap}});
     
-    # Convert id to where parameter
-    my $where = defined $opt{id}
-      ? $self->_id_to_param(delete $opt{id}, $opt{primary_key}, $opt{table})
-      : $opt{where};
-
     # Where
-    my $w = $self->_where_clause_and_param($where, $opt{where_param});
+    my $w = $self->_where_clause_and_param($opt{where}, $opt{where_param},
+      delete $opt{id}, $opt{primary_key}, $opt{table});
     
     # Merge where parameter to parameter
     $param = $self->merge_param($param, $w->{param}) if keys %{$w->{param}};
@@ -1526,78 +1522,73 @@ sub _search_tables {
     return $tables;
 }
 
-sub _where_to_obj {
-    my ($self, $where) = @_;
-    
-    my $obj;
-    
-    # Hash
-    if (ref $where eq 'HASH') {
-        my $clause = ['and'];
-        my $q = $self->_quote;
-        for my $column (keys %$where) {
-            my $table;
-            my $c;
-            if ($column =~ /(?:(.*?)\.)?(.*)/) {
-                $table = $1;
-                $c = $2;
-            }
-            
-            my $table_quote;
-            $table_quote = $self->_q($table) if defined $table;
-            my $column_quote = $self->_q($c);
-            $column_quote = $table_quote . '.' . $column_quote
-              if defined $table_quote;
-            push @$clause, "$column_quote = :$column" for keys %$where;
-        }
-        $obj = $self->where(clause => $clause, param => $where);
-    }
-    
-    # DBIx::Custom::Where object
-    elsif (ref $where eq 'DBIx::Custom::Where') {
-        $obj = $where;
-    }
-    
-    # Array
-    elsif (ref $where eq 'ARRAY') {
-        $obj = $self->where(
-            clause => $where->[0],
-            param  => $where->[1]
-        );
-    }
-    
-    # Check where argument
-    croak qq{"where" must be hash reference or DBIx::Custom::Where object}
-        . qq{or array reference, which contains where clause and parameter}
-        . _subname
-      unless ref $obj eq 'DBIx::Custom::Where';
-    
-    return $obj;
-}
-
 sub _where_clause_and_param {
-    my ($self, $where, $param, $id, $primary_key, $table) = @_;
+    my ($self, $where, $where_param, $id, $primary_key, $table) = @_;
 
     $where ||= {};
     $where = $self->_id_to_param($id, $primary_key, $table) if defined $id;
-    $param ||= {};
+    $where_param ||= {};
     my $w = {};
     my $where_clause = '';
 
+    my $obj;
+    
     if (ref $where eq 'ARRAY' && !ref $where->[0]) {
         $w->{clause} = "where " . $where->[0];
         $w->{param} = $where->[1];
     }
     elsif (ref $where) {
-        $where = $self->_where_to_obj($where);
-        $w->{param} = keys %$param
-                    ? $self->merge_param($param, $where->param)
-                    : $where->param;
-        $w->{clause} = $where->to_string;
+
+        # Hash
+        if (ref $where eq 'HASH') {
+            my $clause = ['and'];
+            my $q = $self->_quote;
+            for my $column (keys %$where) {
+                my $table;
+                my $c;
+                if ($column =~ /(?:(.*?)\.)?(.*)/) {
+                    $table = $1;
+                    $c = $2;
+                }
+                
+                my $table_quote;
+                $table_quote = $self->_q($table) if defined $table;
+                my $column_quote = $self->_q($c);
+                $column_quote = $table_quote . '.' . $column_quote
+                  if defined $table_quote;
+                push @$clause, "$column_quote = :$column" for keys %$where;
+            }
+            $obj = $self->where(clause => $clause, param => $where);
+        }
+        
+        # DBIx::Custom::Where object
+        elsif (ref $where eq 'DBIx::Custom::Where') {
+            $obj = $where;
+        }
+        
+        # Array
+        elsif (ref $where eq 'ARRAY') {
+            $obj = $self->where(
+                clause => $where->[0],
+                param  => $where->[1]
+            );
+        }
+        
+        # Check where argument
+        croak qq{"where" must be hash reference or DBIx::Custom::Where object}
+            . qq{or array reference, which contains where clause and parameter}
+            . _subname
+          unless ref $obj eq 'DBIx::Custom::Where';
+
+
+        $w->{param} = keys %$where_param
+                    ? $self->merge_param($where_param, $obj->param)
+                    : $obj->param;
+        $w->{clause} = $obj->to_string;
     }
     elsif ($where) {
         $w->{clause} = "where $where";
-        $w->{param} = $param;
+        $w->{param} = $where_param;
     }
     
     return $w;
