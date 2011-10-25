@@ -57,7 +57,9 @@ has [qw/connector dsn password quote user exclude_table user_table_info
             my ($sec, $min, $hour, $mday, $mon, $year) = localtime;
             $mon++;
             $year += 1900;
-            return sprintf("%04d-%02d-%02d %02d:%02d:%02d");
+            my $now = sprintf("%04d-%02d-%02d %02d:%02d:%02d",
+              $year, $mon, $mday, $hour, $min, $sec);
+            return $now;
         }
     },
     query_builder => sub {
@@ -371,6 +373,7 @@ sub execute {
     
     # Merge second parameter
     my @cleanup;
+    my $saved_param;
     if (ref $param eq 'ARRAY') {
         my $param2 = $param->[1];
         $param = $param->[0];
@@ -382,7 +385,9 @@ sub execute {
             else {
                 delete $param->{$_} for @cleanup;
                 @cleanup = ();
+                $saved_param  = $param;
                 $param = $self->merge_param($param, $param2);
+                delete $saved_param->{$_} for (@{$opt{cleanup} || []});
                 last;
             }
         }
@@ -433,19 +438,6 @@ sub execute {
            next if exists $param->{$key};
            $param->{$key} = $opt{id}->[$i];
            push @cleanup, $key;1
-        }
-    }
-    
-    # Created time and updated time
-    if (defined $opt{created_at} || defined $opt{updated_at}) {
-        my $now = $self->now->();
-        if (defined $opt{create_at}) {
-            $param->{$opt{created_at}} = $now;
-            push @cleanup, $opt{created_at};
-        }
-        if (defined $opt{updated_at}) {
-            $param->{$opt{updated_at}} = $now;
-            push @cleanup, $opt{updated_at};
         }
     }
     
@@ -527,8 +519,7 @@ sub execute {
       . qq{$query->{sql}\n} . _subname) if $@;
 
     # Remove id from parameter
-    delete $param->{$_} for @cleanup;
-
+    delete $param->{$_} for (@cleanup, @{$opt{cleanup} || []});
     
     # DEBUG message
     if ($ENV{DBIX_CUSTOM_DEBUG}) {
@@ -626,7 +617,7 @@ sub insert {
     warn "insert method param option is DEPRECATED!" if $opt{param};
     $param ||= delete $opt{param} || {};
     
-    # Timestamp
+    # Timestamp(DEPRECATED!)
     if ($opt{timestamp} && (my $insert_timestamp = $self->insert_timestamp)) {
         warn "insert timestamp option is DEPRECATED! use created_at with now attribute";
         my $columns = $insert_timestamp->[0];
@@ -634,6 +625,20 @@ sub insert {
         my $value = $insert_timestamp->[1];
         $value = $value->() if ref $value eq 'CODE';
         $param->{$_} = $value for @$columns;
+    }
+
+    # Created time and updated time
+    my @timestamp_cleanup;
+    if (defined $opt{created_at} || defined $opt{updated_at}) {
+        my $now = $self->now->();
+        if (defined $opt{created_at}) {
+            $param->{$opt{created_at}} = $now;
+            push @timestamp_cleanup, $opt{created_at};
+        }
+        if (defined $opt{updated_at}) {
+            $param->{$opt{updated_at}} = $now;
+            push @timestamp_cleanup, $opt{updated_at};
+        }
     }
     
     # Merge id to parameter
@@ -663,6 +668,7 @@ sub insert {
     
     # Execute query
     $opt{statement} = 'insert';
+    $opt{cleanup} = \@timestamp_cleanup;
     $self->execute($sql, $param, %opt);
 }
 
@@ -1085,7 +1091,7 @@ sub update {
     croak qq{update method where option must be specified } . _subname
       if !$opt{where} && !defined $opt{id} && !$opt{allow_update_all};
     
-    # Timestamp
+    # Timestamp(DEPRECATED!)
     if ($opt{timestamp} && (my $update_timestamp = $self->update_timestamp)) {
         warn "update timestamp option is DEPRECATED! use updated_at and now method";
         my $columns = $update_timestamp->[0];
@@ -1093,6 +1099,13 @@ sub update {
         my $value = $update_timestamp->[1];
         $value = $value->() if ref $value eq 'CODE';
         $param->{$_} = $value for @$columns;
+    }
+
+    # Created time and updated time
+    my @timestamp_cleanup;
+    if (defined $opt{updated_at}) {
+        $param->{$opt{updated_at}} = $self->now->();
+        push @timestamp_cleanup, $opt{updated_at};
     }
 
     # Assign clause
@@ -1109,6 +1122,7 @@ sub update {
     
     # Execute query
     $opt{statement} = 'update';
+    $opt{cleanup} = \@timestamp_cleanup;
     $self->execute($sql, [$param, $w->{param}], %opt);
 }
 
@@ -2596,14 +2610,6 @@ This is used to bind parameter by C<bind_param> of statment handle.
 
     $sth->bind_param($pos, $value, DBI::SQL_BLOB);
 
-=item C<created_at EXPERIMETNAL>
-
-    created_at => 'created_datetime'
-
-Created timestamp column name. time when row is created is set to the column.
-default time format is "YYYY-mm-dd HH:MM:SS", which can be changed by
-C<now> attribute.
-
 =item C<filter>
     
     filter => {
@@ -2721,14 +2727,6 @@ Turn C<into1> type rule off.
 
 Turn C<into2> type rule off.
 
-=item C<updated_at EXPERIMETNAL>
-
-    updated_at => 'updated_datetime'
-
-Updated timestamp column name. time when row is updated is set to the column.
-default time format is C<YYYY-mm-dd HH:MM:SS>, which can be changed by
-C<now> attribute.
-
 =back
 
 =head2 C<get_column_info>
@@ -2794,6 +2792,14 @@ and use the following new ones.
 
 =over 4
 
+=item C<created_at EXPERIMETNAL>
+
+    created_at => 'created_datetime'
+
+Created timestamp column name. time when row is created is set to the column.
+default time format is "YYYY-mm-dd HH:MM:SS", which can be changed by
+C<now> attribute.
+
 =item C<id>
 
     id => 4
@@ -2829,6 +2835,10 @@ prefix before table name section
     table => 'book'
 
 Table name.
+
+=item C<updated_at EXPERIMENTAL>
+
+This option is same as C<update> method C<updated_at> option.
 
 =item C<wrap>
 
@@ -3306,6 +3316,14 @@ If the following statement
 is executed, the following SQL is executed.
 
     update book set price =  ? + 5;
+
+=item C<updated_at EXPERIMETNAL>
+
+    updated_at => 'updated_datetime'
+
+Updated timestamp column name. time when row is updated is set to the column.
+default time format is C<YYYY-mm-dd HH:MM:SS>, which can be changed by
+C<now> attribute.
 
 =back
 

@@ -546,6 +546,38 @@ $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
 is($rows->[0]->{$key1}, $rows->[0]->{$key2});
 
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key1 => 1};
+$dbi->insert(table => $table1, param => $param, created_at => $key2);
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key1 => 1});
+$row   = $result->one;
+is($row->{$key1}, 1);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key1 => 1};
+$dbi->insert(table => $table1, param => $param, updated_at => $key3);
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key1 => 1});
+$row   = $result->one;
+is($row->{$key1}, 1);
+like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key1 => 1};
+$dbi->insert(table => $table1, param => $param, created_at => $key2, updated_at => $key3);
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key1 => 1});
+$row   = $result->one;
+is($row->{$key1}, 1);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+is($row->{$key2}, $row->{$key3});
+
 test 'update_or_insert';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
@@ -792,6 +824,28 @@ $rows   = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
                   {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
                   "basic");
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key3 => 4};
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2, $key3 => 3});
+$dbi->update(table => $table1, param => $param, updated_at => $key2, where => {$key1 => 1});
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key3 => 4});
+$row   = $result->one;
+is($row->{$key3}, 4);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key3 => 4};
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2, $key3 => 3});
+$dbi->update(table => $table1, param => $param, updated_at => $key2, where => {$key3 => 3});
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key3 => 4});
+$row   = $result->one;
+is($row->{$key3}, 4);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
 
 test 'update_all';
 eval { $dbi->execute("drop table $table1") };

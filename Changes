@@ -8,10 +8,10 @@
     - update_timestamp method is DEPRECATED!
       use use now method
     - added EXPEREIMTNAL now method
-    - added EXPERIMENTAL execute created_at method
-    - added EXPERIMETNAL execute updated_at method
+    - added EXPERIMENTAL insert created_at option
+    - added EXPERIMETNAL insert updated_at option
+    - added EXPERIMETNAL update updated_at option
     - added new timestamp system using the above methods and options
-     
 0.1738
     - micro optimization
     - removed example that query pass execute method in documentation
