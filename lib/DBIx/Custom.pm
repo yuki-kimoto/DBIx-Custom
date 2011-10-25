@@ -844,6 +844,8 @@ sub select {
                : [];
     $opt{table} = $tables;
     my $where_param = $opt{where_param} || delete $opt{param} || {};
+    warn "select method where_param option is DEPRECATED!"
+      if $opt{where_param};
     
     # Add relation tables(DEPRECATED!);
     if ($opt{relation}) {
