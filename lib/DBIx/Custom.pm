@@ -875,10 +875,8 @@ sub select {
             @{$self->_search_tables(join(' ', keys %$where_param) || '')};
     
     # Where
-    my $where = defined $opt{id}
-              ? $self->_id_to_param(delete $opt{id}, $opt{primary_key}, $tables->[-1])
-              : $opt{where};
-    my $w = $self->_where_clause_and_param($where, $where_param);
+    my $w = $self->_where_clause_and_param($opt{where}, $where_param,
+      delete $opt{id}, $opt{primary_key}, $tables->[-1]);
     
     # Add table names in where clause
     unshift @$tables, @{$self->_search_tables($w->{clause})};
