@@ -162,7 +162,7 @@ sub column {
     my $table = $option->{alias} || $real_table;
     
     # Columns
-    unless ($columns) {
+    unless (defined $columns) {
         $columns ||= $self->model($real_table)->columns;
     }
     
@@ -924,7 +924,7 @@ sub select {
     else { $sql .= $self->_q($tables->[-1] || '') . ' ' }
     $sql =~ s/, $/ /;
     croak "select method table option must be specified " . _subname
-      unless $tables->[-1];
+      unless defined $tables->[-1];
 
     # Add tables in parameter
     unshift @$tables,

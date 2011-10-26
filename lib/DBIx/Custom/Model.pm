@@ -7,11 +7,8 @@ use DBIx::Custom::Util '_subname';
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-has [qw/dbi table/],
-    bind_type => sub { [] },
-    columns => sub { [] },
-    join => sub { [] },
-    primary_key => sub { [] };
+has [qw/dbi table created_at updated_at bind_type join primary_key/],
+    columns => sub { [] };
 
 our $AUTOLOAD;
 
@@ -44,13 +41,22 @@ for my $method (@methods) {
 
     my $code = sub {
         my $self = shift;
+        
+        unless ($self->{_attribute_cache}{$self}) {
+            $self->$_ for qw/table bind_type primary_key
+              type join created_at updated_at/;
+            $self->{_attribute_cache}{$self} = 1;
+        }
+
         $self->dbi->$method(
             @_ % 2 ? shift : (),
-            table => $self->table,
-            bind_type => $self->bind_type,
-            primary_key => $self->primary_key,
-            type => $self->type,
-            $method =~ /^select/ ? (join => $self->join) : (), 
+            table => $self->{table},
+            exists $self->{type} ? (type => $self->{type}) : (),
+            exists $self->{created_at} && $method eq 'insert' ? (created_at => $self->{created_at}) : (),
+            exists $self->{updated_at} && ($method eq 'insert' || $method eq 'update') ? (updated_at => $self->{updated_at}) : (),
+            exists $self->{bind_type} ? (bind_type=> $self->{bind_type}) : (),
+            exists $self->{primary_key} ? (primary_key => $self->{primary_key}) : (),
+            exists $self->{join} && index($method, 'select') != -1 ? (join => $self->{join}) : (),
             @_
         )
     };
@@ -112,7 +118,7 @@ sub new {
 # DEPRECATED!
 has 'filter';
 has 'name';
-has type => sub { [] };
+has 'type';
 
 
 # DEPRECATED!

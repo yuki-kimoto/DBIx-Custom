@@ -1,8 +1,8 @@
 package MyModel4::TABLE1;
 
-use base 'MyModel4';
+use MyModel4 -base;
 
-sub table { 'TABLE1' }
+has table => 'TABLE1';
 
 sub list { shift->select }
 
