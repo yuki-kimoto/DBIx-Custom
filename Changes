@@ -1,5 +1,5 @@
 0.1740
-    -
+    - execute method id option is DEPRECATED!
 0.1739
     - insert timestamp option is DEPRECATED!
       use created_at option with now attribute

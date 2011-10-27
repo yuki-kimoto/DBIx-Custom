@@ -426,11 +426,12 @@ sub execute {
 
     # Merge id to parameter
     if (defined $opt{id}) {
+        my $statement = $query->statement;
+        warn "execute method id option is DEPRECATED!" unless $statement;
         croak "execute id option must be specified with primary_key option"
           unless $opt{primary_key};
         $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key};
         $opt{id} = [$opt{id}] unless ref $opt{id};
-        my $statement = $query->statement;
         for (my $i = 0; $i < @{$opt{primary_key}}; $i++) {
            my $key = $opt{primary_key}->[$i];
            $key = "$main_table.$key" if $statement eq 'update' ||
@@ -2635,28 +2636,6 @@ registered by by C<register_filter>.
 This filter is executed before data is saved into database.
 and before type rule filter is executed.
 
-=item C<id>
-
-    id => 4
-    id => [4, 5]
-
-ID corresponding to C<primary_key>.
-You can delete rows by C<id> and C<primary_key>.
-
-    $dbi->execute(
-        "select * from book where id1 = :id1 and id2 = :id2",
-        {},
-        primary_key => ['id1', 'id2'],
-        id => [4, 5],
-    );
-
-The above is same as the followin one.
-
-    $dbi->execute(
-        "select * from book where id1 = :id1 and id2 = :id2",
-        {id1 => 4, id2 => 5}
-    );
-
 =item C<query>
 
     query => 1
@@ -2673,7 +2652,7 @@ You can check SQL, column, or get statment handle.
     primary_key => 'id'
     primary_key => ['id1', 'id2']
 
-Priamry key. This is used when C<id> option find primary key.
+Priamry key. This is used for C<id> option.
 
 =item C<table>
     
@@ -3464,6 +3443,7 @@ L<DBIx::Custom>
     update_param_tag # will be removed at 2017/1/1
     
     # Options
+    execute method id option # will be removed 2017/1/1
     update timestamp option # will be removed 2017/1/1
     insert timestamp option # will be removed 2017/1/1
     select method where_param option # will be removed 2017/1/1
