@@ -148,6 +148,13 @@ my $model = DBIx::Custom::Model->new(table => 'books');
 
 L<DBIx::Custom> object.
 
+=head2 C<created_at EXPERIMENTAL>
+
+    my $created_at = $model->created_at;
+    $model = $model->created_at('created_datatime');
+
+Create timestamp column, this is passed to C<insert> or C<update> method.
+
 =head2 C<join>
 
     my $join = $model->join;
@@ -180,6 +187,13 @@ Table name, this is passed to C<select> method.
 Database data type, this is used as type optioon of C<insert>, 
 C<update>, C<update_all>, C<delete>, C<delete_all>,
 C<select>, and C<execute> method
+
+=head2 C<updated_at EXPERIMENTAL>
+
+    my $updated_at = $model->updated_at;
+    $model = $model->updated_at('updated_datatime');
+
+Updated timestamp column, this is passed to C<update> method.
 
 =head1 METHODS
 

@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1738';
+our $VERSION = '0.1740';
 use 5.008001;
 
 use Carp 'croak';
@@ -1144,6 +1144,8 @@ sub update_or_insert {
     croak qq{"table" option must be specified } . _subname
       unless defined $table;
     my $select_option = $opt{select_option};
+    my $reuse = $opt{reuse};
+    $opt{select_option}->{reuse} = $opt{reuse} if $opt{reuse};
     
     my $rows = $self->select(table => $table, id => $id,
         primary_key => $primary_key, %$select_option)->all;
@@ -2699,7 +2701,7 @@ on alias table name.
 
 =item C<reuse EXPERIMENTAL>
     
-    reuse => $has_ref
+    reuse => $hash_ref
 
 Reuse query object if the hash reference variable is set.
     
@@ -2756,21 +2758,16 @@ You can set this value to C<user_table_info>.
 =head2 C<helper>
 
     $dbi->helper(
-        update_or_insert => sub {
-            my $self = shift;
-            
-            # Process
-        },
         find_or_create   => sub {
             my $self = shift;
             
             # Process
-        }
+        },
+        ...
     );
 
 Register helper. These helper is called directly from L<DBIx::Custom> object.
 
-    $dbi->update_or_insert;
     $dbi->find_or_create;
 
 =head2 C<insert>
@@ -3037,10 +3034,6 @@ column name, second argument is alias.
 Alias is quoted properly and joined.
 
     date(book.register_datetime) as "book.register_date"
-
-=item C<filter>
-
-Same as C<execute> method's C<filter> option.
 
 =item C<id>
 
