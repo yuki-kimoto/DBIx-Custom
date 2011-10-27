@@ -4191,6 +4191,28 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}]);
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
+$dbi->insert(table => $table1, param => {$key1 => 3, $key2 => 4});
+eval { $dbi->execute("drop table $table2") };
+$dbi->execute($create_table2);
+$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 5});
+eval { $dbi->execute("drop table $table3") };
+$dbi->execute("create table $table3 ($key3 int, $key4 int)");
+$dbi->insert(table => $table3, param => {$key3 => 5, $key4 => 4});
+$rows = $dbi->select(
+    table => $table1,
+    column => "$table1.$key1 as ${table1}_$key1, $table2.$key1 as ${table2}_$key1, $key2, $key3",
+    where   => {"$table1.$key2" => 2},
+    join  => {
+        clause => "left outer join $table2 on $table1.$key1 = $table2.$key1",
+        table => [$table1, $table2]
+    }
+)->all;
+is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}]);
+
 $rows = $dbi->select(
     table => $table1,
     where   => {$key1 => 1},
