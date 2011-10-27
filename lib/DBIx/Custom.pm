@@ -1158,41 +1158,13 @@ sub update {
 sub update_all { shift->update(allow_update_all => 1, @_) };
 
 sub update_or_insert {
-    my $self = shift;
-
-    # Options
-    my $param  = shift;
-    my %opt = @_;
-    my $id = $opt{id};
-    my $primary_key = $opt{primary_key};
-    $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-    croak "update_or_insert method need primary_key option " .
-          "when id is specified" . _subname
-      if defined $id && !defined $primary_key;
-    my $table  = $opt{table};
-    croak qq{"table" option must be specified } . _subname
-      unless defined $table;
-    my $select_option = $opt{select_option};
-    my $reuse = $opt{reuse};
-    $opt{select_option}->{reuse} = $opt{reuse} if $opt{reuse};
-    
-    my $rows = $self->select(table => $table, id => $id,
-        primary_key => $primary_key, %$select_option)->all;
-    
-    croak "selected row count must be one or zero" . _subname
-      if @$rows > 1;
-    
-    my $row = $rows->[0];
-    my @opt = (table => $table);
-    push @opt, id => $id, primary_key => $primary_key if defined $id;
-    push @opt, %opt;
-    
-    if ($row) {
-        return $self->update($param, @opt);
-    }
-    else {
-        return $self->insert($param, @opt);
-    }
+    my ($self, $param, %opt) = @_;
+    croak "update_or_insert method need primary_key and id option "
+      unless defined $opt{id} && defined $opt{primary_key};
+    my $statement_opt = $opt{option} || {};
+    my $row = $self->select(%opt, %{$statement_opt->{select} || {}})->one;
+    return $row ? $self->update($param, %opt, %{$statement_opt->{update} || {}})
+                : $self->insert($param, %opt, %{$statement_opt->{insert} || {}});
 }
 
 sub update_timestamp {
@@ -3319,34 +3291,48 @@ Options is same as C<update> method.
 
 =head2 C<update_or_insert EXPERIMENTAL>
     
-    # Where
-    $dbi->update_or_insert(
-        {id => 1, title => 'Perl'},
-        table => 'book',
-        where => {id => 1},
-        select_option => {append => 'for update'}
-    );
-    
     # ID
     $dbi->update_or_insert(
         {title => 'Perl'},
         table => 'book',
         id => 1,
         primary_key => 'id',
-        select_option => {append => 'for update'}
+        option => {
+            select => {
+                 append => 'for update'
+            }
+        }
     );
-    
+
 Update or insert.
 
-In both examples, the following SQL is executed.
+C<update_or_insert> method execute C<select> method first to find row.
+If the row is exists, C<update> is executed.
+If not, C<insert> is executed.
 
-    # In case insert
-    insert into book (id, title) values (?, ?)
-    
-    # In case update
-    update book set (id = ?, title = ?) where book.id = ?
+C<OPTIONS>
 
-The following opitons are available adding to C<update> option.
+C<update_or_insert> method use all common option
+in C<select>, C<update>, C<delete>, and has the following new ones.
+
+=over 4
+
+=item C<option>
+
+    option => {
+        select => {
+            append => '...'
+        },
+        insert => {
+            prefix => '...'
+        },
+        update => {
+            filter => {}
+        }
+    }
+
+If you want to pass option to each method,
+you can use C<option> option.
 
 =over 4
 

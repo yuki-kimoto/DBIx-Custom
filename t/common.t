@@ -616,6 +616,7 @@ is($row->{$key2}, $row->{$key3});
 test 'update_or_insert';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
+$DB::single = 1;
 $dbi->update_or_insert(
     {$key2 => 2},
     table => $table1,
@@ -634,15 +635,14 @@ $dbi->update_or_insert(
 $rows = $dbi->select(id => 1, table => $table1, primary_key => $key1)->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 3}], "basic");
 
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$dbi->update_or_insert(
-    {$key1 => 1, $key2 => 2},
-    table => $table1,
-    where => {$key1 => 1}
-);
-$row = $dbi->select(id => 1, table => $table1, primary_key => $key1)->one;
-is_deeply($row, {$key1 => 1, $key2 => 2}, "basic");
+eval {
+    $dbi->update_or_insert(
+        {$key2 => 3},
+        table => $table1,
+    );
+};
+
+like($@, qr/primary_key/);
 
 test 'default_bind_filter';
 $dbi->execute("delete from $table1");
