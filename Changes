@@ -1,4 +1,7 @@
 0.1740
+    - insert method created_at and updated_at option can receive scalar reference
+    - update method updated_at option can receive scalar reference
+    - select column option [COLUMN => ALIAS] syntax is DEPRECATED!
     - added EXPERIMENTAL q method
     - execute method id option is DEPRECATED!
 0.1739

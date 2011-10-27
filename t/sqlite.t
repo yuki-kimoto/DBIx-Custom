@@ -58,15 +58,38 @@ $result = $dbi->execute('select * from table1;');
 $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
 
+
+test 'insert created_at and updated_at scalar reference';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
-$dbi->execute('create table table1 (key1 varchar, key2 varchar, primary key(key1));');
-$dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
-$dbi->update({key2 => 4}, table => 'table1',
-  where => {key1 => 1}, prefix => 'or replace');
-$result = $dbi->execute('select * from table1;');
-$rows   = $result->all;
-is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
+$dbi->execute('create table table1 (key1, key2, key3)');
+$dbi->now(\"datetime('now')");
+$dbi->insert({key1 => \"datetime('now')"}, created_at => 'key2', updated_at => 'key3', table => 'table1');
+$result = $dbi->select(table => 'table1');
+$row   = $result->one;
+is($row->{key1}, $row->{key2});
+is($row->{key1}, $row->{key3});
+
+test 'insert created_at and updated_at scalar reference';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute('create table table1 (key1, key2, key3)');
+$dbi->now(\"datetime('now')");
+$dbi->insert({key1 => \"datetime('now')"}, created_at => 'key2', updated_at => 'key3', table => 'table1');
+$result = $dbi->select(table => 'table1');
+$row   = $result->one;
+is($row->{key1}, $row->{key2});
+is($row->{key1}, $row->{key3});
+
+test 'update updated_at scalar reference';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute('create table table1 (key1, key2)');
+$dbi->now(\"datetime('now')");
+$dbi->insert({key1 => \"datetime('now')"}, updated_at => 'key2', table => 'table1');
+$result = $dbi->select(table => 'table1');
+$row   = $result->one;
+is($row->{key1}, $row->{key2});
 
 test 'DBIX_CUSTOM_DEBUG ok';
 {

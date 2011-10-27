@@ -631,7 +631,8 @@ sub insert {
     # Created time and updated time
     my @timestamp_cleanup;
     if (defined $opt{created_at} || defined $opt{updated_at}) {
-        my $now = $self->now->();
+        my $now = $self->now;
+        $now = $now->() if ref $now eq 'CODE';
         if (defined $opt{created_at}) {
             $param->{$opt{created_at}} = $now;
             push @timestamp_cleanup, $opt{created_at};
@@ -922,6 +923,8 @@ sub select {
                 $column = $self->column(%$column) if ref $column eq 'HASH';
             }
             elsif (ref $column eq 'ARRAY') {
+                warn "select column option [COLUMN => ALIAS] syntax is DEPRECATED!" .
+                  "use q method to quote the value";
                 if (@$column == 3 && $column->[1] eq 'as') {
                     warn "[COLUMN, as => ALIAS] is DEPRECATED! use [COLUMN => ALIAS]";
                     splice @$column, 1, 1;
@@ -1128,6 +1131,8 @@ sub update {
     # Created time and updated time
     my @timestamp_cleanup;
     if (defined $opt{updated_at}) {
+        my $now = $self->now;
+        $now = $now->() if ref $now eq 'CODE';
         $param->{$opt{updated_at}} = $self->now->();
         push @timestamp_cleanup, $opt{updated_at};
     }
@@ -3449,6 +3454,7 @@ L<DBIx::Custom>
     update_param_tag # will be removed at 2017/1/1
     
     # Options
+    select column option [COLUMN => ALIAS] syntax # will be removed 2017/1/1
     execute method id option # will be removed 2017/1/1
     update timestamp option # will be removed 2017/1/1
     insert timestamp option # will be removed 2017/1/1
