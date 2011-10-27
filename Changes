@@ -1,4 +1,5 @@
 0.1740
+    - added EXPERIMENTAL q method
     - execute method id option is DEPRECATED!
 0.1739
     - insert timestamp option is DEPRECATED!

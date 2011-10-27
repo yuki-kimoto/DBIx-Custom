@@ -131,7 +131,7 @@ sub assign_clause {
     
     my $wrap = $opts->{wrap} || {};
     my $safety = $self->{safety_character} || $self->safety_character;
-    my $qp = $self->_q('');
+    my $qp = $self->q('');
     my $q = substr($qp, 0, 1) || '';
     my $p = substr($qp, 1, 1) || '';
     
@@ -172,8 +172,8 @@ sub column {
     # Column clause
     my @column;
     $columns ||= [];
-    push @column, $self->_q($table) . "." . $self->_q($_) .
-      " as " . $self->_q("${table}${separator}$_")
+    push @column, $self->q($table) . "." . $self->q($_) .
+      " as " . $self->q("${table}${separator}$_")
       for @$columns;
     
     return join (', ', @column);
@@ -257,7 +257,7 @@ sub delete {
     # Delete statement
     my $sql = "delete ";
     $sql .= "$opt{prefix} " if defined $opt{prefix};
-    $sql .= "from " . $self->_q($opt{table}) . " $w->{clause} ";
+    $sql .= "from " . $self->q($opt{table}) . " $w->{clause} ";
     
     # Execute query
     $opt{statement} = 'delete';
@@ -661,7 +661,7 @@ sub insert {
     # Insert statement
     my $sql = "insert ";
     $sql .= "$opt{prefix} " if defined $opt{prefix};
-    $sql .= "into " . $self->_q($opt{table}) . " "
+    $sql .= "into " . $self->q($opt{table}) . " "
       . $self->values_clause($param, {wrap => $opt{wrap}}) . " ";
 
     # Remove id from parameter
@@ -814,8 +814,8 @@ sub mycolumn {
     # Create column clause
     my @column;
     $columns ||= [];
-    push @column, $self->_q($table) . "." . $self->_q($_) .
-      " as " . $self->_q($_)
+    push @column, $self->q($table) . "." . $self->q($_) .
+      " as " . $self->q($_)
       for @$columns;
     
     return join (', ', @column);
@@ -854,6 +854,29 @@ sub not_exists { DBIx::Custom::NotExists->singleton }
 sub order {
     my $self = shift;
     return DBIx::Custom::Order->new(dbi => $self, @_);
+}
+
+sub q {
+    my ($self, $value, $quotemeta) = @_;
+    
+    my $quote = $self->{reserved_word_quote}
+      || $self->{quote} || $self->quote || '';
+    return "$quote$value$quote"
+      if !$quotemeta && ($quote eq '`' || $quote eq '"');
+    
+    my $q = substr($quote, 0, 1) || '';
+    my $p;
+    if (defined $quote && length $quote > 1) {
+        $p = substr($quote, 1, 1);
+    }
+    else { $p = $q }
+    
+    if ($quotemeta) {
+        $q = quotemeta($q);
+        $p = quotemeta($p);
+    }
+    
+    return "$q$value$p";
 }
 
 sub register_filter {
@@ -904,7 +927,7 @@ sub select {
                     splice @$column, 1, 1;
                 }
                 
-                $column = join(' ', $column->[0], 'as', $self->_q($column->[1]));
+                $column = join(' ', $column->[0], 'as', $self->q($column->[1]));
             }
             unshift @$tables, @{$self->_search_tables($column)};
             $sql .= "$column, ";
@@ -918,11 +941,11 @@ sub select {
     if ($opt{relation}) {
         my $found = {};
         for my $table (@$tables) {
-            $sql .= $self->_q($table) . ', ' unless $found->{$table};
+            $sql .= $self->q($table) . ', ' unless $found->{$table};
             $found->{$table} = 1;
         }
     }
-    else { $sql .= $self->_q($tables->[-1] || '') . ' ' }
+    else { $sql .= $self->q($tables->[-1] || '') . ' ' }
     $sql =~ s/, $/ /;
     croak "select method table option must be specified " . _subname
       unless defined $tables->[-1];
@@ -1119,7 +1142,7 @@ sub update {
     # Update statement
     my $sql = "update ";
     $sql .= "$opt{prefix} " if defined $opt{prefix};
-    $sql .= $self->_q($opt{table}) . " set $assign_clause $w->{clause} ";
+    $sql .= $self->q($opt{table}) . " set $assign_clause $w->{clause} ";
     
     # Execute query
     $opt{statement} = 'update';
@@ -1187,7 +1210,7 @@ sub values_clause {
     
     # Create insert parameter tag
     my $safety = $self->{safety_character} || $self->safety_character;
-    my $qp = $self->_q('');
+    my $qp = $self->q('');
     my $q = substr($qp, 0, 1) || '';
     my $p = substr($qp, 1, 1) || '';
     
@@ -1531,29 +1554,6 @@ sub _quote {
     return $self->{reserved_word_quote} || $self->quote || '';
 }
 
-sub _q {
-    my ($self, $value, $quotemeta) = @_;
-    
-    my $quote = $self->{reserved_word_quote}
-      || $self->{quote} || $self->quote || '';
-    return "$quote$value$quote"
-      if !$quotemeta && ($quote eq '`' || $quote eq '"');
-    
-    my $q = substr($quote, 0, 1) || '';
-    my $p;
-    if (defined $quote && length $quote > 1) {
-        $p = substr($quote, 1, 1);
-    }
-    else { $p = $q }
-    
-    if ($quotemeta) {
-        $q = quotemeta($q);
-        $p = quotemeta($p);
-    }
-    
-    return "$q$value$p";
-}
-
 sub _remove_duplicate_table {
     my ($self, $tables, $main_table) = @_;
     
@@ -1577,7 +1577,7 @@ sub _search_tables {
     my $tables = [];
     my $safety_character = $self->safety_character;
     my $q = $self->_quote;
-    my $quoted_safety_character_re = $self->_q("?([$safety_character]+)", 1);
+    my $quoted_safety_character_re = $self->q("?([$safety_character]+)", 1);
     my $table_re = $q ? qr/(?:^|[^$safety_character])${quoted_safety_character_re}?\./
                       : qr/(?:^|[^$safety_character])([$safety_character]+)\./;
     while ($source =~ /$table_re/g) {
@@ -1617,8 +1617,8 @@ sub _where_clause_and_param {
                 }
                 
                 my $table_quote;
-                $table_quote = $self->_q($table) if defined $table;
-                my $column_quote = $self->_q($c);
+                $table_quote = $self->q($table) if defined $table;
+                my $column_quote = $self->q($c);
                 $column_quote = $table_quote . '.' . $column_quote
                   if defined $table_quote;
                 push @$clause, "$column_quote = :$column" for keys %$where;
@@ -2943,6 +2943,12 @@ This is used in C<param> of L<DBIx::Custom::Where> .
     my $order = $dbi->order;
 
 Create a new L<DBIx::Custom::Order> object.
+
+=head2 C<q EXPERIMENTAL>
+
+    my $quooted = $dbi->q("title");
+
+Quote string by value of C<quote>.
 
 =head2 C<register_filter>
 

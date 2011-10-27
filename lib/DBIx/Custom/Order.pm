@@ -14,7 +14,7 @@ sub prepend {
     for my $order (reverse @_) {
         if (ref $order eq 'ARRAY') {
             my $column = shift @$order;
-            $column = $self->dbi->_q($column) if defined $column;
+            $column = $self->dbi->q($column) if defined $column;
             my $derection = shift @$order;
             $order = $column;
             $order .= " $derection" if $derection;
