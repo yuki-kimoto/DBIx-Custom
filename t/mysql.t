@@ -32,6 +32,7 @@ my $dbname;
 my $row;
 my $rows;
 my $result;
+my $model;
 
 test 'connect';
 eval {
@@ -75,6 +76,34 @@ $dbi->update_or_insert(
     }
 );
 
+$row = $dbi->select(id => 1, table => 'table1', primary_key => 'key1')->one;
+is_deeply($row, {key1 => 1, key2 => 3}, "basic");
+
+$dbi->delete_all(table => 'table1');
+$model = $dbi->create_model(
+    table => 'table1',
+    primary_key => 'key1',
+);
+$model->update_or_insert(
+    {key2 => 2},
+    id => 1,
+    option => {
+        select => {append => 'for update'},
+        insert => {append => '    #'},
+        update => {append => '     #'}
+    }
+);
+$row = $dbi->select(id => 1, table => 'table1', primary_key => 'key1')->one;
+is_deeply($row, {key1 => 1, key2 => 2}, "basic");
+$model->update_or_insert(
+    {key2 => 3},
+    id => 1,
+    option => {
+        select => {append => 'for update'},
+        insert => {append => '    #'},
+        update => {append => '     #'}
+    }
+);
 $row = $dbi->select(id => 1, table => 'table1', primary_key => 'key1')->one;
 is_deeply($row, {key1 => 1, key2 => 3}, "basic");
 

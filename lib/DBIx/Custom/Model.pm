@@ -36,7 +36,7 @@ sub AUTOLOAD {
 }
 
 my @methods = qw/insert insert_at update update_at update_all
-  delete delete_at delete_all select select_at count update_or_insert/;
+  delete delete_at delete_all select select_at count/;
 for my $method (@methods) {
     
     my $code =
@@ -49,12 +49,8 @@ for my $method (@methods) {
     my @attrs = qw/table type primary_key bind_type/;
     my @insert_attrs = qw/created_at updated_at/;
     my @update_attrs = qw/updated_at/;
-    my @update_or_insert_attrs = qw/created_at updated_at/;
     my @select_attrs = qw/join/;
     if ($method eq 'insert') { push @attrs, @insert_attrs }
-    elsif ($method eq 'update_or_insert') {
-        push @attrs, @update_or_insert_attrs;
-    }
     elsif ($method eq 'update') { push @attrs, @update_attrs }
     elsif (index($method, 'select') != -1) { push @attrs, @select_attrs }
     
@@ -69,6 +65,20 @@ for my $method (@methods) {
     *{__PACKAGE__ . "::$method"} = eval $code;
     croak $code if $@;
 }
+
+sub update_or_insert {
+    my ($self, $param, %opt) = @_;
+    
+    croak "update_or_insert method need primary_key and id option "
+      unless (defined $opt{id} || defined $self->{id})
+          && (defined $opt{primary_key} || defined $self->{primary_key});
+    
+    my $statement_opt = $opt{option} || {};
+    my $row = $self->select(%opt, %{$statement_opt->{select} || {}})->one;
+    return $row ? $self->update($param, %opt, %{$statement_opt->{update} || {}})
+                : $self->insert($param, %opt, %{$statement_opt->{insert} || {}});
+}
+
 
 sub execute {
     my $self = shift;
