@@ -59,7 +59,7 @@ for my $method (@methods) {
     elsif (index($method, 'select') != -1) { push @attrs, @select_attrs }
     
     for my $attr (@attrs) {
-        $code .= "$attr => exists \$self->{$attr} ? \$self->{$attr} : \$self->$attr,";
+        $code .= "exists \$self->{$attr} ? ($attr => \$self->{$attr}) : (),";
     }
     
     $code .= qq/\@_);/ .
@@ -115,6 +115,13 @@ sub new {
         croak qq{"$attr" is invalid attribute name } . _subname
           unless $self->can($attr);
     }
+    
+    # Cache
+    for my $attr (qw/dbi table created_at updated_at bind_type join primary_key/) {
+        $self->$attr;
+        $self->{$attr} = undef unless exists $self->{$attr};
+    }
+    $self->columns;
     
     return $self;
 }
