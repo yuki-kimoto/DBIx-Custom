@@ -616,7 +616,6 @@ is($row->{$key2}, $row->{$key3});
 test 'update_or_insert';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
-$DB::single = 1;
 $dbi->update_or_insert(
     {$key2 => 2},
     table => $table1,
@@ -643,6 +642,17 @@ eval {
 };
 
 like($@, qr/primary_key/);
+
+test 'model update_or_insert';
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$model = $dbi->create_model(
+    table => $table1,
+    primary_key => $key1
+);
+$model->update_or_insert({$key2 => 2}, id => 1);
+$row = $model->select(id => 1)->one;
+is_deeply($row, {$key1 => 1, $key2 => 2}, "basic");
 
 test 'default_bind_filter';
 $dbi->execute("delete from $table1");
@@ -1605,12 +1615,6 @@ $result = $dbi->select(
 );
 $row = $result->all;
 is_deeply($row, [{$key1 => 1, $key2 => 2}]);
-
-$where = $dbi->where
-             ->clause("$key1 = :$key1 $key2 = :$key2")
-             ->param({$key1 => 1});
-eval{$where->to_string};
-like($@, qr/one column/);
 
 $where = $dbi->where
              ->clause(['or', ("$key1 = :$key1") x 3])

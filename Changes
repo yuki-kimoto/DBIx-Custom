@@ -1,3 +1,8 @@
+0.1742
+    - fixed update_or_insert method bug
+    - micro optimization
+0.1741
+    - added EXPERIMENTAL update_or_insert to DBIx::Custom::Model
 0.1740
     - EXPERIMENTAL update_or_insert need id and primary_key option
       and added option option

@@ -47,6 +47,7 @@ sub to_string {
     $self->{_query_builder} = $self->dbi->query_builder;
     $self->{_safety_character} = $self->dbi->safety_character;
     $self->{_quote} = $self->dbi->_quote;
+    $self->{_tag_parse} = $self->dbi->tag_parse;
     $self->_parse($clause, $where, $count, 'and');
 
         
@@ -105,22 +106,18 @@ sub _parse {
         my $pushed;
         
         # Column
-        my $columns = $self->{_query_builder}->build_query($clause)->{columns};
-        if (@$columns == 0) {
+        my $c = $self->{_safety_character};
+        
+        my $column;
+        if ($clause =~ /(\s|^)\{/ && $self->{_tag_parse}) {
+            my $columns = $self->dbi->query_builder->build_query($clause)->{columns};
+            $column = $columns->[0];
+        }
+        else { ($column) = $clause =~ /:([$c\.]+)/ }
+        unless (defined $column) {
             push @$where, $clause;
             $pushed = 1;
             return $pushed;
-        }
-        elsif (@$columns != 1) {
-            croak qq{Each part contains one column name: "$clause" (}
-                  . _subname . ")";
-        }
-        
-        # Remove quote
-        my $column = $columns->[0];
-        if (my $q = $self->{_quote}) {
-            $q = quotemeta($q);
-            $column =~ s/[$q]//g;
         }
         
         # Column count up
@@ -152,7 +149,6 @@ sub _parse {
     }
     return;
 }
-
 1;
 
 =head1 NAME

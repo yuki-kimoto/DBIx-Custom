@@ -36,34 +36,38 @@ sub AUTOLOAD {
 }
 
 my @methods = qw/insert insert_at update update_at update_all
-                 delete delete_at delete_all select select_at count/;
+  delete delete_at delete_all select select_at count update_or_insert/;
 for my $method (@methods) {
+    
+    my $code =
+         qq/sub {/ .
+         qq/my \$self = shift;/ .
+         qq/\$self->dbi->$method(/ .
+             qq/\@_ % 2 ? shift : (),/;
 
-    my $code = sub {
-        my $self = shift;
-        
-        unless ($self->{_attribute_cache}{$self}) {
-            $self->$_ for qw/table bind_type primary_key
-              type join created_at updated_at/;
-            $self->{_attribute_cache}{$self} = 1;
-        }
-
-        $self->dbi->$method(
-            @_ % 2 ? shift : (),
-            table => $self->{table},
-            exists $self->{type} ? (type => $self->{type}) : (),
-            exists $self->{created_at} && $method eq 'insert' ? (created_at => $self->{created_at}) : (),
-            exists $self->{updated_at} && ($method eq 'insert' || $method eq 'update') ? (updated_at => $self->{updated_at}) : (),
-            exists $self->{bind_type} ? (bind_type=> $self->{bind_type}) : (),
-            exists $self->{primary_key} ? (primary_key => $self->{primary_key}) : (),
-            exists $self->{join} && index($method, 'select') != -1 ? (join => $self->{join}) : (),
-            @_
-        )
-    };
+    
+    my @attrs = qw/table type primary_key bind_type/;
+    my @insert_attrs = qw/created_at updated_at/;
+    my @update_attrs = qw/updated_at/;
+    my @update_or_insert_attrs = qw/created_at updated_at/;
+    my @select_attrs = qw/join/;
+    if ($method eq 'insert') { push @attrs, @insert_attrs }
+    elsif ($method eq 'update_or_insert') {
+        push @attrs, @update_or_insert_attrs;
+    }
+    elsif ($method eq 'update') { push @attrs, @update_attrs }
+    elsif (index($method, 'select') != -1) { push @attrs, @select_attrs }
+    
+    for my $attr (@attrs) {
+        $code .= "$attr => exists \$self->{$attr} ? \$self->{$attr} : \$self->$attr,";
+    }
+    
+    $code .= qq/\@_);/ .
+         qq/}/;
     
     no strict 'refs';
-    my $class = __PACKAGE__;
-    *{"${class}::$method"} = $code;
+    *{__PACKAGE__ . "::$method"} = eval $code;
+    croak $code if $@;
 }
 
 sub execute {
@@ -214,28 +218,28 @@ Options is same as C<select> method's ones.
     $model->delete(...);
     
 Same as C<delete> of L<DBIx::Custom> except that
-you don't have to specify C<table> and C<primary_key> option.
+you don't have to specify options if you set attribute in model.
 
 =head2 C<delete_all>
 
     $model->delete_all(...);
     
 Same as C<delete_all> of L<DBIx::Custom> except that
-you don't have to specify C<table> and C<primary_key> option.
+you don't have to specify options if you set attribute in model.
 
 =head2 C<execute>
 
     $model->execute(...);
 
 Same as C<execute> of L<DBIx::Custom> except that
-you don't have to specify C<table> and C<primary_key> option.
+you don't have to specify options if you set attribute in model.
 
 =head2 C<insert>
 
     $model->insert(...);
     
 Same as C<insert> of L<DBIx::Custom> except that
-you don't have to specify C<table> and C<primary_key> option.
+you don't have to specify options if you set attribute in model.
 
 =head2 C<helper>
 
@@ -281,20 +285,27 @@ Create a L<DBIx::Custom::Model> object.
     $model->select(...);
     
 Same as C<select> of L<DBIx::Custom> except that
-you don't have to specify C<table>, C<primary_key> and C<jon> option.
+you don't have to specify options if you set attribute in model.
 
 =head2 C<update>
 
     $model->update(...);
     
 Same as C<update> of L<DBIx::Custom> except that
-you don't have to specify C<table> and C<primary_key> option.
+you don't have to specify options if you set attribute in model.
 
 =head2 C<update_all>
 
     $model->update_all(param => \%param);
     
 Same as C<update_all> of L<DBIx::Custom> except that
-you don't have to specify C<table> and C<primary_key> option.
+you don't have to specify options if you set attribute in model.
+
+=head2 C<update_or_insert EXPERIMENTAL>
+
+    $model->update_or_insert(...);
+    
+Same as C<update> of L<DBIx::Custom> except that
+you don't have to specify options if you set attribute in model.
 
 =cut

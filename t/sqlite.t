@@ -37,6 +37,7 @@ my $result;
 my $row;
 my $rows;
 my $binary;
+my $model;
 
 # Prepare table
 $dbi = DBIx::Custom->connect;
@@ -70,6 +71,17 @@ $row   = $result->one;
 is($row->{key1}, $row->{key2});
 is($row->{key1}, $row->{key3});
 
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute('create table table1 (key1, key2, key3)');
+$dbi->now(\"datetime('now')");
+$model = $dbi->create_model(created_at => 'key2', updated_at => 'key3', table => 'table1');
+$model->insert({key1 => \"datetime('now')"});
+$result = $dbi->select(table => 'table1');
+$row = $result->one;
+is($row->{key1}, $row->{key2});
+is($row->{key1}, $row->{key3});
+
 test 'insert created_at and updated_at scalar reference';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
@@ -87,6 +99,28 @@ eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2)');
 $dbi->now(\"datetime('now')");
 $dbi->insert({key1 => \"datetime('now')"}, updated_at => 'key2', table => 'table1');
+$result = $dbi->select(table => 'table1');
+$row   = $result->one;
+is($row->{key1}, $row->{key2});
+
+test 'update_or_insert created_at and updated_at';
+eval { $dbi->execute('drop table table1') };
+$dbi->execute('create table table1 (key1, key2, key3, key4)');
+$dbi->now(\"datetime('now')");
+$model = $dbi->create_model(created_at => 'key2', updated_at => 'key3', table => 'table1',
+primary_key => 'key4');
+$model->update_or_insert({key1 => \"datetime('now')"}, id => 1);
+$result = $model->select(table => 'table1', id => 1);
+$row = $result->one;
+is($row->{key1}, $row->{key2});
+is($row->{key1}, $row->{key3});
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute('drop table table1') };
+$dbi->execute('create table table1 (key1, key2)');
+$dbi->now(\"datetime('now')");
+$model = $dbi->create_model(updated_at => 'key2', table => 'table1');
+$model->insert({key1 => \"datetime('now')"});
 $result = $dbi->select(table => 'table1');
 $row   = $result->one;
 is($row->{key1}, $row->{key2});
