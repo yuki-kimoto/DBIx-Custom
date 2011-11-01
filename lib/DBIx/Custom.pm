@@ -264,7 +264,7 @@ sub delete {
     $self->execute($sql, $w->{param}, %opt);
 }
 
-sub delete_all { shift->delete(allow_delete_all => 1, @_) }
+sub delete_all { shift->delete(@_, allow_delete_all => 1) }
 
 sub DESTROY {}
 
@@ -1155,7 +1155,7 @@ sub update {
     $self->execute($sql, [$param, $w->{param}], %opt);
 }
 
-sub update_all { shift->update(allow_update_all => 1, @_) };
+sub update_all { shift->update(@_, allow_update_all => 1) };
 
 sub update_or_insert {
     my ($self, $param, %opt) = @_;
