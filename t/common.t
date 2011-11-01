@@ -1788,6 +1788,23 @@ $result = $dbi->execute("select * from $table1 $where", {$key1 => [0, 1]});
 $row = $result->all;
 is_deeply($row, [{$key1 => 1, $key2 => 2}]);
 
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => '00:00:00'});
+$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => '3'});
+$where = $dbi->where
+             ->clause(['and', "$key1 = :$key1", "$key2 = '00:00:00'"])
+             ->param({$key1 => 1});
+
+$result = $dbi->select(
+    table => $table1,
+    where => $where
+);
+$row = $result->all;
+is_deeply($row, [{$key1 => 1, $key2 => '00:00:00'}]);
+
 test 'register_tag_processor';
 $dbi = DBIx::Custom->connect;
 $dbi->register_tag_processor(

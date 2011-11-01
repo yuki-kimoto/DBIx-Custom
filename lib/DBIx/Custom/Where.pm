@@ -109,11 +109,17 @@ sub _parse {
         my $c = $self->{_safety_character};
         
         my $column;
-        if ($clause =~ /(\s|^)\{/ && $self->{_tag_parse}) {
+        if ($self->{_tag_parse} && $clause =~ /(\s|^)\{/) {
             my $columns = $self->dbi->query_builder->build_query($clause)->{columns};
             $column = $columns->[0];
         }
-        else { ($column) = $clause =~ /:([$c\.]+)/ }
+        else {
+            my $sql = $clause;
+            $sql =~ s/([0-9]):/$1\\:/g;
+            if ($sql =~ /[^\\]:([$c\.]+)/s || $sql =~ /^:([$c\.]+)/s) {
+                ($column) = $1;
+            }
+        }
         unless (defined $column) {
             push @$where, $clause;
             $pushed = 1;

@@ -1,4 +1,5 @@
 0.1742
+    - fixed where clause parsing bug when time(like 00:00:00) contain
     - fixed update_or_insert method bug
     - micro optimization
 0.1741
