@@ -2375,7 +2375,7 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert(table => $table1, param => {$key1 => 2, $key2 => 3});
+$dbi->insert({$key1 => 2, $key2 => 3}, table => $table1);
 $dbi->delete(
     table => $table1,
     where => [
@@ -2393,8 +2393,8 @@ eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->update(
+    {$key1 => 5},
     table => $table1,
-    param => {$key1 => 5},
     where => "$key1 = :$key1 and $key2 = :$key2",
     where_param => {$key1 => 1, $key2 => 2}
 );
@@ -2517,22 +2517,22 @@ eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
 $dbi->update(
+    {$key3 => 4},
     table => $table1,
     primary_key => [$key1, $key2],
     id => [1, 2],
-    param => {$key3 => 4}
 );
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 is($dbi->select(table => $table1)->one->{$key3}, 4);
 
 $dbi->delete_all(table => $table1);
-$dbi->insert(table => $table1, param => {$key1 => 0, $key2 => 2, $key3 => 3});
+$dbi->insert({$key1 => 0, $key2 => 2, $key3 => 3}, table => $table1);
 $dbi->update(
+    {$key3 => 4},
     table => $table1,
     primary_key => $key1,
     id => 0,
-    param => {$key3 => 4}
 );
 is($dbi->select(table => $table1)->one->{$key1}, 0);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
@@ -2559,8 +2559,8 @@ eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
 $dbi->model($table1)->update(
+    {$key3 => 4},
     id => [1, 2],
-    param => {$key3 => 4}
 );
 $result = $dbi->model($table1)->select;
 $row = $result->one;
@@ -2581,7 +2581,7 @@ $dbi->delete(
 );
 is_deeply($dbi->select(table => $table1)->all, []);
 
-$dbi->insert(table => $table1, param => {$key1 => 0, $key2 => 2, $key3 => 3});
+$dbi->insert({$key1 => 0, $key2 => 2, $key3 => 3}, table => $table1);
 $dbi->delete(
     table => $table1,
     primary_key => $key1,
@@ -2601,10 +2601,10 @@ $dbi->execute($create_table3);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
 $dbi->model($table1)->delete(id => [1, 2]);
 is_deeply($dbi->select(table => $table1)->all, []);
-$dbi->insert(table => $table2, param => {$key1 => 1, $key2 => 2, $key3 => 3});
+$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table2);
 $dbi->model($table1)->delete(id => [1, 2]);
 is_deeply($dbi->select(table => $table1)->all, []);
-$dbi->insert(table => $table3, param => {$key1 => 1, $key2 => 2, $key3 => 3});
+$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table3);
 $dbi->model($table3)->delete(id => [1, 2]);
 is_deeply($dbi->select(table => $table3)->all, []);
 
@@ -2625,7 +2625,7 @@ is($row->{$key2}, 2);
 is($row->{$key3}, 3);
 
 $dbi->delete_all(table => $table1);
-$dbi->insert(table => $table1, param => {$key1 => 0, $key2 => 2, $key3 => 3});
+$dbi->insert({$key1 => 0, $key2 => 2, $key3 => 3}, table => $table1);
 $result = $dbi->select(
     table => $table1,
     primary_key => $key1,
@@ -2669,7 +2669,7 @@ $dbi->execute($create_table1);
 $dbi->execute($create_table2);
 $dbi->setup_model;
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 3});
+$dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
 $model = $dbi->model($table1);
 $result = $model->select(
     column => [$model->column($table2)],
@@ -2705,7 +2705,7 @@ $model2 = $dbi->create_model(
 );
 $dbi->setup_model;
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 3});
+$dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
 $model = $dbi->model($table1);
 $result = $model->select(
     column => [
@@ -3043,24 +3043,24 @@ $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table
 $dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
 
 $source = "select * from $table1 where :${key1}{=} and :${key2}{=}";
-$result = $dbi->execute($source, param => {$key1 => 1, $key2 => 2});
+$result = $dbi->execute($source, {$key1 => 1, $key2 => 2});
 $rows = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}]);
 
 $source = "select * from $table1 where :${key1}{ = } and :${key2}{=}";
-$result = $dbi->execute($source, param => {$key1 => 1, $key2 => 2});
+$result = $dbi->execute($source, {$key1 => 1, $key2 => 2});
 $rows = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}]);
 
 $source = "select * from $table1 where :${key1}{<} and :${key2}{=}";
-$result = $dbi->execute($source, param => {$key1 => 5, $key2 => 2});
+$result = $dbi->execute($source, {$key1 => 5, $key2 => 2});
 $rows = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}]);
 
 $source = "select * from $table1 where :$table1.${key1}{=} and :$table1.${key2}{=}";
 $result = $dbi->execute(
     $source,
-    param => {"$table1.$key1" => 1, "$table1.$key2" => 1},
+    {"$table1.$key1" => 1, "$table1.$key2" => 1},
     filter => {"$table1.$key2" => sub { $_[0] * 2 }}
 );
 $rows = $result->all;
@@ -3372,7 +3372,7 @@ $dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert(table => $table1, param => {$key1 => 2, $key2 => 3});
+$dbi->insert({$key1 => 2, $key2 => 3}, table => $table1);
 $rows = $dbi->select(
     table => $table1,
     column => $key1,
@@ -3390,7 +3390,7 @@ $dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert(table => $table1, param => {$key1 => 2, $key2 => 3});
+$dbi->insert({$key1 => 2, $key2 => 3}, table => $table1);
 $rows = $dbi->select(
     table => $table1,
     column => $key1,
@@ -3477,7 +3477,7 @@ $dbi->create_model(
 );
 $dbi->setup_model;
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 3});
+$dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
 $model = $dbi->model($table1);
 $result = $model->select(
     column => [$model->mycolumn, $model->column($table2)],
@@ -3491,7 +3491,7 @@ test 'model method';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table2);
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 3});
+$dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
 $model = $dbi->create_model(
     table => $table2
 );
@@ -3502,7 +3502,7 @@ test 'model helper';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table2);
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 3});
+$dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
 $model = $dbi->create_model(
     table => $table2
 );
@@ -3522,7 +3522,7 @@ $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
 EOS
-$dbi->execute($sql, param => $param);
+$dbi->execute($sql, $param);
 $result = $dbi->execute("select * from $table1 order by $key1", table => $table1);
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
@@ -3542,7 +3542,7 @@ $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
 EOS
-$dbi->execute($sql, param => $param);
+$dbi->execute($sql, $param);
 $result = $dbi->execute("select * from $table1 order by $key1", table => $table1);
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 33, $key4 => 4, $key5 => 5},
@@ -3561,7 +3561,7 @@ $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
 EOS
-$dbi->execute($sql, param => $param);
+$dbi->execute($sql, $param);
 $result = $dbi->execute("select * from $table1 order by $key1", table => $table1);
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 33, $key4 => 4, $key5 => 5},
@@ -3584,7 +3584,7 @@ $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
 EOS
-$dbi->execute($sql, param => $param, table => $table1);
+$dbi->execute($sql, $param, table => $table1);
 $result = $dbi->execute("select * from $table1 order by $key1");
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
@@ -3597,7 +3597,7 @@ $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
 EOS
-$dbi->execute($sql, param => $param, table => $table1);
+$dbi->execute($sql, $param, table => $table1);
 $result = $dbi->execute("select * from $table1 order by $key1");
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
@@ -3639,7 +3639,7 @@ $dbi->execute($create_table2);
 $model = $dbi->model($table2);
 $model->insert({$key1 => 'a'});
 is_deeply($model->list->all, [{$key1 => 'a', $key3 => undef}], 'include all model');
-$dbi->insert(table => $table1, param => {$key1 => 1});
+$dbi->insert({$key1 => 1}, table => $table1);
 $model = $dbi->model($table1);
 is_deeply($model->list->all, [{$key1 => 1, $key2 => undef}], 'include all model');
 
@@ -3800,7 +3800,7 @@ $dbi->type_rule(
 );
 $result = $dbi->execute(
     "select * from $table1 where $key1 = :$key1 and $key2 = :$table1.$key2",
-    param => {$key1 => '2010-01-03', "$table1.$key2" => '2010-01-01 01:01:02'}
+    {$key1 => '2010-01-03', "$table1.$key2" => '2010-01-01 01:01:02'}
 );
 $row = $result->one;
 like($row->{$key1}, qr/^2010-01-03/);
@@ -3822,7 +3822,7 @@ $dbi->type_rule(
 );
 $result = $dbi->execute(
     "select * from $table1 where $key1 = :$key1 and $key2 = :$table1.$key2",
-    param => {$key1 => '2010-01-02', "$table1.$key2" => '2010-01-01 01:01:02'},
+    {$key1 => '2010-01-02', "$table1.$key2" => '2010-01-01 01:01:02'},
     table => $table1
 );
 $row = $result->one;
@@ -4200,10 +4200,10 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table2);
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 5});
+$dbi->insert({$key1 => 1, $key3 => 5}, table => $table2);
 eval { $dbi->execute("drop table $table3") };
 $dbi->execute("create table $table3 ($key3 int, $key4 int)");
-$dbi->insert(table => $table3, param => {$key3 => 5, $key4 => 4});
+$dbi->insert({$key3 => 5, $key4 => 4}, table => $table3);
 $rows = $dbi->select(
     table => $table1,
     column => "$table1.$key1 as ${table1}_$key1, $table2.$key1 as ${table2}_$key1, $key2, $key3",
@@ -4219,10 +4219,10 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table2);
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 5});
+$dbi->insert({$key1 => 1, $key3 => 5}, table => $table2);
 eval { $dbi->execute("drop table $table3") };
 $dbi->execute("create table $table3 ($key3 int, $key4 int)");
-$dbi->insert(table => $table3, param => {$key3 => 5, $key4 => 4});
+$dbi->insert({$key3 => 5, $key4 => 4}, table => $table3);
 $rows = $dbi->select(
     table => $table1,
     column => "$table1.$key1 as ${table1}_$key1, $table2.$key1 as ${table2}_$key1, $key2, $key3",
@@ -4273,7 +4273,7 @@ $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table2);
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 5});
+$dbi->insert({$key1 => 1, $key3 => 5}, table => $table2);
 $rows = $dbi->select(
     table => $table1,
     column => "${q}$table1$p.${q}$key1$p as ${q}${table1}_$key1$p, ${q}$table2$p.${q}$key1$p as ${q}${table2}_$key1$p, ${q}$key2$p, ${q}$key3$p",
@@ -4311,8 +4311,8 @@ eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
 $dbi->execute($create_table2);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 4});
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 5});
+$dbi->insert({$key1 => 1, $key3 => 4}, table => $table2);
+$dbi->insert({$key1 => 1, $key3 => 5}, table => $table2);
 $result = $dbi->select(
     table => $table1,
     join => [
@@ -4343,8 +4343,8 @@ eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
 $dbi->execute($create_table2);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 4});
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 5});
+$dbi->insert({$key1 => 1, $key3 => 4}, table => $table2);
+$dbi->insert({$key1 => 1, $key3 => 5}, table => $table2);
 $result = $dbi->select(
     table => $table1,
     column => [{$table2 => [$key3]}],
@@ -4363,8 +4363,8 @@ eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
 $dbi->execute($create_table2);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 4});
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 1});
+$dbi->insert({$key1 => 1, $key3 => 4}, table => $table2);
+$dbi->insert({$key1 => 1, $key3 => 1}, table => $table2);
 $result = $dbi->select(
     table => $table1,
     column => [{$table2 => [$key3]}],
@@ -4380,8 +4380,8 @@ eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
 $dbi->execute($create_table2);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 4});
-$dbi->insert(table => $table2, param => {$key1 => 1, $key3 => 1});
+$dbi->insert({$key1 => 1, $key3 => 4}, table => $table2);
+$dbi->insert({$key1 => 1, $key3 => 1}, table => $table2);
 $result = $dbi->select(
     table => $table1,
     column => [{$table2 => [$key3]}],
@@ -4400,7 +4400,7 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 3});
+$dbi->insert({$key1 => 1, $key2 => 3}, table => $table1);
 is($dbi->count(table => $table1), 2);
 is($dbi->count(table => $table1, where => {$key2 => 2}), 1);
 $model = $dbi->create_model(table => $table1);
