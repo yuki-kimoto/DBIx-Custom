@@ -207,7 +207,7 @@ Table name, this is passed to C<select> method.
     
 Database data type, this is used as type optioon of C<insert>, 
 C<update>, C<update_all>, C<delete>, C<delete_all>,
-C<select>, and C<execute> method
+and C<select> method
 
 =head2 C<updated_at EXPERIMENTAL>
 
@@ -242,13 +242,6 @@ you don't have to specify options if you set attribute in model.
     $model->delete_all(...);
     
 Same as C<delete_all> of L<DBIx::Custom> except that
-you don't have to specify options if you set attribute in model.
-
-=head2 C<execute>
-
-    $model->execute(...);
-
-Same as C<execute> of L<DBIx::Custom> except that
 you don't have to specify options if you set attribute in model.
 
 =head2 C<insert>
