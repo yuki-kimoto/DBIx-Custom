@@ -79,8 +79,8 @@ sub update_or_insert {
                 : $self->insert($param, %opt, %{$statement_opt->{insert} || {}});
 }
 
-
 sub execute {
+    warn "DBIx::Custom::Model execute method is DEPRECATED!";
     my $self = shift;
     return $self->dbi->execute(
         shift,

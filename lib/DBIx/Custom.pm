@@ -3462,6 +3462,7 @@ L<DBIx::Custom>
 L<DBIx::Custom::Model>
 
     # Attribute methods
+    execute # will be removed at 2017/1/1
     method # will be removed at 2017/1/1
     filter # will be removed at 2017/1/1
     name # will be removed at 2017/1/1

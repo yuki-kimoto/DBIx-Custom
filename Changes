@@ -1,4 +1,5 @@
 0.1743
+    - DBIx::Custom::Model execute method is DEPRECATED!
     - fixed bug that update_all can't receive parameter as first argument
     - fixed bug that delete_all can't receive parameter as first argument
     - fixed where clause parsing bug when time(like 00:00:00) contain
