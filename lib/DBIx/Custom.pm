@@ -1583,7 +1583,9 @@ sub _where_clause_and_param {
 
         if (ref $where eq 'HASH') {
             my $clause = ['and'];
+            my $column_join = '';
             for my $column (keys %$where) {
+                my $column_join .= $column_join;
                 my $table;
                 my $c;
                 if ($column =~ /(?:(.*?)\.)?(.*)/) {
@@ -1598,6 +1600,16 @@ sub _where_clause_and_param {
                   if defined $table_quote;
                 push @$clause, "$column_quote = :$column";
             }
+
+            # Check unsafety column
+            my $safety = $self->safety_character;
+            unless ($column_join =~ /^[$safety\.]+$/) {
+                for my $column (keys %$where) {
+                    croak qq{"$column" is not safety column name } . _subname
+                      unless $column =~ /^[$safety\.]+$/;
+                }
+            }
+            
             $obj = $self->where(clause => $clause, param => $where);
         }
         elsif (ref $where eq 'DBIx::Custom::Where') { $obj = $where }

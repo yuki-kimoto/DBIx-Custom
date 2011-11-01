@@ -28,14 +28,6 @@ sub new {
 sub to_string {
     my $self = shift;
     
-    # Check if column name is safety character;
-    my $safety = $self->dbi->safety_character;
-    if (ref $self->param eq 'HASH') {
-        for my $column (keys %{$self->param}) {
-            croak qq{"$column" is not safety column name (} . _subname . ")"
-              unless $column =~ /^[$safety\.]+$/;
-        }
-    }
     # Clause
     my $clause = $self->clause;
     $clause = ['and', $clause] unless ref $clause eq 'ARRAY';
@@ -49,15 +41,6 @@ sub to_string {
     $self->{_quote} = $self->dbi->_quote;
     $self->{_tag_parse} = $self->dbi->tag_parse;
     $self->_parse($clause, $where, $count, 'and');
-
-        
-    # Check safety
-    unless (join('', keys %$count) =~ /^[$self->{_safety_character}\.]+$/) {
-        for my $column (keys %$count) {
-            croak qq{"$column" is not safety column name (} . _subname . ")"
-              unless $column =~ /^[$self->{_safety_character}\.]+$/;
-        }
-    }
 
     # Stringify
     unshift @$where, 'where' if @$where;
