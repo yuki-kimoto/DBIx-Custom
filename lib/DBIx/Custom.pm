@@ -1581,10 +1581,8 @@ sub _where_clause_and_param {
     }
     elsif (ref $where) {
 
-        # Hash
         if (ref $where eq 'HASH') {
             my $clause = ['and'];
-            my $q = $self->_quote;
             for my $column (keys %$where) {
                 my $table;
                 my $c;
@@ -1598,22 +1596,13 @@ sub _where_clause_and_param {
                 my $column_quote = $self->q($c);
                 $column_quote = $table_quote . '.' . $column_quote
                   if defined $table_quote;
-                push @$clause, "$column_quote = :$column" for keys %$where;
+                push @$clause, "$column_quote = :$column";
             }
             $obj = $self->where(clause => $clause, param => $where);
         }
-        
-        # DBIx::Custom::Where object
-        elsif (ref $where eq 'DBIx::Custom::Where') {
-            $obj = $where;
-        }
-        
-        # Array
+        elsif (ref $where eq 'DBIx::Custom::Where') { $obj = $where }
         elsif (ref $where eq 'ARRAY') {
-            $obj = $self->where(
-                clause => $where->[0],
-                param  => $where->[1]
-            );
+            $obj = $self->where(clause => $where->[0], param => $where->[1]);
         }
         
         # Check where argument
@@ -1621,7 +1610,6 @@ sub _where_clause_and_param {
             . qq{or array reference, which contains where clause and parameter}
             . _subname
           unless ref $obj eq 'DBIx::Custom::Where';
-
 
         $w->{param} = keys %$where_param
                     ? $self->merge_param($where_param, $obj->param)
