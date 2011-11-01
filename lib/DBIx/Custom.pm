@@ -1585,7 +1585,7 @@ sub _where_clause_and_param {
             my $clause = ['and'];
             my $column_join = '';
             for my $column (keys %$where) {
-                my $column_join .= $column_join;
+                my $column_join .= $column;
                 my $table;
                 my $c;
                 if ($column =~ /(?:(.*?)\.)?(.*)/) {
