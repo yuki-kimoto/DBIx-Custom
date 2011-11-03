@@ -39,18 +39,6 @@ sub filter {
     return $self->{filter} ||= {};
 }
 
-sub filter_off {
-    my $self = shift;
-    $self->{filter_off} = 1;
-    return $self;
-}
-
-sub filter_on {
-    my $self = shift;
-    $self->{filter_off} = 0;
-    return $self;
-}
-
 sub fetch {
     my $self = shift;
     
@@ -289,6 +277,22 @@ sub type_rule2_on {
 }
 
 # DEPRECATED!
+sub filter_off {
+    warn "filter_off method is DEPRECATED!";
+    my $self = shift;
+    $self->{filter_off} = 1;
+    return $self;
+}
+
+# DEPRECATED!
+sub filter_on {
+    warn "filter_on method is DEPRECATED!";
+    my $self = shift;
+    $self->{filter_off} = 0;
+    return $self;
+}
+
+# DEPRECATED!
 sub end_filter {
     warn "end_filter method is DEPRECATED!";
     my $self = shift;
@@ -473,20 +477,6 @@ Fetch multiple rows and put them into array of array reference.
 Set filter for column.
 You can use subroutine or filter name as filter.
 This filter is executed after C<type_rule> filter.
-
-=head2 C<filter_off>
-
-    $result = $result->filter_off;
-
-Turn filtering by C<filter> method off.
-By default, filterin is on.
-
-=head2 C<filter_on>
-
-    $result = $resutl->filter_on;
-
-Turn filtering by C<filter> method on.
-By default, filterin is on.
 
 =head2 C<header>
 

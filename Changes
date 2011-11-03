@@ -1,3 +1,6 @@
+0.1745
+    - DBIx::Custom::Result filter_on method is DEPRECATED!
+    - DBIx::Custom::Result filter_off method is DEPRECATED!
 0.1744
     - id option work if id count is lower than primary key count.
     - removed EXPERIMETNAL status from update_or_insert method and
