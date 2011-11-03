@@ -74,9 +74,16 @@ sub update_or_insert {
           && (defined $opt{primary_key} || defined $self->{primary_key});
     
     my $statement_opt = $opt{option} || {};
-    my $row = $self->select(%opt, %{$statement_opt->{select} || {}})->one;
-    return $row ? $self->update($param, %opt, %{$statement_opt->{update} || {}})
-                : $self->insert($param, %opt, %{$statement_opt->{insert} || {}});
+    my $rows = $self->select(%opt, %{$statement_opt->{select} || {}})->all;
+    if (@$rows == 0) {
+        return $self->insert($param, %opt, %{$statement_opt->{insert} || {}});
+    }
+    elsif (@$rows == 1) {
+        return $self->update($param, %opt, %{$statement_opt->{update} || {}});
+    }
+    else {
+        croak "selected row must be one " . _subname;
+    }
 }
 
 sub execute {
@@ -311,7 +318,7 @@ you don't have to specify options if you set attribute in model.
 Same as C<update_all> of L<DBIx::Custom> except that
 you don't have to specify options if you set attribute in model.
 
-=head2 C<update_or_insert EXPERIMENTAL>
+=head2 C<update_or_insert>
 
     $model->update_or_insert(...);
     

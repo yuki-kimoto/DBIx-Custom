@@ -5,8 +5,6 @@ use FindBin;
 use lib "$FindBin::Bin/common";
 $ENV{DBIX_CUSTOM_TEST_RUN} = 1;
 
-
-
 use DBIx::Custom;
 {
     package DBIx::Custom;

@@ -651,6 +651,17 @@ eval {
 
 like($@, qr/primary_key/);
 
+eval {
+    $dbi->insert({$key1 => 1}, table => $table1);
+    $dbi->update_or_insert(
+        {$key2 => 3},
+        table => $table1,
+        primary_key => $key1,
+        id => 1
+    );
+};
+like($@, qr/one/);
+
 test 'model update_or_insert';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
@@ -661,6 +672,15 @@ $model = $dbi->create_model(
 $model->update_or_insert({$key2 => 2}, id => 1);
 $row = $model->select(id => 1)->one;
 is_deeply($row, {$key1 => 1, $key2 => 2}, "basic");
+
+eval {
+    $model->insert({$key1 => 1});
+    $model->update_or_insert(
+        {$key2 => 3},
+        id => 1
+    );
+};
+like($@, qr/one/);
 
 test 'default_bind_filter';
 $dbi->execute("delete from $table1");
@@ -1987,16 +2007,6 @@ is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 is($dbi->select(table => $table1)->one->{$key3}, 3);
 
-eval {
-    $dbi->insert_at(
-        {$key1 => 1, $key2 => 2, $key3 => 3},
-        table => $table1,
-        primary_key => [$key1, $key2],
-        where => {},
-    );
-};
-like($@, qr/must be/);
-
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
@@ -2089,43 +2099,6 @@ $row = $result->one;
 is($row->{$key1}, 1);
 is($row->{$key2}, 2);
 is($row->{$key3}, 3);
-
-eval {
-    $result = $dbi->select_at(
-        table => $table1,
-        primary_key => [$key1, $key2],
-        where => {},
-    );
-};
-like($@, qr/must be/);
-
-eval {
-    $result = $dbi->select_at(
-        table => $table1,
-        primary_key => [$key1, $key2],
-        where => [1],
-    );
-};
-like($@, qr/same/);
-
-eval {
-    $result = $dbi->update_at(
-        {$key1 => 1, $key2 => 2},
-        table => $table1,
-        primary_key => [$key1, $key2],
-        where => {},
-    );
-};
-like($@, qr/must be/);
-
-eval {
-    $result = $dbi->delete_at(
-        table => $table1,
-        primary_key => [$key1, $key2],
-        where => {},
-    );
-};
-like($@, qr/must be/);
 
 test 'model delete_at';
 $dbi = MyDBI6->connect;
@@ -2459,6 +2432,19 @@ $dbi->insert(
 
 is($dbi->select(table => $table1)->one->{$key1}, 0);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
+is($dbi->select(table => $table1)->one->{$key3}, 3);
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$dbi->insert(
+    {$key3 => 3},
+    primary_key => [$key1, $key2], 
+    table => $table1,
+    id => 1,
+);
+is($dbi->select(table => $table1)->one->{$key1}, 1);
+ok(!$dbi->select(table => $table1)->one->{$key2});
 is($dbi->select(table => $table1)->one->{$key3}, 3);
 
 $dbi = DBIx::Custom->connect;

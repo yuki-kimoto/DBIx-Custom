@@ -1,3 +1,10 @@
+0.1744
+    - id option work if id count is lower than primary key count.
+    - removed EXPERIMETNAL status from update_or_insert method and
+      DBIx::Custom::Model's update_or_insert method
+    - removed EXPERIMENTAL status from reuse option
+    - removed EXPERIMENTAL status from update_at option and created_at option
+    - removed EXPERIMETNAL status from now attribute
 0.1743
     - DBIx::Custom::Model execute method is DEPRECATED!
     - fixed bug that update_all can't receive parameter as first argument

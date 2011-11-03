@@ -145,9 +145,73 @@ sub _parse {
 DBIx::Custom::Where - Where clause
 
 =head1 SYNOPSYS
-
-    my $where = DBIx::Custom::Where->new;
-    my $string_where = "$where";
+    
+    # Create DBIx::Custom::Where object
+    my $where = $dbi->where;
+    
+    # Set clause and parameter
+    $where->clause(['and', ':title{like}', ':price{=}']);
+    
+    # Create where clause by to_string method
+    my $where_clause = $where->to_string;
+    
+    # Create where clause by stringify
+    my $where_clause = "$where";
+    
+    # Created where clause in the above way
+    where :title{=} and :price{like}
+    
+    # Only price condition
+    $where->clause(['and', ':title{like}', ':price{=}']);
+    $where->param({price => 1900});
+    my $where_clause = "$where";
+    
+    # Created where clause in the above way
+    where :price{=}
+    
+    # Only title condition
+    $where->clause(['and', ':title{like}', ':price{=}']);
+    $where->param({title => 'Perl'});
+    my $where_clause = "$where";
+    
+    # Created where clause in the above way
+    where :title{like}
+    
+    # Nothing
+    $where->clause(['and', ':title{like}', ':price{=}']);
+    $where->param({});
+    my $where_clause = "$where";
+    
+    # or condition
+    $where->clause(['or', ':title{like}', ':price{=}']);
+    
+    # More than one parameter
+    $where->clause(['and', ':price{>}', ':price{<}']);
+    $where->param({price => [1000, 2000]});
+    
+    # Only first condition
+    $where->clause(['and', ':price{>}', ':price{<}']);
+    $where->param({price => [1000, $dbi->not_exists]});
+    
+    # Only second condition
+    $where->clause(['and', ':price{>}', ':price{<}']);
+    $where->param({price => [$dbi->not_exists, 2000]});
+    
+    # More complex condition
+    $where->clause(
+        [
+            'and',
+            ':price{=}',
+            ['or', ':title{=}', ':title{=}', ':title{=}']
+        ]
+    );
+    my $where_clause = "$where";
+    
+    # Created where clause in the above way
+    where :price{=} and (:title{=} or :title{=} or :title{=})
+    
+    # Using Full-qualified column name
+    $where->clause(['and', ':book.title{like}', ':book.price{=}']);
 
 =head1 ATTRIBUTES
 
@@ -156,15 +220,15 @@ DBIx::Custom::Where - Where clause
     my $clause = $where->clause;
     $where = $where->clause(
         ['and',
-            'title = :title', 
-            ['or', 'date < :date', 'date > :date']
+            ':title{=}', 
+            ['or', ':date{<}', ':date{>}']
         ]
     );
 
 Where clause. Above one is expanded to the following SQL by to_string
 If all parameter names is exists.
 
-    "where ( title = :title and ( date < :date or date > :date ) )"
+    where title = :title and ( date < :date or date > :date )
 
 =head2 C<param>
 

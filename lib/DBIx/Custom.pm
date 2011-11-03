@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1743';
+our $VERSION = '0.1744';
 use 5.008001;
 
 use Carp 'croak';
@@ -674,15 +674,6 @@ sub insert {
     $self->execute($sql, $param, %opt);
 }
 
-sub _merge_id_to_param {
-    my ($self, $id, $primary_keys, $param) = @_;
-    
-    # Create parameter
-    $id = [$id] unless ref $id;
-    
-    return $param;
-}
-
 sub insert_timestamp {
     my $self = shift;
     
@@ -1162,9 +1153,17 @@ sub update_or_insert {
     croak "update_or_insert method need primary_key and id option "
       unless defined $opt{id} && defined $opt{primary_key};
     my $statement_opt = $opt{option} || {};
-    my $row = $self->select(%opt, %{$statement_opt->{select} || {}})->one;
-    return $row ? $self->update($param, %opt, %{$statement_opt->{update} || {}})
-                : $self->insert($param, %opt, %{$statement_opt->{insert} || {}});
+
+    my $rows = $self->select(%opt, %{$statement_opt->{select} || {}})->all;
+    if (@$rows == 0) {
+        return $self->insert($param, %opt, %{$statement_opt->{insert} || {}});
+    }
+    elsif (@$rows == 1) {
+        return $self->update($param, %opt, %{$statement_opt->{update} || {}});
+    }
+    else {
+        croak "selected row must be one " . _subname;
+    }
 }
 
 sub update_timestamp {
@@ -1355,7 +1354,7 @@ sub _id_to_param {
     
     # Check primary key
     croak "primary_key option " .
-          "must be specified with id option " . _subname
+          "must be specified when id option is used" . _subname
       unless defined $primary_keys;
     $primary_keys = [$primary_keys] unless ref $primary_keys eq 'ARRAY';
     
@@ -1363,13 +1362,7 @@ sub _id_to_param {
     my $param = {};
     if (defined $id) {
         $id = [$id] unless ref $id;
-        croak qq{"id" must be constant value or array reference}
-            . " (" . (caller 1)[3] . ")"
-          unless !ref $id || ref $id eq 'ARRAY';
-        croak qq{"id" must contain values same count as primary key}
-            . " (" . (caller 1)[3] . ")"
-          unless @$primary_keys eq @$id;
-        for(my $i = 0; $i < @$primary_keys; $i ++) {
+        for(my $i = 0; $i < @$id; $i++) {
            my $key = $primary_keys->[$i];
            $key = "$table." . $key if $table;
            $param->{$key} = $id->[$i];
@@ -1575,12 +1568,7 @@ sub _where_clause_and_param {
 
     my $obj;
     
-    if (ref $where eq 'ARRAY' && !ref $where->[0]) {
-        $w->{clause} = "where " . $where->[0];
-        $w->{param} = $where->[1];
-    }
-    elsif (ref $where) {
-
+    if (ref $where) {
         if (ref $where eq 'HASH') {
             my $clause = ['and'];
             my $column_join = '';
@@ -2160,12 +2148,12 @@ Filters, registered by C<register_filter> method.
 
 Get last successed SQL executed by C<execute> method.
 
-=head2 C<now EXPERIMENTAL>
+=head2 C<now>
 
     my $now = $dbi->now;
     $dbi = $dbi->now($now);
 
-Code reference which return time now, default to the following code reference.
+Code reference which return current time, default to the following code reference.
 
     sub {
         my ($sec, $min, $hour, $mday, $mon, $year) = localtime;
@@ -2174,7 +2162,10 @@ Code reference which return time now, default to the following code reference.
         return sprintf("%04d-%02d-%02d %02d:%02d:%02d");
     }
 
-This return the time like "2011-10-14 05:05:27".
+This return the time like C<2011-10-14 05:05:27>.
+
+This is used by C<insert> method's C<created_at> option and C<updated_at> option,
+and C<update> method's C<updated_at> option.
 
 =head2 C<models>
 
@@ -2652,7 +2643,7 @@ Table alias. Key is real table name, value is alias table name.
 If you set C<table_alias>, you can enable C<into1> and C<into2> type rule
 on alias table name.
 
-=item C<reuse EXPERIMENTAL>
+=item C<reuse>
     
     reuse => $hash_ref
 
@@ -2742,7 +2733,7 @@ and use the following new ones.
 
 =over 4
 
-=item C<created_at EXPERIMETNAL>
+=item C<created_at>
 
     created_at => 'created_datetime'
 
@@ -2786,7 +2777,7 @@ prefix before table name section
 
 Table name.
 
-=item C<updated_at EXPERIMENTAL>
+=item C<updated_at>
 
 This option is same as C<update> method C<updated_at> option.
 
@@ -2918,7 +2909,7 @@ This is used in C<param> of L<DBIx::Custom::Where> .
 
 Create a new L<DBIx::Custom::Order> object.
 
-=head2 C<q EXPERIMENTAL>
+=head2 C<q>
 
     my $quooted = $dbi->q("title");
 
@@ -3091,21 +3082,15 @@ Table name.
     
     # DBIx::Custom::Where object
     where => $dbi->where(
-        clause => ['and', 'author = :author', 'title like :title'],
+        clause => ['and', ':author{=}', ':title{like}'],
         param  => {author => 'Ken', title => '%Perl%'}
     );
     
-    # Array reference 1 (array reference, hash referenc). same as above
+    # Array reference, this is same as above
     where => [
-        ['and', 'author = :author', 'title like :title'],
+        ['and', ':author{=}', ':title{like}'],
         {author => 'Ken', title => '%Perl%'}
-    ];    
-    
-    # Array reference 2 (String, hash reference)
-    where => [
-        'title like :title',
-        {title => '%Perl%'}
-    ]
+    ];
     
     # String
     where => 'title is null'
@@ -3269,7 +3254,7 @@ is executed, the following SQL is executed.
 
     update book set price =  ? + 5;
 
-=item C<updated_at EXPERIMETNAL>
+=item C<updated_at>
 
     updated_at => 'updated_datetime'
 
@@ -3286,7 +3271,7 @@ C<now> attribute.
 Execute update statement for all rows.
 Options is same as C<update> method.
 
-=head2 C<update_or_insert EXPERIMENTAL>
+=head2 C<update_or_insert>
     
     # ID
     $dbi->update_or_insert(
