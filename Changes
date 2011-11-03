@@ -1,4 +1,6 @@
 0.1745
+    - show_datatype method return lower case string
+    - show_typename method return lower case string
     - DBIx::Custom::Result filter_on method is DEPRECATED!
     - DBIx::Custom::Result filter_off method is DEPRECATED!
 0.1744

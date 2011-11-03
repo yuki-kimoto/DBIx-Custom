@@ -1000,7 +1000,7 @@ sub show_datatype {
     
     for (my $i = 0; $i < @$columns; $i++) {
         my $column = $columns->[$i];
-        my $data_type = $data_types->[$i];
+        my $data_type = lc $data_types->[$i];
         print "$column: $data_type\n";
     }
 }
@@ -1013,7 +1013,7 @@ sub show_typename {
     $self->each_column(sub {
         my ($self, $table, $column, $infos) = @_;
         return unless $table eq $t;
-        my $typename = $infos->{TYPE_NAME};
+        my $typename = lc $infos->{TYPE_NAME};
         print "$column: $typename\n";
     });
     
