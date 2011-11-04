@@ -3024,6 +3024,28 @@ $dbi->insert({$key1 => 1, $key2 => 1}, table => $table1);
 eval {$dbi->execute("select * from $table1 where {= $key1}", {$key1 => 1})};
 ok($@);
 
+test 'DBIX_CUSTOM_TAG_PARSE environment variable';
+{
+    $ENV{DBIX_CUSTOM_TAG_PARSE} = 0;
+    $dbi = DBIx::Custom->connect;
+    eval { $dbi->execute("drop table $table1") };
+    $dbi->execute($create_table1);
+    $dbi->insert({$key1 => 1, $key2 => 1}, table => $table1);
+    eval {$dbi->execute("select * from $table1 where {= $key1}", {$key1 => 1})};
+    ok($@);
+    delete$ENV{DBIX_CUSTOM_TAG_PARSE};
+}
+
+{
+    $ENV{DBIX_CUSTOM_TAG_PARSE} = 0;
+    $dbi = DBIx::Custom->connect;
+    eval { $dbi->execute("drop table $table1") };
+    $dbi->execute($create_table1);
+    $dbi->insert({$key1 => 1, $key2 => 1}, table => $table1);
+    is($dbi->select(table => $table1)->one->{$key1}, 1);
+    delete$ENV{DBIX_CUSTOM_TAG_PARSE};
+}
+
 test 'last_sql';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -3133,6 +3155,35 @@ $rows = [
           {$key7 => 22, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 6, $key1 => undef},
       ]
     );
+}
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+{
+    $ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE} = 1;
+    $model = $dbi->create_model(table => $table1, primary_key => $key1);
+    eval {$model->execute("select * from $table1 where :${key1}{=}", id => 1)};
+    like($@, qr/primary_key/);
+    delete $ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE};
+}
+
+{
+    $ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE} = 1;
+    $model = $dbi->create_model(table => $table1, primary_key => $key1);
+    $model->insert({$key1 => 1});
+    $result = $model->execute("select * from $table1 where :${key1}{=}", id => 1,
+      table => $table1, primary_key => $key1);
+    is($result->one->{$key1}, 1);
+    delete $ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE};
+}
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+{
+    $model = $dbi->create_model(table => $table1, primary_key => $key1);
+    $model->insert({$key1 => 1});
+    eval {$result = $model->execute("select * from $table1 where :${key1}{=}", {}, id => 1)};
+    is($result->one->{$key1}, 1);
 }
 
 test 'id option more';

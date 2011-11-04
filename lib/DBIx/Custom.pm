@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1744';
+our $VERSION = '0.1745';
 use 5.008001;
 
 use Carp 'croak';
@@ -71,8 +71,7 @@ has [qw/connector dsn password quote user exclude_table user_table_info
     result_class  => 'DBIx::Custom::Result',
     safety_character => '\w',
     separator => '.',
-    stash => sub { {} },
-    tag_parse => 1;
+    stash => sub { {} };
 
 sub available_datatype {
     my $self = shift;
@@ -837,6 +836,9 @@ sub new {
         'insert_param' => \&DBIx::Custom::Tag::insert_param,
         'update_param' => \&DBIx::Custom::Tag::update_param
     };
+    
+    # DEPRECATED!
+    $self->{tag_parse} = 1;
     
     return $self;
 }
@@ -1704,6 +1706,18 @@ has default_dbi_option => sub {
     warn "default_dbi_option is DEPRECATED! use default_option instead";
     return shift->default_option;
 };
+
+# DEPRECATED
+sub tag_parse {
+   my $self = shift;
+   warn "tag_parse is DEPRECATED! use \$ENV{DBIX_CUSTOM_TAG_PARSE} " .
+         "environment variable";
+    if (@_) {
+        $self->{tag_parse} = $_[0];
+        return $self;
+    }
+    return $self->{tag_parse};
+}
 
 # DEPRECATED!
 sub method {
@@ -2612,6 +2626,18 @@ You can check SQL, column, or get statment handle.
     my $sth = $query->sth;
     my $columns = $query->columns;
     
+=item C<reuse>
+    
+    reuse => $hash_ref
+
+Reuse query object if the hash reference variable is set.
+    
+    my $queries = {};
+    $dbi->execute($sql, $param, reuse => $queries);
+
+This will improved performance when you want to execute same query repeatedly
+because generally creating query object is slow.
+
 =item C<primary_key>
 
     primary_key => 'id'
@@ -2642,18 +2668,6 @@ You must set C<table> option.
 Table alias. Key is real table name, value is alias table name.
 If you set C<table_alias>, you can enable C<into1> and C<into2> type rule
 on alias table name.
-
-=item C<reuse>
-    
-    reuse => $hash_ref
-
-Reuse query object if the hash reference variable is set.
-    
-    my $queries = {};
-    $dbi->execute($sql, $param, reuse => $queries);
-
-This will improved performance when you want to execute same query repeatedly
-because generally creating query object is slow.
 
 =item C<type_rule_off>
 
@@ -3392,6 +3406,7 @@ DEBUG output encoding. Default to UTF-8.
 L<DBIx::Custom>
 
     # Attribute methods
+    tag_parse # will be removed 2017/1/1
     default_dbi_option # will be removed 2017/1/1
     dbi_option # will be removed 2017/1/1
     data_source # will be removed at 2017/1/1
@@ -3464,6 +3479,8 @@ L<DBIx::Custom::Query>
     filter # will be removed at 2017/1/1
 
 L<DBIx::Custom::QueryBuilder>
+
+This module is DEPRECATED! # will be removed at 2017/1/1
     
     # Attribute methods
     tags # will be removed at 2017/1/1

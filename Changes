@@ -1,4 +1,8 @@
 0.1745
+    - DBIx::Custom::QueryBuilder class is DEPRECATED!
+    - added DBIX_CUSTOM_DISABLE_MODEL_EXECUTE environment variable
+    - added DBIX_CUSTOM_TAG_PARSE environment variable
+    - tag_parse attribute is DEPRECATED! 
     - show_datatype method return lower case string
     - show_typename method return lower case string
     - DBIx::Custom::Result filter_on method is DEPRECATED!

@@ -39,14 +39,14 @@ sub to_string {
     $self->{_query_builder} = $self->dbi->query_builder;
     $self->{_safety_character} = $self->dbi->safety_character;
     $self->{_quote} = $self->dbi->_quote;
-    $self->{_tag_parse} = $self->dbi->tag_parse;
+    $self->{_tag_parse} = $self->dbi->{tag_parse};
     $self->_parse($clause, $where, $count, 'and');
 
     # Stringify
     unshift @$where, 'where' if @$where;
     return join(' ', @$where);
 }
-
+    
 our %VALID_OPERATIONS = map { $_ => 1 } qw/and or/;
 sub _parse {
     my ($self, $clause, $where, $count, $op, $info) = @_;

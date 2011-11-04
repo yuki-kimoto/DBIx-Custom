@@ -87,17 +87,27 @@ sub update_or_insert {
 }
 
 sub execute {
-    warn "DBIx::Custom::Model execute method is DEPRECATED!";
     my $self = shift;
-    return $self->dbi->execute(
-        shift,
-        shift,
-        table => $self->table,
-        bind_type => $self->bind_type,
-        primary_key => $self->primary_key,
-        type => $self->type,
-        @_
-    );
+    
+    if ($ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE}) {
+        $self->dbi->execute(@_);
+    }
+    else {
+        warn "DBIx::Custom::Model execute method is DEPRECATED! " .
+             "use DBIx::Custom execute method. " .
+             "If you want to call DBIx::Custom execute method directory from model, " .
+             "set \$ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE} to 1 " .
+             "until DBIx::Custom::Model execute method is removed in the future." ;
+        return $self->dbi->execute(
+            shift,
+            shift,
+            table => $self->table,
+            bind_type => $self->bind_type,
+            primary_key => $self->primary_key,
+            type => $self->type,
+            @_
+        );    
+    }
 }
 
 sub DESTROY { }

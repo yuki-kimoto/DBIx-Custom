@@ -10,13 +10,16 @@ use DBIx::Custom::Util '_subname';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 push @DBIx::Custom::Where::CARP_NOT, __PACKAGE__;
 
-has 'dbi';
-
 sub build_query {
     my ($self, $sql) = @_;
     
     # Parse tag. tag is DEPRECATED!
-    if ($sql =~ /(\s|^)\{/ && $self->dbi->tag_parse) {
+    my $tag_parse;
+    $tag_parse = $ENV{DBIX_CUSTOM_TAG_PARSE}
+      if exists $ENV{DBIX_CUSTOM_TAG_PARSE};
+    $tag_parse = $self->dbi->{tag_parse} unless defined $tag_parse;
+    
+    if ($tag_parse && $sql =~ /(\s|^)\{/) {
         my $query = $self->_parse_tag($sql);
         my $tag_count = delete $query->{tag_count};
         warn qq/Tag system such as {? name} is DEPRECATED! / .
@@ -77,7 +80,10 @@ sub _parse_parameter {
     
     return $query;
 }
-    
+
+# DEPRECATED
+has 'dbi';
+
 # DEPRECATED!
 has tags => sub { {} };
 
@@ -286,33 +292,10 @@ sub register_tag_processor {
 
 =head1 NAME
 
-DBIx::Custom::QueryBuilder - Query builder
+DBIx::Custom::QueryBuilder - DEPRECATED!
 
-=head1 SYNOPSIS
-    
-    my $builder = DBIx::Custom::QueryBuilder->new;
-    my $query = $builder->build_query(
-        "select from table title = :title and author = :author"
-    );
+=head1 DESCRIPTION
 
-=head1 ATTRIBUTES
-
-=head2 C<dbi>
-
-    my $dbi = $builder->dbi;
-    $builder = $builder->dbi($dbi);
-
-L<DBIx::Custom> object.
-
-=head1 METHODS
-
-L<DBIx::Custom::QueryBuilder> inherits all methods from L<Object::Simple>
-and implements the following new ones.
-
-=head2 C<build_query>
-    
-    my $query = $builder->build_query($source);
-
-Create a new L<DBIx::Custom::Query> object from SQL source.
+This module functionality will be moved to DBIx::Custom
 
 =cut
