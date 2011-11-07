@@ -39,6 +39,121 @@ sub filter {
     return $self->{filter} ||= {};
 }
 
+sub _cache {
+    my $self = shift;
+    $self->{_type_map} = {};
+    $self->{_pos} = {};
+    $self->{_columns} = {};
+    for (my $i = 0; $i < @{$self->{sth}->{NAME}}; $i++) {
+        my $type = lc $self->{sth}{TYPE}[$i];
+        my $name = $self->{sth}{NAME}[$i];
+        $self->{_type_map}{$type} ||= [];
+        push @{$self->{_type_map}{$type}}, $name;
+        $self->{_pos}{$name} ||= [];
+        push @{$self->{_pos}{$name}}, $i;
+        $self->{_columns}{$name} = 1;
+    }
+    $self->{_cache} = 1;
+}
+
+=pod
+sub fetch {
+    my $self = shift;
+    
+    # Info
+    $self->_cache unless $self->{_cache};
+    
+    # Fetch
+    my @row = $self->{sth}->fetchrow_array;
+    return unless @row;
+    
+    # Type rule
+    if ((my $from = $self->type_rule->{from1}) && !$self->{type_rule_off} && !$self->{type_rule1_off}) {
+        for my $type (keys %$from) {
+            for my $column (@{$self->{_type_map}->{$type}}) {
+                $row[$_] = $from->{$type}->($row[$_])
+                  for @{$self->{_pos}{$column}};
+            }
+        }
+    }
+    if ((my $from = $self->type_rule->{from2}) && !$self->{type_rule_off} && !$self->{type_rule2_off}) {
+        for my $type (keys %$from) {
+            for my $column (@{$self->{_type_map}->{$type}}) {
+                $row[$_] = $from->{$type}->($row[$_])
+                  for @{$self->{_pos}{$column}};
+            }
+        }
+    }
+    
+    # Filter
+    if (($self->{filter} || $self->{default_filter}) && !$self->{filter_off}) {
+        for my $column (keys %{$self->{filter}}) {
+            $row[$_] = ($self->{filter}->{$column} || $self->{default_filter} || sub { shift })
+                ->($row[$_])
+              for @{$self->{_pos}{$column}};
+        }
+    }
+    if ($self->{end_filter} && !$self->{filter_off}) {
+         for my $column (keys %{$self->{end_filter}}) {
+             $row[$_] = $self->{end_filter}->{$column}->($row[$_])
+               for @{$self->{_pos}{$column}};
+         }
+    }
+
+    return \@row;
+}
+=cut
+
+sub fetch_hash {
+    my $self = shift;
+    
+    # Info
+    $self->_cache unless $self->{_cache};
+    
+    # Fetch
+    return unless my $row = $self->{sth}->fetchrow_hashref;
+    
+    # Type rule
+    if ($self->{type_rule}->{from1} &&
+      !$self->{type_rule_off} && !$self->{type_rule1_off})
+    {
+        my $from = $self->{type_rule}->{from1};
+        for my $type (keys %$from) {
+            $from->{$type} and $row->{$_} = $from->{$type}->($row->{$_})
+              for @{$self->{_type_map}->{$type}};
+        }
+    }
+    if ($self->{type_rule}->{from2} &&
+      !$self->{type_rule_off} && !$self->{type_rule2_off})
+    {
+        my $from = $self->{type_rule}->{from2};
+        for my $type (keys %{$self->{type_rule}->{from2}}) {
+            $from->{$type} and $row->{$_} = $from->{$type}->($row->{$_})
+              for @{$self->{_type_map}->{$type}};
+        }
+    }        
+    # Filter
+    if (($self->{filter} || $self->{default_filter}) &&
+      !$self->{filter_off})
+    {
+         my @columns = $self->{default_filter} ? keys %{$self->{_columns}}
+           : keys %{$self->{filter}};
+         
+         for my $column (@columns) {
+             next unless exists $row->{$column};
+             my $filter = exists $self->{filter}->{$column} ? $self->{filter}->{$column}
+               : $self->{default_filter};
+             $row->{$column} = $filter->($row->{$column}) if $filter;
+         }
+    }
+    if ($self->{end_filter} && !$self->{filter_off}) {
+         exists $self->{_columns}{$_} && $self->{end_filter}->{$_} and
+             $row->{$_} = $self->{end_filter}->{$_}->($row->{$_})
+           for keys %{$self->{end_filter}};
+    }
+    $row;
+}
+
 sub fetch {
     my $self = shift;
     
@@ -102,50 +217,6 @@ sub fetch_first {
     $self->sth->finish;
     
     return $row;
-}
-
-sub fetch_hash {
-    my $self = shift;
-    
-    # Info
-    my $columns = $self->{sth}->{NAME};
-    my $types = $self->{sth}->{TYPE};
-    
-    # Fetch
-    my $row = $self->{sth}->fetchrow_arrayref;
-    return unless $row;
-
-    # Filter
-    my $hash_row = {};
-    my $filter  = $self->filter;
-    my $end_filter = $self->{end_filter} || {};
-    my $type_rule1 = $self->type_rule->{from1} || {};
-    my $type_rule2 = $self->type_rule->{from2} || {};
-    for (my $i = 0; $i < @$columns; $i++) {
-        
-        # Column
-        my $column = $columns->[$i];
-        $hash_row->{$column} = $row->[$i];
-        
-        # Type rule
-        my $type_filter1 = $type_rule1->{lc($types->[$i])};
-        $hash_row->{$column} = $type_filter1->($hash_row->{$column})
-        if  !$self->{type_rule_off} && !$self->{type_rule1_off}
-         && $type_filter1;
-        my $type_filter2 = $type_rule2->{lc($types->[$i])};
-        $hash_row->{$column} = $type_filter2->($hash_row->{$column})
-        if  !$self->{type_rule_off} && !$self->{type_rule2_off}
-         && $type_filter2;
-        
-        # Filter
-        my $f = $filter->{$column} || $self->{default_filter};
-        $hash_row->{$column} = $f->($hash_row->{$column})
-          if $f && !$self->{filter_off};
-        $hash_row->{$column} = $end_filter->{$column}->($hash_row->{$column})
-          if $end_filter->{$column} && !$self->{filter_off};
-    }
-    
-    return $hash_row;
 }
 
 sub fetch_hash_all {

@@ -13,6 +13,8 @@ sub prepend {
     
     for my $order (reverse @_) {
         if (ref $order eq 'ARRAY') {
+            warn "prepend method receiving array reference is DEPRECATED! " .
+                 "use q method to quote column name.";
             my $column = shift @$order;
             $column = $self->dbi->q($column) if defined $column;
             my $derection = shift @$order;
@@ -82,18 +84,6 @@ and implements the following new ones.
     $order->prepend('title', 'author desc');
 
 Prepend order parts to C<orders>.
-
-You can pass array reference, which contain column name and direction.
-Column name is quoted properly
-    
-    # Column name and direction
-    $order->prepend(['book-title']);
-    $order->prepend([qw/book-title desc/]);
-
-This is expanded to the following way.
-
-    "book-title"
-    "book-title" desc
 
 =head2 C<to_string>
 

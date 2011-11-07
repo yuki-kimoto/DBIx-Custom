@@ -1,4 +1,8 @@
+0.1746
+    - micro optimization
 0.1745
+    - DBIx::Custom::Order prepend method receiving array reference
+      is DEPRECATED!
     - DBIx::Custom::QueryBuilder class is DEPRECATED!
     - added DBIX_CUSTOM_DISABLE_MODEL_EXECUTE environment variable
     - added DBIX_CUSTOM_TAG_PARSE environment variable
