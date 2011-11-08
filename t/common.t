@@ -1113,6 +1113,15 @@ $result->filter({$key1 => 'three_times'});
 $row = $result->one;
 is_deeply($row, {$key1 => 3, $key2 => 4}, "default_fetch_filter and filter");
 
+$dbi->default_fetch_filter('twice');
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+$result = $dbi->select(column => [$key1, $key1, $key2], table => $table1);
+$result->filter({$key1 => 'three_times'});
+$row = $result->fetch_first;
+is_deeply($row, [3, 3, 4], "default_fetch_filter and filter");
+
 test 'filters';
 $dbi = DBIx::Custom->new;
 
@@ -1453,6 +1462,16 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+$result = $dbi->select(column => [$key1, $key1, $key2], table => $table1);
+$result->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 });
+$result->end_filter($key1 => sub { $_[0] * 3 }, $key2 => sub { $_[0] * 5 });
+$row = $result->fetch_first;
+is_deeply($row, [6, 6, 40]);
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(table => $table1);
 $result->filter([$key1, $key2] => sub { $_[0] * 2 });
 $result->end_filter([[$key1, $key2] => sub { $_[0] * 3 }]);
@@ -1497,6 +1516,13 @@ $result->filter($key1 => undef);
 $result->end_filter($key1 => undef);
 $row = $result->one;
 is_deeply($row, {$key1 => 1, $key2 => 40}, 'apply_filter overwrite');
+
+$result = $dbi->select(column => [$key1, $key1, $key2], table => $table1);
+$result->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 });
+$result->filter($key1 => undef);
+$result->end_filter($key1 => undef);
+$row = $result->fetch;
+is_deeply($row, [1, 1, 40], 'apply_filter overwrite');
 
 test 'remove_end_filter and remove_filter';
 $dbi = DBIx::Custom->connect;
@@ -3279,15 +3305,48 @@ is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
 $result = $dbi->select(table => $table1);
 $result->dbi->filters({three_times => sub { $_[0] * 3}});
 $result->filter({$key1 => 'three_times'});
-
 $rows = $result->fetch_all;
 is_deeply($rows, [[3, 2], [9, 4]], "array");
+
+$result = $dbi->select(column => [$key1, $key1, $key2], table => $table1);
+$result->dbi->filters({three_times => sub { $_[0] * 3}});
+$result->filter({$key1 => 'three_times'});
+$rows = $result->fetch_all;
+is_deeply($rows, [[3, 3, 2], [9, 9, 4]], "array");
 
 $result = $dbi->select(table => $table1);
 $result->dbi->filters({three_times => sub { $_[0] * 3}});
 $result->filter({$key1 => 'three_times'});
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{$key1 => 3, $key2 => 2}, {$key1 => 9, $key2 => 4}], "hash");
+
+test 'DBIx::Custom::Result fetch_multi';
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+$dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
+$dbi->insert({$key1 => 5, $key2 => 6}, table => $table1);
+$result = $dbi->select(table => $table1);
+$rows = $result->fetch_multi(2);
+is_deeply($rows, [[1, 2], [3, 4]]);
+$rows = $result->fetch_multi(2);
+is_deeply($rows, [[5, 6]]);
+$rows = $result->fetch_multi(2);
+ok(!$rows);
+
+test 'DBIx::Custom::Result fetch_hash_multi';
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+$dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
+$dbi->insert({$key1 => 5, $key2 => 6}, table => $table1);
+$result = $dbi->select(table => $table1);
+$rows = $result->fetch_hash_multi(2);
+is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
+$rows = $result->fetch_hash_multi(2);
+is_deeply($rows, [{$key1 => 5, $key2 => 6}]);
+$rows = $result->fetch_hash_multi(2);
+ok(!$rows);
 
 test "query_builder";
 $datas = [
@@ -3905,6 +3964,10 @@ $dbi->type_rule(
 $dbi->insert({$key1 => '2010-02-02'}, table => $table1);
 $result = $dbi->select(table => $table1);
 like($result->fetch->[0], qr/^2010-03-03/);
+$result = $dbi->select(column => [$key1, $key1], table => $table1);
+$row = $result->fetch;
+like($row->[0], qr/^2010-03-03/);
+like($row->[1], qr/^2010-03-03/);
 
 test 'type_rule and filter order';
 $dbi = DBIx::Custom->connect;
