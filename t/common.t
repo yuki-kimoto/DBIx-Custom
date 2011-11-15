@@ -414,14 +414,6 @@ is_deeply($rows, [{$key1 => 1, $key2 => 2}], 'insert append');
 eval{$dbi->insert({';' => 1}, table => 'table')};
 like($@, qr/safety/);
 
-eval { $dbi->execute("drop table ${q}table$p") };
-$dbi->execute($create_table_reserved);
-$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
-$dbi->insert({select => 1}, table => 'table');
-$result = $dbi->execute("select * from ${q}table$p");
-$rows   = $result->all;
-is_deeply($rows, [{select => 2, update => undef}], "reserved word");
-
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -686,26 +678,22 @@ like($@, qr/safety/);
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->execute($create_table_reserved);
-$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
-$dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
 $dbi->insert({select => 1}, table => 'table');
 $dbi->update({update => 2}, table => 'table', where => {select => 1});
 $result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
-is_deeply($rows, [{select => 2, update => 6}], "reserved word");
+is_deeply($rows, [{select => 1, update => 2}], "reserved word");
 
 eval {$dbi->update_all({';' => 2}, table => 'table') };
 like($@, qr/safety/);
 
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->execute($create_table_reserved);
-$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
-$dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
 $dbi->insert({select => 1}, table => 'table');
 $dbi->update({update => 2}, table => 'table', where => {'table.select' => 1});
 $result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
-is_deeply($rows, [{select => 2, update => 6}], "reserved word");
+is_deeply($rows, [{select => 1, update => 2}], "reserved word");
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
@@ -889,7 +877,6 @@ $dbi = undef;
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->execute($create_table_reserved);
-$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert({select => 1}, table => 'table');
 $dbi->delete(table => 'table', where => {select => 1});
 $result = $dbi->execute("select * from ${q}table$p");
@@ -951,11 +938,10 @@ is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->execute($create_table_reserved);
-$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert({select => 1, update => 2}, table => 'table');
 $result = $dbi->select(table => 'table', where => {select => 1});
 $rows   = $result->all;
-is_deeply($rows, [{select => 2, update => 2}], "reserved word");
+is_deeply($rows, [{select => 1, update => 2}], "reserved word");
 
 test 'fetch filter';
 eval { $dbi->execute("drop table $table1") };
@@ -1118,55 +1104,40 @@ eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->register_filter(three_times => sub { $_[0] * 3});
-$dbi->apply_filter(
-    $table1, $key1 => {out => 'twice', in => 'three_times'}, 
-              $key2 => {out => 'three_times', in => 'twice'});
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->execute("select * from $table1");
 $row   = $result->fetch_hash_first;
-is_deeply($row, {$key1 => 2, $key2 => 6}, "insert");
+is_deeply($row, {$key1 => 1, $key2 => 2}, "insert");
 $result = $dbi->select(table => $table1);
 $row   = $result->one;
-is_deeply($row, {$key1 => 6, $key2 => 12}, "insert");
+is_deeply($row, {$key1 => 1, $key2 => 2}, "insert");
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->register_filter(three_times => sub { $_[0] * 3});
-$dbi->apply_filter(
-    $table1, $key1 => {out => 'twice', in => 'three_times'}, 
-              $key2 => {out => 'three_times', in => 'twice'});
-$dbi->apply_filter(
-    $table1, $key1 => {out => undef}
-); 
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->execute("select * from $table1");
 $row   = $result->one;
-is_deeply($row, {$key1 => 1, $key2 => 6}, "insert");
+is_deeply($row, {$key1 => 1, $key2 => 2}, "insert");
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->apply_filter(
-    $table1, $key1 => {out => 'twice', in => 'twice'}
-);
 $dbi->insert({$key1 => 1, $key2 => 2},table => $table1, filter => {$key1 => undef});
 $dbi->update({$key1 => 2}, table => $table1, where => {$key2 => 2});
 $result = $dbi->execute("select * from $table1");
 $row   = $result->one;
-is_deeply($row, {$key1 => 4, $key2 => 2}, "update");
+is_deeply($row, {$key1 => 2, $key2 => 2}, "update");
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->apply_filter(
-    $table1, $key1 => {out => 'twice', in => 'twice'}
-);
 $dbi->insert({$key1 => 2, $key2 => 2}, table => $table1, filter => {$key1=> undef});
-$dbi->delete(table => $table1, where => {$key1 => 1});
+$dbi->delete(table => $table1, where => {$key1 => 2});
 $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
 is_deeply($rows, [], "delete");
@@ -1175,41 +1146,32 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->apply_filter(
-    $table1, $key1 => {out => 'twice', in => 'twice'}
-);
 $dbi->insert({$key1 => 2, $key2 => 2}, table => $table1, filter => {$key1 => undef});
-$result = $dbi->select(table => $table1, where => {$key1 => 1});
+$result = $dbi->select(table => $table1, where => {$key1 => 2});
 $result->filter({$key2 => 'twice'});
 $rows   = $result->all;
-is_deeply($rows, [{$key1 => 4, $key2 => 4}], "select");
+is_deeply($rows, [{$key1 => 2, $key2 => 4}], "select");
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->apply_filter(
-    $table1, $key1 => {out => 'twice', in => 'twice'}
-);
 $dbi->insert({$key1 => 2, $key2 => 2}, table => $table1, filter => {$key1 => undef});
 $result = $dbi->execute("select * from $table1 where $key1 = :$key1 and $key2 = :$key2",
-                        {$key1 => 1, $key2 => 2},
+                        {$key1 => 2, $key2 => 2},
                         table => [$table1]);
 $rows   = $result->all;
-is_deeply($rows, [{$key1 => 4, $key2 => 2}], "execute");
+is_deeply($rows, [{$key1 => 2, $key2 => 2}], "execute");
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
-$dbi->apply_filter(
-    $table1, $key1 => {out => 'twice', in => 'twice'}
-);
 $dbi->insert({$key1 => 2, $key2 => 2}, table => $table1, filter => {$key1 => undef});
 $result = $dbi->execute("select * from $table1 where $key1 = :$key1 and $key2 = :$key2",
-                        {$key1 => 1, $key2 => 2}, table => $table1);
+                        {$key1 => 2, $key2 => 2}, table => $table1);
 $rows   = $result->all;
-is_deeply($rows, [{$key1 => 4, $key2 => 2}], "execute table tag");
+is_deeply($rows, [{$key1 => 2, $key2 => 2}], "execute table tag");
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -1218,34 +1180,28 @@ $dbi->execute($create_table1);
 $dbi->execute($create_table2);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
 $dbi->register_filter(three_times => sub { $_[0] * 3 });
-$dbi->apply_filter(
-    $table1, $key2 => {out => 'twice', in => 'twice'}
-);
-$dbi->apply_filter(
-    $table2, $key3 => {out => 'three_times', in => 'three_times'}
-);
 $dbi->insert({$key1 => 5, $key2 => 2}, table => $table1, filter => {$key2 => undef});
 $dbi->insert({$key1 => 5, $key3 => 6}, table => $table2, filter => {$key3 => undef});
 $result = $dbi->select(
      table => $table1,
      column => [$key2, $key3],
-     where => {"$table1.$key2" => 1, "$table2.$key3" => 2},
+     where => {"$table1.$key2" => 2, "$table2.$key3" => 6},
      join => "inner join $table2 on $table1.$key1 = $table2.$key1"
 );
 $result->filter({$key2 => 'twice'});
 $rows   = $result->all;
-is_deeply($rows, [{$key2 => 4, $key3 => 18}], "select : join");
+is_deeply($rows, [{$key2 => 4, $key3 => 6}], "select : join");
 
 $result = $dbi->select(
      table => $table1,
      column => [$key2, $key3, "$table2.$key3 as ${table2}_$key3"],
-     where => {$key2 => 1, $key3 => 2},
+     where => {$key2 => 2, $key3 => 6},
      join => "inner join $table2 on $table1.$key1 = $table2.$key1"
 );
 
 $result->filter({$key2 => 'twice'});
 $rows   = $result->all;
-is_deeply($rows, [{$key2 => 4, $key3 => 18, table2_key3 => 6}], "select : join : omit");
+is_deeply($rows, [{$key2 => 4, $key3 => 6, table2_key3 => 6}], "select : join : omit");
 
 test 'connect super';
 $dbi = DBIx::Custom->connect;
@@ -1653,41 +1609,22 @@ $dbi = DBIx::Custom->connect;
 eval {$dbi->select};
 like($@, qr/table/);
 
-test 'more tests';
-$dbi = DBIx::Custom->connect;
-eval{$dbi->apply_filter('table', 'column', [])};
-like($@, qr/apply_filter/);
-
-eval{$dbi->apply_filter('table', 'column', {outer => 2})};
-like($@, qr/apply_filter/);
-
-$dbi->apply_filter(
-
-);
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
-$dbi->apply_filter($table1, $key2, 
-                   {in => sub { $_[0] * 3 }, out => sub { $_[0] * 2 }});
-$rows = $dbi->select(table => $table1, where => {$key2 => 1})->all;
-is_deeply($rows, [{$key1 => 1, $key2 => 6}]);
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
-$dbi->apply_filter($table1, $key2, {});
 $rows = $dbi->select(table => $table1, where => {$key2 => 2})->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
 
 $dbi = DBIx::Custom->connect;
-eval {$dbi->apply_filter($table1, $key2, {out => 'no'})};
-like($@, qr/not registered/);
-eval {$dbi->apply_filter($table1, $key2, {in => 'no'})};
-like($@, qr/not registered/);
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+$dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
+$rows = $dbi->select(table => $table1, where => {$key2 => 2})->all;
+is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
+
 $dbi->helper({one => sub { 1 }});
 is($dbi->one, 1);
 

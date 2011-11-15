@@ -143,7 +143,6 @@ $dbi = DBIx::Custom->connect;
 $dbi->quote('"');
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->execute($create_table_quote);
-$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert({select => 1}, table => 'table');
 $dbi->delete(table => 'table', where => {select => 1});
 $result = $dbi->execute("select * from ${q}table$p");
@@ -276,9 +275,6 @@ eval { $dbi->execute('drop table table2') };
 eval { $dbi->execute('drop table table3') };
 $dbi->execute('create table table2 (id, name, table3_id)');
 $dbi->execute('create table table3 (id, name)');
-$dbi->apply_filter('table3',
-  name => {in => sub { uc $_[0] } }
-);
 
 $dbi->insert({id => 1, name => 'a', table3_id => 2}, table => 'table2');
 $dbi->insert({id => 2, name => 'b'}, table => 'table3');
@@ -288,34 +284,32 @@ $result = $dbi->select(
     join => "inner join table3 on table2.table3_id = table3.id",
     column => ['table3.name as table3__name']
 );
-is($result->fetch_first->[0], 'B');
+is($result->fetch_first->[0], 'b');
 
 $result = $dbi->select(
     table => 'table2',
     join => "inner join table3 on table2.table3_id = table3.id",
     column => ['table3.name as table3__name']
 );
-is($result->fetch_first->[0], 'B');
+is($result->fetch_first->[0], 'b');
 
 $result = $dbi->select(
     table => 'table2',
     join => "inner join table3 on table2.table3_id = table3.id",
     column => ['table3.name as "table3.name"']
 );
-is($result->fetch_first->[0], 'B');
+is($result->fetch_first->[0], 'b');
 
 test 'quote';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->quote('"');
 $dbi->execute($create_table_quote);
-$dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
-$dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
 $dbi->insert({select => 1}, table => 'table');
 $dbi->update({update => 2}, table => 'table', where => {'table.select' => 1});
 $result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
-is_deeply($rows, [{select => 2, update => 6}]);
+is_deeply($rows, [{select => 1, update => 2}]);
 
 test 'join function';
 $dbi = DBIx::Custom->connect;

@@ -264,17 +264,6 @@ sub create_model {
     weaken $model->{dbi};
     $model->table($model_table) unless $model->table;
     
-    # Apply filter(DEPRECATED logic)
-    if ($model->{filter}) {
-        my $filter = ref $model->filter eq 'HASH'
-                   ? [%{$model->filter}]
-                   : $model->filter;
-        $filter ||= [];
-        warn "DBIx::Custom::Model filter method is DEPRECATED!"
-          if @$filter;
-        $self->_apply_filter($model->table, @$filter);
-    }
-    
     # Set model
     $self->model($model->table, $model);
     
@@ -1520,14 +1509,6 @@ sub _apply_filter {
 sub create_query {
     warn "create_query is DEPRECATED! use query option of each method";
     shift->_create_query(@_);
-}
-
-# DEPRECATED!
-sub apply_filter {
-    my $self = shift;
-    
-    warn "apply_filter is DEPRECATED!";
-    return $self->_apply_filter(@_);
 }
 
 1;
@@ -2963,7 +2944,6 @@ L<DBIx::Custom>
     apply_filter # will be removed at 2017/1/1
     
     # Options
-    select column option [COLUMN => ALIAS] syntax # will be removed 2017/1/1
     execute method id option # will be removed 2017/1/1
     
 =head1 BACKWARDS COMPATIBILITY POLICY
