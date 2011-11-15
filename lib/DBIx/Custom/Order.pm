@@ -12,15 +12,6 @@ sub prepend {
     my $self = shift;
     
     for my $order (reverse @_) {
-        if (ref $order eq 'ARRAY') {
-            warn "prepend method receiving array reference is DEPRECATED! " .
-                 "use q method to quote column name.";
-            my $column = shift @$order;
-            $column = $self->dbi->q($column) if defined $column;
-            my $derection = shift @$order;
-            $order = $column;
-            $order .= " $derection" if $derection;
-        }
         unshift @{$self->orders}, $order;
     }
     

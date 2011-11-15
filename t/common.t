@@ -2929,7 +2929,7 @@ is_deeply($result->all, [{$key1 => 2, $key2 => 4}, {$key1 => 2, $key2 => 2},
   {$key1 => 1, $key2 => 3}, {$key1 => 1, $key2 => 1}]);
 
 $order = $dbi->order;
-$order->prepend(["$table1-$key1"], ["$table1-$key2", 'desc']);
+$order->prepend($dbi->q("$table1-$key1"), $dbi->q("$table1-$key2") . ' desc');
 $result = $dbi->select(table => $table1,
   column => [[$key1 => "$table1-$key1"], [$key2 => "$table1-$key2"]],
   append => $order);

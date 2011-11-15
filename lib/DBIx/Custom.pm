@@ -3210,16 +3210,6 @@ L<DBIx::Custom::Result>
     remove_filter # will be removed at 2017/1/1
     default_filter # will be removed at 2017/1/1
 
-L<DBIx::Custom::Tag>
-
-    This module is DEPRECATED! # will be removed at 2017/1/1
-
-L<DBIx::Custom::Order>
-
-    # Other
-    prepend method array reference receiving
-      $order->prepend(['book', 'desc']); # will be removed 2017/1/1
-
 =head1 BACKWARDS COMPATIBILITY POLICY
 
 If a functionality is DEPRECATED, you can know it by DEPRECATED warnings
