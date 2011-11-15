@@ -356,7 +356,7 @@ sub execute {
     }
     
     # Append
-    $sql .= $opt{append} if defined $opt{append} && !ref $sql;
+    $sql .= " $opt{append}" if defined $opt{append};
     
     # Query
     my $query;
@@ -370,7 +370,10 @@ sub execute {
     $self->{last_sql} = $query->{sql};
 
     # Return query
-    return $query if $opt{query};
+    if ($opt{query}) {
+      delete $param->{$_} for (@cleanup, @{$opt{cleanup} || []});
+      return $query;
+    }
     
     # Tables
     unshift @$tables, @{$query->{tables} || []};
@@ -390,7 +393,7 @@ sub execute {
              $statement eq 'delete' || $statement eq 'select';
            next if exists $param->{$key};
            $param->{$key} = $opt{id}->[$i];
-           push @cleanup, $key;1
+           push @cleanup, $key;
         }
     }
     
@@ -532,34 +535,34 @@ sub insert {
     $param ||= {};
 
     # Created time and updated time
-    my @timestamp_cleanup;
+    my @cleanup;
     if (defined $opt{created_at} || defined $opt{updated_at}) {
         my $now = $self->now;
         $now = $now->() if ref $now eq 'CODE';
         if (defined $opt{created_at}) {
             $param->{$opt{created_at}} = $now;
-            push @timestamp_cleanup, $opt{created_at};
+            push @cleanup, $opt{created_at};
         }
         if (defined $opt{updated_at}) {
             $param->{$opt{updated_at}} = $now;
-            push @timestamp_cleanup, $opt{updated_at};
+            push @cleanup, $opt{updated_at};
         }
     }
     
     # Merge id to parameter
-    my @cleanup;
     my $id_param = {};
     if (defined $opt{id}) {
         croak "insert id option must be specified with primary_key option"
           unless $opt{primary_key};
         $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key};
         $opt{id} = [$opt{id}] unless ref $opt{id};
-        for (my $i = 0; $i < @{$opt{primary_key}}; $i++) {
+        for (my $i = 0; $i < @{$opt{id}}; $i++) {
            my $key = $opt{primary_key}->[$i];
            next if exists $param->{$key};
            $param->{$key} = $opt{id}->[$i];
            push @cleanup, $key;
         }
+        delete $opt{id};
     }
     
     # Insert statement
@@ -567,13 +570,10 @@ sub insert {
     $sql .= "$opt{prefix} " if defined $opt{prefix};
     $sql .= "into " . $self->q($opt{table}) . " "
       . $self->values_clause($param, {wrap => $opt{wrap}}) . " ";
-
-    # Remove id from parameter
-    delete $param->{$_} for @cleanup;
     
     # Execute query
     $opt{statement} = 'insert';
-    $opt{cleanup} = \@timestamp_cleanup;
+    $opt{cleanup} = \@cleanup;
     $self->execute($sql, $param, %opt);
 }
 
@@ -754,10 +754,7 @@ sub select {
     my ($self, %opt) = @_;
 
     # Options
-    my $tables = ref $opt{table} eq 'ARRAY' ? $opt{table}
-               : defined $opt{table} ? [$opt{table}]
-               : [];
-    $opt{table} = $tables;
+    my $tables = [$opt{table}];
     my $param = delete $opt{param} || {};
     
     # Select statement
@@ -780,10 +777,10 @@ sub select {
     else { $sql .= '* ' }
     
     # Table
-    $sql .= 'from ' . $self->q($tables->[-1] || '') . ' ';
-    $sql =~ s/, $/ /;
     croak "select method table option must be specified " . _subname
       unless defined $tables->[-1];
+    $sql .= 'from ' . $self->q($tables->[-1] || '') . ' ';
+    $sql =~ s/, $/ /;
 
     # Add tables in parameter
     unshift @$tables,
@@ -940,12 +937,12 @@ sub update {
       if !$opt{where} && !defined $opt{id} && !$opt{allow_update_all};
     
     # Created time and updated time
-    my @timestamp_cleanup;
+    my @cleanup;
     if (defined $opt{updated_at}) {
         my $now = $self->now;
         $now = $now->() if ref $now eq 'CODE';
         $param->{$opt{updated_at}} = $self->now->();
-        push @timestamp_cleanup, $opt{updated_at};
+        push @cleanup, $opt{updated_at};
     }
 
     # Assign clause
@@ -962,7 +959,7 @@ sub update {
     
     # Execute query
     $opt{statement} = 'update';
-    $opt{cleanup} = \@timestamp_cleanup;
+    $opt{cleanup} = \@cleanup;
     $self->execute($sql, [$param, $w->{param}], %opt);
 }
 

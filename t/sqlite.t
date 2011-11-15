@@ -212,28 +212,9 @@ $result = $dbi->select(table => 'table1');
 eval {$result->fetch_hash_multi};
 like($@, qr/Row count must be specified/, "Not specified row count");
 
-
-test 'type option'; # DEPRECATED!
-$dbi = DBIx::Custom->connect(
-    dsn => 'dbi:SQLite:dbname=:memory:',
-    option => {
-        $DBD::SQLite::VERSION > 1.26 ? (sqlite_unicode => 1) : (unicode => 1)
-    }
-);
-$binary = pack("I3", 1, 2, 3);
-eval { $dbi->execute('drop table table1') };
-$dbi->execute('create table table1(key1, key2)');
-$dbi->insert({key1 => $binary, key2 => 'あ'}, table => 'table1', type => [key1 => DBI::SQL_BLOB]);
-$result = $dbi->select(table => 'table1');
-$row   = $result->one;
-is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
-$result = $dbi->execute('select length(key1) as key1_length from table1');
-$row = $result->one;
-is($row->{key1_length}, length $binary);
-
 test 'bind_type option';
 $binary = pack("I3", 1, 2, 3);
-eval { $dbi->execute('drop table table1') };
+$dbi = DBIx::Custom->connect(option => {sqlite_unicode => 1});
 $dbi->execute('create table table1(key1, key2)');
 $dbi->insert({key1 => $binary, key2 => 'あ'}, table => 'table1', bind_type => [key1 => DBI::SQL_BLOB]);
 $result = $dbi->select(table => 'table1');
