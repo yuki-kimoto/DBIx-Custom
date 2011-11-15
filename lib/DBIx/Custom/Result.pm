@@ -82,14 +82,6 @@ sub fetch {
                for @{$self->{_pos}{$column} || []};
          }
     }
-    if ($self->{end_filter} && !$self->{filter_off}) {
-         for my $column (keys %{$self->{end_filter}}) {
-             next unless $self->{end_filter}->{$column};
-             $row[$_] = $self->{end_filter}->{$column}->($row[$_])
-               for @{$self->{_pos}{$column} || []};
-         }
-    }
-
     return \@row;
 }
 
@@ -134,11 +126,6 @@ sub fetch_hash {
                : $self->{default_filter};
              $row->{$column} = $filter->($row->{$column}) if $filter;
          }
-    }
-    if ($self->{end_filter} && !$self->{filter_off}) {
-         exists $self->{_columns}{$_} && $self->{end_filter}->{$_} and
-             $row->{$_} = $self->{end_filter}->{$_}->($row->{$_})
-           for keys %{$self->{end_filter}};
     }
     $row;
 }
@@ -338,41 +325,6 @@ sub filter_on {
     return $self;
 }
 
-# DEPRECATED!
-sub end_filter {
-    warn "end_filter method is DEPRECATED!";
-    my $self = shift;
-    if (@_) {
-        my $end_filter = {};
-        if (ref $_[0] eq 'HASH') { $end_filter = $_[0] }
-        else { 
-            $end_filter = _array_to_hash(
-                @_ > 1 ? [@_] : $_[0]
-            );
-        }
-        for my $column (keys %$end_filter) {
-            my $fname = $end_filter->{$column};
-            if  (exists $end_filter->{$column}
-              && defined $fname
-              && ref $fname ne 'CODE') 
-            {
-              croak qq{Filter "$fname" is not registered" } . _subname
-                unless exists $self->dbi->filters->{$fname};
-              $end_filter->{$column} = $self->dbi->filters->{$fname};
-            }
-        }
-        $self->{end_filter} = {%{$self->end_filter}, %$end_filter};
-        return $self;
-    }
-    return $self->{end_filter} ||= {};
-}
-# DEPRECATED!
-sub remove_end_filter {
-    warn "remove_end_filter is DEPRECATED!";
-    my $self = shift;
-    $self->{end_filter} = {};
-    return $self;
-}
 # DEPRECATED!
 sub remove_filter {
     warn "remove_filter is DEPRECATED!";

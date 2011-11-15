@@ -1340,16 +1340,15 @@ $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 
-test 'end_filter';
+test 'filter';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(table => $table1);
 $result->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 });
-$result->end_filter($key1 => sub { $_[0] * 3 }, $key2 => sub { $_[0] * 5 });
 $row = $result->fetch_first;
-is_deeply($row, [6, 40]);
+is_deeply($row, [2, 8]);
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -1357,9 +1356,8 @@ $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(column => [$key1, $key1, $key2], table => $table1);
 $result->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 });
-$result->end_filter($key1 => sub { $_[0] * 3 }, $key2 => sub { $_[0] * 5 });
 $row = $result->fetch_first;
-is_deeply($row, [6, 6, 40]);
+is_deeply($row, [2, 2, 8]);
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -1367,9 +1365,8 @@ $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(table => $table1);
 $result->filter([$key1, $key2] => sub { $_[0] * 2 });
-$result->end_filter([[$key1, $key2] => sub { $_[0] * 3 }]);
 $row = $result->fetch_first;
-is_deeply($row, [6, 12]);
+is_deeply($row, [2, 4]);
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -1377,59 +1374,20 @@ $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(table => $table1);
 $result->filter([[$key1, $key2] => sub { $_[0] * 2 }]);
-$result->end_filter([$key1, $key2] => sub { $_[0] * 3 });
 $row = $result->fetch_first;
-is_deeply($row, [6, 12]);
+is_deeply($row, [2, 4]);
 
 $dbi->register_filter(five_times => sub { $_[0] * 5 });
 $result = $dbi->select(table => $table1);
 $result->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 });
-$result->end_filter({$key1 => sub { $_[0] * 3 }, $key2 => 'five_times' });
 $row = $result->one;
-is_deeply($row, {$key1 => 6, $key2 => 40});
+is_deeply($row, {$key1 => 2, $key2 => 8});
 
 $dbi->register_filter(five_times => sub { $_[0] * 5 });
-$dbi->apply_filter($table1,
-    $key1 => {end => sub { $_[0] * 3 } },
-    $key2 => {end => 'five_times'}
-);
 $result = $dbi->select(table => $table1);
 $result->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 });
 $row = $result->one;
-is_deeply($row, {$key1 => 6, $key2 => 40}, 'apply_filter');
-
-$dbi->register_filter(five_times => sub { $_[0] * 5 });
-$dbi->apply_filter($table1,
-    $key1 => {end => sub { $_[0] * 3 } },
-    $key2 => {end => 'five_times'}
-);
-$result = $dbi->select(table => $table1);
-$result->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 });
-$result->filter($key1 => undef);
-$result->end_filter($key1 => undef);
-$row = $result->one;
-is_deeply($row, {$key1 => 1, $key2 => 40}, 'apply_filter overwrite');
-
-$result = $dbi->select(column => [$key1, $key1, $key2], table => $table1);
-$result->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 });
-$result->filter($key1 => undef);
-$result->end_filter($key1 => undef);
-$row = $result->fetch;
-is_deeply($row, [1, 1, 40], 'apply_filter overwrite');
-
-test 'remove_end_filter and remove_filter';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$result = $dbi->select(table => $table1);
-$row = $result
-       ->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 })
-       ->remove_filter
-       ->end_filter($key1 => sub { $_[0] * 3 }, $key2 => sub { $_[0] * 5 })
-       ->remove_end_filter
-       ->fetch_first;
-is_deeply($row, [1, 2]);
+is_deeply($row, {$key1 => 2, $key2 => 8}, 'apply_filter');
 
 test 'empty where select';
 $dbi = DBIx::Custom->connect;
@@ -1841,8 +1799,6 @@ $dbi->execute($create_table1);
 $dbi->register_filter(one => sub { 1 });
 $result = $dbi->select(table => $table1);
 eval {$result->filter($key1 => 'no')};
-like($@, qr/not registered/);
-eval {$result->end_filter($key1 => 'no')};
 like($@, qr/not registered/);
 $result->default_filter(undef);
 ok(!defined $result->default_filter);
