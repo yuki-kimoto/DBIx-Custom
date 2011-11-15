@@ -48,7 +48,7 @@ test 'connector => 1';
     is(ref $dbi->connector, 'DBIx::Connector');
     ok($dbi->dbh->{PrintError});
     $dbi->delete_all(table => 'table1');
-    $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+    $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
     die "Can't fork" unless defined (my $pid = fork);
 
     if ($pid) {

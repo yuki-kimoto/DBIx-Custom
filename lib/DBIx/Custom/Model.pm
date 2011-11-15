@@ -41,9 +41,10 @@ for my $method (@methods) {
     my $code =
          qq/sub {/ .
          qq/my \$self = shift;/ .
-         qq/\$self->dbi->$method(/ .
-             qq/\@_ % 2 ? shift : (),/;
-
+         qq/\$self->dbi->$method(/;
+    
+    $code .= qq/shift,/
+      if $method eq  'insert' || $method eq 'update' || $method eq 'update_all';
     
     my @attrs = qw/table primary_key bind_type/;
     my @insert_attrs = qw/created_at updated_at/;

@@ -126,9 +126,9 @@ $dbi = DBIx::Custom->connect(
     password => $password
 );
 $dbi->delete_all(table => 'table1');
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4});
-$dbi->insert(table => 'table1', param => {key1 => 1, key2 => 6});
+$dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
+$dbi->insert({key1 => 1, key2 => 4}, table => 'table1');
+$dbi->insert({key1 => 1, key2 => 6}, table => 'table1');
 $dbi->register_tag(
     limit => sub {
         my ($count, $offset) = @_;
@@ -208,8 +208,8 @@ test 'dbh';
     $dbi->delete_all(table => 'table1');
     
     $dbi->connector->txn(sub {
-        $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-        $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+        $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
+        $dbi->insert({key1 => 3, key2 => 4}, table => 'table1');
     });
     is_deeply($dbi->select(table => 'table1')->fetch_hash_all,
               [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
@@ -217,9 +217,9 @@ test 'dbh';
     $dbi->delete_all(table => 'table1');
     eval {
         $dbi->connector->txn(sub {
-            $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+            $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
             die "Error";
-            $dbi->insert(table => 'table1', param => {key1 => 3, key2 => 4});
+            $dbi->insert({key1 => 3, key2 => 4}, table => 'table1');
         });
     };
     is_deeply($dbi->select(table => 'table1')->fetch_hash_all,
@@ -265,7 +265,7 @@ test 'fork';
     
     my $dbi = DBIx::Custom->new(connector => $connector);
     $dbi->delete_all(table => 'table1');
-    $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+    $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
     die "Can't fork" unless defined (my $pid = fork);
 
     if ($pid) {

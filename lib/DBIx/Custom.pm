@@ -336,14 +336,9 @@ sub each_table {
 }
 
 sub execute {
-    my $self = shift;
-    my $sql = shift;
+    my ($self, $sql, $param, %opt) = @_;
+    $param ||= {};
 
-    # Options
-    my $param;
-    $param = shift if @_ % 2;
-    my %opt = @_;
-    $param ||= $opt{param} || {};
     my $tables = $opt{table} || [];
     $tables = [$tables] unless ref $tables eq 'ARRAY';
     my $filter = ref $opt{filter} eq 'ARRAY' ?
@@ -387,9 +382,6 @@ sub execute {
 
     # Return query
     return $query if $opt{query};
-    
-    # Merge query filter(DEPRECATED!)
-    $filter ||= {};
     
     # Tables
     unshift @$tables, @{$query->{tables} || []};
@@ -452,7 +444,7 @@ sub execute {
                 %{$self->{filter}{out}->{$table} || {}}
             }
         }
-        $filter = {%$applied_filter, %$filter};
+        $filter = {%$applied_filter, %{$filter || {}}};
     }
     
     # Replace filter name to code
@@ -581,13 +573,8 @@ sub helper {
 }
 
 sub insert {
-    my $self = shift;
-    
-    # Options
-    my $param = @_ % 2 ? shift : undef;
-    my %opt = @_;
-    warn "insert method param option is DEPRECATED!" if $opt{param};
-    $param ||= delete $opt{param} || {};
+    my ($self, $param, %opt) = @_;
+    $param ||= {};
 
     # Created time and updated time
     my @timestamp_cleanup;
@@ -1002,13 +989,8 @@ sub type_rule {
 }
 
 sub update {
-    my $self = shift;
-
-    # Options
-    my $param = @_ % 2 ? shift : undef;
-    my %opt = @_;
-    warn "update param option is DEPRECATED!" if $opt{param};
-    $param ||= $opt{param} || {};
+    my ($self, $param, %opt) = @_;
+    $param ||= {};
     
     # Don't allow update all rows
     croak qq{update method where option must be specified } . _subname

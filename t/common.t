@@ -389,7 +389,7 @@ is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "basic");
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
-$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
+$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
 $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
@@ -602,7 +602,7 @@ eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
 $dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
-$dbi->update(param => {$key2 => 11}, table => $table1, where => {$key1 => 1});
+$dbi->update({$key2 => 11}, table => $table1, where => {$key1 => 1});
 $result = $dbi->execute("select * from $table1 order by $key1");
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
@@ -640,7 +640,7 @@ is_deeply($rows, [{$key1 => 1, $key2 => 22, $key3 => 3, $key4 => 4, $key5 => 5},
 
 $result = $dbi->update({$key2 => 11}, table => $table1, where => {$key1 => 1}, append => '   ');
 
-eval{$dbi->update(table => $table1)};
+eval{$dbi->update({}, table => $table1)};
 like($@, qr/where/, "not contain where");
 
 eval { $dbi->execute("drop table $table1") };
@@ -2124,7 +2124,7 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert(table => $table1, param => {$key1 => 2, $key2 => 3});
+$dbi->insert({$key1 => 2, $key2 => 3}, table => $table1);
 $dbi->delete(
     table => $table1,
     where => [
@@ -3075,6 +3075,7 @@ is_deeply($model->foo->one, {$key1 => 1, $key3 => 3});
 test 'assign_clause';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
+$DB::single = 1;
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
 $dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
@@ -3086,7 +3087,7 @@ update $table1 set $assign_clause
 where $key1 = 1
 EOS
 $dbi->execute($sql, $param);
-$result = $dbi->execute("select * from $table1 order by $key1", table => $table1);
+$result = $dbi->execute("select * from $table1 order by $key1", {}, table => $table1);
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
                   {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
@@ -3105,8 +3106,9 @@ $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
 EOS
+$DB::single = 1;
 $dbi->execute($sql, $param);
-$result = $dbi->execute("select * from $table1 order by $key1", table => $table1);
+$result = $dbi->execute("select * from $table1 order by $key1", {}, table => $table1);
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 33, $key4 => 4, $key5 => 5},
                   {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
@@ -3125,7 +3127,7 @@ update $table1 set $assign_clause
 where $key1 = 1
 EOS
 $dbi->execute($sql, $param);
-$result = $dbi->execute("select * from $table1 order by $key1", table => $table1);
+$result = $dbi->execute("select * from $table1 order by $key1", {}, table => $table1);
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 33, $key4 => 4, $key5 => 5},
                   {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
