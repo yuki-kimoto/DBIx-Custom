@@ -804,21 +804,6 @@ sub new {
           unless $self->can($attr);
     }
 
-    # DEPRECATED
-    $self->{_tags} = {
-        '?'     => \&DBIx::Custom::Tag::placeholder,
-        '='     => \&DBIx::Custom::Tag::equal,
-        '<>'    => \&DBIx::Custom::Tag::not_equal,
-        '>'     => \&DBIx::Custom::Tag::greater_than,
-        '<'     => \&DBIx::Custom::Tag::lower_than,
-        '>='    => \&DBIx::Custom::Tag::greater_than_equal,
-        '<='    => \&DBIx::Custom::Tag::lower_than_equal,
-        'like'  => \&DBIx::Custom::Tag::like,
-        'in'    => \&DBIx::Custom::Tag::in,
-        'insert_param' => \&DBIx::Custom::Tag::insert_param,
-        'update_param' => \&DBIx::Custom::Tag::update_param
-    };
-    
     return $self;
 }
 
