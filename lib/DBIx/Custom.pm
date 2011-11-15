@@ -3061,15 +3061,6 @@ executed SQL and bind values are printed to STDERR.
 
 DEBUG output encoding. Default to UTF-8.
 
-=head2 C<DBIX_CUSTOM_TAG_PARSE>
-
-If you set DBIX_CUSTOM_TAG_PARSE to 0, tag parsing is off.
-
-=head2 C<DBIX_CUSTOM_DISABLE_MODEL_EXECUTE>
-
-If you set DBIX_CUSTOM_DISABLE_MODEL_EXECUTE to 1,
-L<DBIx::Custom::Model> execute method call L<DBIx::Custom> execute.
-
 =head1 DEPRECATED FUNCTIONALITY
 
 L<DBIx::Custom>
