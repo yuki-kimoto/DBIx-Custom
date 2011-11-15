@@ -890,12 +890,6 @@ sub select {
     $opt{table} = $tables;
     my $param = delete $opt{param} || {};
     
-    # Add relation tables(DEPRECATED!);
-    if ($opt{relation}) {
-        warn "select() relation option is DEPRECATED!";
-        $self->_add_relation_table($tables, $opt{relation});
-    }
-    
     # Select statement
     my $sql = 'select ';
     
@@ -928,15 +922,7 @@ sub select {
     else { $sql .= '* ' }
     
     # Table
-    $sql .= 'from ';
-    if ($opt{relation}) {
-        my $found = {};
-        for my $table (@$tables) {
-            $sql .= $self->q($table) . ', ' unless $found->{$table};
-            $found->{$table} = 1;
-        }
-    }
-    else { $sql .= $self->q($tables->[-1] || '') . ' ' }
+    $sql .= 'from ' . $self->q($tables->[-1] || '') . ' ';
     $sql =~ s/, $/ /;
     croak "select method table option must be specified " . _subname
       unless defined $tables->[-1];
@@ -957,10 +943,6 @@ sub select {
     
     # Add where clause
     $sql .= "$w->{clause} ";
-    
-    # Relation(DEPRECATED!);
-    $self->_push_relation(\$sql, $tables, $opt{relation}, $w->{clause} eq '' ? 1 : 0)
-      if $opt{relation};
     
     # Execute query
     $opt{statement} = 'select';
@@ -1843,41 +1825,6 @@ sub update_param_tag {
     warn "update_param_tag is DEPRECATED! " .
          "use update_param instead";
     return shift->update_param(@_);
-}
-# DEPRECATED!
-sub _push_relation {
-    my ($self, $sql, $tables, $relation, $need_where) = @_;
-    
-    if (keys %{$relation || {}}) {
-        $$sql .= $need_where ? 'where ' : 'and ';
-        for my $rcolumn (keys %$relation) {
-            my $table1 = (split (/\./, $rcolumn))[0];
-            my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
-            push @$tables, ($table1, $table2);
-            $$sql .= "$rcolumn = " . $relation->{$rcolumn} .  'and ';
-        }
-    }
-    $$sql =~ s/and $/ /;
-}
-
-# DEPRECATED!
-sub _add_relation_table {
-    my ($self, $tables, $relation) = @_;
-    
-    if (keys %{$relation || {}}) {
-        for my $rcolumn (keys %$relation) {
-            my $table1 = (split (/\./, $rcolumn))[0];
-            my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
-            my $table1_exists;
-            my $table2_exists;
-            for my $table (@$tables) {
-                $table1_exists = 1 if $table eq $table1;
-                $table2_exists = 1 if $table eq $table2;
-            }
-            unshift @$tables, $table1 unless $table1_exists;
-            unshift @$tables, $table2 unless $table2_exists;
-        }
-    }
 }
 
 1;
@@ -3359,7 +3306,6 @@ L<DBIx::Custom>
     insert timestamp option # will be removed 2017/1/1
     insert method param option # will be removed at 2017/1/1
     insert method id option # will be removed at 2017/1/1
-    select method relation option # will be removed at 2017/1/1
     select method column option [COLUMN, as => ALIAS] format
       # will be removed at 2017/1/1
     

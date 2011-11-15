@@ -1076,19 +1076,19 @@ eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table2);
 $dbi->insert({$key1 => 1, $key3 => 5}, table => $table2);
 $rows = $dbi->select(
-    table => [$table1, $table2],
+    table => $table1,
     column => "$table1.$key1 as ${table1}_$key1, $table2.$key1 as ${table2}_$key1, $key2, $key3",
     where   => {"$table1.$key2" => 2},
-    relation  => {"$table1.$key1" => "$table2.$key1"}
+    join  => "inner join $table2 on $table1.$key1 = $table2.$key1"
 )->all;
-is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}], "relation : exists where");
+is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}], "exists where");
 
 $rows = $dbi->select(
-    table => [$table1, $table2],
+    table => $table1,
     column => ["$table1.$key1 as ${table1}_$key1", "${table2}.$key1 as ${table2}_$key1", $key2, $key3],
-    relation  => {"$table1.$key1" => "$table2.$key1"}
+    join  => "inner join $table2 on $table1.$key1 = $table2.$key1"
 )->all;
-is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}], "relation : no exists where");
+is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}], "no exists where");
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
@@ -1410,22 +1410,25 @@ $dbi->apply_filter(
 $dbi->insert({$key1 => 5, $key2 => 2}, table => $table1, filter => {$key2 => undef});
 $dbi->insert({$key1 => 5, $key3 => 6}, table => $table2, filter => {$key3 => undef});
 $result = $dbi->select(
-     table => [$table1, $table2],
+     table => $table1,
      column => [$key2, $key3],
-     where => {"$table1.$key2" => 1, "$table2.$key3" => 2}, relation => {"$table1.$key1" => "$table2.$key1"});
-
+     where => {"$table1.$key2" => 1, "$table2.$key3" => 2},
+     join => "inner join $table2 on $table1.$key1 = $table2.$key1"
+);
 $result->filter({$key2 => 'twice'});
 $rows   = $result->all;
 is_deeply($rows, [{$key2 => 4, $key3 => 18}], "select : join");
 
 $result = $dbi->select(
-     table => [$table1, $table2],
-     column => [$key2, $key3],
-     where => {$key2 => 1, $key3 => 2}, relation => {"$table1.$key1" => "$table2.$key1"});
+     table => $table1,
+     column => [$key2, $key3, "$table2.$key3 as ${table2}_$key3"],
+     where => {$key2 => 1, $key3 => 2},
+     join => "inner join $table2 on $table1.$key1 = $table2.$key1"
+);
 
 $result->filter({$key2 => 'twice'});
 $rows   = $result->all;
-is_deeply($rows, [{$key2 => 4, $key3 => 18}], "select : join : omit");
+is_deeply($rows, [{$key2 => 4, $key3 => 18, table2_key3 => 6}], "select : join : omit");
 
 test 'connect super';
 $dbi = DBIx::Custom->connect;

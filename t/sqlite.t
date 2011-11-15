@@ -284,19 +284,22 @@ $dbi->insert({id => 1, name => 'a', table3_id => 2}, table => 'table2');
 $dbi->insert({id => 2, name => 'b'}, table => 'table3');
 
 $result = $dbi->select(
-    table => ['table2', 'table3'], relation => {'table2.table3_id' => 'table3.id'},
+    table => 'table2',
+    join => "inner join table3 on table2.table3_id = table3.id",
     column => ['table3.name as table3__name']
 );
 is($result->fetch_first->[0], 'B');
 
 $result = $dbi->select(
-    table => 'table2', relation => {'table2.table3_id' => 'table3.id'},
+    table => 'table2',
+    join => "inner join table3 on table2.table3_id = table3.id",
     column => ['table3.name as table3__name']
 );
 is($result->fetch_first->[0], 'B');
 
 $result = $dbi->select(
-    table => 'table2', relation => {'table2.table3_id' => 'table3.id'},
+    table => 'table2',
+    join => "inner join table3 on table2.table3_id = table3.id",
     column => ['table3.name as "table3.name"']
 );
 is($result->fetch_first->[0], 'B');
