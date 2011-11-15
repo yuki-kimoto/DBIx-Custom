@@ -326,13 +326,6 @@ sub filter_on {
 }
 
 # DEPRECATED!
-sub remove_filter {
-    warn "remove_filter is DEPRECATED!";
-    my $self = shift;
-    $self->{filter} = {};
-    return $self;
-}
-# DEPRECATED!
 sub default_filter {
     warn "default_filter is DEPRECATED!";
     my $self = shift;
