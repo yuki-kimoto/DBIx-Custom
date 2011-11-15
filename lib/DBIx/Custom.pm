@@ -431,7 +431,7 @@ sub execute {
           unless $opt{primary_key};
         $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key};
         $opt{id} = [$opt{id}] unless ref $opt{id};
-        for (my $i = 0; $i < @{$opt{primary_key}}; $i++) {
+        for (my $i = 0; $i < @{$opt{id}}; $i++) {
            my $key = $opt{primary_key}->[$i];
            $key = "$main_table.$key" if $statement eq 'update' ||
              $statement eq 'delete' || $statement eq 'select';
@@ -2619,12 +2619,11 @@ and before type rule filter is executed.
 
     query => 1
 
-C<execute> method return L<DBIx::Custom::Query> object, not executing SQL.
-You can check SQL, column, or get statment handle.
+C<execute> method return hash reference which contain SQL and column
+infromation
 
-    my $sql = $query->sql;
-    my $sth = $query->sth;
-    my $columns = $query->columns;
+    my $sql = $query->{sql};
+    my $columns = $query->{columns};
     
 =item C<reuse>
     
@@ -3478,6 +3477,8 @@ L<DBIx::Custom::Model>
     type # will be removed at 2017/1/1
 
 L<DBIx::Custom::Query>
+
+This module is DEPRECATED! # will be removed at 2017/1/1
     
     # Attribute methods
     default_filter # will be removed at 2017/1/1
