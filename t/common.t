@@ -1227,22 +1227,6 @@ eval{ $dbi->begin_work };
 ok($@, "exception");
 $dbi->dbh->{AutoCommit} = 1;
 
-test 'cache';
-eval { $dbi->execute("drop table $table1") };
-$dbi->cache(1);
-$dbi->execute($create_table1);
-$source = "select * from $table1 where $key1 = :$key1 and $key2 = :$key2";
-$dbi->execute($source, {}, query => 1);
-is_deeply($dbi->{_cached}->{$source}, 
-          {sql => "select * from $table1 where $key1 = ? and $key2 = ?", columns => [$key1, $key2], tables => []}, "cache");
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$dbi->{_cached} = {};
-$dbi->cache(0);
-$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-is(scalar keys %{$dbi->{_cached}}, 0, 'not cache');
-
 test 'execute';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);

@@ -21,21 +21,6 @@ use Scalar::Util qw/weaken/;
 
 has [qw/connector dsn password quote user exclude_table user_table_info
         user_column_info/],
-    cache => 0,
-    cache_method => sub {
-        sub {
-            my $self = shift;
-            
-            $self->{_cached} ||= {};
-            
-            if (@_ > 1) {
-                $self->{_cached}{$_[0]} = $_[1];
-            }
-            else {
-                return $self->{_cached}{$_[0]};
-            }
-        }
-    },
     option => sub { {} },
     default_option => sub {
         {
@@ -1199,24 +1184,8 @@ sub _create_query {
     
     my ($self, $source, $after_build_sql) = @_;
     
-    # Cache
-    my $cache = $self->cache;
-    
     # Query
     my $query;
-    
-    # Get cached query
-    if ($cache) {
-        
-        # Get query
-        my $q = $self->cache_method->($self, $source);
-        
-        # Create query
-        if ($q) {
-            $query = DBIx::Custom::Query->new($q);
-            $query->{filters} = $self->filters;
-        }
-    }
     
     # Create query
     unless ($query) {
@@ -1230,16 +1199,6 @@ sub _create_query {
             $q = quotemeta($q);
             $_ =~ s/[$q]//g for @{$query->columns}
         }
-
-        # Save query to cache
-        $self->cache_method->(
-            $self, $source,
-            {
-                sql     => $query->sql, 
-                columns => $query->columns,
-                tables  => $query->{tables} || []
-            }
-        ) if $cache;
     }
 
     # Filter SQL
@@ -3234,7 +3193,6 @@ L<DBIx::Custom>
     data_source # will be removed at 2017/1/1
     filter_check # will be removed at 2017/1/1
     reserved_word_quote # will be removed at 2017/1/1
-    cache_method # will be removed at 2017/1/1
     
     # Methods
     update_timestamp # will be removed at 2017/1/1
