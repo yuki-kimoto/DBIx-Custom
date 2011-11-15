@@ -2615,7 +2615,6 @@ is_deeply($result->one,
 is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
 
 
-test 'filter_off';
 $dbi = DBIx::Custom->connect;
 $dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };

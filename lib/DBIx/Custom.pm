@@ -3159,8 +3159,6 @@ L<DBIx::Custom::Query>
 L<DBIx::Custom::Result>
     
     # Methods
-    filter_on # will be removed at 2017/1/1
-    filter_off # will be removed at 2017/1/1
     default_filter # will be removed at 2017/1/1
 
 =head1 BACKWARDS COMPATIBILITY POLICY

@@ -70,7 +70,7 @@ sub fetch {
     }
     
     # Filter
-    if (($self->{filter} || $self->{default_filter}) && !$self->{filter_off}) {
+    if (($self->{filter} || $self->{default_filter})) {
          my @columns = $self->{default_filter} ? keys %{$self->{_columns}}
            : keys %{$self->{filter}};
          
@@ -114,8 +114,7 @@ sub fetch_hash {
         }
     }        
     # Filter
-    if (($self->{filter} || $self->{default_filter}) &&
-      !$self->{filter_off})
+    if (($self->{filter} || $self->{default_filter}))
     {
          my @columns = $self->{default_filter} ? keys %{$self->{_columns}}
            : keys %{$self->{filter}};
@@ -307,22 +306,6 @@ sub _cache {
         $self->{_columns}{$name} = 1;
     }
     $self->{_cache} = 1;
-}
-
-# DEPRECATED!
-sub filter_off {
-    warn "filter_off method is DEPRECATED!";
-    my $self = shift;
-    $self->{filter_off} = 1;
-    return $self;
-}
-
-# DEPRECATED!
-sub filter_on {
-    warn "filter_on method is DEPRECATED!";
-    my $self = shift;
-    $self->{filter_off} = 0;
-    return $self;
 }
 
 # DEPRECATED!
