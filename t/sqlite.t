@@ -231,7 +231,7 @@ $result = $dbi->execute('select length(key1) as key1_length from table1');
 $row = $result->one;
 is($row->{key1_length}, length $binary);
 
-test 'bind_type option'; # DEPRECATED!
+test 'bind_type option';
 $binary = pack("I3", 1, 2, 3);
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1(key1, key2)');

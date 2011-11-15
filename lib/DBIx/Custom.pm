@@ -400,40 +400,26 @@ sub execute {
     
     # Type rule
     my $type_filters = {};
-    if ($self->{_type_rule_is_called}) {
-        unless ($opt{type_rule_off}) {
-            my $type_rule_off_parts = {
-                1 => $opt{type_rule1_off},
-                2 => $opt{type_rule2_off}
-            };
-            for my $i (1, 2) {
-                unless ($type_rule_off_parts->{$i}) {
-                    $type_filters->{$i} = {};
-                    my $table_alias = $opt{table_alias} || {};
-                    for my $alias (keys %$table_alias) {
-                        my $table = $table_alias->{$alias};
-                        
-                        for my $column (keys %{$self->{"_into$i"}{key}{$table} || {}}) {
-                            $type_filters->{$i}->{"$alias.$column"} = $self->{"_into$i"}{key}{$table}{$column};
-                        }
+    if ($self->{_type_rule_is_called} && !$opt{type_rule_off}) {
+        my $type_rule_off_parts = {
+            1 => $opt{type_rule1_off},
+            2 => $opt{type_rule2_off}
+        };
+        for my $i (1, 2) {
+            unless ($type_rule_off_parts->{$i}) {
+                $type_filters->{$i} = {};
+                my $table_alias = $opt{table_alias} || {};
+                for my $alias (keys %$table_alias) {
+                    my $table = $table_alias->{$alias};
+                    
+                    for my $column (keys %{$self->{"_into$i"}{key}{$table} || {}}) {
+                        $type_filters->{$i}->{"$alias.$column"} = $self->{"_into$i"}{key}{$table}{$column};
                     }
-                    $type_filters->{$i} = {%{$type_filters->{$i}}, %{$self->{"_into$i"}{key}{$main_table} || {}}}
-                      if $main_table;
                 }
+                $type_filters->{$i} = {%{$type_filters->{$i}}, %{$self->{"_into$i"}{key}{$main_table} || {}}}
+                  if $main_table;
             }
         }
-    }
-    
-    # Applied filter(DEPRECATED!)
-    if ($self->{filter}{on}) {
-        my $applied_filter = {};
-        for my $table (@$tables) {
-            $applied_filter = {
-                %$applied_filter,
-                %{$self->{filter}{out}->{$table} || {}}
-            }
-        }
-        $filter = {%$applied_filter, %{$filter || {}}};
     }
     
     # Replace filter name to code
@@ -451,21 +437,19 @@ sub execute {
     
     # Create bind values
     my ($bind, $bind_types) = $self->_create_bind_values($param, $query->{columns},
-      $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
+      $filter, $type_filters, $opt{bind_type} || {});
 
     # Execute
     my $sth = $query->{sth};
     my $affected;
     eval {
-        if ($opt{bind_type} || $opt{type}) {
+        if ($opt{bind_type}) {
             $sth->bind_param($_ + 1, $bind->[$_],
                 $bind_types->[$_] ? $bind_types->[$_] : ())
               for (0 .. @$bind - 1);
             $affected = $sth->execute;
         }
-        else {
-            $affected = $sth->execute(@$bind);
-        }
+        else { $affected = $sth->execute(@$bind) }
     };
     
     $self->_croak($@, qq{. Following SQL is executed.\n}
@@ -489,34 +473,16 @@ sub execute {
     
     # Not select statement
     return $affected unless $sth->{NUM_OF_FIELDS};
-
-    # Filter(DEPRECATED!)
-    my $infilter = {};
-    if ($self->{filter}{on}) {
-        $infilter->{in}  = {};
-        $infilter->{end} = {};
-        push @$tables, $main_table if $main_table;
-        for my $table (@$tables) {
-            for my $way (qw/in end/) {
-                $infilter->{$way} = {%{$infilter->{$way}},
-                  %{$self->{filter}{$way}{$table} || {}}};
-            }
-        }
-    }
     
     # Result
-    my $result = $self->result_class->new(
+    return $self->result_class->new(
         sth => $sth,
         dbi => $self,
-        default_filter => $self->{default_in_filter},
-        filter => $infilter->{in} || {},
-        end_filter => $infilter->{end} || {},
         type_rule => {
             from1 => $self->type_rule->{from1},
             from2 => $self->type_rule->{from2}
         },
     );
-    $result;
 }
 
 sub get_table_info {
@@ -1433,12 +1399,6 @@ sub _where_clause_and_param {
     }
     
     return $w;
-}
-
-# DEPRECATED!
-sub create_query {
-    warn "create_query is DEPRECATED! use query option of each method";
-    shift->_create_query(@_);
 }
 
 1;
