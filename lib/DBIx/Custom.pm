@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1747';
+our $VERSION = '0.05_01';
 use 5.008001;
 
 use Carp 'croak';
@@ -242,15 +242,13 @@ sub dbh {
 
 sub delete {
     my ($self, %opt) = @_;
-    warn "delete method where_param option is DEPRECATED!"
-      if $opt{where_param};
     
     # Don't allow delete all rows
     croak qq{delete method where or id option must be specified } . _subname
       if !$opt{where} && !defined $opt{id} && !$opt{allow_delete_all};
     
     # Where
-    my $w = $self->_where_clause_and_param($opt{where}, $opt{where_param},
+    my $w = $self->_where_clause_and_param($opt{where}, {},
       delete $opt{id}, $opt{primary_key}, $opt{table});
 
     # Delete statement
@@ -891,9 +889,7 @@ sub select {
                : defined $opt{table} ? [$opt{table}]
                : [];
     $opt{table} = $tables;
-    my $where_param = $opt{where_param} || delete $opt{param} || {};
-    warn "select method where_param option is DEPRECATED!"
-      if $opt{where_param};
+    my $param = delete $opt{param} || {};
     
     # Add relation tables(DEPRECATED!);
     if ($opt{relation}) {
@@ -948,10 +944,10 @@ sub select {
 
     # Add tables in parameter
     unshift @$tables,
-            @{$self->_search_tables(join(' ', keys %$where_param) || '')};
+            @{$self->_search_tables(join(' ', keys %$param) || '')};
     
     # Where
-    my $w = $self->_where_clause_and_param($opt{where}, $where_param,
+    my $w = $self->_where_clause_and_param($opt{where}, $param,
       delete $opt{id}, $opt{primary_key}, $tables->[-1]);
     
     # Add table names in where clause
@@ -1103,8 +1099,6 @@ sub update {
     my $param = @_ % 2 ? shift : undef;
     my %opt = @_;
     warn "update param option is DEPRECATED!" if $opt{param};
-    warn "update method where_param option is DEPRECATED!"
-      if $opt{where_param};
     $param ||= $opt{param} || {};
     
     # Don't allow update all rows
@@ -1134,7 +1128,7 @@ sub update {
     my $assign_clause = $self->assign_clause($param, {wrap => $opt{wrap}});
     
     # Where
-    my $w = $self->_where_clause_and_param($opt{where}, $opt{where_param},
+    my $w = $self->_where_clause_and_param($opt{where}, {},
       delete $opt{id}, $opt{primary_key}, $opt{table});
     
     # Update statement
@@ -1560,11 +1554,11 @@ sub _search_tables {
 }
 
 sub _where_clause_and_param {
-    my ($self, $where, $where_param, $id, $primary_key, $table) = @_;
+    my ($self, $where, $param, $id, $primary_key, $table) = @_;
 
     $where ||= {};
     $where = $self->_id_to_param($id, $primary_key, $table) if defined $id;
-    $where_param ||= {};
+    $param ||= {};
     my $w = {};
     my $where_clause = '';
 
@@ -1613,14 +1607,14 @@ sub _where_clause_and_param {
             . _subname
           unless ref $obj eq 'DBIx::Custom::Where';
 
-        $w->{param} = keys %$where_param
-                    ? $self->merge_param($where_param, $obj->param)
+        $w->{param} = keys %$param
+                    ? $self->merge_param($param, $obj->param)
                     : $obj->param;
         $w->{clause} = $obj->to_string;
     }
     elsif ($where) {
         $w->{clause} = "where $where";
-        $w->{param} = $where_param;
+        $w->{param} = $param;
     }
     
     return $w;
@@ -1816,29 +1810,6 @@ sub update_at {
     my $where_param = $self->_id_to_param($where, $primary_keys);
     
     return $self->update(where => $where_param, param => $param, %opt);
-}
-
-# DEPRECATED!
-sub insert_at {
-    my $self = shift;
-    
-    warn "insert_at is DEPRECATED! use insert method id option instead";
-    
-    # Options
-    my $param;
-    $param = shift if @_ % 2;
-    my %opt = @_;
-    my $primary_key = delete $opt{primary_key};
-    $primary_key = [$primary_key] unless ref $primary_key;
-    my $where = delete $opt{where};
-    my $p = delete $opt{param} || {};
-    $param  ||= $p;
-    
-    # Create where parameter
-    my $where_param = $self->_id_to_param($where, $primary_key);
-    $param = $self->merge_param($where_param, $param);
-    
-    return $self->insert(param => $param, %opt);
 }
 
 # DEPRECATED!
@@ -3450,9 +3421,6 @@ L<DBIx::Custom>
     execute method id option # will be removed 2017/1/1
     update timestamp option # will be removed 2017/1/1
     insert timestamp option # will be removed 2017/1/1
-    select method where_param option # will be removed 2017/1/1
-    delete method where_param option # will be removed 2017/1/1
-    update method where_param option # will be removed 2017/1/1
     insert method param option # will be removed at 2017/1/1
     insert method id option # will be removed at 2017/1/1
     select method relation option # will be removed at 2017/1/1

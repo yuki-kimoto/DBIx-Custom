@@ -2006,15 +2006,15 @@ $dbi->delete_at(
 );
 is_deeply($dbi->select(table => $table1)->all, []);
 
-test 'insert_at';
+test 'insert';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
-$dbi->insert_at(
+$dbi->insert(
     {$key3 => 3},
     primary_key => [$key1, $key2], 
     table => $table1,
-    where => [1, 2],
+    id => [1, 2],
 );
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
@@ -2022,11 +2022,11 @@ is($dbi->select(table => $table1)->one->{$key3}, 3);
 
 $dbi->delete_all(table => $table1);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->insert_at(
+$dbi->insert(
     {$key2 => 2, $key3 => 3},
     primary_key => $key1, 
     table => $table1,
-    where => 1,
+    id => 1,
 );
 
 is($dbi->select(table => $table1)->one->{$key1}, 1);
@@ -2036,11 +2036,11 @@ is($dbi->select(table => $table1)->one->{$key3}, 3);
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
-$dbi->insert_at(
+$dbi->insert(
     {$key3 => 3},
     primary_key => [$key1, $key2], 
     table => $table1,
-    where => [1, 2],
+    id => [1, 2],
 );
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
@@ -2144,13 +2144,13 @@ $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table3);
 $dbi->model($table3)->delete_at(where => [1, 2]);
 is_deeply($dbi->select(table => $table3)->all, []);
 
-test 'model insert_at';
+test 'model insert';
 $dbi = MyDBI6->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
-$dbi->model($table1)->insert_at(
+$dbi->model($table1)->insert(
     {$key3 => 3},
-    where => [1, 2],
+    id => [1, 2],
 );
 $result = $dbi->model($table1)->select;
 $row = $result->one;
@@ -2342,8 +2342,10 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 2, $key2 => 3}, table => $table1);
 $rows = $dbi->select(
     table => $table1,
-    where => "$key1 = :$key1 and $key2 = :$key2",
-    where_param => {$key1 => 1, $key2 => 2}
+    where => [
+        "$key1 = :$key1 and $key2 = :$key2",
+        {$key1 => 1, $key2 => 2}
+    ]
 )->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
 
@@ -2383,8 +2385,10 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert(table => $table1, param => {$key1 => 2, $key2 => 3});
 $dbi->delete(
     table => $table1,
-    where => "$key1 = :$key1 and $key2 = :$key2",
-    where_param => {$key1 => 1, $key2 => 2}
+    where => [
+        "$key1 = :$key1 and $key2 = :$key2",
+        {$key1 => 1, $key2 => 2}
+    ]
 );
 $rows = $dbi->select(table => $table1)->all;
 is_deeply($rows, [{$key1 => 2, $key2 => 3}]);
@@ -2413,8 +2417,10 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->update(
     {$key1 => 5},
     table => $table1,
-    where => "$key1 = :$key1 and $key2 = :$key2",
-    where_param => {$key1 => 1, $key2 => 2}
+    where => [
+        "$key1 = :$key1 and $key2 = :$key2",
+        {$key1 => 1, $key2 => 2}
+    ]
 );
 $rows = $dbi->select(table => $table1)->all;
 is_deeply($rows, [{$key1 => 5, $key2 => 2}]);
