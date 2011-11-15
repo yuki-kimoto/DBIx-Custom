@@ -158,13 +158,6 @@ has 'filter';
 has 'name';
 has 'type';
 
-
-# DEPRECATED!
-sub method {
-    warn "method method is DEPRECATED! use helper instead";
-    return shift->helper(@_);
-}
-
 1;
 
 =head1 NAME

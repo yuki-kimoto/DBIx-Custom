@@ -1274,14 +1274,14 @@ ok($@, "execute fail");
     like($@, qr/QueryBuilder.*\.t /s, "caller spec : not vebose");
 }
 
-test 'method';
+test 'helper';
 $dbi->helper(
     one => sub { 1 }
 );
 $dbi->helper(
     two => sub { 2 }
 );
-$dbi->method({
+$dbi->helper({
     twice => sub {
         my $self = shift;
         return $_[0] * 2;
@@ -1927,7 +1927,7 @@ eval {$dbi->apply_filter($table1, $key2, {out => 'no'})};
 like($@, qr/not registered/);
 eval {$dbi->apply_filter($table1, $key2, {in => 'no'})};
 like($@, qr/not registered/);
-$dbi->method({one => sub { 1 }});
+$dbi->helper({one => sub { 1 }});
 is($dbi->one, 1);
 
 eval{DBIx::Custom->connect(dsn => undef)};
@@ -3526,7 +3526,7 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{$key1 => 1}]);
 
-test 'dbi method from model';
+test 'dbi helper from model';
 $dbi = MyDBI9->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
@@ -3611,7 +3611,7 @@ is_deeply($result->one,
           {$key1 => 1, $key2 => 2, "$table2.$key1" => 1, "$table2.$key3" => 3});
 is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
 
-test 'model method';
+test 'model helper';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table2);
@@ -3619,7 +3619,7 @@ $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
 $model = $dbi->create_model(
     table => $table2
 );
-$model->method(foo => sub { shift->select(@_) });
+$model->helper(foo => sub { shift->select(@_) });
 is_deeply($model->foo->one, {$key1 => 1, $key3 => 3});
 
 test 'model helper';

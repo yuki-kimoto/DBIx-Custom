@@ -1694,12 +1694,6 @@ sub tag_parse {
     return $self->{tag_parse};
 }
 
-# DEPRECATED!
-sub method {
-    warn "method is DEPRECATED! use helper instead";
-    return shift->helper(@_);
-}
-
 # DEPRECATED
 sub update_param {
     my ($self, $param, $opts) = @_;
@@ -3257,7 +3251,6 @@ L<DBIx::Custom>
     # Methods
     update_timestamp # will be removed at 2017/1/1
     insert_timestamp # will be removed at 2017/1/1
-    method # will be removed at 2017/1/1
     create_query # will be removed at 2017/1/1
     apply_filter # will be removed at 2017/1/1
     register_tag # will be removed at 2017/1/1
