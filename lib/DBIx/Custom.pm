@@ -1806,27 +1806,6 @@ sub default_fetch_filter {
     return $self->{default_in_filter};
 }
 
-# DEPRECATED!
-sub insert_param {
-    my $self = shift;
-    warn "insert_param is DEPRECATED! use values_clause instead";
-    return $self->values_clause(@_);
-}
-
-# DEPRECATED!
-sub insert_param_tag {
-    warn "insert_param_tag is DEPRECATED! " .
-         "use insert_param instead!";
-    return shift->insert_param(@_);
-}
-
-# DEPRECATED!
-sub update_param_tag {
-    warn "update_param_tag is DEPRECATED! " .
-         "use update_param instead";
-    return shift->update_param(@_);
-}
-
 1;
 
 =head1 NAME

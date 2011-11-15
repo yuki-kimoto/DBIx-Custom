@@ -2224,7 +2224,7 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key1 => 1, $key2 => 2};
-$values_clause = $dbi->insert_param($param);
+$values_clause = $dbi->values_clause($param);
 $sql = <<"EOS";
 insert into $table1 $values_clause
 EOS
@@ -3680,7 +3680,7 @@ $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table
 $dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
 
 $param = {$key2 => 11, $key3 => 33};
-$assign_clause = $dbi->update_param($param, {no_set => 1});
+$assign_clause = $dbi->assign_clause($param);
 $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
