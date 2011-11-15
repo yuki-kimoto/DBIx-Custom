@@ -1776,22 +1776,6 @@ sub select_at {
 }
 
 # DEPRECATED!
-sub delete_at {
-    my ($self, %opt) = @_;
-
-    warn "delete_at is DEPRECATED! use delete method id option instead";
-    
-    # Options
-    my $primary_keys = delete $opt{primary_key};
-    my $where = delete $opt{where};
-    
-    # Create where parameter
-    my $where_param = $self->_id_to_param($where, $primary_keys);
-    
-    return $self->delete(where => $where_param, %opt);
-}
-
-# DEPRECATED!
 sub update_at {
     my $self = shift;
 

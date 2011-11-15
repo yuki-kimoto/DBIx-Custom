@@ -1986,23 +1986,23 @@ is_deeply($result->stash, {}, 'default');
 $result->stash->{foo} = 1;
 is($result->stash->{foo}, 1, 'get and set');
 
-test 'delete_at';
+test 'delete';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->delete_at(
+$dbi->delete(
     table => $table1,
     primary_key => [$key1, $key2],
-    where => [1, 2],
+    id => [1, 2],
 );
 is_deeply($dbi->select(table => $table1)->all, []);
 
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->delete_at(
+$dbi->delete(
     table => $table1,
     primary_key => $key1,
-    where => 1,
+    id => 1,
 );
 is_deeply($dbi->select(table => $table1)->all, []);
 
@@ -2126,7 +2126,7 @@ is($row->{$key1}, 1);
 is($row->{$key2}, 2);
 is($row->{$key3}, 3);
 
-test 'model delete_at';
+test 'model delete';
 $dbi = MyDBI6->connect;
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
@@ -2135,13 +2135,13 @@ $dbi->execute($create_table1_2);
 $dbi->execute($create_table2_2);
 $dbi->execute($create_table3);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->model($table1)->delete_at(where => [1, 2]);
+$dbi->model($table1)->delete(id => [1, 2]);
 is_deeply($dbi->select(table => $table1)->all, []);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table2);
-$dbi->model($table1)->delete_at(where => [1, 2]);
+$dbi->model($table1)->delete(id => [1, 2]);
 is_deeply($dbi->select(table => $table1)->all, []);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table3);
-$dbi->model($table3)->delete_at(where => [1, 2]);
+$dbi->model($table3)->delete(id => [1, 2]);
 is_deeply($dbi->select(table => $table3)->all, []);
 
 test 'model insert';
