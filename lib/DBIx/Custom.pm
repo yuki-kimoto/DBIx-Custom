@@ -1311,10 +1311,7 @@ sub _connect {
     my $self = shift;
     
     # Attributes
-    my $dsn = $self->data_source;
-    warn "data_source is DEPRECATED!\n"
-      if $dsn;
-    $dsn ||= $self->dsn;
+    my $dsn = $self->dsn;
     croak qq{"dsn" must be specified } . _subname
       unless $dsn;
     my $user        = $self->user;
@@ -1615,7 +1612,6 @@ sub _apply_filter {
 }
 
 # DEPRECATED!
-has 'data_source';
 has dbi_options => sub { {} };
 has 'reserved_word_quote';
 has dbi_option => sub { {} };
@@ -3178,7 +3174,6 @@ L<DBIx::Custom>
 
     # Attribute methods
     tag_parse # will be removed 2017/1/1
-    data_source # will be removed at 2017/1/1
     
     # Methods
     update_timestamp # will be removed at 2017/1/1
