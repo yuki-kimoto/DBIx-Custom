@@ -71,8 +71,7 @@ sub fetch {
     
     # Filter
     if ($self->{filter}) {
-         my @columns = keys %{$self->{filter}};
-         for my $column (@columns) {
+         for my $column (keys %{$self->{filter}}) {
              my $filter = $self->{filter}->{$column};
              next unless $filter;
              $row[$_] = $filter->($row[$_])
@@ -111,15 +110,10 @@ sub fetch_hash {
         }
     }        
     # Filter
-    if ($self->{filter})
-    {
-         my @columns = keys %{$self->{filter}};
-         
-         for my $column (@columns) {
-             next unless exists $row->{$column};
-             my $filter = $self->{filter}->{$column};
-             $row->{$column} = $filter->($row->{$column}) if $filter;
-         }
+    if ($self->{filter}) {
+       exists $row->{$_} && $self->{filter}->{$_}
+           and $row->{$_} = $self->{filter}->{$_}->($row->{$_})
+         for keys %{$self->{filter}};
     }
     $row;
 }
