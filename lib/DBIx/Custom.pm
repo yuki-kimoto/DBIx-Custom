@@ -1649,31 +1649,6 @@ sub default_bind_filter {
     return $self->{default_out_filter};
 }
 
-# DEPRECATED!
-sub default_fetch_filter {
-    my $self = shift;
-
-    warn "default_fetch_filter is DEPRECATED!";
-    
-    if (@_) {
-        my $fname = $_[0];
-
-        if (@_ && !$fname) {
-            $self->{default_in_filter} = undef;
-        }
-        else {
-            croak qq{Filter "$fname" is not registered}
-              unless exists $self->filters->{$fname};
-        
-            $self->{default_in_filter} = $self->filters->{$fname};
-        }
-        
-        return $self;
-    }
-    
-    return $self->{default_in_filter};
-}
-
 1;
 
 =head1 NAME
@@ -3117,7 +3092,6 @@ L<DBIx::Custom>
     create_query # will be removed at 2017/1/1
     apply_filter # will be removed at 2017/1/1
     default_bind_filter # will be removed at 2017/1/1
-    default_fetch_filter # will be removed at 2017/1/1
     
     # Options
     select column option [COLUMN => ALIAS] syntax # will be removed 2017/1/1
@@ -3155,11 +3129,6 @@ L<DBIx::Custom::Query>
     
     # Methods
     filter # will be removed at 2017/1/1
-
-L<DBIx::Custom::Result>
-    
-    # Methods
-    default_filter # will be removed at 2017/1/1
 
 =head1 BACKWARDS COMPATIBILITY POLICY
 

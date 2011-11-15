@@ -1034,22 +1034,20 @@ $dbi->register_filter(
     twice       => sub { $_[0] * 2 },
     three_times => sub { $_[0] * 3 }
 );
-$dbi->default_fetch_filter('twice');
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(table => $table1);
 $result->filter({$key1 => 'three_times'});
 $row = $result->one;
-is_deeply($row, {$key1 => 3, $key2 => 4}, "default_fetch_filter and filter");
+is_deeply($row, {$key1 => 3, $key2 => 2}, "default_fetch_filter and filter");
 
-$dbi->default_fetch_filter('twice');
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(column => [$key1, $key1, $key2], table => $table1);
 $result->filter({$key1 => 'three_times'});
 $row = $result->fetch_first;
-is_deeply($row, [3, 3, 4], "default_fetch_filter and filter");
+is_deeply($row, [3, 3, 2], "default_fetch_filter and filter");
 
 test 'filters';
 $dbi = DBIx::Custom->new;
@@ -1779,20 +1777,6 @@ eval {$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1,
              filter => {$key1 => 'no'}) };
 like($@, qr//);
 
-$dbi->register_filter(one => sub { });
-$dbi->default_fetch_filter('one');
-ok($dbi->default_fetch_filter);
-$dbi->default_bind_filter('one');
-ok($dbi->default_bind_filter);
-eval{$dbi->default_fetch_filter('no')};
-like($@, qr/not registered/);
-eval{$dbi->default_bind_filter('no')};
-like($@, qr/not registered/);
-$dbi->default_bind_filter(undef);
-ok(!defined $dbi->default_bind_filter);
-$dbi->default_fetch_filter(undef);
-ok(!defined $dbi->default_fetch_filter);
-
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
@@ -1800,10 +1784,6 @@ $dbi->register_filter(one => sub { 1 });
 $result = $dbi->select(table => $table1);
 eval {$result->filter($key1 => 'no')};
 like($@, qr/not registered/);
-$result->default_filter(undef);
-ok(!defined $result->default_filter);
-$result->default_filter('one');
-is($result->default_filter->(), 1);
 
 test 'option';
 $dbi = DBIx::Custom->connect(option => {PrintError => 1});

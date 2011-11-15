@@ -70,13 +70,10 @@ sub fetch {
     }
     
     # Filter
-    if (($self->{filter} || $self->{default_filter})) {
-         my @columns = $self->{default_filter} ? keys %{$self->{_columns}}
-           : keys %{$self->{filter}};
-         
+    if ($self->{filter}) {
+         my @columns = keys %{$self->{filter}};
          for my $column (@columns) {
-             my $filter = exists $self->{filter}->{$column} ? $self->{filter}->{$column}
-               : $self->{default_filter};
+             my $filter = $self->{filter}->{$column};
              next unless $filter;
              $row[$_] = $filter->($row[$_])
                for @{$self->{_pos}{$column} || []};
@@ -114,15 +111,13 @@ sub fetch_hash {
         }
     }        
     # Filter
-    if (($self->{filter} || $self->{default_filter}))
+    if ($self->{filter})
     {
-         my @columns = $self->{default_filter} ? keys %{$self->{_columns}}
-           : keys %{$self->{filter}};
+         my @columns = keys %{$self->{filter}};
          
          for my $column (@columns) {
              next unless exists $row->{$column};
-             my $filter = exists $self->{filter}->{$column} ? $self->{filter}->{$column}
-               : $self->{default_filter};
+             my $filter = $self->{filter}->{$column};
              $row->{$column} = $filter->($row->{$column}) if $filter;
          }
     }
@@ -306,25 +301,6 @@ sub _cache {
         $self->{_columns}{$name} = 1;
     }
     $self->{_cache} = 1;
-}
-
-# DEPRECATED!
-sub default_filter {
-    warn "default_filter is DEPRECATED!";
-    my $self = shift;
-    if (@_) {
-        my $fname = $_[0];
-        if (@_ && !$fname) {
-            $self->{default_filter} = undef;
-        }
-        else {
-            croak qq{Filter "$fname" is not registered}
-              unless exists $self->dbi->filters->{$fname};
-            $self->{default_filter} = $self->dbi->filters->{$fname};
-        }
-        return $self;
-    }
-    return $self->{default_filter};
 }
 
 1;
