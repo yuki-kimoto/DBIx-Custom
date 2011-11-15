@@ -296,14 +296,14 @@ $rows = $result->fetch_hash_all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "all");
 
 test 'Insert query return value';
-$source = "insert into $table1 {insert_param $key1 $key2}";
+$source = "insert into $table1 " . $dbi->values_clause({$key1 => 1, $key2 => 2});
 $query = $dbi->execute($source, {}, query => 1);
 $ret_val = $dbi->execute($query, {$key1 => 1, $key2 => 2});
 ok($ret_val);
 
 test 'Direct query';
 $dbi->delete_all(table => $table1);
-$insert_source = "insert into $table1 {insert_param $key1 $key2}";
+$insert_source = "insert into $table1 " . $dbi->values_clause({$key1 => 1, $key2 => 2});
 $dbi->execute($insert_source, {$key1 => 1, $key2 => 2});
 $result = $dbi->execute("select * from $table1");
 $rows = $result->all;
@@ -314,84 +314,13 @@ $dbi->delete_all(table => $table1);
 $dbi->register_filter(twice       => sub { $_[0] * 2}, 
                     three_times => sub { $_[0] * 3});
 
-$insert_source  = "insert into $table1 {insert_param $key1 $key2}";
+$insert_source  = "insert into $table1 " . $dbi->values_clause({$key1 => 1, $key2 => 2});
 $insert_query = $dbi->execute($insert_source, {}, query => 1);
 $insert_query->filter({$key1 => 'twice'});
 $dbi->execute($insert_query, {$key1 => 1, $key2 => 2});
 $result = $dbi->execute("select * from $table1");
 $rows = $result->filter({$key2 => 'three_times'})->all;
 is_deeply($rows, [{$key1 => 2, $key2 => 6}], "filter fetch_filter");
-
-test 'Filter in';
-$dbi->delete_all(table => $table1);
-$insert_source  = "insert into $table1 {insert_param $key1 $key2}";
-$insert_query = $dbi->execute($insert_source, {}, query => 1);
-$dbi->execute($insert_query, {$key1 => 2, $key2 => 4});
-$select_source = "select * from $table1 where {in $table1.$key1 2} and {in $table1.$key2 2}";
-$select_query = $dbi->execute($select_source,{}, query => 1);
-$select_query->filter({"$table1.$key1" => 'twice'});
-$result = $dbi->execute($select_query, {"$table1.$key1" => [1,5], "$table1.$key2" => [2,4]});
-$rows = $result->all;
-is_deeply($rows, [{$key1 => 2, $key2 => 4}], "filter");
-
-test 'DBIx::Custom::SQLTemplate basic tag';
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
-$dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
-
-$source = "select * from $table1 where $key1 = :$key1 and {<> $key2} and {< $key3} and {> $key4} and {>= $key5}";
-$query = $dbi->execute($source, {}, query => 1);
-$result = $dbi->execute($query, {$key1 => 1, $key2 => 3, $key3 => 4, $key4 => 3, $key5 => 5});
-$rows = $result->all;
-is_deeply($rows, [{$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}], "basic tag1");
-
-$source = "select * from $table1 where $key1 = :$key1 and {<> $key2} and {< $key3} and {> $key4} and {>= $key5}";
-$query = $dbi->execute($source, {}, query => 1);
-$result = $dbi->execute($query, {$key1 => 1, $key2 => 3, $key3 => 4, $key4 => 3, $key5 => 5});
-$rows = $result->all;
-is_deeply($rows, [{$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}], "basic tag1");
-
-$source = "select * from $table1 where {<= $key1} and {like $key2}";
-$query = $dbi->execute($source, {}, query => 1);
-$result = $dbi->execute($query, {$key1 => 1, $key2 => '%2%'});
-$rows = $result->all;
-is_deeply($rows, [{$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}], "basic tag2");
-
-test 'DIB::Custom::SQLTemplate in tag';
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
-$dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
-
-$source = "select * from $table1 where {in $key1 2}";
-$query = $dbi->execute($source, {}, query => 1);
-$result = $dbi->execute($query, {$key1 => [9, 1]});
-$rows = $result->all;
-is_deeply($rows, [{$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}], "basic");
-
-test 'DBIx::Custom::SQLTemplate insert tag';
-$dbi->delete_all(table => $table1);
-$insert_source = "insert into $table1 {insert_param $key1 $key2 $key3 $key4 $key5}";
-$dbi->execute($insert_source, {$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5});
-
-$result = $dbi->execute("select * from $table1");
-$rows = $result->all;
-is_deeply($rows, [{$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}], "basic");
-
-test 'DBIx::Custom::SQLTemplate update tag';
-$dbi->delete_all(table => $table1);
-$insert_source = "insert into $table1 {insert_param $key1 $key2 $key3 $key4 $key5}";
-$dbi->execute($insert_source, {$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5});
-$dbi->execute($insert_source, {$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10});
-
-$update_source = "update $table1 {update_param $key1 $key2 $key3 $key4} where {= $key5}";
-$dbi->execute($update_source, {$key1 => 1, $key2 => 1, $key3 => 1, $key4 => 1, $key5 => 5});
-
-$result = $dbi->execute("select * from $table1 order by $key1");
-$rows = $result->all;
-is_deeply($rows, [{$key1 => 1, $key2 => 1, $key3 => 1, $key4 => 1, $key5 => 5},
-                  {$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}], "basic");
 
 test 'Named placeholder';
 eval { $dbi->execute("drop table $table1") };
@@ -1178,18 +1107,6 @@ $dbi->dbh->disconnect;
 eval{$dbi->execute($query, {$key1 => {a => 1}})};
 ok($@, "execute fail");
 
-{
-    local $Carp::Verbose = 0;
-    eval{$dbi->execute("select * from $table1 where {0 $key1}", {}, query => 1)};
-    like($@, qr/\Q.t /, "caller spec : not vebose");
-}
-{
-    local $Carp::Verbose = 1;
-    eval{$dbi->execute("select * from $table1 where {0 $key1}", {}, query => 1)};
-    like($@, qr/QueryBuilder.*\.t /s, "caller spec : not vebose");
-}
-
-
 test 'transaction2';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -1246,17 +1163,6 @@ $query = $dbi->execute("select * from $table1 where $key1 = :$key1", {}, query =
 $dbi->dbh->disconnect;
 eval{$dbi->execute($query, {$key1 => {a => 1}})};
 ok($@, "execute fail");
-
-{
-    local $Carp::Verbose = 0;
-    eval{$dbi->execute("select * from $table1 where {0 $key1}", {}, query => 1)};
-    like($@, qr/\Q.t /, "caller spec : not vebose");
-}
-{
-    local $Carp::Verbose = 1;
-    eval{$dbi->execute("select * from $table1 where {0 $key1}", {}, query => 1)};
-    like($@, qr/QueryBuilder.*\.t /s, "caller spec : not vebose");
-}
 
 test 'helper';
 $dbi->helper(
@@ -1373,8 +1279,8 @@ $dbi->apply_filter(
     $table1, $key1 => {out => 'twice', in => 'twice'}
 );
 $dbi->insert({$key1 => 2, $key2 => 2}, table => $table1, filter => {$key1 => undef});
-$result = $dbi->execute("select * from {table $table1} where $key1 = :$key1 and $key2 = :$key2",
-                        {$key1 => 1, $key2 => 2});
+$result = $dbi->execute("select * from $table1 where $key1 = :$key1 and $key2 = :$key2",
+                        {$key1 => 1, $key2 => 2}, table => $table1);
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 4, $key2 => 2}], "execute table tag");
 
@@ -1749,7 +1655,7 @@ $row = $result->all;
 is_deeply($row, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], 'not_exists');
 
 $where = $dbi->where
-             ->clause(['and', "{> $key1}", "{< $key1}" ])
+             ->clause(['and', ":${key1}{>}", ":${key1}{<}" ])
              ->param({$key1 => [2, $dbi->not_exists]});
 $result = $dbi->select(
     table => $table1,
@@ -1759,7 +1665,7 @@ $row = $result->all;
 is_deeply($row, [{$key1 => 3, $key2 => 4}], 'not_exists');
 
 $where = $dbi->where
-             ->clause(['and', "{> $key1}", "{< $key1}" ])
+             ->clause(['and', ":${key1}{>}", ":${key1}{<}" ])
              ->param({$key1 => [$dbi->not_exists, 2]});
 $result = $dbi->select(
     table => $table1,
@@ -1769,7 +1675,7 @@ $row = $result->all;
 is_deeply($row, [{$key1 => 1, $key2 => 2}], 'not_exists');
 
 $where = $dbi->where
-             ->clause(['and', "{> $key1}", "{< $key1}" ])
+             ->clause(['and', ":${key1}{>}", ":${key1}{<}" ])
              ->param({$key1 => [$dbi->not_exists, $dbi->not_exists]});
 $result = $dbi->select(
     table => $table1,
@@ -1779,7 +1685,7 @@ $row = $result->all;
 is_deeply($row, [{$key1 => 1, $key2 => 2},{$key1 => 3, $key2 => 4}], 'not_exists');
 
 $where = $dbi->where
-             ->clause(['and', "{> $key1}", "{< $key1}" ])
+             ->clause(['and', ":${key1}{>}", ":${key1}{<}" ])
              ->param({$key1 => [0, 2]});
 $result = $dbi->select(
     table => $table1,
@@ -1942,8 +1848,6 @@ $dbi->default_bind_filter(undef);
 ok(!defined $dbi->default_bind_filter);
 $dbi->default_fetch_filter(undef);
 ok(!defined $dbi->default_fetch_filter);
-eval {$dbi->execute("select * from $table1 {} {= author") };
-like($@, qr/Tag not finished/);
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -2305,7 +2209,7 @@ $rows = $dbi->select(
     table => $table1,
     column => "$table1.$key1 as ${table1}_$key1, $key2, $key3",
     where   => {"$table1.$key2" => 3},
-    join  => ["inner join (select * from $table2 where {= $table2.$key3})" . 
+    join  => ["inner join (select * from $table2 where :$table2.${key3}{=})" . 
               " $table2 on $table1.$key1 = $table2.$key1"],
     param => {"$table2.$key3" => 5}
 )->all;
@@ -2315,7 +2219,7 @@ $rows = $dbi->select(
     table => $table1,
     column => "$table1.$key1 as ${table1}_$key1, $key2, $key3",
     where   => {"$table1.$key2" => 3},
-    join  => "inner join (select * from $table2 where {= $table2.$key3})" . 
+    join  => "inner join (select * from $table2 where :$table2.${key3}{=})" . 
              " $table2 on $table1.$key1 = $table2.$key1",
     param => {"$table2.$key3" => 5}
 )->all;
@@ -3034,37 +2938,6 @@ is_deeply($result->all, [{"$table1-$key1" => 1, "$table1-$key2" => 3},
   {"$table1-$key1" => 2, "$table1-$key2" => 4},
   {"$table1-$key1" => 2, "$table1-$key2" => 2}]);
 
-test 'tag_parse';
-$dbi = DBIx::Custom->connect;
-$dbi->tag_parse(0);
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$dbi->insert({$key1 => 1, $key2 => 1}, table => $table1);
-eval {$dbi->execute("select * from $table1 where {= $key1}", {$key1 => 1})};
-ok($@);
-
-test 'DBIX_CUSTOM_TAG_PARSE environment variable';
-{
-    $ENV{DBIX_CUSTOM_TAG_PARSE} = 0;
-    $dbi = DBIx::Custom->connect;
-    eval { $dbi->execute("drop table $table1") };
-    $dbi->execute($create_table1);
-    $dbi->insert({$key1 => 1, $key2 => 1}, table => $table1);
-    eval {$dbi->execute("select * from $table1 where {= $key1}", {$key1 => 1})};
-    ok($@);
-    delete$ENV{DBIX_CUSTOM_TAG_PARSE};
-}
-
-{
-    $ENV{DBIX_CUSTOM_TAG_PARSE} = 0;
-    $dbi = DBIx::Custom->connect;
-    eval { $dbi->execute("drop table $table1") };
-    $dbi->execute($create_table1);
-    $dbi->insert({$key1 => 1, $key2 => 1}, table => $table1);
-    is($dbi->select(table => $table1)->one->{$key1}, 1);
-    delete$ENV{DBIX_CUSTOM_TAG_PARSE};
-}
-
 test 'last_sql';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -3340,139 +3213,6 @@ $rows = $result->fetch_hash_multi(2);
 is_deeply($rows, [{$key1 => 5, $key2 => 6}]);
 $rows = $result->fetch_hash_multi(2);
 ok(!$rows);
-
-test "query_builder";
-$datas = [
-    # Basic tests
-    {   name            => 'placeholder basic',
-        source            => "a {?  k1} b {=  k2} {<> k3} {>  k4} {<  k5} {>= k6} {<= k7} {like k8}", ,
-        sql_expected    => "a ? b k2 = ? k3 <> ? k4 > ? k5 < ? k6 >= ? k7 <= ? k8 like ?",
-        columns_expected   => [qw/k1 k2 k3 k4 k5 k6 k7 k8/]
-    },
-    {
-        name            => 'placeholder in',
-        source            => "{in k1 3}",
-        sql_expected    => "k1 in (?, ?, ?)",
-        columns_expected   => [qw/k1 k1 k1/]
-    },
-    
-    # Table name
-    {
-        name            => 'placeholder with table name',
-        source            => "{= a.k1} {= a.k2}",
-        sql_expected    => "a.k1 = ? a.k2 = ?",
-        columns_expected  => [qw/a.k1 a.k2/]
-    },
-    {   
-        name            => 'placeholder in with table name',
-        source            => "{in a.k1 2} {in b.k2 2}",
-        sql_expected    => "a.k1 in (?, ?) b.k2 in (?, ?)",
-        columns_expected  => [qw/a.k1 a.k1 b.k2 b.k2/]
-    },
-    {
-        name            => 'not contain tag',
-        source            => "aaa",
-        sql_expected    => "aaa",
-        columns_expected  => [],
-    }
-];
-
-for (my $i = 0; $i < @$datas; $i++) {
-    my $data = $datas->[$i];
-    my $dbi = DBIx::Custom->new;
-    my $builder = $dbi->query_builder;
-    my $query = $builder->build_query($data->{source});
-    is($query->{sql}, $data->{sql_expected}, "$data->{name} : sql");
-    is_deeply($query->columns, $data->{columns_expected}, "$data->{name} : columns");
-}
-
-$dbi = DBIx::Custom->new;
-$builder = $dbi->query_builder;
-$dbi->register_tag(
-    p => sub {
-        my @args = @_;
-        
-        my $expand    = "? $args[0] $args[1]";
-        my $columns = [2];
-        return [$expand, $columns];
-    }
-);
-
-$query = $builder->build_query("{p a b}");
-is($query->{sql}, "? a b", "register_tag sql");
-is_deeply($query->{columns}, [2], "register_tag columns");
-
-eval{$builder->build_query('{? }')};
-like($@, qr/\QColumn name must be specified in tag "{? }"/, "? not arguments");
-
-eval{$builder->build_query("{a }")};
-like($@, qr/\QTag "a" is not registered/, "tag not exist");
-
-$dbi->register_tag({
-    q => 'string'
-});
-
-eval{$builder->build_query("{q}", {})};
-like($@, qr/Tag "q" must be sub reference/, "tag not code ref");
-
-$dbi->register_tag({
-   r => sub {} 
-});
-
-eval{$builder->build_query("{r}")};
-like($@, qr/\QTag "r" must return [STRING, ARRAY_REFERENCE]/, "tag return noting");
-
-$dbi->register_tag({
-   s => sub { return ["a", ""]} 
-});
-
-eval{$builder->build_query("{s}")};
-like($@, qr/\QTag "s" must return [STRING, ARRAY_REFERENCE]/, "tag return not array columns");
-
-$dbi->register_tag(
-    t => sub {return ["a", []]}
-);
-
-
-test 'Default tag Error case';
-eval{$builder->build_query("{= }")};
-like($@, qr/Column name must be specified in tag "{= }"/, "basic '=' : key not exist");
-
-eval{$builder->build_query("{in }")};
-like($@, qr/Column name and count of values must be specified in tag "{in }"/, "in : key not exist");
-
-eval{$builder->build_query("{in a}")};
-like($@, qr/\QColumn name and count of values must be specified in tag "{in }"/,
-     "in : key not exist");
-
-eval{$builder->build_query("{in a r}")};
-like($@, qr/\QColumn name and count of values must be specified in tag "{in }"/,
-     "in : key not exist");
-
-test 'variouse source';
-$source = "a {= b} c \\{ \\} {= \\{} {= \\}} d";
-$query = $builder->build_query($source);
-is($query->sql, 'a b = ? c { } { = ? } = ? d', "basic : 1");
-
-$source = "abc";
-$query = $builder->build_query($source);
-is($query->sql, 'abc', "basic : 2");
-
-$source = "{= a}";
-$query = $builder->build_query($source);
-is($query->sql, 'a = ?', "only tag");
-
-$source = "000";
-$query = $builder->build_query($source);
-is($query->sql, '000', "contain 0 value");
-
-$source = "a {= b} }";
-eval{$builder->build_query($source)};
-like($@, qr/unexpected "}"/, "error : 1");
-
-$source = "a {= {}";
-eval{$builder->build_query($source)};
-like($@, qr/unexpected "{"/, "error : 2");
 
 test 'select() after_build_sql option';
 $dbi = DBIx::Custom->connect;

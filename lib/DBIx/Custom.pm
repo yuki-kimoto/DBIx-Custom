@@ -819,9 +819,6 @@ sub new {
         'update_param' => \&DBIx::Custom::Tag::update_param
     };
     
-    # DEPRECATED!
-    $self->{tag_parse} = 1;
-    
     return $self;
 }
 
@@ -1617,18 +1614,6 @@ has 'reserved_word_quote';
 has dbi_option => sub { {} };
 
 # DEPRECATED
-sub tag_parse {
-   my $self = shift;
-   warn "tag_parse is DEPRECATED! use \$ENV{DBIX_CUSTOM_TAG_PARSE} " .
-         "environment variable";
-    if (@_) {
-        $self->{tag_parse} = $_[0];
-        return $self;
-    }
-    return $self->{tag_parse};
-}
-
-# DEPRECATED
 sub update_param {
     my ($self, $param, $opts) = @_;
     
@@ -2005,14 +1990,6 @@ This have effect to C<column> and C<mycolumn> method,
 and C<select> method's column option.
 
 Default to C<.>.
-
-=head2 C<tag_parse>
-
-    my $tag_parse = $dbi->tag_parse(0);
-    $dbi = $dbi->tag_parse;
-
-Enable DEPRECATED tag parsing functionality, default to 1.
-If you want to disable tag parsing functionality, set to 0.
 
 =head2 C<user>
 
@@ -3172,9 +3149,6 @@ L<DBIx::Custom::Model> execute method call L<DBIx::Custom> execute.
 
 L<DBIx::Custom>
 
-    # Attribute methods
-    tag_parse # will be removed 2017/1/1
-    
     # Methods
     update_timestamp # will be removed at 2017/1/1
     insert_timestamp # will be removed at 2017/1/1
@@ -3185,7 +3159,6 @@ L<DBIx::Custom>
     default_fetch_filter # will be removed at 2017/1/1
     register_tag # will be removed at 2017/1/1
     register_tag_processor # will be removed at 2017/1/1
-    update_param_tag # will be removed at 2017/1/1
     
     # Options
     select column option [COLUMN => ALIAS] syntax # will be removed 2017/1/1
