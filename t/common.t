@@ -316,8 +316,7 @@ $dbi->register_filter(twice       => sub { $_[0] * 2},
 
 $insert_source  = "insert into $table1 " . $dbi->values_clause({$key1 => 1, $key2 => 2});
 $insert_query = $dbi->execute($insert_source, {}, query => 1);
-$insert_query->filter({$key1 => 'twice'});
-$dbi->execute($insert_query, {$key1 => 1, $key2 => 2});
+$dbi->execute($insert_query, {$key1 => 1, $key2 => 2}, filter => {$key1 => 'twice'});
 $result = $dbi->execute("select * from $table1");
 $rows = $result->filter({$key2 => 'three_times'})->all;
 is_deeply($rows, [{$key1 => 2, $key2 => 6}], "filter fetch_filter");

@@ -399,7 +399,7 @@ sub execute {
     return $query if $opt{query};
     
     # Merge query filter(DEPRECATED!)
-    $filter ||= $query->{filter} || {};
+    $filter ||= {};
     
     # Tables
     unshift @$tables, @{$query->{tables} || []};
@@ -2294,9 +2294,9 @@ and before type rule filter is executed.
 C<execute> method return L<DBIx::Custom::Query> object, not executing SQL.
 You can check SQL, column, or get statment handle.
 
-    my $sql = $query->sql;
-    my $sth = $query->sth;
-    my $columns = $query->columns;
+    my $sql = $query->{sql};
+    my $sth = $query->{sth};
+    my $columns = $query->{columns};
     
 =item C<reuse>
     
