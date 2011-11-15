@@ -1700,13 +1700,6 @@ sub method {
     return shift->helper(@_);
 }
 
-# DEPRECATED!
-sub assign_param {
-    my $self = shift;
-    warn "assing_param is DEPRECATED! use assign_clause instead";
-    return $self->assign_clause(@_);
-}
-
 # DEPRECATED
 sub update_param {
     my ($self, $param, $opts) = @_;
@@ -3265,15 +3258,11 @@ L<DBIx::Custom>
     update_timestamp # will be removed at 2017/1/1
     insert_timestamp # will be removed at 2017/1/1
     method # will be removed at 2017/1/1
-    assign_param # will be removed at 2017/1/1
-    update_param # will be removed at 2017/1/1
-    insert_param # will be removed at 2017/1/1
     create_query # will be removed at 2017/1/1
     apply_filter # will be removed at 2017/1/1
     register_tag # will be removed at 2017/1/1
     default_bind_filter # will be removed at 2017/1/1
     default_fetch_filter # will be removed at 2017/1/1
-    insert_param_tag # will be removed at 2017/1/1
     register_tag # will be removed at 2017/1/1
     register_tag_processor # will be removed at 2017/1/1
     update_param_tag # will be removed at 2017/1/1

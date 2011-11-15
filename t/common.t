@@ -3703,7 +3703,7 @@ $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table
 $dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
 
 $param = {$key2 => 11};
-$assign_clause = $dbi->assign_param($param);
+$assign_clause = $dbi->assign_clause($param);
 $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
