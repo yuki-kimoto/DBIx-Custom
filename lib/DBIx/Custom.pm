@@ -1617,7 +1617,6 @@ sub _apply_filter {
 # DEPRECATED!
 has 'data_source';
 has dbi_options => sub { {} };
-has filter_check  => 1;
 has 'reserved_word_quote';
 has dbi_option => sub { {} };
 
@@ -3180,7 +3179,6 @@ L<DBIx::Custom>
     # Attribute methods
     tag_parse # will be removed 2017/1/1
     data_source # will be removed at 2017/1/1
-    filter_check # will be removed at 2017/1/1
     
     # Methods
     update_timestamp # will be removed at 2017/1/1
@@ -3248,9 +3246,6 @@ This module is DEPRECATED! # will be removed at 2017/1/1
                                             # will be removed at 2017/1/1
 
 L<DBIx::Custom::Result>
-    
-    # Attribute methods
-    filter_check # will be removed at 2017/1/1
     
     # Methods
     filter_on # will be removed at 2017/1/1

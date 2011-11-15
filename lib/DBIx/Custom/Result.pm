@@ -398,8 +398,6 @@ sub default_filter {
     }
     return $self->{default_filter};
 }
-# DEPRECATED!
-has 'filter_check'; 
 
 1;
 
