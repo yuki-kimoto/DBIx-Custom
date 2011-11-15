@@ -2046,16 +2046,16 @@ is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 is($dbi->select(table => $table1)->one->{$key3}, 3);
 
-test 'update_at';
+test 'update';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->update_at(
+$dbi->update(
     {$key3 => 4},
     table => $table1,
     primary_key => [$key1, $key2],
-    where => [1, 2],
+    id => [1, 2],
 );
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
@@ -2063,11 +2063,11 @@ is($dbi->select(table => $table1)->one->{$key3}, 4);
 
 $dbi->delete_all(table => $table1);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->update_at(
+$dbi->update(
     {$key3 => 4},
     table => $table1,
     primary_key => $key1,
-    where => 1,
+    id => 1,
 );
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
@@ -2077,11 +2077,11 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->update_at(
+$dbi->update(
     {$key3 => 4},
     table => $table1,
     primary_key => [$key1, $key2],
-    where => [1, 2]
+    id=> [1, 2]
 );
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
@@ -2158,14 +2158,14 @@ is($row->{$key1}, 1);
 is($row->{$key2}, 2);
 is($row->{$key3}, 3);
 
-test 'model update_at';
+test 'model update';
 $dbi = MyDBI6->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->model($table1)->update_at(
+$dbi->model($table1)->update(
     {$key3 => 4},
-    where => [1, 2],
+    id => [1, 2],
 );
 $result = $dbi->model($table1)->select;
 $row = $result->one;

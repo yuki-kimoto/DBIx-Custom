@@ -1776,27 +1776,6 @@ sub select_at {
 }
 
 # DEPRECATED!
-sub update_at {
-    my $self = shift;
-
-    warn "update_at is DEPRECATED! use update method id option instead";
-    
-    # Options
-    my $param;
-    $param = shift if @_ % 2;
-    my %opt = @_;
-    my $primary_keys = delete $opt{primary_key};
-    my $where = delete $opt{where};
-    my $p = delete $opt{param} || {};
-    $param  ||= $p;
-    
-    # Create where parameter
-    my $where_param = $self->_id_to_param($where, $primary_keys);
-    
-    return $self->update(where => $where_param, param => $param, %opt);
-}
-
-# DEPRECATED!
 sub register_tag {
     my $self = shift;
     
