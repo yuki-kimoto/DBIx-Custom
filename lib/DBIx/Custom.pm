@@ -1620,10 +1620,6 @@ has dbi_options => sub { {} };
 has filter_check  => 1;
 has 'reserved_word_quote';
 has dbi_option => sub { {} };
-has default_dbi_option => sub {
-    warn "default_dbi_option is DEPRECATED! use default_option instead";
-    return shift->default_option;
-};
 
 # DEPRECATED
 sub tag_parse {
@@ -3183,10 +3179,8 @@ L<DBIx::Custom>
 
     # Attribute methods
     tag_parse # will be removed 2017/1/1
-    default_dbi_option # will be removed 2017/1/1
     data_source # will be removed at 2017/1/1
     filter_check # will be removed at 2017/1/1
-    reserved_word_quote # will be removed at 2017/1/1
     
     # Methods
     update_timestamp # will be removed at 2017/1/1
