@@ -361,7 +361,6 @@ sub execute {
     my $param;
     $param = shift if @_ % 2;
     my %opt = @_;
-    warn "sqlfilter option is DEPRECATED" if $opt{sqlfilter};
     $param ||= $opt{param} || {};
     my $tables = $opt{table} || [];
     $tables = [$tables] unless ref $tables eq 'ARRAY';
@@ -402,7 +401,7 @@ sub execute {
     }
     else {
         $query = $opt{reuse}->{$sql} if $opt{reuse};
-        $query = $self->_create_query($sql,$opt{after_build_sql} || $opt{sqlfilter})
+        $query = $self->_create_query($sql,$opt{after_build_sql})
           unless $query;
         $query->statement($opt{statement} || '');
         $opt{reuse}->{$sql} = $query if $opt{reuse};
@@ -3345,10 +3344,6 @@ L<DBIx::Custom>
     insert_param # will be removed at 2017/1/1
     create_query # will be removed at 2017/1/1
     apply_filter # will be removed at 2017/1/1
-    select_at # will be removed at 2017/1/1
-    delete_at # will be removed at 2017/1/1
-    update_at # will be removed at 2017/1/1
-    insert_at # will be removed at 2017/1/1
     register_tag # will be removed at 2017/1/1
     default_bind_filter # will be removed at 2017/1/1
     default_fetch_filter # will be removed at 2017/1/1
@@ -3367,7 +3362,6 @@ L<DBIx::Custom>
     select method relation option # will be removed at 2017/1/1
     select method column option [COLUMN, as => ALIAS] format
       # will be removed at 2017/1/1
-    execute method's sqlfilter option # will be removed at 2017/1/1
     
     # Others
     execute($query, ...) # execute method receiving query object.

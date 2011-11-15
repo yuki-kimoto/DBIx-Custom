@@ -3487,7 +3487,7 @@ $source = "a {= {}";
 eval{$builder->build_query($source)};
 like($@, qr/unexpected "{"/, "error : 2");
 
-test 'select() sqlfilter option';
+test 'select() after_build_sql option';
 $dbi = DBIx::Custom->connect;
 $dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
@@ -3497,7 +3497,7 @@ $dbi->insert({$key1 => 2, $key2 => 3}, table => $table1);
 $rows = $dbi->select(
     table => $table1,
     column => $key1,
-    sqlfilter => sub {
+    after_build_sql => sub {
         my $sql = shift;
         $sql = "select * from ( $sql ) t where $key1 = 1";
         return $sql;
