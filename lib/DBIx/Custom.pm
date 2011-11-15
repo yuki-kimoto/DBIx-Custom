@@ -816,19 +816,7 @@ sub select {
         my $columns
           = ref $opt{column} eq 'ARRAY' ? $opt{column} : [$opt{column}];
         for my $column (@$columns) {
-            if (ref $column eq 'HASH') {
-                $column = $self->column(%$column) if ref $column eq 'HASH';
-            }
-            elsif (ref $column eq 'ARRAY') {
-                warn "select column option [COLUMN => ALIAS] syntax is DEPRECATED!" .
-                  "use q method to quote the value";
-                if (@$column == 3 && $column->[1] eq 'as') {
-                    warn "[COLUMN, as => ALIAS] is DEPRECATED! use [COLUMN => ALIAS]";
-                    splice @$column, 1, 1;
-                }
-                
-                $column = join(' ', $column->[0], 'as', $self->q($column->[1]));
-            }
+            $column = $self->column(%$column) if ref $column eq 'HASH';
             unshift @$tables, @{$self->_search_tables($column)};
             $sql .= "$column, ";
         }
@@ -2977,12 +2965,6 @@ L<DBIx::Custom>
     # Options
     select column option [COLUMN => ALIAS] syntax # will be removed 2017/1/1
     execute method id option # will be removed 2017/1/1
-    update timestamp option # will be removed 2017/1/1
-    insert timestamp option # will be removed 2017/1/1
-    insert method param option # will be removed at 2017/1/1
-    insert method id option # will be removed at 2017/1/1
-    select method column option [COLUMN, as => ALIAS] format
-      # will be removed at 2017/1/1
     
 =head1 BACKWARDS COMPATIBILITY POLICY
 
