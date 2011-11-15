@@ -1161,6 +1161,24 @@ sub values_clause {
 
 sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
 
+sub _build_query {
+    my ($self, $sql) = @_;
+    
+    $sql ||= '';
+    my $columns = [];
+    my $c = $self->{safety_character} || $self->safety_character;
+    # Parameter regex
+    $sql =~ s/([0-9]):/$1\\:/g;
+    while ($sql =~ /(^|.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/sg) {
+        push @$columns, $2;
+        $sql = defined $3 ? "$1$2 $3 ?$4" : "$1?$4";
+    }
+    $sql =~ s/\\:/:/g if index($sql, "\\:") != -1;
+
+    # Create query
+    bless {sql => $sql, columns => $columns}, 'DBIx::Custom::Query';
+}
+
 sub _create_query {
     
     my ($self, $source, $after_build_sql) = @_;
@@ -1173,7 +1191,7 @@ sub _create_query {
 
         # Create query
         my $builder = $self->query_builder;
-        $query = $builder->build_query($source);
+        $query = $self->_build_query($source);
 
         # Remove reserved word quote
         if (my $q = $self->quote || '') {
@@ -3181,22 +3199,6 @@ L<DBIx::Custom::Query>
     
     # Methods
     filter # will be removed at 2017/1/1
-
-L<DBIx::Custom::QueryBuilder>
-
-This module is DEPRECATED! # will be removed at 2017/1/1
-    
-    # Attribute methods
-    tags # will be removed at 2017/1/1
-    tag_processors # will be removed at 2017/1/1
-    
-    # Methods
-    register_tag # will be removed at 2017/1/1
-    register_tag_processor # will be removed at 2017/1/1
-    
-    # Others
-    build_query("select * from {= title}"); # tag parsing functionality
-                                            # will be removed at 2017/1/1
 
 L<DBIx::Custom::Result>
     
