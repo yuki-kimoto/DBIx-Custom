@@ -400,12 +400,10 @@ $dbi->register_filter(
     twice       => sub { $_[0] * 2 },
     three_times => sub { $_[0] * 3 }
 );
-$dbi->default_bind_filter('twice');
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, filter => {$key1 => 'three_times'});
 $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
-is_deeply($rows, [{$key1 => 3, $key2 => 4}], "filter");
-$dbi->default_bind_filter(undef);
+is_deeply($rows, [{$key1 => 3, $key2 => 2}], "filter");
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
@@ -607,18 +605,16 @@ eval {
 };
 like($@, qr/one/);
 
-test 'default_bind_filter';
+test 'filter';
 $dbi->execute("delete from $table1");
 $dbi->register_filter(
     twice       => sub { $_[0] * 2 },
     three_times => sub { $_[0] * 3 }
 );
-$dbi->default_bind_filter('twice');
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, filter => {$key1 => 'three_times'});
 $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
-is_deeply($rows, [{$key1 => 3, $key2 => 4}], "filter");
-$dbi->default_bind_filter(undef);
+is_deeply($rows, [{$key1 => 3, $key2 => 2}], "filter");
 
 test 'update';
 eval { $dbi->execute("drop table $table1") };

@@ -1606,30 +1606,6 @@ sub apply_filter {
     return $self->_apply_filter(@_);
 }
 
-# DEPRECATED!
-sub default_bind_filter {
-    my $self = shift;
-    
-    warn "default_bind_filter is DEPRECATED!";
-    
-    if (@_) {
-        my $fname = $_[0];
-        
-        if (@_ && !$fname) {
-            $self->{default_out_filter} = undef;
-        }
-        else {
-            croak qq{Filter "$fname" is not registered}
-              unless exists $self->filters->{$fname};
-        
-            $self->{default_out_filter} = $self->filters->{$fname};
-        }
-        return $self;
-    }
-    
-    return $self->{default_out_filter};
-}
-
 1;
 
 =head1 NAME
