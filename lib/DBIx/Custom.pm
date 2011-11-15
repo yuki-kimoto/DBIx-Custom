@@ -330,8 +330,6 @@ sub execute {
 
     my $tables = $opt{table} || [];
     $tables = [$tables] unless ref $tables eq 'ARRAY';
-    my $filter = ref $opt{filter} eq 'ARRAY' ?
-      _array_to_hash($opt{filter}) : $opt{filter};
     
     # Merge second parameter
     my @cleanup;
@@ -402,22 +400,9 @@ sub execute {
         }
     }
     
-    # Replace filter name to code
-    for my $column (keys %$filter) {
-        my $name = $filter->{$column};
-        if (!defined $name) {
-            $filter->{$column} = undef;
-        }
-        elsif (ref $name ne 'CODE') {
-          croak qq{Filter "$name" is not registered" } . _subname
-            unless exists $self->filters->{$name};
-          $filter->{$column} = $self->filters->{$name};
-        }
-    }
-    
     # Create bind values
     my ($bind, $bind_types) = $self->_create_bind_values($param, $query->{columns},
-      $filter, $type_filters, $opt{bind_type} || {});
+      $opt{filter}, $type_filters, $opt{bind_type} || {});
 
     # Execute
     my $sth = $query->{sth};
@@ -1066,6 +1051,21 @@ sub _create_bind_values {
     my ($self, $params, $columns, $filter, $type_filters, $bind_type) = @_;
     
     $bind_type = _array_to_hash($bind_type) if ref $bind_type eq 'ARRAY';
+
+    # Replace filter name to code
+    $filter ||= {};
+    $filter = ref $filter eq 'ARRAY' ? _array_to_hash($filter) : $filter;
+    for my $column (keys %$filter) {
+        my $name = $filter->{$column};
+        if (!defined $name) {
+            $filter->{$column} = undef;
+        }
+        elsif (ref $name ne 'CODE') {
+          croak qq{Filter "$name" is not registered" } . _subname
+            unless exists $self->filters->{$name};
+          $filter->{$column} = $self->filters->{$name};
+        }
+    }
     
     # Create bind values
     my @bind;
@@ -1094,9 +1094,7 @@ sub _create_bind_values {
         else { push @bind, $params->{$column} }
         
         # Filter
-        if (my $f = $filter->{$column} || $self->{default_out_filter} || '') {
-            $bind[-1] = $f->($bind[-1]);
-        }
+        $bind[-1] = $filter->{$column}->($bind[-1]) if $filter->{$column};
         
         # Type rule
         if ($self->{_type_rule_is_called}) {
