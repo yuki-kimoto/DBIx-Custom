@@ -41,16 +41,6 @@ sub map {
             $value = $mapping->{value};
             $condition = $mapping->{condition};
         }
-        elsif (!ref $mapping) {
-            $new_key = $mapping;
-            warn qq/map method's string value "$mapping" is DEPRECATED. / .
-                 qq/use {key => ...} syntax instead/
-        }
-        elsif (ref $mapping eq 'CODE') {
-            $value = $mapping;
-            warn qq/map method's code reference value "$mapping" is DEPRECATED. / .
-                 qq/use {value => ...} syntax instead/
-        }
         
         $new_key = $key unless defined $new_key;
         $condition ||= $self->condition;

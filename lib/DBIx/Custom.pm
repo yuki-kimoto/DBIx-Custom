@@ -376,30 +376,7 @@ sub execute {
     }
     
     # Tables
-    unshift @$tables, @{$query->{tables} || []};
     my $main_table = @{$tables}[-1];
-
-    # Merge id to parameter
-    if (defined $opt{id}) {
-        my $statement = $query->{statement};
-        warn "execute method id option is DEPRECATED!" unless $statement;
-        croak "execute id option must be specified with primary_key option"
-          unless $opt{primary_key};
-        $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key};
-        $opt{id} = [$opt{id}] unless ref $opt{id};
-        for (my $i = 0; $i < @{$opt{primary_key}}; $i++) {
-           my $key = $opt{primary_key}->[$i];
-           $key = "$main_table.$key" if $statement eq 'update' ||
-             $statement eq 'delete' || $statement eq 'select';
-           next if exists $param->{$key};
-           $param->{$key} = $opt{id}->[$i];
-           push @cleanup, $key;
-        }
-    }
-    
-    # Cleanup tables(DEPRECATED!)
-    $tables = $self->_remove_duplicate_table($tables, $main_table)
-      if @$tables > 1;
     
     # Type rule
     my $type_filters = {};
@@ -2821,28 +2798,6 @@ executed SQL and bind values are printed to STDERR.
 =head2 C<DBIX_CUSTOM_DEBUG_ENCODING>
 
 DEBUG output encoding. Default to UTF-8.
-
-=head1 DEPRECATED FUNCTIONALITY
-
-L<DBIx::Custom>
-
-    # Methods
-    create_query # will be removed at 2017/1/1
-    apply_filter # will be removed at 2017/1/1
-    
-    # Options
-    execute method id option # will be removed 2017/1/1
-    
-=head1 BACKWARDS COMPATIBILITY POLICY
-
-If a functionality is DEPRECATED, you can know it by DEPRECATED warnings
-except for attribute method.
-You can check all DEPRECATED functionalities by document.
-DEPRECATED functionality is removed after five years,
-but if at least one person use the functionality and tell me that thing
-I extend one year each time he tell me it.
-
-EXPERIMENTAL functionality will be changed without warnings.
 
 =head1 BUGS
 
