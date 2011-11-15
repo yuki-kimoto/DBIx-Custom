@@ -44,9 +44,9 @@ $dbi = DBIx::Custom->connect;
 
 
 ### SQLite only test
-test 'dbi_option default';
+test 'option default';
 $dbi = DBIx::Custom->new;
-is_deeply($dbi->dbi_option, {});
+is_deeply($dbi->option, {});
 
 
 test 'prefix';
@@ -217,7 +217,7 @@ like($@, qr/Row count must be specified/, "Not specified row count");
 test 'type option'; # DEPRECATED!
 $dbi = DBIx::Custom->connect(
     data_source => 'dbi:SQLite:dbname=:memory:',
-    dbi_option => {
+    option => {
         $DBD::SQLite::VERSION > 1.26 ? (sqlite_unicode => 1) : (unicode => 1)
     }
 );

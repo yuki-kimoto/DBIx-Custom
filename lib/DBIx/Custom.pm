@@ -189,7 +189,7 @@ sub connect {
         my $dsn = $self->dsn;
         my $user = $self->user;
         my $password = $self->password;
-        my $option = $self->_option;
+        my $option = $self->option;
         my $connector = DBIx::Connector->new($dsn, $user, $password,
           {%{$self->default_option} , %$option});
         $self->connector($connector);
@@ -1361,7 +1361,7 @@ sub _connect {
       unless $dsn;
     my $user        = $self->user;
     my $password    = $self->password;
-    my $option = $self->_option;
+    my $option = $self->option;
     $option = {%{$self->default_option}, %$option};
     
     # Connect
@@ -1413,16 +1413,6 @@ sub _need_tables {
             $self->_need_tables($tree, $need_tables, [$tree->{$table}{parent}])
         }
     }
-}
-
-sub _option {
-    my $self = shift;
-    my $option = {%{$self->dbi_options}, %{$self->dbi_option}, %{$self->option}};
-    warn "dbi_options is DEPRECATED! use option instead\n"
-      if keys %{$self->dbi_options};
-    warn "dbi_option is DEPRECATED! use option instead\n"
-      if keys %{$self->dbi_option};
-    return $option;
 }
 
 sub _push_join {
@@ -3241,9 +3231,7 @@ L<DBIx::Custom>
     # Attribute methods
     tag_parse # will be removed 2017/1/1
     default_dbi_option # will be removed 2017/1/1
-    dbi_option # will be removed 2017/1/1
     data_source # will be removed at 2017/1/1
-    dbi_options # will be removed at 2017/1/1
     filter_check # will be removed at 2017/1/1
     reserved_word_quote # will be removed at 2017/1/1
     cache_method # will be removed at 2017/1/1
