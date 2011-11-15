@@ -376,19 +376,12 @@ sub execute {
     
     # Query
     my $query;
-    if (ref $sql) {
-        $query = $sql;
-        warn "execute method receiving query object as first parameter is DEPRECATED!" .
-             "because this is very buggy.";
-    }
-    else {
-        $query = $opt{reuse}->{$sql} if $opt{reuse};
-        $query = $self->_create_query($sql,$opt{after_build_sql})
-          unless $query;
-        $query->{statement} = $opt{statement} || '';
-        $opt{reuse}->{$sql} = $query if $opt{reuse};
-    }
-        
+    $query = $opt{reuse}->{$sql} if $opt{reuse};
+    $query = $self->_create_query($sql,$opt{after_build_sql})
+      unless $query;
+    $query->{statement} = $opt{statement} || '';
+    $opt{reuse}->{$sql} = $query if $opt{reuse};
+    
     # Save query
     $self->{last_sql} = $query->{sql};
 
@@ -3082,19 +3075,6 @@ L<DBIx::Custom>
     select method column option [COLUMN, as => ALIAS] format
       # will be removed at 2017/1/1
     
-    # Others
-    execute($query, ...) # execute method receiving query object.
-                         # this is removed at 2017/1/1
-    execute("select * from {= title}"); # execute method's
-                                        # tag parsing functionality
-                                        # will be removed at 2017/1/1
-    Query caching # will be removed at 2017/1/1
-
-L<DBIx::Custom::Model>
-
-    # Attribute methods
-    execute # will be removed at 2017/1/1
-
 =head1 BACKWARDS COMPATIBILITY POLICY
 
 If a functionality is DEPRECATED, you can know it by DEPRECATED warnings

@@ -270,8 +270,7 @@ $dbi->delete_all(table => $table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
 $source = "select $key1, $key2 from $table1";
-$query = $dbi->create_query($source);
-$result = $dbi->execute($query);
+$result = $dbi->execute($source);
 
 @rows = ();
 while (my $row = $result->fetch) {
@@ -279,25 +278,25 @@ while (my $row = $result->fetch) {
 }
 is_deeply(\@rows, [[1, 2], [3, 4]], "fetch");
 
-$result = $dbi->execute($query);
+$result = $dbi->execute($source);
 @rows = ();
 while (my $row = $result->fetch_hash) {
     push @rows, {%$row};
 }
 is_deeply(\@rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "fetch_hash");
 
-$result = $dbi->execute($query);
+$result = $dbi->execute($source);
 $rows = $result->fetch_all;
 is_deeply($rows, [[1, 2], [3, 4]], "fetch_all");
 
-$result = $dbi->execute($query);
+$result = $dbi->execute($source);
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "all");
 
 test 'Insert query return value';
 $source = "insert into $table1 " . $dbi->values_clause({$key1 => 1, $key2 => 2});
 $query = $dbi->execute($source, {}, query => 1);
-$ret_val = $dbi->execute($query, {$key1 => 1, $key2 => 2});
+$ret_val = $dbi->execute($source, {$key1 => 1, $key2 => 2});
 ok($ret_val);
 
 test 'Direct query';
@@ -314,8 +313,7 @@ $dbi->register_filter(twice       => sub { $_[0] * 2},
                     three_times => sub { $_[0] * 3});
 
 $insert_source  = "insert into $table1 " . $dbi->values_clause({$key1 => 1, $key2 => 2});
-$insert_query = $dbi->execute($insert_source, {}, query => 1);
-$dbi->execute($insert_query, {$key1 => 1, $key2 => 2}, filter => {$key1 => 'twice'});
+$dbi->execute($insert_source, {$key1 => 1, $key2 => 2}, filter => {$key1 => 'twice'});
 $result = $dbi->execute("select * from $table1");
 $rows = $result->filter({$key2 => 'three_times'})->all;
 is_deeply($rows, [{$key1 => 2, $key2 => 6}], "filter fetch_filter");
