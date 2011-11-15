@@ -1754,28 +1754,6 @@ sub apply_filter {
 }
 
 # DEPRECATED!
-sub select_at {
-    my ($self, %opt) = @_;
-
-    warn "select_at is DEPRECATED! use select method id option instead";
-
-    # Options
-    my $primary_keys = delete $opt{primary_key};
-    my $where = delete $opt{where};
-    my $param = delete $opt{param};
-    
-    # Table
-    croak qq{"table" option must be specified } . _subname
-      unless $opt{table};
-    my $table = ref $opt{table} ? $opt{table}->[-1] : $opt{table};
-    
-    # Create where parameter
-    my $where_param = $self->_id_to_param($where, $primary_keys);
-    
-    return $self->select(where => $where_param, %opt);
-}
-
-# DEPRECATED!
 sub register_tag {
     my $self = shift;
     

@@ -2087,15 +2087,15 @@ is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 is($dbi->select(table => $table1)->one->{$key3}, 4);
 
-test 'select_at';
+test 'select';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$result = $dbi->select_at(
+$result = $dbi->select(
     table => $table1,
     primary_key => [$key1, $key2],
-    where => [1, 2]
+    id => [1, 2]
 );
 $row = $result->one;
 is($row->{$key1}, 1);
@@ -2104,10 +2104,10 @@ is($row->{$key3}, 3);
 
 $dbi->delete_all(table => $table1);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$result = $dbi->select_at(
+$result = $dbi->select(
     table => $table1,
     primary_key => $key1,
-    where => 1,
+    id => 1,
 );
 $row = $result->one;
 is($row->{$key1}, 1);
@@ -2116,10 +2116,10 @@ is($row->{$key3}, 3);
 
 $dbi->delete_all(table => $table1);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$result = $dbi->select_at(
+$result = $dbi->select(
     table => $table1,
     primary_key => [$key1, $key2],
-    where => [1, 2]
+    id => [1, 2]
 );
 $row = $result->one;
 is($row->{$key1}, 1);
@@ -2173,12 +2173,12 @@ is($row->{$key1}, 1);
 is($row->{$key2}, 2);
 is($row->{$key3}, 4);
 
-test 'model select_at';
+test 'model select';
 $dbi = MyDBI6->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$result = $dbi->model($table1)->select_at(where => [1, 2]);
+$result = $dbi->model($table1)->select(id => [1, 2]);
 $row = $result->one;
 is($row->{$key1}, 1);
 is($row->{$key2}, 2);
@@ -2243,7 +2243,7 @@ $dbi->setup_model;
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
 $model = $dbi->model($table1);
-$result = $model->select_at(
+$result = $model->select(
     column => [
         $model->mycolumn,
         $model->column($table2)
@@ -2252,7 +2252,7 @@ $result = $model->select_at(
 is_deeply($result->one,
           {$key1 => 1, $key2 => 2, "$table2.$key1" => 1, "$table2.$key3" => 3});
 
-$result = $model->select_at(
+$result = $model->select(
     column => [
         $model->mycolumn([$key1]),
         $model->column($table2 => [$key1])
@@ -2260,7 +2260,7 @@ $result = $model->select_at(
 );
 is_deeply($result->one,
           {$key1 => 1, "$table2.$key1" => 1});
-$result = $model->select_at(
+$result = $model->select(
     column => [
         $model->mycolumn([$key1]),
         {$table2 => [$key1]}
@@ -2269,7 +2269,7 @@ $result = $model->select_at(
 is_deeply($result->one,
           {$key1 => 1, "$table2.$key1" => 1});
 
-$result = $model->select_at(
+$result = $model->select(
     column => [
         $model->mycolumn([$key1]),
         ["$table2.$key1", as => "$table2.$key1"]
@@ -2278,7 +2278,7 @@ $result = $model->select_at(
 is_deeply($result->one,
           {$key1 => 1, "$table2.$key1" => 1});
 
-$result = $model->select_at(
+$result = $model->select(
     column => [
         $model->mycolumn([$key1]),
         ["$table2.$key1" => "$table2.$key1"]
@@ -2686,7 +2686,7 @@ is($row->{$key2}, 2);
 is($row->{$key3}, 3);
 
 
-test 'model select_at';
+test 'model select';
 $dbi = MyDBI6->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
