@@ -1400,13 +1400,13 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $query = $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, query => 1);
-is(ref $query, 'DBIx::Custom::Query');
+is(ref $query, 'HASH');
 $query = $dbi->update({$key2 => 2}, table => $table1, where => {$key1 => 1}, query => 1);
-is(ref $query, 'DBIx::Custom::Query');
+is(ref $query, 'HASH');
 $query = $dbi->delete(table => $table1, where => {$key1 => 1}, query => 1);
-is(ref $query, 'DBIx::Custom::Query');
+is(ref $query, 'HASH');
 $query = $dbi->select(table => $table1, where => {$key1 => 1, $key2 => 2}, query => 1);
-is(ref $query, 'DBIx::Custom::Query');
+is(ref $query, 'HASH');
 
 test 'where';
 $dbi = DBIx::Custom->connect;
@@ -2330,7 +2330,7 @@ $query = $dbi->insert(
     id => [1, 2],
     query => 1
 );
-is(ref $query, 'DBIx::Custom::Query');
+is(ref $query, 'HASH');
 is_deeply($param, {$key3 => 3, $key2 => 4});
 
 test 'model insert id and primary_key option';
@@ -2937,7 +2937,7 @@ $rows = [
     my $sth;
     for my $row (@$rows) {
       $query ||= $dbi->insert($row, table => $table1, query => 1);
-      $sth ||= $query->sth;
+      $sth ||= $query->{sth};
       $sth->execute(map { $row->{$_} } sort keys %$row);
     }
     is_deeply($dbi->select(table => $table1)->all,
