@@ -1763,20 +1763,6 @@ $result = $dbi->select(
 $row = $result->all;
 is_deeply($row, [{$key1 => 1, $key2 => '00:00:00'}]);
 
-test 'register_tag_processor';
-$dbi = DBIx::Custom->connect;
-$dbi->register_tag_processor(
-    a => sub { 1 }
-);
-is($dbi->{_tags}->{a}->(), 1);
-
-test 'register_tag';
-$dbi = DBIx::Custom->connect;
-$dbi->register_tag(
-    b => sub { 2 }
-);
-is($dbi->{_tags}->{b}->(), 2);
-
 test 'table not specify exception';
 $dbi = DBIx::Custom->connect;
 eval {$dbi->select};

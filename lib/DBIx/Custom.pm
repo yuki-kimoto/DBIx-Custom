@@ -1127,7 +1127,7 @@ sub values_clause {
     
     my $wrap = $opts->{wrap} || {};
     
-    # Create insert parameter tag
+    # Create insert parameter
     my $safety = $self->{safety_character} || $self->safety_character;
     my $qp = $self->q('');
     my $q = substr($qp, 0, 1) || '';
@@ -1612,24 +1612,6 @@ sub _apply_filter {
 }
 
 # DEPRECATED!
-has dbi_options => sub { {} };
-has 'reserved_word_quote';
-has dbi_option => sub { {} };
-
-# DEPRECATED
-sub update_param {
-    my ($self, $param, $opts) = @_;
-    
-    warn "update_param is DEPRECATED! use assign_clause instead.";
-    
-    # Create update parameter tag
-    my $tag = $self->assign_clause($param, $opts);
-    $tag = "set $tag" unless $opts->{no_set};
-
-    return $tag;
-}
-
-# DEPRECATED!
 sub create_query {
     warn "create_query is DEPRECATED! use query option of each method";
     shift->_create_query(@_);
@@ -1641,29 +1623,6 @@ sub apply_filter {
     
     warn "apply_filter is DEPRECATED!";
     return $self->_apply_filter(@_);
-}
-
-# DEPRECATED!
-sub register_tag {
-    my $self = shift;
-    
-    warn "register_tag is DEPRECATED!";
-    
-    # Merge tag
-    my $tags = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $self->{_tags} = {%{$self->{_tags} || {}}, %$tags};
-    
-    return $self;
-}
-
-# DEPRECATED!
-sub register_tag_processor {
-    my $self = shift;
-    warn "register_tag_processor is DEPRECATED!";
-    # Merge tag
-    my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    $self->{_tags} = {%{$self->{_tags} || {}}, %{$tag_processors}};
-    return $self;
 }
 
 # DEPRECATED!
@@ -3157,11 +3116,8 @@ L<DBIx::Custom>
     insert_timestamp # will be removed at 2017/1/1
     create_query # will be removed at 2017/1/1
     apply_filter # will be removed at 2017/1/1
-    register_tag # will be removed at 2017/1/1
     default_bind_filter # will be removed at 2017/1/1
     default_fetch_filter # will be removed at 2017/1/1
-    register_tag # will be removed at 2017/1/1
-    register_tag_processor # will be removed at 2017/1/1
     
     # Options
     select column option [COLUMN => ALIAS] syntax # will be removed 2017/1/1
