@@ -212,7 +212,7 @@ sub dbh {
         $self->{dbh} ||= $self->_connect;
         
         # Quote
-        if (!defined $self->reserved_word_quote && !defined $self->quote) {
+        unless (defined $self->quote) {
             my $driver = $self->_driver;
             my $quote =  $driver eq 'odbc' ? '[]'
                        : $driver eq 'ado' ? '[]'
@@ -835,8 +835,7 @@ sub order {
 sub q {
     my ($self, $value, $quotemeta) = @_;
     
-    my $quote = $self->{reserved_word_quote}
-      || $self->{quote} || $self->quote || '';
+    my $quote = $self->{quote} || $self->quote || '';
     return "$quote$value$quote"
       if !$quotemeta && ($quote eq '`' || $quote eq '"');
     
@@ -1195,7 +1194,7 @@ sub _create_query {
         $query = $builder->build_query($source);
 
         # Remove reserved word quote
-        if (my $q = $self->_quote) {
+        if (my $q = $self->quote || '') {
             $q = quotemeta($q);
             $_ =~ s/[$q]//g for @{$query->columns}
         }
@@ -1406,7 +1405,7 @@ sub _push_join {
             $table2 = $table->[1];
         }
         else {
-            my $q = $self->_quote;
+            my $q = $self->quote || '';
             my $j_clause = (split /\s+on\s+/, $join_clause)[-1];
             $j_clause =~ s/'.+?'//g;
             my $q_re = quotemeta($q);
@@ -1445,11 +1444,6 @@ sub _push_join {
     $$sql .= $tree->{$_}{join} . ' ' for @need_tables;
 }
 
-sub _quote {
-    my $self = shift;
-    return $self->{reserved_word_quote} || $self->quote || '';
-}
-
 sub _remove_duplicate_table {
     my ($self, $tables, $main_table) = @_;
     
@@ -1458,7 +1452,7 @@ sub _remove_duplicate_table {
     delete $tables{$main_table} if $main_table;
     
     my $new_tables = [keys %tables, $main_table ? $main_table : ()];
-    if (my $q = $self->_quote) {
+    if (my $q = $self->quote || '') {
         $q = quotemeta($q);
         $_ =~ s/[$q]//g for @$new_tables;
     }
@@ -1472,7 +1466,7 @@ sub _search_tables {
     # Search tables
     my $tables = [];
     my $safety_character = $self->safety_character;
-    my $q = $self->_quote;
+    my $q = $self->quote;
     my $quoted_safety_character_re = $self->q("?([$safety_character]+)", 1);
     my $table_re = $q ? qr/(?:^|[^$safety_character])${quoted_safety_character_re}?\./
                       : qr/(?:^|[^$safety_character])([$safety_character]+)\./;

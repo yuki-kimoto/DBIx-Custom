@@ -27,7 +27,7 @@ use DBIx::Custom;
 
 # Constant
 my $create_table1 = 'create table table1 (key1 varchar, key2 varchar);';
-my $create_table_reserved = 'create table "table" ("select" varchar, "update" varchar)';
+my $create_table_quote = 'create table "table" ("select" varchar, "update" varchar)';
 my $q = '"';
 my $p = '"';
 
@@ -142,13 +142,13 @@ test 'quote';
 $dbi = DBIx::Custom->connect;
 $dbi->quote('"');
 eval { $dbi->execute("drop table ${q}table$p") };
-$dbi->execute($create_table_reserved);
+$dbi->execute($create_table_quote);
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->insert({select => 1}, table => 'table');
 $dbi->delete(table => 'table', where => {select => 1});
 $result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
-is_deeply($rows, [], "reserved word");
+is_deeply($rows, [], "quote");
 
 test 'finish statement handle';
 $dbi = DBIx::Custom->connect;
@@ -304,18 +304,18 @@ $result = $dbi->select(
 );
 is($result->fetch_first->[0], 'B');
 
-test 'reserved_word_quote';
+test 'quote';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
-$dbi->reserved_word_quote('"');
-$dbi->execute($create_table_reserved);
+$dbi->quote('"');
+$dbi->execute($create_table_quote);
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
 $dbi->insert({select => 1}, table => 'table');
 $dbi->update({update => 2}, table => 'table', where => {'table.select' => 1});
 $result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
-is_deeply($rows, [{select => 2, update => 6}], "reserved word");
+is_deeply($rows, [{select => 2, update => 6}]);
 
 test 'limit tag';
 $dbi = DBIx::Custom->connect;

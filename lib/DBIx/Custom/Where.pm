@@ -38,7 +38,7 @@ sub to_string {
     my $count = {};
     $self->{_query_builder} = $self->dbi->query_builder;
     $self->{_safety_character} = $self->dbi->safety_character;
-    $self->{_quote} = $self->dbi->_quote;
+    $self->{_quote} = $self->dbi->quote;
     $self->{_tag_parse} = $self->dbi->{tag_parse};
     $self->_parse($clause, $where, $count, 'and');
 
