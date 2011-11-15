@@ -257,14 +257,11 @@ sub create_model {
     my $opt = ref $_[0] eq 'HASH' ? $_[0] : {@_};
     $opt->{dbi} = $self;
     my $model_class = delete $opt->{model_class} || 'DBIx::Custom::Model';
-    my $model_name  = delete $opt->{name};
     my $model_table = delete $opt->{table};
-    $model_name ||= $model_table;
     
     # Create model
     my $model = $model_class->new($opt);
     weaken $model->{dbi};
-    $model->name($model_name) unless $model->name;
     $model->table($model_table) unless $model->table;
     
     # Apply filter(DEPRECATED logic)
@@ -279,9 +276,9 @@ sub create_model {
     }
     
     # Set model
-    $self->model($model->name, $model);
+    $self->model($model->table, $model);
     
-    return $self->model($model->name);
+    return $self->model($model->table);
 }
 
 sub each_column {
@@ -703,17 +700,13 @@ sub include_model {
         
         # Load model
         my $model_class;
-        my $model_name;
         my $model_table;
         if (ref $model_info eq 'HASH') {
             $model_class = $model_info->{class};
-            $model_name  = $model_info->{name};
             $model_table = $model_info->{table};
-            
-            $model_name  ||= $model_class;
-            $model_table ||= $model_name;
+            $model_table ||= $model_class;
         }
-        else { $model_class = $model_name = $model_table = $model_info }
+        else { $model_class = $model_table = $model_info }
         my $mclass = "${name_space}::$model_class";
         croak qq{"$mclass" is invalid class name } . _subname
           if $mclass =~ /[^\w:]/;
@@ -725,7 +718,6 @@ sub include_model {
         # Create model
         my $opt = {};
         $opt->{model_class} = $mclass if $mclass;
-        $opt->{name}        = $model_name if $model_name;
         $opt->{table}       = $model_table if $model_table;
         $self->create_model($opt);
     }
@@ -3111,20 +3103,6 @@ L<DBIx::Custom::Model>
 
     # Attribute methods
     execute # will be removed at 2017/1/1
-    method # will be removed at 2017/1/1
-    filter # will be removed at 2017/1/1
-    name # will be removed at 2017/1/1
-    type # will be removed at 2017/1/1
-
-L<DBIx::Custom::Query>
-    
-    # Attribute methods
-    default_filter # will be removed at 2017/1/1
-    table # will be removed at 2017/1/1
-    filters # will be removed at 2017/1/1
-    
-    # Methods
-    filter # will be removed at 2017/1/1
 
 =head1 BACKWARDS COMPATIBILITY POLICY
 

@@ -46,7 +46,7 @@ for my $method (@methods) {
              qq/\@_ % 2 ? shift : (),/;
 
     
-    my @attrs = qw/table type primary_key bind_type/;
+    my @attrs = qw/table primary_key bind_type/;
     my @insert_attrs = qw/created_at updated_at/;
     my @update_attrs = qw/updated_at/;
     my @select_attrs = qw/join/;
@@ -104,7 +104,6 @@ sub execute {
             table => $self->table,
             bind_type => $self->bind_type,
             primary_key => $self->primary_key,
-            type => $self->type,
             @_
         );    
     }
@@ -152,11 +151,6 @@ sub new {
     
     return $self;
 }
-
-# DEPRECATED!
-has 'filter';
-has 'name';
-has 'type';
 
 1;
 

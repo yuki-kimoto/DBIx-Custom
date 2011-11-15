@@ -3239,9 +3239,6 @@ $model2 = $dbi->create_model(
 );
 $dbi->create_model(
     table => $table3,
-    filter => [
-        $key1 => {in => sub { uc $_[0] }}
-    ]
 );
 $dbi->setup_model;
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
