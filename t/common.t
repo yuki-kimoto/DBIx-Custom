@@ -2229,9 +2229,6 @@ $dbi->execute($sql, $param, table => $table1);
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 
-eval { $dbi->values_clause({";" => 1}) };
-like($@, qr/not safety/);
-
 test 'mycolumn';
 $dbi = MyDBI8->connect;
 $dbi->user_table_info($user_table_info);
@@ -3684,9 +3681,6 @@ is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 33, $key4 => 4, $key5 => 5}
                   "update param no_set");
 
             
-eval { $dbi->assign_clause({";" => 1}) };
-like($@, qr/not safety/);
-
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);

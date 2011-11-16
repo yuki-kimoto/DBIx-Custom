@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.1747';
+our $VERSION = '0.2100';
 use 5.008001;
 
 use Carp 'croak';
@@ -131,18 +131,7 @@ sub assign_clause {
     my ($self, $param, $opts) = @_;
     
     my $wrap = $opts->{wrap} || {};
-    my $safety = $self->{safety_character} || $self->safety_character;
-    my $qp = $self->q('');
-    my $q = substr($qp, 0, 1) || '';
-    my $p = substr($qp, 1, 1) || '';
-    
-    # Check unsafety keys
-    unless ((join('', keys %$param) || '') =~ /^[$safety\.]+$/) {
-        for my $column (keys %$param) {
-            croak qq{"$column" is not safety column name } . _subname
-              unless $column =~ /^[$safety\.]+$/;
-        }
-    }
+    my ($q, $p) = split //, $self->q('');
     
     # Assign clause (performance is important)
     join(
@@ -406,8 +395,17 @@ sub execute {
     }
     else {
         $query = $opt{reuse}->{$sql} if $opt{reuse};
-        $query = $self->_create_query($sql,$opt{after_build_sql} || $opt{sqlfilter})
-          unless $query;
+        unless ($query) {
+            my $safety = $self->{safety_character} || $self->safety_character;
+            # Check unsafety keys
+            unless ((join('', keys %$param) || '') =~ /^[$safety\.]+$/) {
+                for my $column (keys %$param) {
+                    croak qq{"$column" is not safety column name } . _subname
+                      unless $column =~ /^[$safety\.]+$/;
+                }
+            }
+            $query = $self->_create_query($sql,$opt{after_build_sql} || $opt{sqlfilter});
+        }
         $query->statement($opt{statement} || '');
         $opt{reuse}->{$sql} = $query if $opt{reuse};
     }
@@ -1183,69 +1181,13 @@ sub update_timestamp {
     return $self->{update_timestamp};
 }
 
-sub use_version1 {
-    my $self = shift;
-    
-    return if $VERSION >= 1;
-    
-    my @modules = ('', qw/::Where ::Util ::Result ::Order ::NotExists ::Model ::Mapper/);
-    
-    # Replace
-    for my $module (@modules) {
-        my $old = 'DBIx::Custom' . $module;
-        my $new = 'DBIx::Custom::Next' . $module;
-        
-        no strict 'refs';
-        no warnings 'redefine';
-        eval "require $old";
-        die $@ if $@;
-        eval "require $new";
-        die $@ if $@;
-        for my $method (@{DBIx::Custom::Class::Inspector->methods( $old, 'full', 'public' )}) {
-            next unless $method =~ /^DBIx::Custom/;
-            undef &{"$method"};
-            *{"$method"} = sub { die "$method method is removed" };
-        }
-        
-        for my $new_method (@{DBIx::Custom::Class::Inspector->methods( $new, 'full', 'public' )}) {
-            next unless $new_method =~ /^DBIx::Custom/;
-            my $old_method = $new_method;
-            $old_method =~ s/::Next//;
-            *{"$old_method"} = \&{"$new_method"};
-        }
-    }
-
-    # Remove
-    for my $module (qw/DBIx::Custom::Tag DBIx::Custom::QueryBuilder/) {
-        no strict 'refs';
-        eval "require $module";
-        die $@ if $@;
-        for my $method (@{DBIx::Custom::Class::Inspector->methods( $module, 'full', 'public' )}) {
-            next unless $method =~ /^DBIx::Custom/;
-            undef &{"$method"};
-            *{"$method"} = sub { die "$method method is removed" };
-        }
-    }
-}
-
 sub values_clause {
     my ($self, $param, $opts) = @_;
     
     my $wrap = $opts->{wrap} || {};
     
     # Create insert parameter tag
-    my $safety = $self->{safety_character} || $self->safety_character;
-    my $qp = $self->q('');
-    my $q = substr($qp, 0, 1) || '';
-    my $p = substr($qp, 1, 1) || '';
-    
-    # Check unsafety keys
-    unless ((join('', keys %$param) || '') =~ /^[$safety\.]+$/) {
-        for my $column (keys %$param) {
-            croak qq{"$column" is not safety column name } . _subname
-              unless $column =~ /^[$safety\.]+$/;
-        }
-    }
+    my ($q, $p) = split //, $self->q('');
     
     # values clause(performance is important)
     '(' .
@@ -3414,13 +3356,6 @@ Show type name of the columns of specified table.
     issue_date: date
 
 This type name is used in C<type_rule>'s C<into1> and C<into2>.
-
-=head2 C<use_version1 EXPERIMENTAL>
-
-    DBIx::Custom->use_version1;
-
-Upgrade L<DBIx::Custom> to major version 1 if version is lower than 1.
-You can't use DEPRECATED method and method performance is improved.
 
 =head2 C<values_clause>
 
