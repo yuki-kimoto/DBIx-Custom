@@ -18,7 +18,6 @@ use DBIx::Custom::Mapper;
 use DBIx::Custom::NotExists;
 use Encode qw/encode encode_utf8 decode_utf8/;
 use Scalar::Util qw/weaken/;
-use DBIx::Custom::Class::Inspector;
 
 
 has [qw/connector dsn password quote user exclude_table user_table_info
