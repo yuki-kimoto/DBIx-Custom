@@ -5,9 +5,9 @@ use FindBin;
 use lib "$FindBin::Bin/common";
 $ENV{DBIX_CUSTOM_TEST_RUN} = 1;
 
-use DBIx::Custom::Next;
+use DBIx::Custom;
 {
-    package DBIx::Custom::Next;
+    package DBIx::Custom;
     no warnings 'redefine';
     
     my $table1 = 'table1';

@@ -13,15 +13,15 @@ BEGIN {
         or plan skip_all => 'DBD::SQLite >= 1.25 required';
 
     plan 'no_plan';
-    use_ok('DBIx::Custom::Next');
+    use_ok('DBIx::Custom');
 }
 
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 sub test { print "# $_[0]\n" }
 
-use DBIx::Custom::Next;
+use DBIx::Custom;
 {
-    package DBIx::Custom::Next;
+    package DBIx::Custom;
     has dsn => sub { 'dbi:SQLite:dbname=:memory:' }
 }
 
@@ -40,17 +40,17 @@ my $binary;
 my $model;
 
 # Prepare table
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 
 
 ### SQLite only test
 test 'option default';
-$dbi = DBIx::Custom::Next->new;
+$dbi = DBIx::Custom->new;
 is_deeply($dbi->option, {});
 
 
 test 'prefix';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1 varchar, key2 varchar, primary key(key1));');
 $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
@@ -61,7 +61,7 @@ is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
 
 
 test 'insert created_at and updated_at scalar reference';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2, key3)');
 $dbi->now(\"datetime('now')");
@@ -71,7 +71,7 @@ $row   = $result->one;
 is($row->{key1}, $row->{key2});
 is($row->{key1}, $row->{key3});
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2, key3)');
 $dbi->now(\"datetime('now')");
@@ -83,7 +83,7 @@ is($row->{key1}, $row->{key2});
 is($row->{key1}, $row->{key3});
 
 test 'insert created_at and updated_at scalar reference';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2, key3)');
 $dbi->now(\"datetime('now')");
@@ -94,7 +94,7 @@ is($row->{key1}, $row->{key2});
 is($row->{key1}, $row->{key3});
 
 test 'update updated_at scalar reference';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2)');
 $dbi->now(\"datetime('now')");
@@ -115,7 +115,7 @@ $row = $result->one;
 is($row->{key1}, $row->{key2});
 is($row->{key1}, $row->{key3});
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2)');
 $dbi->now(\"datetime('now')");
@@ -128,7 +128,7 @@ is($row->{key1}, $row->{key2});
 test 'DBIX_CUSTOM_DEBUG ok';
 {
     local $ENV{DBIX_CUSTOM_DEBUG} = 1;
-    $dbi = DBIx::Custom::Next->connect;
+    $dbi = DBIx::Custom->connect;
     eval { $dbi->execute('drop table table1') };
     my $error;
     local $SIG{__WARN__} = sub {
@@ -139,7 +139,7 @@ test 'DBIX_CUSTOM_DEBUG ok';
 }
 
 test 'quote';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 $dbi->quote('"');
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->execute($create_table_quote);
@@ -150,7 +150,7 @@ $rows   = $result->all;
 is_deeply($rows, [], "quote");
 
 test 'finish statement handle';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 $dbi->execute($create_table1);
 $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
 $dbi->insert({key1 => 3, key2 => 4}, table => 'table1');
@@ -172,7 +172,7 @@ $result = $dbi->select(table => 'table2');
 $row = $result->fetch_hash_first;
 ok(!$row, "no row fetch");
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
@@ -214,7 +214,7 @@ like($@, qr/Row count must be specified/, "Not specified row count");
 
 test 'bind_type option';
 $binary = pack("I3", 1, 2, 3);
-$dbi = DBIx::Custom::Next->connect(option => {sqlite_unicode => 1});
+$dbi = DBIx::Custom->connect(option => {sqlite_unicode => 1});
 $dbi->execute('create table table1(key1, key2)');
 $dbi->insert({key1 => $binary, key2 => 'あ'}, table => 'table1', bind_type => [key1 => DBI::SQL_BLOB]);
 $result = $dbi->select(table => 'table1');
@@ -225,7 +225,7 @@ $row = $result->one;
 is($row->{key1_length}, length $binary);
 
 test 'type_rule from';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 $dbi->type_rule(
     from1 => {
         date => sub { uc $_[0] }
@@ -251,7 +251,7 @@ is_deeply($rows, [{key1 => 3, key2 => 4}], "append statement");
 
 # DEPRECATED! test
 test 'filter __ expression';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table2') };
 eval { $dbi->execute('drop table table3') };
 $dbi->execute('create table table2 (id, name, table3_id)');
@@ -282,7 +282,7 @@ $result = $dbi->select(
 is($result->fetch_first->[0], 'b');
 
 test 'quote';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->quote('"');
 $dbi->execute($create_table_quote);
@@ -293,7 +293,7 @@ $rows   = $result->all;
 is_deeply($rows, [{select => 1, update => 2}]);
 
 test 'join function';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table table1") };
 eval { $dbi->execute("drop table table2") };
 $dbi->execute($create_table1);
@@ -310,7 +310,7 @@ $result = $dbi->select(
 );
 is_deeply($result->all, [{"table2.key3" => 4}]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table table1") };
 eval { $dbi->execute("drop table table2") };
 $dbi->execute($create_table1);

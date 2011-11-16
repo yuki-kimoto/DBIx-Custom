@@ -4,7 +4,7 @@ use warnings;
 use utf8;
 
 use FindBin;
-use DBIx::Custom::Next;
+use DBIx::Custom;
 
 my $dbi;
 my $dsn;
@@ -14,7 +14,7 @@ $dsn = "dbi:ODBC:Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=$database
 
 plan skip_all => 'Microsoft access(ODBC, *.accdb(2007)) private test'
   unless -f "$FindBin::Bin/run/access2007-accdb.run"
-      && eval { $dbi = DBIx::Custom::Next->connect(dsn => $dsn); 1 };
+      && eval { $dbi = DBIx::Custom->connect(dsn => $dsn); 1 };
 plan 'no_plan';
 
 my $model;

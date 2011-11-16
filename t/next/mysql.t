@@ -4,7 +4,7 @@ use warnings;
 use utf8;
 
 use FindBin;
-use DBIx::Custom::Next;
+use DBIx::Custom;
 
 my $dbi;
 my $dsn;
@@ -17,7 +17,7 @@ $dsn = "dbi:mysql:database=$database";
 $args = {dsn => $dsn, user => $user, password => $password,};
 
 plan skip_all => 'mysql private test' unless -f "$FindBin::Bin/run/mysql2.run"
-  && eval { $dbi = DBIx::Custom::Next->connect($args); 1 };
+  && eval { $dbi = DBIx::Custom->connect($args); 1 };
 plan 'no_plan';
 
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
@@ -36,7 +36,7 @@ my $model;
 
 test 'connect';
 eval {
-    $dbi = DBIx::Custom::Next->connect(
+    $dbi = DBIx::Custom->connect(
         dsn => "dbi:mysql:database=$database;host=localhost;port=10000",
         user => $user,
         password => $password
@@ -109,7 +109,7 @@ is_deeply($row, {key1 => 1, key2 => 3}, "basic");
 
 # Test memory leaks
 for (1 .. 300) {
-    $dbi = DBIx::Custom::Next->connect(
+    $dbi = DBIx::Custom->connect(
         dsn => "dbi:mysql:database=$database;host=localhost;port=10000",
         user => $user,
         password => $password
@@ -124,15 +124,15 @@ test 'dbh';
         "dbi:mysql:database=$database",
         $user,
         $password,
-        DBIx::Custom::Next->new->default_option
+        DBIx::Custom->new->default_option
     );
 
-    my $dbi = DBIx::Custom::Next->connect(connector => $connector);
+    my $dbi = DBIx::Custom->connect(connector => $connector);
     $dbi->delete_all(table => 'table1');
     $dbi->do('insert into table1 (key1, key2) values (1, 2)');
     is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
     
-    $dbi = DBIx::Custom::Next->new;
+    $dbi = DBIx::Custom->new;
     $dbi->dbh('a');
     is($dbi->{dbh}, 'a');
 }
@@ -144,10 +144,10 @@ test 'dbh';
         "dbi:mysql:database=$database",
         $user,
         $password,
-        DBIx::Custom::Next->new->default_option
+        DBIx::Custom->new->default_option
     );
 
-    my $dbi = DBIx::Custom::Next->connect(connector => $connector);
+    my $dbi = DBIx::Custom->connect(connector => $connector);
     $dbi->delete_all(table => 'table1');
     
     $dbi->connector->txn(sub {
@@ -169,10 +169,10 @@ test 'dbh';
               []);
 }
 
-use DBIx::Custom::Next;
+use DBIx::Custom;
 use Scalar::Util 'blessed';
 {
-    my $dbi = DBIx::Custom::Next->connect(
+    my $dbi = DBIx::Custom->connect(
         user => $user,
         password => $password,
         dsn => "dbi:mysql:dbname=$database"
@@ -186,7 +186,7 @@ use Scalar::Util 'blessed';
 }
 
 {
-    my $dbi = DBIx::Custom::Next->connect(
+    my $dbi = DBIx::Custom->connect(
         user => $user,
         password => $password,
         dsn => "dbi:mysql:dbname=$database",
@@ -203,10 +203,10 @@ test 'fork';
         "dbi:mysql:database=$database",
         $user,
         $password,
-        DBIx::Custom::Next->new->default_option
+        DBIx::Custom->new->default_option
     );
     
-    my $dbi = DBIx::Custom::Next->new(connector => $connector);
+    my $dbi = DBIx::Custom->new(connector => $connector);
     $dbi->delete_all(table => 'table1');
     $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
     die "Can't fork" unless defined (my $pid = fork);

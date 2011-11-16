@@ -3,7 +3,7 @@ package MyModel1::TABLE2;
 use strict;
 use warnings;
 
-use base 'DBIx::Custom::Next::Model';
+use base 'DBIx::Custom::Model';
 
 
 sub insert {

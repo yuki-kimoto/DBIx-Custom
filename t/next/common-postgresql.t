@@ -7,9 +7,9 @@ $ENV{DBIX_CUSTOM_TEST_RUN} = 1
   if -f "$FindBin::Bin/run/common-postgresql.run";
 $ENV{DBIX_CUSTOM_SKIP_MESSAGE} = 'postgresql private test';
 
-use DBIx::Custom::Next;
+use DBIx::Custom;
 {
-    package DBIx::Custom::Next;
+    package DBIx::Custom;
     no warnings 'redefine';
 
     my $table1 = 'table1';

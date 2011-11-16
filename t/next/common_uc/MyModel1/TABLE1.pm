@@ -1,6 +1,6 @@
 package MyModel1::TABLE1;
 
-use DBIx::Custom::Next::Model -base;
+use DBIx::Custom::Model -base;
 
 sub insert {
     my ($self, $param) = @_;

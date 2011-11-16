@@ -1,5 +1,5 @@
 package MyModel6;
 
-use base 'DBIx::Custom::Next::Model';
+use base 'DBIx::Custom::Model';
 
 1;

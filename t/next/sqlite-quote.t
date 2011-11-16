@@ -1,7 +1,7 @@
 # Change quote for tests
-use DBIx::Custom::Next;
+use DBIx::Custom;
 {
-    package DBIx::Custom::Next;
+    package DBIx::Custom;
     no warnings 'redefine';
     sub quote { '""' }
 }

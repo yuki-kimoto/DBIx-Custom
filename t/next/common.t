@@ -9,7 +9,7 @@ my $dbi;
 
 plan skip_all => $ENV{DBIX_CUSTOM_SKIP_MESSAGE} || 'common.t is always skipped'
   unless $ENV{DBIX_CUSTOM_TEST_RUN}
-    && eval { $dbi = DBIx::Custom::Next->connect; 1 };
+    && eval { $dbi = DBIx::Custom->connect; 1 };
 
 plan 'no_plan';
 
@@ -88,7 +88,7 @@ require MyDBI1;
     use strict;
     use warnings;
 
-    use base 'DBIx::Custom::Next';
+    use base 'DBIx::Custom';
 
     sub connect {
         my $self = shift->SUPER::connect(@_);
@@ -106,7 +106,7 @@ require MyDBI1;
     use strict;
     use warnings;
 
-    use base 'DBIx::Custom::Next::Model';
+    use base 'DBIx::Custom::Model';
 
     package MyModel2::table1;
 
@@ -174,7 +174,7 @@ require MyDBI1;
     use strict;
     use warnings;
 
-    use base 'DBIx::Custom::Next';
+    use base 'DBIx::Custom';
 
     sub connect {
         my $self = shift->SUPER::connect(@_);
@@ -185,7 +185,7 @@ require MyDBI1;
 {
     package MyDBI6;
     
-    use base 'DBIx::Custom::Next';
+    use base 'DBIx::Custom';
     
     sub connect {
         my $self = shift->SUPER::connect(@_);
@@ -198,7 +198,7 @@ require MyDBI1;
 {
     package MyDBI7;
     
-    use base 'DBIx::Custom::Next';
+    use base 'DBIx::Custom';
     
     sub connect {
         my $self = shift->SUPER::connect(@_);
@@ -212,7 +212,7 @@ require MyDBI1;
 {
     package MyDBI8;
     
-    use base 'DBIx::Custom::Next';
+    use base 'DBIx::Custom';
     
     sub connect {
         my $self = shift->SUPER::connect(@_);
@@ -226,7 +226,7 @@ require MyDBI1;
 {
     package MyDBI9;
     
-    use base 'DBIx::Custom::Next';
+    use base 'DBIx::Custom';
     
     sub connect {
         my $self = shift->SUPER::connect(@_);
@@ -248,7 +248,7 @@ $rows = $dbi->select(table => $table1)->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 1, $key2 => 2}]);
 
 # Get user table info
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 eval { $dbi->execute("drop table $table3") };
@@ -258,14 +258,14 @@ $dbi->execute($create_table3);
 $user_table_info = $dbi->get_table_info(exclude => $dbi->exclude_table);
 
 # Create table
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $model = $dbi->create_model(table => $table1);
 $model->insert({$key1 => 1, $key2 => 2});
 is_deeply($model->select->all, [{$key1 => 1, $key2 => 2}]);
 
-test 'DBIx::Custom::Next::Result test';
+test 'DBIx::Custom::Result test';
 $dbi->delete_all(table => $table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
@@ -372,7 +372,7 @@ $rows = $result->all;
 is_deeply($rows, [{$key1 => 'a:b c:d', $key2 => 2}]);
 
 test 'Error case';
-eval {DBIx::Custom::Next->connect(dsn => 'dbi:SQLit')};
+eval {DBIx::Custom->connect(dsn => 'dbi:SQLit')};
 ok($@, "connect error");
 
 test 'insert';
@@ -871,7 +871,7 @@ eval{$dbi->delete(table => $table1, where => {';' => 1})};
 like($@, qr/safety/);
 
 $dbi = undef;
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->execute($create_table_reserved);
 $dbi->insert({select => 1}, table => 'table');
@@ -932,7 +932,7 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}], "no exists where");
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->execute($create_table_reserved);
 $dbi->insert({select => 1, update => 2}, table => 'table');
@@ -962,7 +962,7 @@ $row = $result->fetch_first;
 is_deeply($row, [3, 3, 2], "default_fetch_filter and filter");
 
 test 'filters';
-$dbi = DBIx::Custom::Next->new;
+$dbi = DBIx::Custom->new;
 
 is($dbi->filters->{decode_utf8}->(encode_utf8('あ')),
    'あ', "decode_utf8");
@@ -971,7 +971,7 @@ is($dbi->filters->{encode_utf8}->('あ'),
    encode_utf8('あ'), "encode_utf8");
 
 test 'transaction1';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->begin_work;
@@ -984,7 +984,7 @@ $result = $dbi->select(table => $table1);
 ok(! $result->fetch_first, "rollback");
 
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->begin_work;
@@ -1018,7 +1018,7 @@ eval{$dbi->execute($query, {$key1 => {a => 1}})};
 ok($@, "execute fail");
 
 test 'transaction2';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 
@@ -1096,7 +1096,7 @@ eval {$dbi->XXXXXX};
 ok($@, "not exists");
 
 test 'out filter';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
@@ -1109,7 +1109,7 @@ $result = $dbi->select(table => $table1);
 $row   = $result->one;
 is_deeply($row, {$key1 => 1, $key2 => 2}, "insert");
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
@@ -1119,7 +1119,7 @@ $result = $dbi->execute("select * from $table1");
 $row   = $result->one;
 is_deeply($row, {$key1 => 1, $key2 => 2}, "insert");
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
@@ -1129,7 +1129,7 @@ $result = $dbi->execute("select * from $table1");
 $row   = $result->one;
 is_deeply($row, {$key1 => 2, $key2 => 2}, "update");
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
@@ -1139,7 +1139,7 @@ $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
 is_deeply($rows, [], "delete");
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
@@ -1149,7 +1149,7 @@ $result->filter({$key2 => 'twice'});
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 2, $key2 => 4}], "select");
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
@@ -1160,7 +1160,7 @@ $result = $dbi->execute("select * from $table1 where $key1 = :$key1 and $key2 = 
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 2, $key2 => 2}], "execute");
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
@@ -1170,7 +1170,7 @@ $result = $dbi->execute("select * from $table1 where $key1 = :$key1 and $key2 = 
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 2, $key2 => 2}], "execute table tag");
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
@@ -1201,27 +1201,27 @@ $rows   = $result->all;
 is_deeply($rows, [{$key2 => 4, $key3 => 6, "${table2}_$key3" => 6}], "select : join : omit");
 
 test 'connect super';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 
-$dbi = DBIx::Custom::Next->new;
+$dbi = DBIx::Custom->new;
 $dbi->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 
 test 'filter';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -1230,7 +1230,7 @@ $result->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 });
 $row = $result->fetch_first;
 is_deeply($row, [2, 8]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -1239,7 +1239,7 @@ $result->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 });
 $row = $result->fetch_first;
 is_deeply($row, [2, 2, 8]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -1248,7 +1248,7 @@ $result->filter([$key1, $key2] => sub { $_[0] * 2 });
 $row = $result->fetch_first;
 is_deeply($row, [2, 4]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -1270,7 +1270,7 @@ $row = $result->one;
 is_deeply($row, {$key1 => 2, $key2 => 8}, 'apply_filter');
 
 test 'empty where select';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -1279,20 +1279,20 @@ $row = $result->one;
 is_deeply($row, {$key1 => 1, $key2 => 2});
 
 test 'select query option';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $query = $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, query => 1);
-is(ref $query, 'HASH');
+ok(ref $query);
 $query = $dbi->update({$key2 => 2}, table => $table1, where => {$key1 => 1}, query => 1);
-is(ref $query, 'HASH');
+ok(ref $query);
 $query = $dbi->delete(table => $table1, where => {$key1 => 1}, query => 1);
-is(ref $query, 'HASH');
+ok(ref $query);
 $query = $dbi->select(table => $table1, where => {$key1 => 1, $key2 => 2}, query => 1);
-is(ref $query, 'HASH');
+ok(ref $query);
 
 test 'where';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -1585,7 +1585,7 @@ $row = $result->all;
 is_deeply($row, [{$key1 => 1, $key2 => 2}]);
 
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => '00:00:00'}, table => $table1);
@@ -1602,11 +1602,11 @@ $row = $result->all;
 is_deeply($row, [{$key1 => 1, $key2 => '00:00:00'}]);
 
 test 'table not specify exception';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval {$dbi->select};
 like($@, qr/table/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -1614,7 +1614,7 @@ $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
 $rows = $dbi->select(table => $table1, where => {$key2 => 2})->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -1625,10 +1625,10 @@ is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
 $dbi->helper({one => sub { 1 }});
 is($dbi->one, 1);
 
-eval{DBIx::Custom::Next->connect(dsn => undef)};
+eval{DBIx::Custom->connect(dsn => undef)};
 like($@, qr/_connect/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(twice => sub { $_[0] * 2 });
@@ -1640,7 +1640,7 @@ eval {$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1,
              filter => {$key1 => 'no'}) };
 like($@, qr//);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->register_filter(one => sub { 1 });
@@ -1649,21 +1649,21 @@ eval {$result->filter($key1 => 'no')};
 like($@, qr/not registered/);
 
 test 'option';
-$dbi = DBIx::Custom::Next->connect(option => {PrintError => 1});
+$dbi = DBIx::Custom->connect(option => {PrintError => 1});
 ok($dbi->dbh->{PrintError});
-$dbi = DBIx::Custom::Next->connect(option => {PrintError => 1});
+$dbi = DBIx::Custom->connect(option => {PrintError => 1});
 ok($dbi->dbh->{PrintError});
-$dbi = DBIx::Custom::Next->connect(option => {PrintError => 1});
+$dbi = DBIx::Custom->connect(option => {PrintError => 1});
 ok($dbi->dbh->{PrintError});
 
-test 'DBIx::Custom::Next::Result stash()';
-$result = DBIx::Custom::Next::Result->new;
+test 'DBIx::Custom::Result stash()';
+$result = DBIx::Custom::Result->new;
 is_deeply($result->stash, {}, 'default');
 $result->stash->{foo} = 1;
 is($result->stash->{foo}, 1, 'get and set');
 
 test 'delete';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
@@ -1683,7 +1683,7 @@ $dbi->delete(
 is_deeply($dbi->select(table => $table1)->all, []);
 
 test 'insert';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert(
@@ -1709,7 +1709,7 @@ is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 is($dbi->select(table => $table1)->one->{$key3}, 3);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert(
@@ -1723,7 +1723,7 @@ is($dbi->select(table => $table1)->one->{$key2}, 2);
 is($dbi->select(table => $table1)->one->{$key3}, 3);
 
 test 'update';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
@@ -1749,7 +1749,7 @@ is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 is($dbi->select(table => $table1)->one->{$key3}, 4);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
@@ -1764,7 +1764,7 @@ is($dbi->select(table => $table1)->one->{$key2}, 2);
 is($dbi->select(table => $table1)->one->{$key3}, 4);
 
 test 'select';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
@@ -1881,7 +1881,7 @@ is_deeply($result->one,
           {$key1 => 1, $key2 => 2, "${table2}__$key1" => 1, "${table2}__$key3" => 3});
 
 test 'values_clause';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key1 => 1, $key2 => 2};
@@ -1893,7 +1893,7 @@ $dbi->execute($sql, $param, table => $table1);
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key1 => 1, $key2 => 2};
@@ -1961,7 +1961,7 @@ is_deeply($result->one,
           {$key1 => 1, "$table2.$key1" => 1});
 
 test 'merge_param';
-$dbi = DBIx::Custom::Next->new;
+$dbi = DBIx::Custom->new;
 $params = [
     {$key1 => 1, $key2 => 2, $key3 => 3},
     {$key1 => 1, $key2 => 2},
@@ -1978,7 +1978,7 @@ $param = $dbi->merge_param($params->[0], $params->[1]);
 is_deeply($param, {$key1 => [1, 2, 3, 4], $key2 => [1, 2, 3], $key3 => [1, 2, 3]});
 
 test 'select() param option';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -2008,7 +2008,7 @@ $rows = $dbi->select(
 is_deeply($rows, [{"${table1}_$key1" => 2, $key2 => 3, $key3 => 5}]);
 
 test 'select() string where';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -2022,7 +2022,7 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -2036,7 +2036,7 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -2051,7 +2051,7 @@ $rows = $dbi->select(
 is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
 
 test 'delete() string where';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -2066,7 +2066,7 @@ $dbi->delete(
 $rows = $dbi->select(table => $table1)->all;
 is_deeply($rows, [{$key1 => 2, $key2 => 3}]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -2083,7 +2083,7 @@ is_deeply($rows, [{$key1 => 2, $key2 => 3}]);
 
 
 test 'update() string where';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -2098,7 +2098,7 @@ $dbi->update(
 $rows = $dbi->select(table => $table1)->all;
 is_deeply($rows, [{$key1 => 5, $key2 => 2}]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -2114,7 +2114,7 @@ $rows = $dbi->select(table => $table1)->all;
 is_deeply($rows, [{$key1 => 5, $key2 => 2}]);
 
 test 'insert id and primary_key option';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert(
@@ -2139,7 +2139,7 @@ is($dbi->select(table => $table1)->one->{$key1}, 0);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 is($dbi->select(table => $table1)->one->{$key3}, 3);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert(
@@ -2152,7 +2152,7 @@ is($dbi->select(table => $table1)->one->{$key1}, 1);
 ok(!$dbi->select(table => $table1)->one->{$key2});
 is($dbi->select(table => $table1)->one->{$key3}, 3);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert(
@@ -2165,7 +2165,7 @@ is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 is($dbi->select(table => $table1)->one->{$key3}, 3);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key3 => 3, $key2 => 4};
@@ -2180,7 +2180,7 @@ is($dbi->select(table => $table1)->one->{$key2}, 4);
 is($dbi->select(table => $table1)->one->{$key3}, 3);
 is_deeply($param, {$key3 => 3, $key2 => 4});
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key3 => 3, $key2 => 4};
@@ -2191,7 +2191,7 @@ $dbi->insert(
     id => [1, 2],
     query => 1
 );
-is(ref $query, 'HASH');
+ok(ref $query);
 is_deeply($param, {$key3 => 3, $key2 => 4});
 
 test 'model insert id and primary_key option';
@@ -2222,7 +2222,7 @@ is($row->{$key2}, 2);
 is($row->{$key3}, 3);
 
 test 'update and id option';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
@@ -2248,7 +2248,7 @@ is($dbi->select(table => $table1)->one->{$key1}, 0);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 is($dbi->select(table => $table1)->one->{$key3}, 4);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
@@ -2280,7 +2280,7 @@ is($row->{$key3}, 4);
 
 
 test 'delete and id option';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
@@ -2320,7 +2320,7 @@ is_deeply($dbi->select(table => $table3)->all, []);
 
 
 test 'select and id option';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
@@ -2396,7 +2396,7 @@ is_deeply($result->one,
           {"$table2.$key1" => 1, "$table2.$key3" => 3});
 
 test 'separator';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 $dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
@@ -2455,7 +2455,7 @@ is_deeply($result->one,
 is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
 
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 $dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
@@ -2477,12 +2477,12 @@ $result->filter($key1 => sub { $_[0] * 2 });
 is_deeply($result->one, {$key1 => 2});
 
 test 'available_datetype';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 ok($dbi->can('available_datatype'));
 
 
 test 'select prefix option';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -2491,7 +2491,7 @@ is_deeply($rows, [{$key1 => 1, $key2 => 2}], "table");
 
 
 test 'mapper';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 $param = $dbi->mapper(param => {id => 1, author => 'Ken', price => 1900})->map(
     id => {key => "$table1.id"},
     author => ["$table1.author" => sub { '%' . $_[0] . '%' }],
@@ -2500,7 +2500,7 @@ $param = $dbi->mapper(param => {id => 1, author => 'Ken', price => 1900})->map(
 is_deeply($param, {"$table1.id" => 1, "$table1.author" => '%Ken%',
   "$table1.price" => 1900});
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 $param = $dbi->mapper(param => {id => 1, author => 'Ken', price => 1900})->map(
     id => {key => "$table1.id"},
     author => ["$table1.author" => $dbi->like_value],
@@ -2686,7 +2686,7 @@ $param = $dbi->mapper(param => {id => 'a', author => 'b', price => 'c'}, pass =>
 is_deeply($param, {id => 'a', author => 'b', 'book.price' => 'c'});
 
 test 'order';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 1}, table => $table1);
@@ -2714,7 +2714,7 @@ is_deeply($result->all, [{"$table1-$key1" => 1, "$table1-$key2" => 3},
   {"$table1-$key1" => 2, "$table1-$key2" => 2}]);
 
 test 'last_sql';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->execute("select * from $table1");
@@ -2723,8 +2723,8 @@ is($dbi->last_sql, "select * from $table1");
 eval{$dbi->execute("aaa")};
 is($dbi->last_sql, 'aaa');
 
-test 'DBIx::Custom::Next header';
-$dbi = DBIx::Custom::Next->connect;
+test 'DBIx::Custom header';
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $result = $dbi->execute("select $key1 as h1, $key2 as h2 from $table1");
@@ -2776,7 +2776,7 @@ $result = $model->select(
 is_deeply($result->all, [{"$table1.$key2" => 2}]);
 
 test 'result';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -2796,7 +2796,7 @@ while (my $row = $result->fetch_hash) {
 }
 is_deeply(\@rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -2829,7 +2829,7 @@ $result->filter({$key1 => 'three_times'});
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{$key1 => 3, $key2 => 2}, {$key1 => 9, $key2 => 4}], "hash");
 
-test 'DBIx::Custom::Next::Result fetch_multi';
+test 'DBIx::Custom::Result fetch_multi';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -2843,7 +2843,7 @@ is_deeply($rows, [[5, 6]]);
 $rows = $result->fetch_multi(2);
 ok(!$rows);
 
-test 'DBIx::Custom::Next::Result fetch_hash_multi';
+test 'DBIx::Custom::Result fetch_hash_multi';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -2858,7 +2858,7 @@ $rows = $result->fetch_hash_multi(2);
 ok(!$rows);
 
 test 'select() after_build_sql option';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 $dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
@@ -2876,7 +2876,7 @@ $rows = $dbi->select(
 is_deeply($rows, [{$key1 => 1}]);
 
 test 'select() after_build_sql option';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 $dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
@@ -2943,7 +2943,7 @@ is_deeply($result->one,
           {"$table2_alias-$key1" => 1, "$table2_alias-$key3" => 4});
 
 test 'create_model';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 $dbi->user_table_info($user_table_info);
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
@@ -2976,7 +2976,7 @@ is_deeply($result->one,
 is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
 
 test 'model helper';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table2);
 $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
@@ -2987,7 +2987,7 @@ $model->helper(foo => sub { shift->select(@_) });
 is_deeply($model->foo->one, {$key1 => 1, $key3 => 3});
 
 test 'model helper';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table2);
 $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
@@ -2998,7 +2998,7 @@ $model->helper(foo => sub { shift->select(@_) });
 is_deeply($model->foo->one, {$key1 => 1, $key3 => 3});
 
 test 'assign_clause';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
@@ -3018,7 +3018,7 @@ is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
                   "basic");
 
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
@@ -3037,7 +3037,7 @@ is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 33, $key4 => 4, $key5 => 5}
                   {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
                   "basic");
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
@@ -3057,7 +3057,7 @@ is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 33, $key4 => 4, $key5 => 5}
                   "update param no_set");
 
             
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
@@ -3153,7 +3153,7 @@ is_deeply([sort @{$dbi->model($table1)->columns}], [$key1, $key2]);
 is_deeply([sort @{$dbi->model($table2)->columns}], [$key1, $key3]);
 
 test 'each_column';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
@@ -3182,7 +3182,7 @@ is_deeply($infos,
 );
 
 test 'each_table';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table2);
@@ -3205,7 +3205,7 @@ is_deeply($infos,
     ]
 );
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table2);
@@ -3236,7 +3236,7 @@ $dbi->execute($create_table1_type);
 $user_column_info = $dbi->get_column_info(exclude_table => $dbi->exclude_table);
 
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 
@@ -3250,7 +3250,7 @@ $dbi->insert({$key1 => '01-01'}, table => $table1);
 $result = $dbi->select(table => $table1);
 like($result->one->{$key1}, qr/^2010-01-01/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3269,7 +3269,7 @@ $row = $result->one;
 like($row->{$key1}, qr/^2010-01-03/);
 like($row->{$key2}, qr/^2010-01-01 01:01:03/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->insert({$key1 => '2010-01-03', $key2 => '2010-01-01 01:01:03'}, table => $table1);
@@ -3291,7 +3291,7 @@ $row = $result->one;
 like($row->{$key1}, qr/^2010-01-03/);
 like($row->{$key2}, qr/^2010-01-01 01:01:03/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->insert({$key1 => '2010-01-03', $key2 => '2010-01-01 01:01:03'}, table => $table1);
@@ -3314,7 +3314,7 @@ $row = $result->one;
 like($row->{$key1}, qr/^2010-01-03/);
 like($row->{$key2}, qr/2010-01-01 01:01:03/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->register_filter(convert => sub {
@@ -3340,7 +3340,7 @@ like($row->[0], qr/^2010-03-03/);
 like($row->[1], qr/^2010-03-03/);
 
 test 'type_rule and filter order';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3365,7 +3365,7 @@ $result->filter($key1 => sub { my $v = shift || ''; $v =~ s/8/9/; return $v });
 like($result->fetch_first->[0], qr/^2010-01-09/);
 
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3392,7 +3392,7 @@ $result->filter($key1 => sub { my $v = shift || ''; $v =~ s/8/9/; return $v });
 like($result->fetch_first->[0], qr/^2010-01-09/);
 
 test 'type_rule_off';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3408,7 +3408,7 @@ $dbi->insert({$key1 => '2010-01-03'}, table => $table1, type_rule_off => 1);
 $result = $dbi->select(table => $table1, type_rule_off => 1);
 like($result->type_rule_off->fetch->[0], qr/^2010-01-03/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3424,7 +3424,7 @@ $dbi->insert({$key1 => '2010-01-03'}, table => $table1, type_rule_off => 1);
 $result = $dbi->select(table => $table1, type_rule_off => 1);
 like($result->one->{$key1}, qr/^2010-01-04/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3440,7 +3440,7 @@ $dbi->insert({$key1 => '2010-01-03'}, table => $table1);
 $result = $dbi->select(table => $table1);
 like($result->one->{$key1}, qr/^2010-01-05/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3456,7 +3456,7 @@ $dbi->insert({$key1 => '2010-01-03'}, table => $table1);
 $result = $dbi->select(table => $table1);
 like($result->fetch->[0], qr/2010-01-05/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->register_filter(ppp => sub { my $v = shift || ''; $v =~ s/3/4/; return $v });
@@ -3477,7 +3477,7 @@ eval{$dbi->type_rule(
 )};
 like($@, qr/not registered/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 eval {
@@ -3498,7 +3498,7 @@ eval {
 };
 like($@, qr/lower/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3515,7 +3515,7 @@ $result = $dbi->select(table => $table1);
 $result->type_rule_off;
 like($result->one->{$key1}, qr/^2010-01-04/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3581,7 +3581,7 @@ $row = $result->one;
 like($row->{$key1}, qr/^2010-01-03/);
 like($row->{$key2}, qr/^2010-01-01 01:01:03/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3595,7 +3595,7 @@ $result = $dbi->select(table => $table1);
 $result->filter($key1 => sub { my $v = shift || ''; $v =~ s/4/5/; return $v });
 like($result->one->{$key1}, qr/^2010-01-05/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3609,7 +3609,7 @@ $result = $dbi->select(table => $table1);
 $result->filter($key1 => sub { my $v = shift || ''; $v =~ s/4/5/; return $v });
 like($result->fetch->[0], qr/^2010-01-05/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3633,7 +3633,7 @@ like($result->type_rule_off->fetch_first->[0], qr/^2010-01-03/);
 $result = $dbi->select(table => $table1);
 like($result->type_rule_on->fetch_first->[0], qr/^2010-01-07/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3657,7 +3657,7 @@ like($result->type_rule1_off->fetch_first->[0], qr/^2010-01-05/);
 $result = $dbi->select(table => $table1);
 like($result->type_rule1_on->fetch_first->[0], qr/^2010-01-07/);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
 $dbi->user_column_info($user_column_info);
@@ -3682,7 +3682,7 @@ $result = $dbi->select(table => $table1);
 like($result->type_rule2_on->fetch_first->[0], qr/^2010-01-07/);
 
 test 'join';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -3701,7 +3701,7 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -3756,7 +3756,7 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{"${table1}__$key1" => 1}]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -3773,7 +3773,7 @@ is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $
           'quote');
 
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -3794,7 +3794,7 @@ $rows = $dbi->select(
 )->all;
 is_deeply($rows, [{"${table3}__$key1" => 1}]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
@@ -3826,7 +3826,7 @@ $result = $dbi->select(
 );
 is_deeply($result->all, [{"$table2.$key3" => 4}]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
@@ -3846,7 +3846,7 @@ $result = $dbi->select(
 );
 is_deeply($result->all, [{"$table2.$key3" => 4}]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
@@ -3863,7 +3863,7 @@ $result = $dbi->select(
 );
 is_deeply($result->all, [{"$table2.$key3" => 4}]);
 
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
@@ -3885,7 +3885,7 @@ $dbi = MyDBI1->connect;
 $model = $dbi->model($table1);
 
 test 'count';
-$dbi = DBIx::Custom::Next->connect;
+$dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);

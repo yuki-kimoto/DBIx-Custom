@@ -4,7 +4,7 @@ use warnings;
 use utf8;
 
 use FindBin;
-use DBIx::Custom::Next;
+use DBIx::Custom;
 
 my $dbi;
 my $dsn;
@@ -17,7 +17,7 @@ $dsn = "dbi:mysql:database=$database";
 $args = {dsn => $dsn, user => $user, password => $password,};
 
 plan skip_all => 'mysql private test' unless -f "$FindBin::Bin/run/mysql2.run"
-  && eval { $dbi = DBIx::Custom::Next->connect($args); 1 };
+  && eval { $dbi = DBIx::Custom->connect($args); 1 };
 plan 'no_plan';
 
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
@@ -33,7 +33,7 @@ my $dbname;
 my $rows;
 my $result;
 
-$dbi = DBIx::Custom::Next->connect(
+$dbi = DBIx::Custom->connect(
     dsn => "dbi:mysql:database=$database",
     user => $user,
     password => $password
@@ -43,7 +43,7 @@ $dbi->execute('create table table1 (key1 varchar(255), key2 varchar(255))');
 
 test 'connector => 1';
 {
-    my $dbi = DBIx::Custom::Next->connect(dsn => $dsn, user => $user, password => $password,
+    my $dbi = DBIx::Custom->connect(dsn => $dsn, user => $user, password => $password,
       option => {PrintError => 1}, connector => 1);
     is(ref $dbi->connector, 'DBIx::Connector');
     ok($dbi->dbh->{PrintError});

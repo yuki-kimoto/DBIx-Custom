@@ -7,9 +7,9 @@ $ENV{DBIX_CUSTOM_TEST_RUN} = 1
   if -f "$FindBin::Bin/run/common-oracle.run";
 $ENV{DBIX_CUSTOM_SKIP_MESSAGE} = 'oracle private test';
 
-use DBIx::Custom::Next;
+use DBIx::Custom;
 {
-    package DBIx::Custom::Next;
+    package DBIx::Custom;
     no warnings 'redefine';
     
     has option => sub {

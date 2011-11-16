@@ -9,9 +9,9 @@ $ENV{DBIX_CUSTOM_SKIP_MESSAGE} = 'mysql private test';
 
 
 
-use DBIx::Custom::Next;
+use DBIx::Custom;
 {
-    package DBIx::Custom::Next;
+    package DBIx::Custom;
     no warnings 'redefine';
 
     my $table1 = 'table1';

@@ -1,4 +1,4 @@
 package MyModel8;
-use DBIx::Custom::Next::Model -base;
+use DBIx::Custom::Model -base;
 
 1;

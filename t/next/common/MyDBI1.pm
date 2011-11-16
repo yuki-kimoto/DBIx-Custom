@@ -3,7 +3,7 @@ package MyDBI1;
 use strict;
 use warnings;
 
-use base 'DBIx::Custom::Next';
+use base 'DBIx::Custom';
 
 sub connect {
     my $self = shift->SUPER::connect(@_);
