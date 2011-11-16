@@ -552,7 +552,7 @@ sub execute {
     }
     
     # Result
-    my $result = $self->result_class->new(
+    $self->result_class->new(
         sth => $sth,
         dbi => $self,
         default_filter => $self->{default_in_filter},
@@ -563,7 +563,6 @@ sub execute {
             from2 => $self->type_rule->{from2}
         },
     );
-    $result;
 }
 
 sub get_table_info {
@@ -1257,12 +1256,8 @@ sub _create_query {
     }
 
     # Filter SQL
-    if ($after_build_sql) {
-        my $sql = $query->{sql};
-        $sql = $after_build_sql->($sql);
-        $query->{sql} = $sql;
-    }
-        
+    $query->{sql} = $after_build_sql->($query->{sql}) if $after_build_sql;
+    
     # Save sql
     $self->{last_sql} = $query->{sql};
     
