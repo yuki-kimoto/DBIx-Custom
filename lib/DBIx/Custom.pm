@@ -1235,8 +1235,27 @@ sub _create_query {
     unless ($query) {
 
         # Create query
-        my $builder = $self->query_builder;
-        $query = $builder->build_query($source);
+        if (exists $ENV{DBIX_CUSTOM_TAG_PARSE} && !$ENV{DBIX_CUSTOM_TAG_PARSE}) {
+            $source ||= '';
+            my $columns = [];
+            my $c = $self->{safety_character} || $self->safety_character;
+            my %duplicate;
+            my $duplicate;
+            # Parameter regex
+            $source =~ s/([0-9]):/$1\\:/g;
+            while ($source =~ /(^|.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/sg) {
+                push @$columns, $2;
+                $duplicate = 1 if ++$duplicate{$columns->[-1]} > 1;
+                $source = defined $3 ? "$1$2 $3 ?$4" : "$1?$4";
+            }
+            $source =~ s/\\:/:/g if index($source, "\\:") != -1;
+
+            # Create query
+            $query = {sql => $source, columns => $columns, duplicate => $duplicate};
+        }
+        else {
+            $query = $self->query_builder->build_query($source);
+        }
         
         # Save query to cache
         $self->cache_method->(
@@ -1268,7 +1287,7 @@ sub _create_query {
     $query->{sth} = $sth;
     
     # Set filters
-    $query->{filters} = $self->filters;
+    $query->{filters} = $self->{filters} || $self->filters;
     
     return $query;
 }

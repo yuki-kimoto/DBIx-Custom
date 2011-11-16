@@ -14,12 +14,7 @@ sub build_query {
     my ($self, $sql) = @_;
     
     # Parse tag. tag is DEPRECATED!
-    my $tag_parse;
-    $tag_parse = $ENV{DBIX_CUSTOM_TAG_PARSE}
-      if exists $ENV{DBIX_CUSTOM_TAG_PARSE};
-    $tag_parse = $self->dbi->{tag_parse} unless defined $tag_parse;
-    
-    if ($tag_parse && $sql =~ /(\s|^)\{/) {
+    if ($self->dbi->{tag_parse} && $sql =~ /(\s|^)\{/) {
         my $query = $self->_parse_tag($sql);
         my $tag_count = delete $query->{tag_count};
         warn qq/Tag system such as {? name} is DEPRECATED! / .
@@ -52,7 +47,7 @@ sub build_query {
     $sql =~ s/\\:/:/g if index($sql, "\\:") != -1;
 
     # Create query
-    return {sql => $sql, columns => $columns};
+    return {sql => $sql, columns => $columns, duplicate => 1};
 }
 
 # DEPRECATED!

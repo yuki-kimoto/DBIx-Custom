@@ -3056,6 +3056,8 @@ test 'DBIX_CUSTOM_TAG_PARSE environment variable';
     $dbi->insert({$key1 => 1, $key2 => 1}, table => $table1);
     eval {$dbi->execute("select * from $table1 where {= $key1}", {$key1 => 1})};
     ok($@);
+    eval {$dbi->select(table => $table1, where => ["{= $key1}", {$key1 => 1}]) };
+    ok($@);
     delete$ENV{DBIX_CUSTOM_TAG_PARSE};
 }
 
@@ -3065,7 +3067,7 @@ test 'DBIX_CUSTOM_TAG_PARSE environment variable';
     eval { $dbi->execute("drop table $table1") };
     $dbi->execute($create_table1);
     $dbi->insert({$key1 => 1, $key2 => 1}, table => $table1);
-    is($dbi->select(table => $table1)->one->{$key1}, 1);
+    is($dbi->select(table => $table1, wher => {$key1 => 1})->one->{$key1}, 1);
     delete$ENV{DBIX_CUSTOM_TAG_PARSE};
 }
 

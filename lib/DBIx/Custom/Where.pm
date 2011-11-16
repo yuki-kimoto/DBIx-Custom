@@ -39,7 +39,8 @@ sub to_string {
     $self->{_query_builder} = $self->dbi->query_builder;
     $self->{_safety_character} = $self->dbi->safety_character;
     $self->{_quote} = $self->dbi->_quote;
-    $self->{_tag_parse} = $self->dbi->{tag_parse};
+    $self->{_tag_parse} = exists $ENV{DBIX_CUSTOM_TAG_PARSE}
+      ? $ENV{DBIX_CUSTOM_TAG_PARSE} : $self->dbi->{tag_parse};
     $self->_parse($clause, $where, $count, 'and');
 
     # Stringify
