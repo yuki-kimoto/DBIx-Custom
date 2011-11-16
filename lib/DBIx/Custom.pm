@@ -406,7 +406,7 @@ sub execute {
             }
             $query = $self->_create_query($sql,$opt{after_build_sql} || $opt{sqlfilter});
         }
-        $query->statement($opt{statement} || '');
+        $query->{statement} = $opt{statement} || '';
         $opt{reuse}->{$sql} = $query if $opt{reuse};
     }
         
@@ -425,7 +425,7 @@ sub execute {
 
     # Merge id to parameter
     if (defined $opt{id}) {
-        my $statement = $query->statement;
+        my $statement = $query->{statement};
         warn "execute method id option is DEPRECATED!" unless $statement;
         croak "execute id option must be specified with primary_key option"
           unless $opt{primary_key};
@@ -497,7 +497,7 @@ sub execute {
     }
     
     # Create bind values
-    my ($bind, $bind_types) = $self->_create_bind_values($param, $query->columns,
+    my ($bind, $bind_types) = $self->_create_bind_values($param, $query->{columns},
       $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
 
     # Execute
@@ -523,7 +523,7 @@ sub execute {
     
     # DEBUG message
     if ($ENV{DBIX_CUSTOM_DEBUG}) {
-        warn "SQL:\n" . $query->sql . "\n";
+        warn "SQL:\n" . $query->{sql} . "\n";
         my @output;
         for my $value (@$bind) {
             $value = 'undef' unless defined $value;
@@ -1242,15 +1242,15 @@ sub _create_query {
         # Remove reserved word quote
         if (my $q = $self->_quote) {
             $q = quotemeta($q);
-            $_ =~ s/[$q]//g for @{$query->columns}
+            $_ =~ s/[$q]//g for @{$query->{columns}}
         }
 
         # Save query to cache
         $self->cache_method->(
             $self, $source,
             {
-                sql     => $query->sql, 
-                columns => $query->columns,
+                sql     => $query->{sql}, 
+                columns => $query->{columns},
                 tables  => $query->{tables} || []
             }
         ) if $cache;
@@ -1258,13 +1258,13 @@ sub _create_query {
 
     # Filter SQL
     if ($after_build_sql) {
-        my $sql = $query->sql;
+        my $sql = $query->{sql};
         $sql = $after_build_sql->($sql);
-        $query->sql($sql);
+        $query->{sql} = $sql;
     }
         
     # Save sql
-    $self->last_sql($query->sql);
+    $self->{last_sql} = $query->{sql};
     
     # Prepare statement handle
     my $sth;
@@ -1276,7 +1276,7 @@ sub _create_query {
     }
     
     # Set statement handle
-    $query->sth($sth);
+    $query->{sth} = $sth;
     
     # Set filters
     $query->{filters} = $self->filters;

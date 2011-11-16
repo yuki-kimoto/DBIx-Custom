@@ -1552,13 +1552,13 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $query = $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, query => 1);
-is(ref $query, 'DBIx::Custom::Query');
+ok(ref $query);
 $query = $dbi->update({$key2 => 2}, table => $table1, where => {$key1 => 1}, query => 1);
-is(ref $query, 'DBIx::Custom::Query');
+ok(ref $query);
 $query = $dbi->delete(table => $table1, where => {$key1 => 1}, query => 1);
-is(ref $query, 'DBIx::Custom::Query');
+ok(ref $query);
 $query = $dbi->select(table => $table1, where => {$key1 => 1, $key2 => 2}, query => 1);
-is(ref $query, 'DBIx::Custom::Query');
+ok(ref $query);
 
 test 'where';
 $dbi = DBIx::Custom->connect;
@@ -2509,7 +2509,7 @@ $query = $dbi->insert(
     id => [1, 2],
     query => 1
 );
-is(ref $query, 'DBIx::Custom::Query');
+ok(ref $query);
 is_deeply($param, {$key3 => 3, $key2 => 4});
 
 test 'model insert id and primary_key option';
@@ -3148,7 +3148,7 @@ $rows = [
     my $sth;
     for my $row (@$rows) {
       $query ||= $dbi->insert($row, table => $table1, query => 1);
-      $sth ||= $query->sth;
+      $sth ||= $query->{sth};
       $sth->execute(map { $row->{$_} } sort keys %$row);
     }
     is_deeply($dbi->select(table => $table1)->all,
@@ -3387,7 +3387,7 @@ for (my $i = 0; $i < @$datas; $i++) {
     my $builder = $dbi->query_builder;
     my $query = $builder->build_query($data->{source});
     is($query->{sql}, $data->{sql_expected}, "$data->{name} : sql");
-    is_deeply($query->columns, $data->{columns_expected}, "$data->{name} : columns");
+    is_deeply($query->{columns}, $data->{columns_expected}, "$data->{name} : columns");
 }
 
 $dbi = DBIx::Custom->new;
@@ -3460,15 +3460,15 @@ is($query->sql, 'a b = ? c { } { = ? } = ? d', "basic : 1");
 
 $source = "abc";
 $query = $builder->build_query($source);
-is($query->sql, 'abc', "basic : 2");
+is($query->{sql}, 'abc', "basic : 2");
 
 $source = "{= a}";
 $query = $builder->build_query($source);
-is($query->sql, 'a = ?', "only tag");
+is($query->{sql}, 'a = ?', "only tag");
 
 $source = "000";
 $query = $builder->build_query($source);
-is($query->sql, '000', "contain 0 value");
+is($query->{sql}, '000', "contain 0 value");
 
 $source = "a {= b} }";
 eval{$builder->build_query($source)};

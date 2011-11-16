@@ -52,7 +52,7 @@ sub build_query {
     $sql =~ s/\\:/:/g if index($sql, "\\:") != -1;
 
     # Create query
-    bless {sql => $sql, columns => $columns}, 'DBIx::Custom::Query';
+    return {sql => $sql, columns => $columns};
 }
 
 # DEPRECATED!
