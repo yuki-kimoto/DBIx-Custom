@@ -1908,9 +1908,6 @@ $dbi->execute($sql, $param, table => $table1);
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 
-eval { $dbi->values_clause({";" => 1}) };
-like($@, qr/not safety/);
-
 test 'mycolumn';
 $dbi = MyDBI8->connect;
 $dbi->user_table_info($user_table_info);
@@ -3006,7 +3003,6 @@ is_deeply($model->foo->one, {$key1 => 1, $key3 => 3});
 test 'assign_clause';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
-$DB::single = 1;
 $dbi->execute($create_table1_2);
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
 $dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
@@ -3037,7 +3033,6 @@ $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
 EOS
-$DB::single = 1;
 $dbi->execute($sql, $param);
 $result = $dbi->execute("select * from $table1 order by $key1", {}, table => $table1);
 $rows   = $result->all;
@@ -3065,9 +3060,6 @@ is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 33, $key4 => 4, $key5 => 5}
                   "update param no_set");
 
             
-eval { $dbi->assign_clause({";" => 1}) };
-like($@, qr/not safety/);
-
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);

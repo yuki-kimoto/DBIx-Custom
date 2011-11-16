@@ -1,7 +1,8 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.05_01';
+our $VERSION = '0.20_01';
+$VERSION = eval $VERSION;
 use 5.008001;
 
 use Carp 'croak';
@@ -114,18 +115,7 @@ sub assign_clause {
     my ($self, $param, $opts) = @_;
     
     my $wrap = $opts->{wrap} || {};
-    my $safety = $self->{safety_character} || $self->safety_character;
-    my $qp = $self->q('');
-    my $q = substr($qp, 0, 1) || '';
-    my $p = substr($qp, 1, 1) || '';
-    
-    # Check unsafety keys
-    unless ((join('', keys %$param) || '') =~ /^[$safety\.]+$/) {
-        for my $column (keys %$param) {
-            croak qq{"$column" is not safety column name } . _subname
-              unless $column =~ /^[$safety\.]+$/;
-        }
-    }
+    my ($q, $p) = split //, $self->q('');
     
     # Assign clause (performance is important)
     join(
@@ -242,7 +232,6 @@ sub delete {
     $sql .= "from " . $self->q($opt{table}) . " $w->{clause} ";
     
     # Execute query
-    $opt{statement} = 'delete';
     $self->execute($sql, $w->{param}, %opt);
 }
 
@@ -359,13 +348,47 @@ sub execute {
     # Query
     my $query;
     $query = $opt{reuse}->{$sql} if $opt{reuse};
-    $query = $self->_create_query($sql,$opt{after_build_sql})
-      unless $query;
-    $query->{statement} = $opt{statement} || '';
-    $opt{reuse}->{$sql} = $query if $opt{reuse};
     
-    # Save query
-    $self->{last_sql} = $query->{sql};
+    if ($query) {
+        # Save query
+        $self->{last_sql} = $query->{sql};
+    }
+    else {
+        
+        my $safety = $self->{safety_character} || $self->safety_character;
+        # Check unsafety keys
+        unless ((join('', keys %$param) || '') =~ /^[$safety\.]+$/) {
+            for my $column (keys %$param) {
+                croak qq{"$column" is not safety column name } . _subname
+                  unless $column =~ /^[$safety\.]+$/;
+            }
+        }
+
+        # Query
+        $query = $self->_build_query($sql);
+
+        # After build sql
+        $query->{sql} = $opt{after_build_sql}->($query->{sql})
+          if $opt{after_build_sql};
+            
+        # Save sql
+        $self->{last_sql} = $query->{sql};
+        
+        # Prepare statement handle
+        my $sth;
+        eval { $sth = $self->dbh->prepare($query->{sql}) };
+        
+        if ($@) {
+            $self->_croak($@, qq{. Following SQL is executed.\n}
+              . qq{$query->{sql}\n} . _subname);
+        }
+        
+        # Set statement handle
+        $query->{sth} = $sth;
+        
+        # Save query
+        $opt{reuse}->{$sql} = $query if $opt{reuse};
+    }
 
     # Return query
     if ($opt{query}) {
@@ -378,7 +401,8 @@ sub execute {
     
     # Type rule
     my $type_filters = {};
-    if ($self->{_type_rule_is_called} && !$opt{type_rule_off}) {
+    my $type_rule_off = !$self->{_type_rule_is_called} || $opt{type_rule_off};
+    unless ($type_rule_off) {
         my $type_rule_off_parts = {
             1 => $opt{type_rule1_off},
             2 => $opt{type_rule2_off}
@@ -399,24 +423,31 @@ sub execute {
             }
         }
     }
-    
-    # Create bind values
-    my ($bind, $bind_types) = $self->_create_bind_values($param, $query->{columns},
-      $opt{filter}, $type_filters, $opt{bind_type} || {});
 
-    # Execute
     my $sth = $query->{sth};
     my $affected;
-    eval {
-        if ($opt{bind_type}) {
-            $sth->bind_param($_ + 1, $bind->[$_],
-                $bind_types->[$_] ? $bind_types->[$_] : ())
-              for (0 .. @$bind - 1);
-            $affected = $sth->execute;
-        }
-        else { $affected = $sth->execute(@$bind) }
-    };
     
+    # Execute
+    my $bind;
+    my $bind_types;
+    if (!$query->{duplicate} && $type_rule_off &&
+      !$opt{filter} && !$opt{bind_type} && !$ENV{DBIX_CUSTOM_DEBUG}) 
+    {
+        eval { $affected = $sth->execute(map { $param->{$_} } @{$query->{columns}}) };
+    }
+    else {
+        ($bind, $bind_types) = $self->_create_bind_values($param,
+           $query->{columns}, $opt{filter}, $type_filters, $opt{bind_type});
+        eval {
+            if ($opt{bind_type}) {
+                $sth->bind_param($_ + 1, $bind->[$_],
+                    $bind_types->[$_] ? $bind_types->[$_] : ())
+                  for (0 .. @$bind - 1);
+                $affected = $sth->execute;
+            }
+            else { $affected = $sth->execute(@$bind) }
+        };
+    }
     $self->_croak($@, qq{. Following SQL is executed.\n}
       . qq{$query->{sql}\n} . _subname) if $@;
 
@@ -534,7 +565,6 @@ sub insert {
       . $self->values_clause($param, {wrap => $opt{wrap}}) . " ";
     
     # Execute query
-    $opt{statement} = 'insert';
     $opt{cleanup} = \@cleanup;
     $self->execute($sql, $param, %opt);
 }
@@ -762,7 +792,6 @@ sub select {
     $sql .= "$w->{clause} ";
     
     # Execute query
-    $opt{statement} = 'select';
     my $result = $self->execute($sql, $w->{param}, %opt);
     
     $result;
@@ -920,7 +949,6 @@ sub update {
     $sql .= $self->q($opt{table}) . " set $assign_clause $w->{clause} ";
     
     # Execute query
-    $opt{statement} = 'update';
     $opt{cleanup} = \@cleanup;
     $self->execute($sql, [$param, $w->{param}], %opt);
 }
@@ -951,18 +979,7 @@ sub values_clause {
     my $wrap = $opts->{wrap} || {};
     
     # Create insert parameter
-    my $safety = $self->{safety_character} || $self->safety_character;
-    my $qp = $self->q('');
-    my $q = substr($qp, 0, 1) || '';
-    my $p = substr($qp, 1, 1) || '';
-    
-    # Check unsafety keys
-    unless ((join('', keys %$param) || '') =~ /^[$safety\.]+$/) {
-        for my $column (keys %$param) {
-            croak qq{"$column" is not safety column name } . _subname
-              unless $column =~ /^[$safety\.]+$/;
-        }
-    }
+    my ($q, $p) = split //, $self->q('');
     
     # values clause(performance is important)
     '(' .
@@ -989,17 +1006,20 @@ sub _build_query {
     
     $sql ||= '';
     my $columns = [];
+    my %duplicate;
+    my $duplicate;
     my $c = $self->{safety_character} || $self->safety_character;
     # Parameter regex
     $sql =~ s/([0-9]):/$1\\:/g;
     while ($sql =~ /(^|.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/sg) {
         push @$columns, $2;
+        $duplicate = 1 if ++$duplicate{$columns->[-1]} > 1;
         $sql = defined $3 ? "$1$2 $3 ?$4" : "$1?$4";
     }
     $sql =~ s/\\:/:/g if index($sql, "\\:") != -1;
 
     # Create query
-    {sql => $sql, columns => $columns};
+    {sql => $sql, columns => $columns, duplicate => $duplicate};
 }
 
 sub _create_query {
@@ -1007,23 +1027,9 @@ sub _create_query {
     my ($self, $source, $after_build_sql) = @_;
     
     # Query
-    my $query;
-    
-    # Create query
-    unless ($query) {
+    my $query = $self->_build_query($source);
 
-        # Create query
-        my $builder = $self->query_builder;
-        $query = $self->_build_query($source);
-
-        # Remove reserved word quote
-        if (my $q = $self->quote || '') {
-            $q = quotemeta($q);
-            $_ =~ s/[$q]//g for @{$query->{columns}}
-        }
-    }
-
-    # Filter SQL
+    # After build sql
     $query->{sql} = $after_build_sql->($query->{sql}) if $after_build_sql;
         
     # Save sql
@@ -1035,14 +1041,11 @@ sub _create_query {
     
     if ($@) {
         $self->_croak($@, qq{. Following SQL is executed.\n}
-                        . qq{$query->{sql}\n} . _subname);
+          . qq{$query->{sql}\n} . _subname);
     }
     
     # Set statement handle
     $query->{sth} = $sth;
-    
-    # Set filters
-    $query->{filters} = $self->filters;
     
     return $query;
 }
@@ -1050,6 +1053,8 @@ sub _create_query {
 sub _create_bind_values {
     my ($self, $params, $columns, $filter, $type_filters, $bind_type) = @_;
     
+    # Bind type
+    $bind_type ||= {};
     $bind_type = _array_to_hash($bind_type) if ref $bind_type eq 'ARRAY';
 
     # Replace filter name to code
