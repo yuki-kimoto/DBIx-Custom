@@ -18,6 +18,8 @@ use DBIx::Custom::Mapper;
 use DBIx::Custom::NotExists;
 use Encode qw/encode encode_utf8 decode_utf8/;
 use Scalar::Util qw/weaken/;
+use DBIx::Custom::Class::Inspector;
+
 
 has [qw/connector dsn password quote user exclude_table user_table_info
         user_column_info/],
@@ -1179,6 +1181,49 @@ sub update_timestamp {
         return $self;
     }
     return $self->{update_timestamp};
+}
+
+sub use_next_version {
+    my $self = shift;
+
+    my @modules = ('', qw/::Where ::Util ::Result ::Order ::NotExists ::Model ::Mapper/);
+    
+    # Replace
+    for my $module (@modules) {
+        my $old = 'DBIx::Custom' . $module;
+        my $new = 'DBIx::Custom::Next' . $module;
+        
+        no strict 'refs';
+        no warnings 'redefine';
+        eval "require $old";
+        die $@ if $@;
+        eval "require $new";
+        die $@ if $@;
+        for my $method (@{DBIx::Custom::Class::Inspector->methods( $old, 'full', 'public' )}) {
+            next unless $method =~ /^DBIx::Custom/;
+            undef &{"$method"};
+            *{"$method"} = sub { die "$method method is removed" };
+        }
+        
+        for my $new_method (@{DBIx::Custom::Class::Inspector->methods( $new, 'full', 'public' )}) {
+            next unless $new_method =~ /^DBIx::Custom/;
+            my $old_method = $new_method;
+            $old_method =~ s/::Next//;
+            *{"$old_method"} = \&{"$new_method"};
+        }
+    }
+
+    # Remove
+    for my $module (qw/DBIx::Custom::Tag DBIx::Custom::QueryBuilder/) {
+        no strict 'refs';
+        eval "require $module";
+        die $@ if $@;
+        for my $method (@{DBIx::Custom::Class::Inspector->methods( $module, 'full', 'public' )}) {
+            next unless $method =~ /^DBIx::Custom/;
+            undef &{"$method"};
+            *{"$method"} = sub { die "$method method is removed" };
+        }
+    }
 }
 
 sub values_clause {
@@ -3367,6 +3412,13 @@ Show type name of the columns of specified table.
     issue_date: date
 
 This type name is used in C<type_rule>'s C<into1> and C<into2>.
+
+=head2 C<use_next_version EXPERIMENTAL>
+
+    DBIx::Custom->use_next_version;
+
+Upgrade next major version L<DBIx::Custom>.
+You can't use DEPRECATED method no more and method performance is improved.
 
 =head2 C<values_clause>
 
