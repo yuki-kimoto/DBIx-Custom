@@ -1,5 +1,5 @@
 0.1748
-    - added EXPERIMETNAL use_next_version method
+    - added EXPERIMETNAL use_version1
     - DBIx::Custom::Query is DEPRECATED!
 0.1747
     - fixed bug DBIx::Custom::Result fetch_hash_multi throw warnings

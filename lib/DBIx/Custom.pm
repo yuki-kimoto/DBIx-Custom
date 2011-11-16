@@ -1183,9 +1183,11 @@ sub update_timestamp {
     return $self->{update_timestamp};
 }
 
-sub use_next_version {
+sub use_version1 {
     my $self = shift;
-
+    
+    return if $VERSION >= 1;
+    
     my @modules = ('', qw/::Where ::Util ::Result ::Order ::NotExists ::Model ::Mapper/);
     
     # Replace
@@ -3413,12 +3415,12 @@ Show type name of the columns of specified table.
 
 This type name is used in C<type_rule>'s C<into1> and C<into2>.
 
-=head2 C<use_next_version EXPERIMENTAL>
+=head2 C<use_version1 EXPERIMENTAL>
 
-    DBIx::Custom->use_next_version;
+    DBIx::Custom->use_version1;
 
-Upgrade next major version L<DBIx::Custom>.
-You can't use DEPRECATED method no more and method performance is improved.
+Upgrade L<DBIx::Custom> to major version 1 if version is lower than 1.
+You can't use DEPRECATED method and method performance is improved.
 
 =head2 C<values_clause>
 
