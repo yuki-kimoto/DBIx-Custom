@@ -1,0 +1,5 @@
+### DB2 Install
+
+cd /usr/local/src
+
+curl -L https://www6.software.ibm.com/sdfdl/v2/regs2/db2pmopn/db2_v97/expc/Xa.2/Xb.aA_60_-iVlRRTUNBO90Dq4FHTisv_wdecoCQFeRQbw/Xc.db2exc_974_LNX_x86.tar.gz/Xd./Xf.LPr.D1vk/Xg.6107654/Xi.swg-db2expressc/XY.regsrvs/XZ.2ygJIAbTC5bn3tv2hlm2PnXUcz8/db2exc_974_LNX_x86.tar.gz > db2exc_974_LNX_x86.tar.gz

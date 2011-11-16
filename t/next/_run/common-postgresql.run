@@ -1,0 +1,35 @@
+### CentOS5
+
+# Install
+yum -y install postgresql-server
+yum -y install postgresql
+yum -y install postgresql-devel
+chkconfig --level 2345 postgresql on
+
+# Start server
+service postgresql start
+
+# Change config file
+vi /var/lib/pgsql/data/pg_hba.conf
+  # "local" is for Unix domain socket connections only
+  local   all         all                               trust
+
+# Create user and database
+su - postgres
+createuser -a -d -U postgres -P dbix_custom
+  # Shall the new role be a superuser? (y/n) -> y
+  # Shall the new role be allowed to create databases? (y/n) -> y
+  # Shall the new role be allowed to create more new roles? (y/n) -> y
+
+createdb dbix_custom -U dbix_custom
+
+# Connect to database
+psql -U dbix_custom dbix_custom
+
+# Install DBD::pg
+cpanm DBD::Pg
+
+### Memo
+
+# Drop user
+dropuser dbix_custom

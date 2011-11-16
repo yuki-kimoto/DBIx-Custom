@@ -19,4 +19,5 @@ WriteMakefile(
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'DBIx-Custom-*' },
+    test => {TESTS => 't/*.t t/next/*.t'}
 );
