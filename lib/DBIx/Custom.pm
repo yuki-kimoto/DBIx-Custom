@@ -497,44 +497,52 @@ sub execute {
           $filter->{$column} = $self->filters->{$name};
         }
     }
-    
-    # Create bind values
-    my ($bind, $bind_types) = $self->_create_bind_values($param, $query->{columns},
-      $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
 
     # Execute
     my $sth = $query->{sth};
     my $affected;
-    eval {
-        if ($opt{bind_type} || $opt{type}) {
-            $sth->bind_param($_ + 1, $bind->[$_],
-                $bind_types->[$_] ? $bind_types->[$_] : ())
-              for (0 .. @$bind - 1);
-            $affected = $sth->execute;
-        }
-        else {
-            $affected = $sth->execute(@$bind);
-        }
-    };
+    if (!$query->{duplicate} && $type_rule_off && !keys %$filter &&
+      !$opt{bind_type} && !$opt{type} && !$ENV{DBIX_CUSTOM_DEBUG})
+    {
+        eval { $affected = $sth->execute(map { $param->{$_} } @{$query->{columns}}) };
+    }
+    else {
+        # Create bind values
+        my ($bind, $bind_types) = $self->_create_bind_values($param, $query->{columns},
+          $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
+
+        # Execute
+        eval {
+            if ($opt{bind_type} || $opt{type}) {
+                $sth->bind_param($_ + 1, $bind->[$_],
+                    $bind_types->[$_] ? $bind_types->[$_] : ())
+                  for (0 .. @$bind - 1);
+                $affected = $sth->execute;
+            }
+            else {
+                $affected = $sth->execute(@$bind);
+            }
+
+            # DEBUG message
+            if ($ENV{DBIX_CUSTOM_DEBUG}) {
+                warn "SQL:\n" . $query->{sql} . "\n";
+                my @output;
+                for my $value (@$bind) {
+                    $value = 'undef' unless defined $value;
+                    $value = encode($ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8', $value)
+                      if utf8::is_utf8($value);
+                    push @output, $value;
+                }
+                warn "Bind values: " . join(', ', @output) . "\n\n";
+            }
+        };
+    }
     
     $self->_croak($@, qq{. Following SQL is executed.\n}
       . qq{$query->{sql}\n} . _subname) if $@;
 
     # Remove id from parameter
     delete $param->{$_} for (@cleanup, @{$opt{cleanup} || []});
-    
-    # DEBUG message
-    if ($ENV{DBIX_CUSTOM_DEBUG}) {
-        warn "SQL:\n" . $query->{sql} . "\n";
-        my @output;
-        for my $value (@$bind) {
-            $value = 'undef' unless defined $value;
-            $value = encode($ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8', $value)
-              if utf8::is_utf8($value);
-            push @output, $value;
-        }
-        warn "Bind values: " . join(', ', @output) . "\n\n";
-    }
     
     # Not select statement
     return $affected unless $sth->{NUM_OF_FIELDS};
