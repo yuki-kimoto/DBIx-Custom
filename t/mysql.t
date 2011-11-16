@@ -119,62 +119,6 @@ for (1 .. 200) {
     $dbi->create_model(table => 'table2');
 }
 
-test 'limit';
-$dbi = DBIx::Custom->connect(
-    dsn => "dbi:mysql:database=$database",
-    user => $user,
-    password => $password
-);
-$dbi->delete_all(table => 'table1');
-$dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
-$dbi->insert({key1 => 1, key2 => 4}, table => 'table1');
-$dbi->insert({key1 => 1, key2 => 6}, table => 'table1');
-$dbi->register_tag(
-    limit => sub {
-        my ($count, $offset) = @_;
-        
-        my $s = '';
-        $offset = 0 unless defined $offset;
-        $s .= "limit $offset";
-        $s .= ", $count";
-        
-        return [$s, []];
-    }
-);
-$rows = $dbi->select(
-  table => 'table1',
-  where => {key1 => 1},
-  append => "order by key2 {limit 1 0}"
-)->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 2}]);
-$rows = $dbi->select(
-  table => 'table1',
-  where => {key1 => 1},
-  append => "order by key2 {limit 2 1}"
-)->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 4},{key1 => 1, key2 => 6}]);
-$rows = $dbi->select(
-  table => 'table1',
-  where => {key1 => 1},
-  append => "order by key2 {limit 1}"
-)->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 2}]);
-
-$dbi->dbh->disconnect;
-$dbi = undef;
-$dbi = DBIx::Custom->connect(
-    dsn => "dbi:mysql:database=$database",
-    user => $user,
-    password => $password
-);
-$rows = $dbi->select(
-  table => 'table1',
-  where => {key1 => 1, key2 => 4},
-  append => "order by key2 limit 0, 1"
-)->fetch_hash_all;
-is_deeply($rows, [{key1 => 1, key2 => 4}]);
-$dbi->delete_all(table => 'table1');
-
 test 'dbh';
 {
     my $connector = DBIx::Connector->new(
@@ -201,7 +145,7 @@ test 'dbh';
         "dbi:mysql:database=$database",
         $user,
         $password,
-        DBIx::Custom->new->default_dbi_option
+        DBIx::Custom->new->default_option
     );
 
     my $dbi = DBIx::Custom->connect(connector => $connector);

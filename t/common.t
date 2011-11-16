@@ -375,9 +375,6 @@ test 'Error case';
 eval {DBIx::Custom->connect(dsn => 'dbi:SQLit')};
 ok($@, "connect error");
 
-eval{$dbi->execute("{p }", {}, query => 1)};
-ok($@, "create_query invalid SQL template");
-
 test 'insert';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
@@ -1201,7 +1198,7 @@ $result = $dbi->select(
 
 $result->filter({$key2 => 'twice'});
 $rows   = $result->all;
-is_deeply($rows, [{$key2 => 4, $key3 => 6, table2_key3 => 6}], "select : join : omit");
+is_deeply($rows, [{$key2 => 4, $key3 => 6, "${table2}_$key3" => 6}], "select : join : omit");
 
 test 'connect super';
 $dbi = DBIx::Custom->connect;
