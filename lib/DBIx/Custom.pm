@@ -1237,13 +1237,7 @@ sub _create_query {
         # Create query
         my $builder = $self->query_builder;
         $query = $builder->build_query($source);
-
-        # Remove reserved word quote
-        if (my $q = $self->_quote) {
-            $q = quotemeta($q);
-            $_ =~ s/[$q]//g for @{$query->{columns}}
-        }
-
+        
         # Save query to cache
         $self->cache_method->(
             $self, $source,
