@@ -414,7 +414,10 @@ sub execute {
     $self->{last_sql} = $query->{sql};
 
     # Return query
-    return $query if $opt{query};
+    if ($opt{query}) {
+        delete $param->{$_} for (@cleanup, @{$opt{cleanup} || []});
+        return $query;
+    };
     
     # Merge query filter(DEPRECATED!)
     $filter ||= $query->{filter} || {};
@@ -447,26 +450,25 @@ sub execute {
     
     # Type rule
     my $type_filters = {};
-    if ($self->{_type_rule_is_called}) {
-        unless ($opt{type_rule_off}) {
-            my $type_rule_off_parts = {
-                1 => $opt{type_rule1_off},
-                2 => $opt{type_rule2_off}
-            };
-            for my $i (1, 2) {
-                unless ($type_rule_off_parts->{$i}) {
-                    $type_filters->{$i} = {};
-                    my $table_alias = $opt{table_alias} || {};
-                    for my $alias (keys %$table_alias) {
-                        my $table = $table_alias->{$alias};
-                        
-                        for my $column (keys %{$self->{"_into$i"}{key}{$table} || {}}) {
-                            $type_filters->{$i}->{"$alias.$column"} = $self->{"_into$i"}{key}{$table}{$column};
-                        }
+    my $type_rule_off = !$self->{_type_rule_is_called} || $opt{type_rule_off};
+    unless ($type_rule_off) {
+        my $type_rule_off_parts = {
+            1 => $opt{type_rule1_off},
+            2 => $opt{type_rule2_off}
+        };
+        for my $i (1, 2) {
+            unless ($type_rule_off_parts->{$i}) {
+                $type_filters->{$i} = {};
+                my $table_alias = $opt{table_alias} || {};
+                for my $alias (keys %$table_alias) {
+                    my $table = $table_alias->{$alias};
+                    
+                    for my $column (keys %{$self->{"_into$i"}{key}{$table} || {}}) {
+                        $type_filters->{$i}->{"$alias.$column"} = $self->{"_into$i"}{key}{$table}{$column};
                     }
-                    $type_filters->{$i} = {%{$type_filters->{$i}}, %{$self->{"_into$i"}{key}{$main_table} || {}}}
-                      if $main_table;
                 }
+                $type_filters->{$i} = {%{$type_filters->{$i}}, %{$self->{"_into$i"}{key}{$main_table} || {}}}
+                  if $main_table;
             }
         }
     }
