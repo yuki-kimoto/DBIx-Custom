@@ -93,14 +93,14 @@ sub _parse {
         my $c = $self->{_safety_character};
         
         my $column;
-        if ($self->{_tag_parse} && ($clause =~ /\s\{/ || $clause =~ /^\{/)) {
+        my $sql = " " . $clause || '';
+        if ($self->{_tag_parse} && ($sql =~ /\s\{/)) {
             my $columns = $self->dbi->query_builder->build_query($clause)->{columns};
             $column = $columns->[0];
         }
         else {
-            my $sql = " " . $clause || '';
             $sql =~ s/([0-9]):/$1\\:/g;
-            ($column) = $sql =~ /[^\\]:([$c\.]+)/s
+            ($column) = $sql =~ /[^\\]:([$c\.]+)/s;
         }
         unless (defined $column) {
             push @$where, $clause;

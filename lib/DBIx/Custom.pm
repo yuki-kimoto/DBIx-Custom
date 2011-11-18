@@ -1253,7 +1253,7 @@ sub _create_query {
           ? $ENV{DBIX_CUSTOM_TAG_PARSE} : $self->{tag_parse};
 
         my $sql = " " . $source || '';
-        if ($tag_parse && ($sql =~ /\s\{/ || $sql =~ /^\{/)) {
+        if ($tag_parse && ($sql =~ /\s\{/)) {
             $query = $self->query_builder->build_query($sql);
         }
         else {
