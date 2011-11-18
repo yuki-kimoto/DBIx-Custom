@@ -95,7 +95,7 @@ sub _parse {
         my $column;
         my $sql = " " . $clause || '';
         if ($self->{_tag_parse} && ($sql =~ /\s\{/)) {
-            my $columns = $self->dbi->query_builder->build_query($clause)->{columns};
+            my $columns = $self->dbi->query_builder->build_query($sql)->{columns};
             $column = $columns->[0];
         }
         else {
