@@ -248,6 +248,8 @@ for my $i (1 .. 2) {
 }
 $rows = $dbi->select(table => $table1)->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 1, $key2 => 2}]);
+ok(keys %$reuse);
+ok((keys %$reuse)[0] !~ /\?/);
 
 # Get user table info
 $dbi = DBIx::Custom->connect;

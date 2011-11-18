@@ -1248,26 +1248,29 @@ sub _create_query {
     unless ($query) {
 
         # Create query
-        if (exists $ENV{DBIX_CUSTOM_TAG_PARSE} && !$ENV{DBIX_CUSTOM_TAG_PARSE}) {
-            $source ||= '';
-            my $columns = [];
+        my $tag_parse = exists $ENV{DBIX_CUSTOM_TAG_PARSE}
+          ? $ENV{DBIX_CUSTOM_TAG_PARSE} : $self->{tag_parse};
+
+        my $sql = $source || '';
+        if ($tag_parse && ($sql =~ /\s\{/ || $sql =~ /^\{/)) {
+            $query = $self->query_builder->build_query($sql);
+        }
+        else {
+            my @columns;
             my $c = $self->{safety_character} || $self->safety_character;
             my %duplicate;
             my $duplicate;
             # Parameter regex
-            $source =~ s/([0-9]):/$1\\:/g;
-            while ($source =~ /(^|.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/sg) {
-                push @$columns, $2;
-                $duplicate = 1 if ++$duplicate{$columns->[-1]} > 1;
-                $source = defined $3 ? "$1$2 $3 ?$4" : "$1?$4";
+            $sql =~ s/([0-9]):/$1\\:/g;
+            while ($sql =~ /(^|.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/sg) {
+                push @columns, $2;
+                $duplicate = 1 if ++$duplicate{$columns[-1]} > 1;
+                $sql = defined $3 ? "$1$2 $3 ?$4" : "$1?$4";
             }
-            $source =~ s/\\:/:/g if index($source, "\\:") != -1;
+            $sql =~ s/\\:/:/g if index($sql, "\\:") != -1;
 
             # Create query
-            $query = {sql => $source, columns => $columns, duplicate => $duplicate};
-        }
-        else {
-            $query = $self->query_builder->build_query($source);
+            $query = {sql => $sql, columns => \@columns, duplicate => $duplicate};
         }
         
         # Save query to cache
