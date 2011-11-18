@@ -93,7 +93,7 @@ sub _parse {
         my $c = $self->{_safety_character};
         
         my $column;
-        if ($self->{_tag_parse} && $clause =~ /(\s|^)\{/) {
+        if ($self->{_tag_parse} && ($clause =~ /\s\{/ || $clause =~ /^\{/)) {
             my $columns = $self->dbi->query_builder->build_query($clause)->{columns};
             $column = $columns->[0];
         }

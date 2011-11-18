@@ -844,9 +844,8 @@ sub new {
         'insert_param' => \&DBIx::Custom::Tag::insert_param,
         'update_param' => \&DBIx::Custom::Tag::update_param
     };
-    
-    # DEPRECATED!
-    $self->{tag_parse} = 1;
+    $self->{tag_parse} = 1 unless exists $self->{tag_parse};
+    $self->{cache} = 0 unless exists $self->{cache};
     
     return $self;
 }
@@ -1226,7 +1225,7 @@ sub _create_query {
     my ($self, $source, $after_build_sql) = @_;
     
     # Cache
-    my $cache = $self->cache;
+    my $cache = $self->{cache};
     
     # Query
     my $query;
