@@ -1,4 +1,6 @@
 0.2101
+    - select method can receive odd number argument. In that case first argument
+      is column option.
     - fixed update_or_insert bug that when parameter don't contain any key-value
       this method throw exception.
 0.2100

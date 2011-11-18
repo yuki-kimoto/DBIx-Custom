@@ -892,7 +892,10 @@ sub register_filter {
 }
 
 sub select {
-    my ($self, %opt) = @_;
+    my $self = shift;
+    my $column = shift if @_ % 2;
+    my %opt = @_;
+    $opt{column} = $column if defined $column;
 
     # Options
     my $tables = ref $opt{table} eq 'ARRAY' ? $opt{table}
@@ -2955,12 +2958,17 @@ Register filters, used by C<filter> option of many methods.
 =head2 C<select>
 
     my $result = $dbi->select(
-        table  => 'book',
         column => ['author', 'title'],
+        table  => 'book',
         where  => {author => 'Ken'},
     );
     
 Execute select statement.
+
+You can pass odd number arguments. first argument is C<column>.
+This is EXPERIMENTAL.
+
+    my $result = $dbi->select(['author', 'title'], table => 'book');
 
 B<OPTIONS>
 

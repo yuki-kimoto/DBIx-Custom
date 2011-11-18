@@ -267,6 +267,12 @@ $model = $dbi->create_model(table => $table1);
 $model->insert({$key1 => 1, $key2 => 2});
 is_deeply($model->select->all, [{$key1 => 1, $key2 => 2}]);
 
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$model = $dbi->create_model(table => $table1);
+$model->insert({$key1 => 1, $key2 => 2});
+is_deeply($model->select($key1)->all, [{$key1 => 1}]);
+
 test 'DBIx::Custom::Result test';
 $dbi->delete_all(table => $table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
@@ -1120,6 +1126,12 @@ $dbi->insert({select => 1, update => 2}, table => 'table');
 $result = $dbi->select(table => 'table', where => {select => 1});
 $rows   = $result->all;
 is_deeply($rows, [{select => 2, update => 2}], "reserved word");
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+$row = $dbi->select($key1, table => $table1)->one;
+is_deeply($row, {$key1 => 1});
 
 test 'fetch filter';
 eval { $dbi->execute("drop table $table1") };
