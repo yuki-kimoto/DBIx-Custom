@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.2100';
+our $VERSION = '0.2101';
 use 5.008001;
 
 use Carp 'croak';
@@ -1169,6 +1169,7 @@ sub update_or_insert {
         return $self->insert($param, %opt, %{$statement_opt->{insert} || {}});
     }
     elsif (@$rows == 1) {
+        return 0 unless keys %$param;
         return $self->update($param, %opt, %{$statement_opt->{update} || {}});
     }
     else {

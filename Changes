@@ -1,3 +1,6 @@
+0.2101
+    - fixed update_or_insert bug that when parameter don't contain any key-value
+      this method throw exception.
 0.2100
     - micro optimization
     - DBIx::Custom::Query is DEPRECATED!

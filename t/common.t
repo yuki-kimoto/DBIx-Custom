@@ -81,6 +81,7 @@ my $user_column_info;
 my $values_clause;
 my $assign_clause;
 my $reuse;
+my $affected;
 
 require MyDBI1;
 {
@@ -661,6 +662,27 @@ eval {
     );
 };
 like($@, qr/one/);
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->update_or_insert(
+    {},
+    table => $table1,
+    primary_key => $key1,
+    id => 1
+);
+$row = $dbi->select(id => 1, table => $table1, primary_key => $key1)->one;
+is($row->{$key1}, 1);
+
+eval { 
+    $affected = $dbi->update_or_insert(
+        {},
+        table => $table1,
+        primary_key => $key1,
+        id => 1
+    );
+};
+is($affected, 0);
 
 test 'model update_or_insert';
 eval { $dbi->execute("drop table $table1") };
