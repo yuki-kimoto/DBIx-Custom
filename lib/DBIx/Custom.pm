@@ -1263,15 +1263,18 @@ sub _create_query {
             my $duplicate;
             # Parameter regex
             $sql =~ s/([0-9]):/$1\\:/g;
-            while ($sql =~ /(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/sg) {
+            my $new_sql = '';
+            while ($sql =~ /(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s) {
                 push @columns, $2;
                 $duplicate = 1 if ++$duplicate{$columns[-1]} > 1;
-                $sql = defined $3 ? "$1$2 $3 ?$4" : "$1?$4";
+                ($new_sql, $sql) = defined $3 ?
+                  ($new_sql . "$1$2 $3 ?", " $4") : ($new_sql . "$1?", " $4");
             }
-            $sql =~ s/\\:/:/g if index($sql, "\\:") != -1;
+            $new_sql .= $sql;
+            $new_sql =~ s/\\:/:/g if index($new_sql, "\\:") != -1;
 
             # Create query
-            $query = {sql => $sql, columns => \@columns, duplicate => $duplicate};
+            $query = {sql => $new_sql, columns => \@columns, duplicate => $duplicate};
         }
         
         # Save query to cache
