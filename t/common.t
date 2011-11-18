@@ -1270,7 +1270,7 @@ $dbi->execute($create_table1);
 $source = "select * from $table1 where $key1 = :$key1 and $key2 = :$key2";
 $dbi->execute($source, {}, query => 1);
 is_deeply($dbi->{_cached}->{$source}, 
-          {sql => "select * from $table1 where $key1 = ? and $key2 = ?", columns => [$key1, $key2], tables => []}, "cache");
+          {sql => " select * from $table1 where $key1 = ? and $key2 = ?", columns => [$key1, $key2], tables => []}, "cache");
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
@@ -3112,10 +3112,10 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->execute("select * from $table1");
-is($dbi->last_sql, "select * from $table1");
+is($dbi->last_sql, " select * from $table1");
 
 eval{$dbi->execute("aaa")};
-is($dbi->last_sql, 'aaa');
+is($dbi->last_sql, ' aaa');
 
 test 'DBIx::Custom header';
 $dbi = DBIx::Custom->connect;

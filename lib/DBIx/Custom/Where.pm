@@ -98,11 +98,9 @@ sub _parse {
             $column = $columns->[0];
         }
         else {
-            my $sql = $clause;
+            my $sql = " " . $clause || '';
             $sql =~ s/([0-9]):/$1\\:/g;
-            if ($sql =~ /[^\\]:([$c\.]+)/s || $sql =~ /^:([$c\.]+)/s) {
-                ($column) = $1;
-            }
+            ($column) = $sql =~ /[^\\]:([$c\.]+)/s
         }
         unless (defined $column) {
             push @$where, $clause;

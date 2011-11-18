@@ -1252,7 +1252,7 @@ sub _create_query {
         my $tag_parse = exists $ENV{DBIX_CUSTOM_TAG_PARSE}
           ? $ENV{DBIX_CUSTOM_TAG_PARSE} : $self->{tag_parse};
 
-        my $sql = $source || '';
+        my $sql = " " . $source || '';
         if ($tag_parse && ($sql =~ /\s\{/ || $sql =~ /^\{/)) {
             $query = $self->query_builder->build_query($sql);
         }
@@ -1263,7 +1263,7 @@ sub _create_query {
             my $duplicate;
             # Parameter regex
             $sql =~ s/([0-9]):/$1\\:/g;
-            while ($sql =~ /(^|.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/sg) {
+            while ($sql =~ /(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/sg) {
                 push @columns, $2;
                 $duplicate = 1 if ++$duplicate{$columns[-1]} > 1;
                 $sql = defined $3 ? "$1$2 $3 ?$4" : "$1?$4";
