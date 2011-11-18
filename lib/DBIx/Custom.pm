@@ -21,7 +21,7 @@ use Scalar::Util qw/weaken/;
 
 
 has [qw/connector dsn password quote user exclude_table user_table_info
-        user_column_info/],
+        user_column_info safety_character/],
     cache => 0,
     cache_method => sub {
         sub {
@@ -70,7 +70,6 @@ has [qw/connector dsn password quote user exclude_table user_table_info
         return $builder;
     },
     result_class  => 'DBIx::Custom::Result',
-    safety_character => '\w',
     separator => '.',
     stash => sub { {} };
 
@@ -395,12 +394,12 @@ sub execute {
     else {
         $query = $opt{reuse}->{$sql} if $opt{reuse};
         unless ($query) {
-            my $safety = $self->{safety_character} || $self->safety_character;
+            my $c = $self->{safety_character};
             # Check unsafety keys
-            unless ((join('', keys %$param) || '') =~ /^[$safety\.]+$/) {
+            unless ((join('', keys %$param) || '') =~ /^[$c\.]+$/) {
                 for my $column (keys %$param) {
                     croak qq{"$column" is not safety column name } . _subname
-                      unless $column =~ /^[$safety\.]+$/;
+                      unless $column =~ /^[$c\.]+$/;
                 }
             }
             $query = $self->_create_query($sql,$opt{after_build_sql} || $opt{sqlfilter});
@@ -829,6 +828,9 @@ sub new {
         croak qq{Invalid attribute: "$attr" } . _subname
           unless $self->can($attr);
     }
+    
+    $self->{safety_character} = 'a-zA-Z0-9_'
+      unless exists $self->{safety_character};
 
     # DEPRECATED
     $self->{_tags} = {
@@ -1256,7 +1258,7 @@ sub _create_query {
         }
         else {
             my @columns;
-            my $c = $self->{safety_character} || $self->safety_character;
+            my $c = $self->{safety_character};
             my %duplicate;
             my $duplicate;
             # Parameter regex
@@ -1501,8 +1503,8 @@ sub _push_join {
             $j_clause =~ s/[$q_re]//g;
             
             my @j_clauses = reverse split /\s(and|on)\s/, $j_clause;
-            my $c = $self->safety_character;
-            my $join_re = qr/($c+)\.$c+[^$c].*?($c+)\.$c+/sm;
+            my $c = $self->{safety_character};
+            my $join_re = qr/([$c]+)\.[$c]+[^$c].*?([$c]+)\.[$c]+/sm;
             for my $clause (@j_clauses) {
                 if ($clause =~ $join_re) {
                     $table1 = $1;
@@ -1559,7 +1561,7 @@ sub _search_tables {
     
     # Search tables
     my $tables = [];
-    my $safety_character = $self->safety_character;
+    my $safety_character = $self->{safety_character};
     my $q = $self->_quote;
     my $quoted_safety_character_re = $self->q("?([$safety_character]+)", 1);
     my $table_re = $q ? qr/(?:^|[^$safety_character])${quoted_safety_character_re}?\./
@@ -1604,7 +1606,7 @@ sub _where_clause_and_param {
             }
 
             # Check unsafety column
-            my $safety = $self->safety_character;
+            my $safety = $self->{safety_character};
             unless ($column_join =~ /^[$safety\.]+$/) {
                 for my $column (keys %$where) {
                     croak qq{"$column" is not safety column name } . _subname

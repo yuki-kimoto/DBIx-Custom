@@ -1,3 +1,4 @@
+# DEPRECATED!
 package DBIx::Custom::QueryBuilder;
 
 use Object::Simple -base;
@@ -10,44 +11,27 @@ use DBIx::Custom::Util '_subname';
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 push @DBIx::Custom::Where::CARP_NOT, __PACKAGE__;
 
+# DEPRECATED!
 sub build_query {
     my ($self, $sql) = @_;
-    
-    # Parse tag. tag is DEPRECATED!
-    if ($self->dbi->{tag_parse} && $sql =~ /(\s|^)\{/) {
-        my $query = $self->_parse_tag($sql);
-        my $tag_count = delete $query->{tag_count};
-        warn qq/Tag system such as {? name} is DEPRECATED! / .
-             qq/use parameter system such as :name instead/
-          if $tag_count;
-        my $query2 = $self->_parse_parameter($query->sql);
-        $query->sql($query2->sql);
-        for (my $i =0; $i < @{$query->columns}; $i++) {
-            my $column = $query->columns->[$i];
-            if ($column eq 'RESERVED_PARAMETER') {
-                my $column2 = shift @{$query2->columns};
-                croak ":name syntax is wrong"
-                  unless defined $column2;
-                $query->columns->[$i] = $column2;
-            }
-        }
-        return $query;
-    }
-    
-    $sql ||= '';
-    my $columns = [];
-    my $c = ($self->{dbi} || {})->{safety_character}
-      || $self->dbi->safety_character;
-    # Parameter regex
-    $sql =~ s/([0-9]):/$1\\:/g;
-    while ($sql =~ /(^|.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/sg) {
-        push @$columns, $2;
-        $sql = defined $3 ? "$1$2 $3 ?$4" : "$1?$4";
-    }
-    $sql =~ s/\\:/:/g if index($sql, "\\:") != -1;
 
-    # Create query
-    return {sql => $sql, columns => $columns, duplicate => 1};
+    my $query = $self->_parse_tag($sql);
+    my $tag_count = delete $query->{tag_count};
+    warn qq/Tag system such as {? name} is DEPRECATED! / .
+         qq/use parameter system such as :name instead/
+      if $tag_count;
+    my $query2 = $self->_parse_parameter($query->sql);
+    $query->sql($query2->sql);
+    for (my $i =0; $i < @{$query->columns}; $i++) {
+        my $column = $query->columns->[$i];
+        if ($column eq 'RESERVED_PARAMETER') {
+            my $column2 = shift @{$query2->columns};
+            croak ":name syntax is wrong"
+              unless defined $column2;
+            $query->columns->[$i] = $column2;
+        }
+    }
+    return $query;
 }
 
 # DEPRECATED!
@@ -288,9 +272,5 @@ sub register_tag_processor {
 =head1 NAME
 
 DBIx::Custom::QueryBuilder - DEPRECATED!
-
-=head1 DESCRIPTION
-
-This module functionality will be moved to DBIx::Custom
 
 =cut
