@@ -37,7 +37,10 @@ sub to_string {
     my $where = [];
     my $count = {};
     $self->{_query_builder} = $self->dbi->query_builder;
-    $self->{_safety_character} = $self->dbi->safety_character;
+    my $c = $self->dbi->safety_character;
+    $self->{_re} = $c eq 'a-zA-Z0-9_' ?
+      qr/[^\\]:([$c\.]+)/so : qr/[^\\]:([$c\.]+)/s;
+    
     $self->{_quote} = $self->dbi->_quote;
     $self->{_tag_parse} = exists $ENV{DBIX_CUSTOM_TAG_PARSE}
       ? $ENV{DBIX_CUSTOM_TAG_PARSE} : $self->dbi->{tag_parse};
@@ -90,7 +93,7 @@ sub _parse {
         my $pushed;
         
         # Column
-        my $c = $self->{_safety_character};
+        my $re = $self->{_re};
         
         my $column;
         my $sql = " " . $clause || '';
@@ -100,7 +103,7 @@ sub _parse {
         }
         else {
             $sql =~ s/([0-9]):/$1\\:/g;
-            ($column) = $sql =~ /[^\\]:([$c\.]+)/s;
+            ($column) = $sql =~ /$re/;
         }
         unless (defined $column) {
             push @$where, $clause;

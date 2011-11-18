@@ -1,4 +1,5 @@
 0.2101
+    - micro optimization
     - select method can receive odd number argument. In that case first argument
       is column option.
     - fixed update_or_insert bug that when parameter don't contain any key-value

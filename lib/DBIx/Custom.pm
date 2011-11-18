@@ -1259,12 +1259,15 @@ sub _create_query {
         else {
             my @columns;
             my $c = $self->{safety_character};
+            my $re = $c eq 'a-zA-Z0-9_'
+              ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
+              : qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
             my %duplicate;
             my $duplicate;
             # Parameter regex
             $sql =~ s/([0-9]):/$1\\:/g;
             my $new_sql = '';
-            while ($sql =~ /(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s) {
+            while ($sql =~ /$re/) {
                 push @columns, $2;
                 $duplicate = 1 if ++$duplicate{$columns[-1]} > 1;
                 ($new_sql, $sql) = defined $3 ?

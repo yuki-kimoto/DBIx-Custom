@@ -243,7 +243,6 @@ test 'execute reuse option';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $reuse = {};
-$DB::single = 1;
 for my $i (1 .. 2) {
   $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, reuse => $reuse);
 }
