@@ -505,38 +505,44 @@ sub execute {
     if (!$query->{duplicate} && $type_rule_off && !keys %$filter && !$self->{default_out_filter}
       && !$opt{bind_type} && !$opt{type} && !$ENV{DBIX_CUSTOM_DEBUG})
     {
-        eval { $affected = $sth->execute(map { $params->[0]->{$_} } @{$query->{columns}}) };
-    }
-    else {
-        # Create bind values
-        my ($bind, $bind_types) = $self->_create_bind_values($params->[0], $query->{columns},
-          $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
-
-        # Execute
         eval {
-            if ($opt{bind_type} || $opt{type}) {
-                $sth->bind_param($_ + 1, $bind->[$_],
-                    $bind_types->[$_] ? $bind_types->[$_] : ())
-                  for (0 .. @$bind - 1);
-                $affected = $sth->execute;
-            }
-            else {
-                $affected = $sth->execute(@$bind);
-            }
-
-            # DEBUG message
-            if ($ENV{DBIX_CUSTOM_DEBUG}) {
-                warn "SQL:\n" . $query->{sql} . "\n";
-                my @output;
-                for my $value (@$bind) {
-                    $value = 'undef' unless defined $value;
-                    $value = encode($ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8', $value)
-                      if utf8::is_utf8($value);
-                    push @output, $value;
-                }
-                warn "Bind values: " . join(', ', @output) . "\n\n";
+            for my $param (@$params) {
+                $affected = $sth->execute(map { $param->{$_} } @{$query->{columns}});
             }
         };
+    }
+    else {
+        for my $param (@$params) {
+            # Create bind values
+            my ($bind, $bind_types) = $self->_create_bind_values($param, $query->{columns},
+              $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
+
+            # Execute
+            eval {
+                if ($opt{bind_type} || $opt{type}) {
+                    $sth->bind_param($_ + 1, $bind->[$_],
+                        $bind_types->[$_] ? $bind_types->[$_] : ())
+                      for (0 .. @$bind - 1);
+                    $affected = $sth->execute;
+                }
+                else {
+                    $affected = $sth->execute(@$bind);
+                }
+
+                # DEBUG message
+                if ($ENV{DBIX_CUSTOM_DEBUG}) {
+                    warn "SQL:\n" . $query->{sql} . "\n";
+                    my @output;
+                    for my $value (@$bind) {
+                        $value = 'undef' unless defined $value;
+                        $value = encode($ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8', $value)
+                          if utf8::is_utf8($value);
+                        push @output, $value;
+                    }
+                    warn "Bind values: " . join(', ', @output) . "\n\n";
+                }
+            };
+        }
     }
     
     $self->_croak($@, qq{. Following SQL is executed.\n}
