@@ -349,11 +349,11 @@ sub execute {
     my $sql = shift;
 
     # Options
-    my $param;
-    $param = shift if @_ % 2;
+    my $params;
+    $params = shift if @_ % 2;
     my %opt = @_;
     warn "sqlfilter option is DEPRECATED" if $opt{sqlfilter};
-    $param ||= $opt{param} || {};
+    $params ||= $opt{param} || {};
     my $tables = $opt{table} || [];
     $tables = [$tables] unless ref $tables eq 'ARRAY';
     my $filter = ref $opt{filter} eq 'ARRAY' ?
@@ -362,25 +362,25 @@ sub execute {
     # Merge second parameter
     my @cleanup;
     my $saved_param;
-    if (($opt{statement} || '') ne 'insert' && ref $param eq 'ARRAY') {
-        my $param2 = $param->[1];
-        $param = $param->[0];
-        for my $column (keys %$param2) {
-            if (!exists $param->{$column}) {
-                $param->{$column} = $param2->{$column};
+    if (($opt{statement} || '') ne 'insert' && ref $params eq 'ARRAY') {
+        my $params2 = $params->[1];
+        $params = $params->[0];
+        for my $column (keys %$params2) {
+            if (!exists $params->{$column}) {
+                $params->{$column} = $params2->{$column};
                 push @cleanup, $column;
             }
             else {
-                delete $param->{$_} for @cleanup;
+                delete $params->{$_} for @cleanup;
                 @cleanup = ();
-                $saved_param  = $param;
-                $param = $self->merge_param($param, $param2);
+                $saved_param  = $params;
+                $params = $self->merge_param($params, $params2);
                 delete $saved_param->{$_} for (@{$opt{cleanup} || []});
                 last;
             }
         }
     }
-    $param = [$param] unless ref $param eq 'ARRAY';
+    $params = [$params] unless ref $params eq 'ARRAY';
     
     # Append
     $sql .= $opt{append} if defined $opt{append} && !ref $sql;
@@ -397,8 +397,8 @@ sub execute {
         unless ($query) {
             my $c = $self->{safety_character};
             # Check unsafety keys
-            unless ((join('', keys %{$param->[0]}) || '') =~ /^[$c\.]+$/) {
-                for my $column (keys %{$param->[0]}) {
+            unless ((join('', keys %{$params->[0]}) || '') =~ /^[$c\.]+$/) {
+                for my $column (keys %{$params->[0]}) {
                     croak qq{"$column" is not safety column name } . _subname
                       unless $column =~ /^[$c\.]+$/;
                 }
@@ -415,7 +415,7 @@ sub execute {
     # Return query
     if ($opt{query}) {
         for my $column (@cleanup, @{$opt{cleanup} || []}) {
-            delete $_->{$column} for @$param;
+            delete $_->{$column} for @$params;
         }
         return $query;
     };
@@ -439,8 +439,8 @@ sub execute {
            my $key = $opt{primary_key}->[$i];
            $key = "$main_table.$key" if $statement eq 'update' ||
              $statement eq 'delete' || $statement eq 'select';
-           next if exists $param->[0]->{$key};
-           $param->[0]->{$key} = $opt{id}->[$i];
+           next if exists $params->[0]->{$key};
+           $params->[0]->{$key} = $opt{id}->[$i];
            push @cleanup, $key;1
         }
     }
@@ -505,11 +505,11 @@ sub execute {
     if (!$query->{duplicate} && $type_rule_off && !keys %$filter && !$self->{default_out_filter}
       && !$opt{bind_type} && !$opt{type} && !$ENV{DBIX_CUSTOM_DEBUG})
     {
-        eval { $affected = $sth->execute(map { $param->[0]->{$_} } @{$query->{columns}}) };
+        eval { $affected = $sth->execute(map { $params->[0]->{$_} } @{$query->{columns}}) };
     }
     else {
         # Create bind values
-        my ($bind, $bind_types) = $self->_create_bind_values($param->[0], $query->{columns},
+        my ($bind, $bind_types) = $self->_create_bind_values($params->[0], $query->{columns},
           $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
 
         # Execute
@@ -544,7 +544,7 @@ sub execute {
 
     # Remove id from parameter
     for my $column (@cleanup, @{$opt{cleanup} || []}) {
-        delete $_->{$column} for @$param;
+        delete $_->{$column} for @$params;
     }
     
     # Not select statement
