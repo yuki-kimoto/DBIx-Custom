@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.2101';
+our $VERSION = '0.2102';
 use 5.008001;
 
 use Carp 'croak';
@@ -499,8 +499,8 @@ sub execute {
     # Execute
     my $sth = $query->{sth};
     my $affected;
-    if (!$query->{duplicate} && $type_rule_off && !keys %$filter &&
-      !$opt{bind_type} && !$opt{type} && !$ENV{DBIX_CUSTOM_DEBUG})
+    if (!$query->{duplicate} && $type_rule_off && !keys %$filter && !$self->{default_out_filter}
+      && !$opt{bind_type} && !$opt{type} && !$ENV{DBIX_CUSTOM_DEBUG})
     {
         eval { $affected = $sth->execute(map { $param->{$_} } @{$query->{columns}}) };
     }

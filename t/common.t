@@ -489,7 +489,13 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, filter => {$key1 => 'th
 $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 3, $key2 => 4}], "filter");
+$dbi->delete_all(table => $table1);
+$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+$result = $dbi->execute("select * from $table1");
+$rows   = $result->all;
+is_deeply($rows, [{$key1 => 2, $key2 => 4}], "filter");
 $dbi->default_bind_filter(undef);
+
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
@@ -4556,5 +4562,17 @@ is($dbi->count(table => $table1), 2);
 is($dbi->count(table => $table1, where => {$key2 => 2}), 1);
 $model = $dbi->create_model(table => $table1);
 is($model->count, 2);
+
+eval { $dbi->execute("drop table $table1") };
+eval { $dbi->execute("drop table $table2") };
+$dbi->execute($create_table1);
+$dbi->execute($create_table2);
+$model = $dbi->create_model(table => $table1, primary_key => $key1);
+$model->insert({$key1 => 1, $key2 => 2});
+$model = $dbi->create_model(table => $table2, primary_key => $key1,
+    join => ["left outer join $table1 on $table2.$key1 = $table1.$key1"]);
+$model->insert({$key1 => 1, $key3 => 3});
+is($model->count(id => 1), 1);
+is($model->count(where => {"$table2.$key3" => 3}), 1);
 
 1;

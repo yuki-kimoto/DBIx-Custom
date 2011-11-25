@@ -52,7 +52,9 @@ for my $method (@methods) {
     my @select_attrs = qw/join/;
     if ($method eq 'insert') { push @attrs, @insert_attrs }
     elsif ($method eq 'update') { push @attrs, @update_attrs }
-    elsif (index($method, 'select') != -1) { push @attrs, @select_attrs }
+    elsif (index($method, 'select') != -1 || $method eq 'count') {
+        push @attrs, @select_attrs
+    }
     
     for my $attr (@attrs) {
         $code .= "exists \$self->{$attr} ? ($attr => \$self->{$attr}) : (),";

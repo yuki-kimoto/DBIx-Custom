@@ -1,4 +1,8 @@
+0.2102
+    - fixed bug that DBIx::Custom::Model count method don't receive model's
+      attribute
 0.2101
+    - fixed small default_bind_filter bug
     - micro optimization
     - select method can receive odd number argument. In that case first argument
       is column option.
