@@ -2774,6 +2774,20 @@ as parameter value.
 
     {date => \"NOW()"}
 
+You can pass multiple parameters, this is very fast.
+This is EXPERIMETNAL.
+
+    $dbi->insert(
+        [
+            {title => 'Perl', author => 'Ken'},
+            {title => 'Ruby', author => 'Tom'}
+        ],
+        table  => 'book'
+    );
+
+In multiple insert, you can't use C<id> option.
+and only first parameter is used by creating sql.
+
 B<options>
 
 C<insert> method use all of C<execute> method's options,

@@ -1,6 +1,7 @@
 0.2102
     - fixed bug that DBIx::Custom::Model count method don't receive model's
       attribute
+    - insert method can receive multipule parameters, this is very fast, this is experimental
 0.2101
     - fixed small default_bind_filter bug
     - micro optimization
