@@ -362,7 +362,7 @@ sub execute {
     # Merge second parameter
     my @cleanup;
     my $saved_param;
-    if (ref $param eq 'ARRAY') {
+    if (($opt{statement} || '') ne 'insert' && ref $param eq 'ARRAY') {
         my $param2 = $param->[1];
         $param = $param->[0];
         for my $column (keys %$param2) {
@@ -380,6 +380,7 @@ sub execute {
             }
         }
     }
+    $param = [$param] unless ref $param eq 'ARRAY';
     
     # Append
     $sql .= $opt{append} if defined $opt{append} && !ref $sql;
@@ -396,8 +397,8 @@ sub execute {
         unless ($query) {
             my $c = $self->{safety_character};
             # Check unsafety keys
-            unless ((join('', keys %$param) || '') =~ /^[$c\.]+$/) {
-                for my $column (keys %$param) {
+            unless ((join('', keys %{$param->[0]}) || '') =~ /^[$c\.]+$/) {
+                for my $column (keys %{$param->[0]}) {
                     croak qq{"$column" is not safety column name } . _subname
                       unless $column =~ /^[$c\.]+$/;
                 }
@@ -413,7 +414,9 @@ sub execute {
 
     # Return query
     if ($opt{query}) {
-        delete $param->{$_} for (@cleanup, @{$opt{cleanup} || []});
+        for my $column (@cleanup, @{$opt{cleanup} || []}) {
+            delete $_->{$column} for @$param;
+        }
         return $query;
     };
     
@@ -436,8 +439,8 @@ sub execute {
            my $key = $opt{primary_key}->[$i];
            $key = "$main_table.$key" if $statement eq 'update' ||
              $statement eq 'delete' || $statement eq 'select';
-           next if exists $param->{$key};
-           $param->{$key} = $opt{id}->[$i];
+           next if exists $param->[0]->{$key};
+           $param->[0]->{$key} = $opt{id}->[$i];
            push @cleanup, $key;1
         }
     }
@@ -502,11 +505,11 @@ sub execute {
     if (!$query->{duplicate} && $type_rule_off && !keys %$filter && !$self->{default_out_filter}
       && !$opt{bind_type} && !$opt{type} && !$ENV{DBIX_CUSTOM_DEBUG})
     {
-        eval { $affected = $sth->execute(map { $param->{$_} } @{$query->{columns}}) };
+        eval { $affected = $sth->execute(map { $param->[0]->{$_} } @{$query->{columns}}) };
     }
     else {
         # Create bind values
-        my ($bind, $bind_types) = $self->_create_bind_values($param, $query->{columns},
+        my ($bind, $bind_types) = $self->_create_bind_values($param->[0], $query->{columns},
           $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
 
         # Execute
@@ -540,7 +543,9 @@ sub execute {
       . qq{$query->{sql}\n} . _subname) if $@;
 
     # Remove id from parameter
-    delete $param->{$_} for (@cleanup, @{$opt{cleanup} || []});
+    for my $column (@cleanup, @{$opt{cleanup} || []}) {
+        delete $_->{$column} for @$param;
+    }
     
     # Not select statement
     return $affected unless $sth->{NUM_OF_FIELDS};
@@ -619,19 +624,23 @@ sub insert {
     my $self = shift;
     
     # Options
-    my $param = @_ % 2 ? shift : undef;
+    my $params = @_ % 2 ? shift : undef;
     my %opt = @_;
     warn "insert method param option is DEPRECATED!" if $opt{param};
-    $param ||= delete $opt{param} || {};
+    $params ||= delete $opt{param} || {};
+    
+    my $multi;
+    if (ref $params eq 'ARRAY') { $multi = 1 }
+    else { $params = [$params] }
     
     # Timestamp(DEPRECATED!)
-    if ($opt{timestamp} && (my $insert_timestamp = $self->insert_timestamp)) {
+    if (!$multi && $opt{timestamp} && (my $insert_timestamp = $self->insert_timestamp)) {
         warn "insert timestamp option is DEPRECATED! use created_at with now attribute";
         my $columns = $insert_timestamp->[0];
         $columns = [$columns] unless ref $columns eq 'ARRAY';
         my $value = $insert_timestamp->[1];
         $value = $value->() if ref $value eq 'CODE';
-        $param->{$_} = $value for @$columns;
+        $params->[0]->{$_} = $value for @$columns;
     }
 
     # Created time and updated time
@@ -640,11 +649,11 @@ sub insert {
         my $now = $self->now;
         $now = $now->() if ref $now eq 'CODE';
         if (defined $opt{created_at}) {
-            $param->{$opt{created_at}} = $now;
+            $_->{$opt{created_at}} = $now for @$params;
             push @timestamp_cleanup, $opt{created_at};
         }
         if (defined $opt{updated_at}) {
-            $param->{$opt{updated_at}} = $now;
+            $_->{$opt{updated_at}} = $now for @$params;
             push @timestamp_cleanup, $opt{updated_at};
         }
     }
@@ -652,15 +661,15 @@ sub insert {
     # Merge id to parameter
     my @cleanup;
     my $id_param = {};
-    if (defined $opt{id}) {
+    if (defined $opt{id} && !$multi) {
         croak "insert id option must be specified with primary_key option"
           unless $opt{primary_key};
         $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key};
         $opt{id} = [$opt{id}] unless ref $opt{id};
         for (my $i = 0; $i < @{$opt{primary_key}}; $i++) {
            my $key = $opt{primary_key}->[$i];
-           next if exists $param->{$key};
-           $param->{$key} = $opt{id}->[$i];
+           next if exists $params->[0]->{$key};
+           $params->[0]->{$key} = $opt{id}->[$i];
            push @cleanup, $key;
         }
     }
@@ -669,15 +678,15 @@ sub insert {
     my $sql = "insert ";
     $sql .= "$opt{prefix} " if defined $opt{prefix};
     $sql .= "into " . $self->q($opt{table}) . " "
-      . $self->values_clause($param, {wrap => $opt{wrap}}) . " ";
+      . $self->values_clause($params->[0], {wrap => $opt{wrap}}) . " ";
 
     # Remove id from parameter
-    delete $param->{$_} for @cleanup;
+    delete $params->[0]->{$_} for @cleanup;
     
     # Execute query
     $opt{statement} = 'insert';
     $opt{cleanup} = \@timestamp_cleanup;
-    $self->execute($sql, $param, %opt);
+    $self->execute($sql, $params, %opt);
 }
 
 sub insert_timestamp {
