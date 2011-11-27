@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.2102';
+our $VERSION = '0.2103';
 use 5.008001;
 
 use Carp 'croak';
@@ -683,8 +683,19 @@ sub insert {
     # Insert statement
     my $sql = "insert ";
     $sql .= "$opt{prefix} " if defined $opt{prefix};
-    $sql .= "into " . $self->q($opt{table}) . " "
-      . $self->values_clause($params->[0], {wrap => $opt{wrap}}) . " ";
+    $sql .= "into " . $self->q($opt{table}) . " ";
+    if ($opt{bulk_insert}) {
+        $sql .= $self->_multi_values_clause($params, {wrap => $opt{wrap}}) . " ";
+        my $new_param = {};
+        $new_param->{$_} = [] for keys %{$params->[0]};
+        for my $param (@$params) {
+            push @{$new_param->{$_}}, $param->{$_} for keys %$param;
+        }
+        $params = [$new_param];
+    }
+    else {
+        $sql .= $self->values_clause($params->[0], {wrap => $opt{wrap}}) . " ";
+    }
 
     # Remove id from parameter
     delete $params->[0]->{$_} for @cleanup;
@@ -1233,6 +1244,30 @@ sub values_clause {
       } sort keys %$param
     ) .
     ')'
+}
+
+sub _multi_values_clause {
+    my ($self, $params, $opts) = @_;
+    
+    my $wrap = $opts->{wrap} || {};
+    
+    # Create insert parameter tag
+    my ($q, $p) = split //, $self->q('');
+    
+    # Multi values clause
+    my $clause = '(' . join(', ', map { "$q$_$p" } sort keys %{$params->[0]}) . ') values ';
+    
+    for (1 .. @$params) {
+        $clause .= '(' . join(', ', 
+          map {
+              ref $params->[0]->{$_} eq 'SCALAR' ? ${$params->[0]->{$_}} :
+              $wrap->{$_} ? $wrap->{$_}->(":$_") :
+              ":$_";
+          } sort keys %{$params->[0]}
+        ) . '), '
+    }
+    $clause =~ s/, $//;
+    return $clause;
 }
 
 sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
@@ -2794,6 +2829,16 @@ C<insert> method use all of C<execute> method's options,
 and use the following new ones.
 
 =over 4
+
+=item C<bulk_insert> EXPERIMENTAL
+
+    bulk_insert => 1
+
+bulk insert is executed if database support bulk insert and 
+multiple parameters is passed to C<insert>.
+The SQL like the following one is executed.
+
+    insert into book (id, title) values (?, ?), (?, ?);
 
 =item C<created_at>
 

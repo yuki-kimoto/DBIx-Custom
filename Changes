@@ -1,3 +1,5 @@
+0.2103
+    - added EXPERIMENTAL insert bulk_insert option.
 0.2102
     - fixed bug that DBIx::Custom::Model count method don't receive model's
       attribute

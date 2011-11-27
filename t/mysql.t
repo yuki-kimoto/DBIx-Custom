@@ -47,6 +47,28 @@ ok(!$@);
 eval { $dbi->do('drop table table1') };
 $dbi->do('create table table1 (key1 varchar(255), key2 varchar(255)) engine=InnoDB');
 
+test 'bulk_insert';
+$dbi->delete_all(table => 'table1');
+$dbi->insert(
+    [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}],
+    table => 'table1',
+    bulk_insert => 1
+);
+like($dbi->last_sql, qr/(\?.+){4}/);
+$rows = $dbi->select(table => 'table1')->all;
+is_deeply($rows, [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}]);
+
+$dbi->delete_all(table => 'table1');
+$dbi->insert(
+    [{key1 => 1, key2 => 2}, {key1 => 3, key2 => 4}],
+    table => 'table1',
+    bulk_insert => 1,
+    filter => {key1 => sub { $_[0] * 2 }}
+);
+like($dbi->last_sql, qr/(\?.+){4}/);
+$rows = $dbi->select(table => 'table1')->all;
+is_deeply($rows, [{key1 => 2, key2 => 2}, {key1 => 6, key2 => 4}]);
+
 test 'update_or_insert';
 $dbi->delete_all(table => 'table1');
 $dbi->update_or_insert(
