@@ -298,11 +298,16 @@ is_deeply(\@rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "fetch_h
 
 $result = $dbi->execute($query);
 $rows = $result->fetch_all;
-is_deeply($rows, [[1, 2], [3, 4]], "fetch_all");
+is_deeply($rows, [[1, 2], [3, 4]]);
 
 $result = $dbi->execute($query);
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "all");
+
+is_deeply($dbi->select($key1, table => $table1)->column, [1, 3]);
+
+is($dbi->select('count(*)', table => $table1)->value, 2);
+ok(!defined $dbi->select($key1, table => $table1, where => {$key1 => 10})->value);
 
 test 'Insert query return value';
 $source = "insert into $table1 {insert_param $key1 $key2}";

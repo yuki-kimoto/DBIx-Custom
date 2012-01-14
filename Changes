@@ -1,3 +1,6 @@
+0.2105
+    - added EXPERIMENTAL DBIx::Custom::Result::value method
+    - added EXPERIMENTAL DBIx::Custom::Result::column method
 0.2104
     - improved bulk_insert performance
 0.2103

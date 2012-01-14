@@ -9,6 +9,15 @@ has [qw/dbi sth/],
 
 *all = \&fetch_hash_all;
 
+sub column {
+    my $self = shift;
+    
+    my $column = [];
+    my $rows = $self->fetch_all;
+    push @$column, $_->[0] for @$rows;
+    return $column;
+}
+
 sub filter {
     my $self = shift;
     
@@ -305,6 +314,13 @@ sub type_rule2_on {
     return $self;
 }
 
+sub value {
+    my $self = shift;
+    my $row = $self->fetch_first;
+    my $value = $row ? $row->[0] : undef;
+    return $value;
+}
+
 sub _cache {
     my $self = shift;
     $self->{_type_map} = {};
@@ -465,6 +481,14 @@ and implements the following new ones.
 
 Same as C<fetch_hash_all>.
 
+=head2 C<column> EXPERIMENTAL
+
+    my $column = $result->column;
+
+Get first column's all values.
+
+    my $names = $dbi->select('name', table => 'book')->column;
+
 =head2 C<fetch>
 
     my $row = $result->fetch;
@@ -542,7 +566,7 @@ Same as C<fetch_hash_first>.
     my $foo = $result->stash->{foo};
     $result->stash->{foo} = $foo;
 
-Stash is hash reference for data.
+Stash is hash reference to save some data.
 
 =head2 C<type_rule>
     
@@ -605,5 +629,13 @@ By default, type rule is on.
 
 Turn C<from2> type rule on.
 By default, type rule is on.
+
+=head2 C<value> EXPERIMENTAL
+
+    my $value = $result->value;
+
+Get first column's first value.
+
+    my $count = $dbi->select('count(*)')->value;
 
 =cut
