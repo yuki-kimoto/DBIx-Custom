@@ -1,754 +1,754 @@
 0.2106
-    - renamed DBIx::Custom::Result::fetch_hash_first to fethc_hash_one
-      because first is misleading name. fethc_hash_first is DEPRECATED!
-    - renamed DBIx::Custom::Result::fetch_first to fetch_one,
-      because first is misleading name. fetch_first is DEPRECATED!
+  - renamed DBIx::Custom::Result::fetch_hash_first to fethc_hash_one
+    because first is misleading name. fethc_hash_first is DEPRECATED!
+  - renamed DBIx::Custom::Result::fetch_first to fetch_one,
+    because first is misleading name. fetch_first is DEPRECATED!
 0.2105
-    - added EXPERIMENTAL DBIx::Custom::Result::value method
-    - added EXPERIMENTAL DBIx::Custom::Result::column method
+  - added EXPERIMENTAL DBIx::Custom::Result::value method
+  - added EXPERIMENTAL DBIx::Custom::Result::column method
 0.2104
-    - improved bulk_insert performance
+  - improved bulk_insert performance
 0.2103
-    - added EXPERIMENTAL insert bulk_insert option.
+  - added EXPERIMENTAL insert bulk_insert option.
 0.2102
-    - fixed bug that DBIx::Custom::Model count method don't receive model's
-      attribute
-    - insert method can receive multipule parameters, this is very fast, this is experimental
+  - fixed bug that DBIx::Custom::Model count method don't receive model's
+    attribute
+  - insert method can receive multipule parameters, this is very fast, this is experimental
 0.2101
-    - fixed small default_bind_filter bug
-    - micro optimization
-    - select method can receive odd number argument. In that case first argument
-      is column option.
-    - fixed update_or_insert bug that when parameter don't contain any key-value
-      this method throw exception.
+  - fixed small default_bind_filter bug
+  - micro optimization
+  - select method can receive odd number argument. In that case first argument
+    is column option.
+  - fixed update_or_insert bug that when parameter don't contain any key-value
+    this method throw exception.
 0.2100
-    - micro optimization
-    - DBIx::Custom::Query is DEPRECATED!
+  - micro optimization
+  - DBIx::Custom::Query is DEPRECATED!
 0.1747
-    - fixed bug DBIx::Custom::Result fetch_hash_multi throw warnings
-      which cannnot fetch any more
-    - fixed bug DBIx::Custom::Result fetch_hash_multi throw warnings
-      which cannnot fetch any more
+  - fixed bug DBIx::Custom::Result fetch_hash_multi throw warnings
+    which cannnot fetch any more
+  - fixed bug DBIx::Custom::Result fetch_hash_multi throw warnings
+    which cannnot fetch any more
 0.1746
-    - micro optimization
+  - micro optimization
 0.1745
-    - DBIx::Custom::Order prepend method receiving array reference
-      is DEPRECATED!
-    - DBIx::Custom::QueryBuilder class is DEPRECATED!
-    - added DBIX_CUSTOM_DISABLE_MODEL_EXECUTE environment variable
-    - added DBIX_CUSTOM_TAG_PARSE environment variable
-    - tag_parse attribute is DEPRECATED! 
-    - show_datatype method return lower case string
-    - show_typename method return lower case string
-    - DBIx::Custom::Result filter_on method is DEPRECATED!
-    - DBIx::Custom::Result filter_off method is DEPRECATED!
+  - DBIx::Custom::Order prepend method receiving array reference
+    is DEPRECATED!
+  - DBIx::Custom::QueryBuilder class is DEPRECATED!
+  - added DBIX_CUSTOM_DISABLE_MODEL_EXECUTE environment variable
+  - added DBIX_CUSTOM_TAG_PARSE environment variable
+  - tag_parse attribute is DEPRECATED! 
+  - show_datatype method return lower case string
+  - show_typename method return lower case string
+  - DBIx::Custom::Result filter_on method is DEPRECATED!
+  - DBIx::Custom::Result filter_off method is DEPRECATED!
 0.1744
-    - id option work if id count is lower than primary key count.
-    - removed EXPERIMETNAL status from update_or_insert method and
-      DBIx::Custom::Model's update_or_insert method
-    - removed EXPERIMENTAL status from reuse option
-    - removed EXPERIMENTAL status from update_at option and created_at option
-    - removed EXPERIMETNAL status from now attribute
+  - id option work if id count is lower than primary key count.
+  - removed EXPERIMETNAL status from update_or_insert method and
+    DBIx::Custom::Model's update_or_insert method
+  - removed EXPERIMENTAL status from reuse option
+  - removed EXPERIMENTAL status from update_at option and created_at option
+  - removed EXPERIMETNAL status from now attribute
 0.1743
-    - DBIx::Custom::Model execute method is DEPRECATED!
-    - fixed bug that update_all can't receive parameter as first argument
-    - fixed bug that delete_all can't receive parameter as first argument
-    - fixed where clause parsing bug when time(like 00:00:00) contain
+  - DBIx::Custom::Model execute method is DEPRECATED!
+  - fixed bug that update_all can't receive parameter as first argument
+  - fixed bug that delete_all can't receive parameter as first argument
+  - fixed where clause parsing bug when time(like 00:00:00) contain
 0.1742
-    - fixed update_or_insert method bug
-    - micro optimization
+  - fixed update_or_insert method bug
+  - micro optimization
 0.1741
-    - added EXPERIMENTAL update_or_insert to DBIx::Custom::Model
+  - added EXPERIMENTAL update_or_insert to DBIx::Custom::Model
 0.1740
-    - EXPERIMENTAL update_or_insert need id and primary_key option
-      and added option option
-    - insert method created_at and updated_at option can receive scalar reference
-    - update method updated_at option can receive scalar reference
-    - select column option [COLUMN => ALIAS] syntax is DEPRECATED!
-    - added EXPERIMENTAL q method
-    - execute method id option is DEPRECATED!
+  - EXPERIMENTAL update_or_insert need id and primary_key option
+    and added option option
+  - insert method created_at and updated_at option can receive scalar reference
+  - update method updated_at option can receive scalar reference
+  - select column option [COLUMN => ALIAS] syntax is DEPRECATED!
+  - added EXPERIMENTAL q method
+  - execute method id option is DEPRECATED!
 0.1739
-    - insert timestamp option is DEPRECATED!
-      use created_at option with now attribute
-    - update timestamp option is DEPRECATED!
-      use updated_at option wieh now attribute
-    - insert_timestamp method is DEPRECATED!
-      use now method
-    - update_timestamp method is DEPRECATED!
-      use use now method
-    - added EXPEREIMTNAL now method
-    - added EXPERIMENTAL insert created_at option
-    - added EXPERIMETNAL insert updated_at option
-    - added EXPERIMETNAL update updated_at option
-    - added new timestamp system using the above methods and options
+  - insert timestamp option is DEPRECATED!
+    use created_at option with now attribute
+  - update timestamp option is DEPRECATED!
+    use updated_at option wieh now attribute
+  - insert_timestamp method is DEPRECATED!
+    use now method
+  - update_timestamp method is DEPRECATED!
+    use use now method
+  - added EXPEREIMTNAL now method
+  - added EXPERIMENTAL insert created_at option
+  - added EXPERIMETNAL insert updated_at option
+  - added EXPERIMETNAL update updated_at option
+  - added new timestamp system using the above methods and options
 0.1738
-    - micro optimization
-    - removed example that query pass execute method in documentation
-      this is many bug reason much more than I have expected
-      and passing query to execute method is DEPRECATED!
-    - insert method id value is not copied to parameter
-      if the key exists in parameter
+  - micro optimization
+  - removed example that query pass execute method in documentation
+    this is many bug reason much more than I have expected
+    and passing query to execute method is DEPRECATED!
+  - insert method id value is not copied to parameter
+    if the key exists in parameter
 0.1737
-    - micro optimization
-    - fixed DEBUG messsage bug
+  - micro optimization
+  - fixed DEBUG messsage bug
 0.1736
-    - micro optimization
+  - micro optimization
 0.1735
-    - added EXPERIMENTAL reuse_query option to execute method
+  - added EXPERIMENTAL reuse_query option to execute method
 0.1734
-    - moved DBIx::Custom::Guide to wiki
+  - moved DBIx::Custom::Guide to wiki
 0.1733
-    - select method join option can receive string.
-    - removed DEPRECATED status of select param option
-    - select method where_param option is DEPRECATED!
-      use where => [STRING, PARAM] syntax instead
-    - delete method where_param option is DEPRECATED!
-      use where => [STRING, PARAM] syntax instead
-    - update method where_param option is DEPRECATED!
-      use where => [STRING, PARAM] syntax instead
-    - update method param option is DEPRECATED!
-    - insert method param option is DEPRECATED!
-    - removed argument checking logic because in database performance is more
-      important.
+  - select method join option can receive string.
+  - removed DEPRECATED status of select param option
+  - select method where_param option is DEPRECATED!
+    use where => [STRING, PARAM] syntax instead
+  - delete method where_param option is DEPRECATED!
+    use where => [STRING, PARAM] syntax instead
+  - update method where_param option is DEPRECATED!
+    use where => [STRING, PARAM] syntax instead
+  - update method param option is DEPRECATED!
+  - insert method param option is DEPRECATED!
+  - removed argument checking logic because in database performance is more
+    important.
 0.1732
-    - removed EXPERIMETNAL flag from like_value
+  - removed EXPERIMETNAL flag from like_value
 0.1731
-    - removed DEPRECATED status from insert method's id option
-    - renamed EXPERIMENTAL insert_or_update to update_or_insert
+  - removed DEPRECATED status from insert method's id option
+  - renamed EXPERIMENTAL insert_or_update to update_or_insert
 0.1730
-    - added EXPERIMENTAL insert_or_update method
-    - method method of DBIx::Custom::Model is renamed to helper,
-      method is DEPRECATED!
-    - method method is renamed to helper, method is DEPRECATED!
-    - insert method's id option is DEPRECATED!
-    - fixed id option bug when column name is anbiguous
+  - added EXPERIMENTAL insert_or_update method
+  - method method of DBIx::Custom::Model is renamed to helper,
+    method is DEPRECATED!
+  - method method is renamed to helper, method is DEPRECATED!
+  - insert method's id option is DEPRECATED!
+  - fixed id option bug when column name is anbiguous
 0.1729
-    - dbi_option attribute is renamed to option, dbi_option is DEPRECATED!
-    - default_dbi_option is renamed to default_option, default_dbi_option
-      is DEPRECATED!
+  - dbi_option attribute is renamed to option, dbi_option is DEPRECATED!
+  - default_dbi_option is renamed to default_option, default_dbi_option
+    is DEPRECATED!
 0.1728
-    - added {key => ..., value => ...} syntax to DBIx::Custom::Mapper map method
-      ,and argument of string and code reference is DEPRECATED!
-    - update_param is DEPRECATED, use assing_clause instead.
-    - assing_param is renamed to assing_clause, assing_param is DEPRECATED!
-    - insert_param is renamed to values_clause, insert_param is DEPRECATED!
+  - added {key => ..., value => ...} syntax to DBIx::Custom::Mapper map method
+    ,and argument of string and code reference is DEPRECATED!
+  - update_param is DEPRECATED, use assing_clause instead.
+  - assing_param is renamed to assing_clause, assing_param is DEPRECATED!
+  - insert_param is renamed to values_clause, insert_param is DEPRECATED!
 0.1727
-    - improved join clause parsing
+  - improved join clause parsing
 0.1726
-    - improved join clause parsing
+  - improved join clause parsing
 0.1725
-    - improved join clause parsing
+  - improved join clause parsing
 0.1724
-    - added EXPERIMENTAL like_value method to DBIx::Custom
-    - sqlfilter option is renamed to after_build_sql, sqlfilter is DEPRECATED!
-    - removed EXPERIMENTAL flag from DBIx::Custom::Mapper
-    - removed EXPERIMENTAL flag from the following DBIx::Custom methods
-    insert_timestamp, mapper, update_timestamp
-    - removed EXPERIMENTAL flag from the following DBIx::Custom method's option
-    timestamp, 
+  - added EXPERIMENTAL like_value method to DBIx::Custom
+  - sqlfilter option is renamed to after_build_sql, sqlfilter is DEPRECATED!
+  - removed EXPERIMENTAL flag from DBIx::Custom::Mapper
+  - removed EXPERIMENTAL flag from the following DBIx::Custom methods
+  insert_timestamp, mapper, update_timestamp
+  - removed EXPERIMENTAL flag from the following DBIx::Custom method's option
+  timestamp, 
 0.1723
-    - removed EXPERIMENTAL call_dbi method from DBIx::Custom::Model
-    - removed EXPERIMENTAL map_param method from DBIx::Custom
-    - removed EXPERIMENTAL the following methods from DBIx::Custom::Where
-      if, map
-    - removed EXPERIMENTAL flag from the following DBIx::Custom::Model methods
-      count, execute
-    - removed EXPERIMENTAL flag from the following DBIx::Custom::Result mehotds
-      filter_on, type_rule, type_rule_off, type_rule_on, type_rule1_off,
-      type_rule1_on, type_rule2_off, type_rule2_on
-    - removed EXPERIMENTAL flag from the following DBIx::Custom method's options
-      sqlfilter, type_rule_off, type_rule1_off, type_rule2_off,
-      table_alias, wrap
-    - removed EXPERIMENTAL flag from DBIx::Custom::Order
-    - removed EXPERIMETNAL flag from the following DBIx::Custom methods
-      exclude_table, user_column_info,
-      user_table_info, available_datatype, available_typename,
-      assign_param, count, get_column_info, get_table_info
-      order, show_datatype, show_typename methods, show_tables, type_rule,
-    - added EXPERIMENTAL update_timestamp method to DBIx::Custom
-    - added EXPERIMENTAL insert_timestamp method to DBIx::Custom
-    - removed EXPERIMENTAL timestamp attribute from DBIx::Custom
+  - removed EXPERIMENTAL call_dbi method from DBIx::Custom::Model
+  - removed EXPERIMENTAL map_param method from DBIx::Custom
+  - removed EXPERIMENTAL the following methods from DBIx::Custom::Where
+    if, map
+  - removed EXPERIMENTAL flag from the following DBIx::Custom::Model methods
+    count, execute
+  - removed EXPERIMENTAL flag from the following DBIx::Custom::Result mehotds
+    filter_on, type_rule, type_rule_off, type_rule_on, type_rule1_off,
+    type_rule1_on, type_rule2_off, type_rule2_on
+  - removed EXPERIMENTAL flag from the following DBIx::Custom method's options
+    sqlfilter, type_rule_off, type_rule1_off, type_rule2_off,
+    table_alias, wrap
+  - removed EXPERIMENTAL flag from DBIx::Custom::Order
+  - removed EXPERIMETNAL flag from the following DBIx::Custom methods
+    exclude_table, user_column_info,
+    user_table_info, available_datatype, available_typename,
+    assign_param, count, get_column_info, get_table_info
+    order, show_datatype, show_typename methods, show_tables, type_rule,
+  - added EXPERIMENTAL update_timestamp method to DBIx::Custom
+  - added EXPERIMENTAL insert_timestamp method to DBIx::Custom
+  - removed EXPERIMENTAL timestamp attribute from DBIx::Custom
 0.1722
-    - added EXPERIMENTAL timestamp option to DBIx::Custom insert
-      and update method.
-    - added EXPERIMENTAL timestamp attribute to DBIx::Custom
-    - added {KEY => {OPTION_KEY => OPTION_VALUE} syntax
-      to EXPERIMENTAL DBIx::Custom::Mapper map method
-    - added {KEY => sub { VALUE }} syntax
-      to EXPERIMETNAL DBIx::Custom::Mapper map method
-    - removed EXPERIMENTAL wrap option from select method
-    - insert_param, update_param, and assign param can
-      be wrapeed by DB function by C<wrap> option
-    - added EXPERIMENTAL pass attribute to DBIx::Custom::Mapper
-    - removed EXPERIMENTAL ignore attribute from DBIx::Custom::Mapper
+  - added EXPERIMENTAL timestamp option to DBIx::Custom insert
+    and update method.
+  - added EXPERIMENTAL timestamp attribute to DBIx::Custom
+  - added {KEY => {OPTION_KEY => OPTION_VALUE} syntax
+    to EXPERIMENTAL DBIx::Custom::Mapper map method
+  - added {KEY => sub { VALUE }} syntax
+    to EXPERIMETNAL DBIx::Custom::Mapper map method
+  - removed EXPERIMENTAL wrap option from select method
+  - insert_param, update_param, and assign param can
+    be wrapeed by DB function by C<wrap> option
+  - added EXPERIMENTAL pass attribute to DBIx::Custom::Mapper
+  - removed EXPERIMENTAL ignore attribute from DBIx::Custom::Mapper
 0.1721
-    - added EXPERIMENTAL DBIx::Custom::Mapper class
-    - added EXPERIMENTAL mapper method to DBIx::Custom
+  - added EXPERIMENTAL DBIx::Custom::Mapper class
+  - added EXPERIMENTAL mapper method to DBIx::Custom
 0.1720
-    - removed placeholder count check
-    - added EXPERIMENTAL execute method's id and primary key option.
-    - added EXPERIMENTAL DBIx::Custom::Model execute method
+  - removed placeholder count check
+  - added EXPERIMENTAL execute method's id and primary key option.
+  - added EXPERIMENTAL DBIx::Custom::Model execute method
 0.1719
-    - DBIx::Custom support Microsoft Access through DBD::ODBC
+  - DBIx::Custom support Microsoft Access through DBD::ODBC
 0.1718
-    - added EXPERIMENTAL DBIx::Custom::Model call_dbi method
-    - added EXPERIMENTAL count method
-    - added EXPERIMENTAL DBIx::Custom::Model count method
+  - added EXPERIMENTAL DBIx::Custom::Model call_dbi method
+  - added EXPERIMENTAL count method
+  - added EXPERIMENTAL DBIx::Custom::Model count method
 0.1717
-    - added EXPERIMENTAL get_table_info
-    - added EXPERIMETNAL user_table_info attribute
-      and each_table find table info in user_table_info if set.
-    - added EXPERIMENTAL get_column_info
-    - added EXPERIMENTAL user_column_info attribute
-      and each_column find column info in user_column_info if set.
-    - connector is automatically set to DBDx::Connector object
-      if connector is set to 1 when connect method is called.
+  - added EXPERIMENTAL get_table_info
+  - added EXPERIMETNAL user_table_info attribute
+    and each_table find table info in user_table_info if set.
+  - added EXPERIMENTAL get_column_info
+  - added EXPERIMENTAL user_column_info attribute
+    and each_column find column info in user_column_info if set.
+  - connector is automatically set to DBDx::Connector object
+    if connector is set to 1 when connect method is called.
 0.1716
-    - fixed bugs when using DBD::Oracle.
-    - added EXPERIMENTAL show_tables method.
+  - fixed bugs when using DBD::Oracle.
+  - added EXPERIMENTAL show_tables method.
 0.1715
-    - default quote attribute in ODBC driver is changed to "[]"
-    - fixed some bug in Microsoft SQL Server
-    - added EXPERIMENTAL execute method sqlfilter option
+  - default quote attribute in ODBC driver is changed to "[]"
+  - fixed some bug in Microsoft SQL Server
+  - added EXPERIMENTAL execute method sqlfilter option
 0.1714
-    - fixed not backword compatible change in 0.1712 query_buider
+  - fixed not backword compatible change in 0.1712 query_buider
 0.1713
-    - fixed memory leak and connection increasing bug when using model.
+  - fixed memory leak and connection increasing bug when using model.
 0.1712
-    - you can set any string as separator
-    - fixed memory leak and connection increasing bug, and query_buider method return new object.
-    - added EXPERIMENTAL exclude_table attribute
-    - added EXPERIMENTAL show_typename method
-    - added EXPERIMENTAL show_datatype method
+  - you can set any string as separator
+  - fixed memory leak and connection increasing bug, and query_buider method return new object.
+  - added EXPERIMENTAL exclude_table attribute
+  - added EXPERIMENTAL show_typename method
+  - added EXPERIMENTAL show_datatype method
 0.1711
-    - renamed EXPERIMENTAL available_type_name to available_typename
-    - renamed EXPERIMENTAL available_data_type to available_datatype
-    - added EXPERIMENTAL DBIx::Custom::Where if method
-    - added EXPERIMENTAL DBIx::Custom::Where map method
+  - renamed EXPERIMENTAL available_type_name to available_typename
+  - renamed EXPERIMENTAL available_data_type to available_datatype
+  - added EXPERIMENTAL DBIx::Custom::Where if method
+  - added EXPERIMENTAL DBIx::Custom::Where map method
 0.1710
-    - use more DBIx::Custom information in sub modules to decrease bugs
-      (very sorry, this change can't keep backword compatible,
-       but maybe no effects,
-       because the attributes is automatically set by DBIx::Custom, not user).
-    - Fixed fisrt executed where clause failed in some condition.
+  - use more DBIx::Custom information in sub modules to decrease bugs
+    (very sorry, this change can't keep backword compatible,
+     but maybe no effects,
+     because the attributes is automatically set by DBIx::Custom, not user).
+  - Fixed fisrt executed where clause failed in some condition.
 0.1709
-    - fixed named placeholder bug and added escape syntax
+  - fixed named placeholder bug and added escape syntax
 0.1708
-    - improved execute method performance
+  - improved execute method performance
 0.1707
-    - I call :title named placeholder, stoping calling it parameter
-    - removed some EXPERIMENTAL status
-    - fixed performance
+  - I call :title named placeholder, stoping calling it parameter
+  - removed some EXPERIMENTAL status
+  - fixed performance
 0.1706
-    - Added execute method's query option document
-      You can get more performance.
-    - DBIx::Custom::Query table and filters attribute method and
-      filter method is DEPRECATED!
-      because I think query object must have only the information
-      for statement handle caching.
+  - Added execute method's query option document
+    You can get more performance.
+  - DBIx::Custom::Query table and filters attribute method and
+    filter method is DEPRECATED!
+    because I think query object must have only the information
+    for statement handle caching.
 0.1705
-    - insert and update method's param can set constant value by scalara reference
-      such as {date => \"NOW()"} This is EXPERIMENTAL.
+  - insert and update method's param can set constant value by scalara reference
+    such as {date => \"NOW()"} This is EXPERIMENTAL.
 0.1704
-    - added quote method's two character support like []
-      for Microsoft SQL Server and Access
-    - added EXPERIMENTAL parameter new syntax :name{operator}
+  - added quote method's two character support like []
+    for Microsoft SQL Server and Access
+  - added EXPERIMENTAL parameter new syntax :name{operator}
 0.1703
-    - added EXPERIMENTAL join new syntax.
+  - added EXPERIMENTAL join new syntax.
 0.1702
-    - removed EXPERIMENTAL status of some methods.
-    - fixed some join bug
+  - removed EXPERIMENTAL status of some methods.
+  - fixed some join bug
 0.1701
-    - added DBIx::Cusotm::Order prepend method automatically quoted syntax
-    - simplified arguments check
-    - added EXPERIMENTAL each_table method
-    - select method column option [COLUMN, as => ALIAS] format is DEPRECATED!
-      changed to [COLUMN => ALIAS]
-    - added EXPERIMENTAL DBIx::Custom::Result header method
-    - added EXPERIMENTAL last_sql attribute method
+  - added DBIx::Cusotm::Order prepend method automatically quoted syntax
+  - simplified arguments check
+  - added EXPERIMENTAL each_table method
+  - select method column option [COLUMN, as => ALIAS] format is DEPRECATED!
+    changed to [COLUMN => ALIAS]
+  - added EXPERIMENTAL DBIx::Custom::Result header method
+  - added EXPERIMENTAL last_sql attribute method
 0.1700
-    - fixed end_filter DEPRECATED warnings bug
+  - fixed end_filter DEPRECATED warnings bug
 0.1699
-    - added tag_parse attribute.
-    - added EXPERIMENTAL order method
-    - added EXPERIMENTAL DBIx::Custom::Order module
-    - changed backword compatible policy
-      ------------------------------------------------------------------------
-      If a functionality is DEPRECATED, you can know it by DEPRECATED warnings
-      except for attribute method.
-      You can check all DEPRECATED functionalities by document.
-      DEPRECATED functionality is removed after five years,
-      but if at least one person use the functionality and tell me that thing
-      I extend one year each time you tell me it.
+  - added tag_parse attribute.
+  - added EXPERIMENTAL order method
+  - added EXPERIMENTAL DBIx::Custom::Order module
+  - changed backword compatible policy
+    ------------------------------------------------------------------------
+    If a functionality is DEPRECATED, you can know it by DEPRECATED warnings
+    except for attribute method.
+    You can check all DEPRECATED functionalities by document.
+    DEPRECATED functionality is removed after five years,
+    but if at least one person use the functionality and tell me that thing
+    I extend one year each time you tell me it.
 
-      EXPERIMENTAL functionality will be changed without warnings.
-      ------------------------------------------------------------------------
+    EXPERIMENTAL functionality will be changed without warnings.
+    ------------------------------------------------------------------------
 0.1698
-    - fixed DBIx::Custom::Where to_string method small bug
-    - added EXPERIMENTAL execute method table_alias option
+  - fixed DBIx::Custom::Where to_string method small bug
+  - added EXPERIMENTAL execute method table_alias option
 0.1697
-    - added EXPERIMENTAL map_param method
+  - added EXPERIMENTAL map_param method
 0.1696
-    - added new argument format update, delete, select method where option
-    - create_query is DEPRECATED! use query option of each method instead.
-    - added EXPERIMENTAL insert, update, and select method prefix option
-    - fixed small insert, update, delete, select method id option bug
+  - added new argument format update, delete, select method where option
+  - create_query is DEPRECATED! use query option of each method instead.
+  - added EXPERIMENTAL insert, update, and select method prefix option
+  - fixed small insert, update, delete, select method id option bug
 0.1695
-    - changed EXPERIMENTAL DBIx::Custom::Result type_rule_off method argument
-    - added EXPERIMENTAL DBIx::Custom::Result type_rule_on method
-    - changed EXPERIMENTAL DBIx::Custom::Result type_rule1_off method argument
-    - added EXPERIMENTAL DBIx::Custom::Result type_rule1_on method
-    - changed EXPERIMENTAL DBIx::Custom::Result type_rule2_off method argument
-    - added EXPERIMENTAL DBIx::Custom::Result type_rule2_on method
-    - changed EXPERIMENTAL DBIx::Custom::Result filter_off method argument
-    - added EXPERIMENTAL DBIx::Custom::Result filter_on method
+  - changed EXPERIMENTAL DBIx::Custom::Result type_rule_off method argument
+  - added EXPERIMENTAL DBIx::Custom::Result type_rule_on method
+  - changed EXPERIMENTAL DBIx::Custom::Result type_rule1_off method argument
+  - added EXPERIMENTAL DBIx::Custom::Result type_rule1_on method
+  - changed EXPERIMENTAL DBIx::Custom::Result type_rule2_off method argument
+  - added EXPERIMENTAL DBIx::Custom::Result type_rule2_on method
+  - changed EXPERIMENTAL DBIx::Custom::Result filter_off method argument
+  - added EXPERIMENTAL DBIx::Custom::Result filter_on method
 0.1694
-    - EXPERIMENTAL type_rule argument format is changed
-    - DBIx::Custom::Result type_rule method on setting return self 
-    - reserved_word_quote is DEPRECATED! this is renamed to quote
-    - DBIx::Custom::Model type attribute is DEPRECATED!
-      this is renamed to bind_type.
+  - EXPERIMENTAL type_rule argument format is changed
+  - DBIx::Custom::Result type_rule method on setting return self 
+  - reserved_word_quote is DEPRECATED! this is renamed to quote
+  - DBIx::Custom::Model type attribute is DEPRECATED!
+    this is renamed to bind_type.
 0.1693
-    - separate DBIx::Custom type_rule from filter
-    - DBIx::Custom::Model filter attrribute is DEPRECATED!
-    - DBIx::Custom::Model name attribute is DEPRECATED!
-    - removed EXPERIMENTAL DBIx::Custom::Model alias_table
-    - added DBIx::Custom column method's table option
-    - separate DBIx::Custom::Result type_rule from filter again
+  - separate DBIx::Custom type_rule from filter
+  - DBIx::Custom::Model filter attrribute is DEPRECATED!
+  - DBIx::Custom::Model name attribute is DEPRECATED!
+  - removed EXPERIMENTAL DBIx::Custom::Model alias_table
+  - added DBIx::Custom column method's table option
+  - separate DBIx::Custom::Result type_rule from filter again
 0.1692
-    - removed EXPERIMENTAL DBIx::Model result_filter
-    - DBIx::Custom::Result filter override type_rule
-    - added EXPERIMENTAL DBIx::Custom::Result type_rule
-    - added EXPERIMENTAL available_type_name method 
-    - EXPERIMENTAL type_rule_off is not passed form execute method 
-      to DBIx::Custom::Result object
+  - removed EXPERIMENTAL DBIx::Model result_filter
+  - DBIx::Custom::Result filter override type_rule
+  - added EXPERIMENTAL DBIx::Custom::Result type_rule
+  - added EXPERIMENTAL available_type_name method 
+  - EXPERIMENTAL type_rule_off is not passed form execute method 
+    to DBIx::Custom::Result object
 0.1691
-    - DBIx::Custom::Result end_filter, remove_filter, remove_end_filter is DEPRECATED!
-    - apply_filter is DEPRECATED!
-    - EXPERIMETAL column method and table_alias think about "-" separator
-    - EXPERIMTANL column method think about separator
-    - removed EXPERIMENTAL col method.
-    - added EXPERIMENTAL separater method
-    - added EXPERIMENTAL select prefix option.
-    - fixed bug that data_source DEPRECATED warnings pirnt STDERR
-    - fixed bug that type_rule from option can't receive filter name
+  - DBIx::Custom::Result end_filter, remove_filter, remove_end_filter is DEPRECATED!
+  - apply_filter is DEPRECATED!
+  - EXPERIMETAL column method and table_alias think about "-" separator
+  - EXPERIMTANL column method think about separator
+  - removed EXPERIMENTAL col method.
+  - added EXPERIMENTAL separater method
+  - added EXPERIMENTAL select prefix option.
+  - fixed bug that data_source DEPRECATED warnings pirnt STDERR
+  - fixed bug that type_rule from option can't receive filter name
 0.1690
-    - use latest Object::Simple features
+  - use latest Object::Simple features
 0.1689
-    - added EXPERIMENTAL available_data_type
-    - simplified type_rule
-    - changed type_rule arguments format
-    - added EXPERIMENTAL DBIx::Custom::Model result_filter attribute
-    - added EXPERIMETNAL DBIx::Custom::Result filter_off method
-    - EXPERIMENTAL type_rule can receive filter name
+  - added EXPERIMENTAL available_data_type
+  - simplified type_rule
+  - changed type_rule arguments format
+  - added EXPERIMENTAL DBIx::Custom::Model result_filter attribute
+  - added EXPERIMETNAL DBIx::Custom::Result filter_off method
+  - EXPERIMENTAL type_rule can receive filter name
 0.1688
-    - fixed bug that model insert, update, delete select can't
-      odd number arguments
-    - improved type_rule method
+  - fixed bug that model insert, update, delete select can't
+    odd number arguments
+  - improved type_rule method
 0.1687
-    - added EXPERIMENTAL type_rule method
-    - added EXPERIMENTAL execute() type_rule_off option
-    - execute method can second argument as parameter
+  - added EXPERIMENTAL type_rule method
+  - added EXPERIMENTAL execute() type_rule_off option
+  - execute method can second argument as parameter
 0.1686
-    - select() column option can receive array reference in array.
-      This is EXPERIMENTAL
-    - select() EXPERIMETNAL column option hash format
-      return table.column, not table__column
-    - added EXPERIMENTAL col method.
-    - set reserved_word_quote automatically from driver name
+  - select() column option can receive array reference in array.
+    This is EXPERIMENTAL
+  - select() EXPERIMETNAL column option hash format
+    return table.column, not table__column
+  - added EXPERIMENTAL col method.
+  - set reserved_word_quote automatically from driver name
 0.1685
-    - insert_at, update_at, delete_at, select_at is DEPRECATED!
-      use insert, update, delete, select method and id option.
-    - insert, insert_at, update, update_at can receive odd number arguments,
-      first one is parameter.
+  - insert_at, update_at, delete_at, select_at is DEPRECATED!
+    use insert, update, delete, select method and id option.
+  - insert, insert_at, update, update_at can receive odd number arguments,
+    first one is parameter.
 0.1684
-    - added DBIx::Custom::Result all method, this is alias for fetch_hash_all
-    - added DBIx::Custom::Result one method, this is alias for fetch_hash_first
-    - DBIx::Custom::Result fetch_hash_first can recieve argument
-    - select() column option can receive hash reference. This is EXPERIMENTAL
-    - update_param_tag is DEPRECATED! use update_param instead.
-    - insert_param_tag is DEPRECATED! use insert_param instead.
-    - assing_param_tag is DEPRECATED! use assign_param instead.
-    - Tag system such as {? title}, {= title} is DEPRECATED!
-      and added paramter system such as :title.
+  - added DBIx::Custom::Result all method, this is alias for fetch_hash_all
+  - added DBIx::Custom::Result one method, this is alias for fetch_hash_first
+  - DBIx::Custom::Result fetch_hash_first can recieve argument
+  - select() column option can receive hash reference. This is EXPERIMENTAL
+  - update_param_tag is DEPRECATED! use update_param instead.
+  - insert_param_tag is DEPRECATED! use insert_param instead.
+  - assing_param_tag is DEPRECATED! use assign_param instead.
+  - Tag system such as {? title}, {= title} is DEPRECATED!
+    and added paramter system such as :title.
 0.1683
-    - data_source is DEPRECATED! It is renamed to dsn
+  - data_source is DEPRECATED! It is renamed to dsn
 0.1682
-    - improved debug message
-    - fixed merge_param bug
+  - improved debug message
+  - fixed merge_param bug
 0.1681
-    - added EXPERIMENTAL assign_tag() method
+  - added EXPERIMENTAL assign_tag() method
 0.1680
-    - DEPRECATED select() param option, this is renamed to where_param
-    - added select(), update(), and delete() where_param option
+  - DEPRECATED select() param option, this is renamed to where_param
+  - added select(), update(), and delete() where_param option
 0.1679
-    - added EXPERIMENTAL select() wrap option to support Oracle ROWNUM
+  - added EXPERIMENTAL select() wrap option to support Oracle ROWNUM
 0.1678
-    - DBIx::Custom::Model filter attribute can receive hash reference
-    - DBIx::Custom::Where clause attribute can receive clause without column name
-    - improved error messages
+  - DBIx::Custom::Model filter attribute can receive hash reference
+  - DBIx::Custom::Where clause attribute can receive clause without column name
+  - improved error messages
 0.1677
-    - improved table search in column and join clause
-    - DEPRECATED table tag. use table option.
+  - improved table search in column and join clause
+  - DEPRECATED table tag. use table option.
 0.1676
-    - fixed test bug
+  - fixed test bug
 0.1675
-    - removed DEPRECATED DBIx::Custom::MySQL and DBIx::Custom::SQLite
-      these implementations remine in https://github.com/yuki-kimoto/DBIx-Custom/wiki
-      for some users.
-    - removed EXPERIMENTAL replace().
-    - removed EXPERIMENTAL mark from many methods.
+  - removed DEPRECATED DBIx::Custom::MySQL and DBIx::Custom::SQLite
+    these implementations remine in https://github.com/yuki-kimoto/DBIx-Custom/wiki
+    for some users.
+  - removed EXPERIMENTAL replace().
+  - removed EXPERIMENTAL mark from many methods.
 0.1674
-    - fixed test bug
+  - fixed test bug
 0.1673
-    - fixed dbh() method bug.
+  - fixed dbh() method bug.
 0.1672
-    - removed EXPERIMENTAL Prefork server safe implementation, my implementation is very buggy.
-    - added EXPERIMETNAL connector() attribute.
-    - change retern value to array refrence of EXPERIMENTAL replace()
+  - removed EXPERIMENTAL Prefork server safe implementation, my implementation is very buggy.
+  - added EXPERIMETNAL connector() attribute.
+  - change retern value to array refrence of EXPERIMENTAL replace()
 0,1671
-    - added environment variable DBIX_CUSTOM_DEBUG
+  - added environment variable DBIX_CUSTOM_DEBUG
 0.1670
-    - removed EXPERIMETNAL select() column hash option. it's a little complex.
-    - added EXPERIMENTAL select() param option.
-    - added EXPERIMENTAL replace().
+  - removed EXPERIMETNAL select() column hash option. it's a little complex.
+  - added EXPERIMENTAL select() param option.
+  - added EXPERIMENTAL replace().
 0.1669
-    - renamed update_param to update_param_tag, update_param is DEPRECATED!
-    - renamed insert_param to insert_param_tag, insert_param is DEPRECATED!
+  - renamed update_param to update_param_tag, update_param is DEPRECATED!
+  - renamed insert_param to insert_param_tag, insert_param is DEPRECATED!
 0.1668
-    - added EXPERIMENTAL update_param no_set option.
-    - added EXPERIMENTAL reserved_word_quote attribute.
+  - added EXPERIMENTAL update_param no_set option.
+  - added EXPERIMENTAL reserved_word_quote attribute.
 0.1666
-    - removed from cache() and cache_method() document for a while and cache() value
-      become 0 because I find something bug.
-    - create_model() return model.
-    - added document of hash filter
-    - adeed EXPERIMENTAL DBIx::Custom::Model method()
+  - removed from cache() and cache_method() document for a while and cache() value
+    become 0 because I find something bug.
+  - create_model() return model.
+  - added document of hash filter
+  - adeed EXPERIMENTAL DBIx::Custom::Model method()
 0.1665
-    - removed EXPERIMETNAL flag from insert_at(), update_at(), delete_at(), select_at(), insert_param(), not_exists(), select()'s query option, update_param(), where, table tag, each column, safety_character, DBIx::Where, where().
-    - added EXPERIMETNAL create_model()
+  - removed EXPERIMETNAL flag from insert_at(), update_at(), delete_at(), select_at(), insert_param(), not_exists(), select()'s query option, update_param(), where, table tag, each column, safety_character, DBIx::Where, where().
+  - added EXPERIMETNAL create_model()
 0.1664
-    - where can recieve array refrence, which contains where cluase and paramter.
+  - where can recieve array refrence, which contains where cluase and paramter.
 0.1663
-    - added EXPERIMENTAL type() attribute to DBIx::Custom::Model
-    - added EXPERIMENTAL bind_param_option can set bind_param option
-      to insert(), update(), delete(), select(), insert_at(),
-      update_at(), delete_at(), select_at(), delete_all(), update_all()
+  - added EXPERIMENTAL type() attribute to DBIx::Custom::Model
+  - added EXPERIMENTAL bind_param_option can set bind_param option
+    to insert(), update(), delete(), select(), insert_at(),
+    update_at(), delete_at(), select_at(), delete_all(), update_all()
 0.1662
-    - removed EXPERIMENTAL DBIx::Custom::Model column_clause
-    - added EXPERIMENTAL column()
-    - added EXPERIMENTAL mycolumn()
+  - removed EXPERIMENTAL DBIx::Custom::Model column_clause
+  - added EXPERIMENTAL column()
+  - added EXPERIMENTAL mycolumn()
 0.1661
-    - added EXPERIMENTAL DBIx::Custom::Model table_alias attribute
-    - added EXPERIMENTAL DBIx::Custom::Model mycolumn()
-    - added EXPERIMENTAL DBIx::Custom::Model column()
-    - fixed autoloading bug
-    - added EXPERIMETNAL select() prepend table option
-    - added EXPERIMETNAL select() column table option
-    - added EXPERIMETNAL select() column all option
-    - removed EXPERIMETNAL select() all_column option
-    - removed EXPERIMENTAL view()
+  - added EXPERIMENTAL DBIx::Custom::Model table_alias attribute
+  - added EXPERIMENTAL DBIx::Custom::Model mycolumn()
+  - added EXPERIMENTAL DBIx::Custom::Model column()
+  - fixed autoloading bug
+  - added EXPERIMETNAL select() prepend table option
+  - added EXPERIMETNAL select() column table option
+  - added EXPERIMETNAL select() column all option
+  - removed EXPERIMETNAL select() all_column option
+  - removed EXPERIMENTAL view()
 0.1660
-    - added EXPERIMENTAL DBIx::Custom::Model view()
-    - added EXPERIMENTAL view()
-    - DBIx::Custom::Model inherit DBIx::Custom
-    - removed EXPERIMETNAL DBIx::Custom::Model method()
-    - added table choice feature to select() EXPERIMENTAL all_column option 
-    - removed EXPERIMENTAL DBIx::Custom::Model column attribute for side effect
+  - added EXPERIMENTAL DBIx::Custom::Model view()
+  - added EXPERIMENTAL view()
+  - DBIx::Custom::Model inherit DBIx::Custom
+  - removed EXPERIMETNAL DBIx::Custom::Model method()
+  - added table choice feature to select() EXPERIMENTAL all_column option 
+  - removed EXPERIMENTAL DBIx::Custom::Model column attribute for side effect
 0.1659
-    - EXPERIMETAL fork safety implementaion.
-    - removed EXPERIMENTAL selection
-    - added select() all_column option
+  - EXPERIMETAL fork safety implementaion.
+  - removed EXPERIMENTAL selection
+  - added select() all_column option
 0.1658
-    - added EXPERIMENTAL DBIx::Custom::Model column() prefix option.
-    - fixed select_at join column invalid bug
-    - added DBIx::Custom::Model column() attribute 
+  - added EXPERIMENTAL DBIx::Custom::Model column() prefix option.
+  - fixed select_at join column invalid bug
+  - added DBIx::Custom::Model column() attribute 
 0.1657
-    - remaned EXPERIMENTAL safty_charcter to safty_name
-    - safty_charcter is changed, set only one character regex.
+  - remaned EXPERIMENTAL safty_charcter to safty_name
+  - safty_charcter is changed, set only one character regex.
 0.1656
-    - fixed some select() join opition bug
+  - fixed some select() join opition bug
 0.1655
-    - added EXPERIMENTAL DBIx::Custom::Model join attribute
-    - added EXPERIMENTAL select() join option
-    - deprecated select() relation option
-    - added EXPERIMENTAL update_param and insert_param
-    - remove EXPERIMENTAL DBIx::Custom::Model relation
+  - added EXPERIMENTAL DBIx::Custom::Model join attribute
+  - added EXPERIMENTAL select() join option
+  - deprecated select() relation option
+  - added EXPERIMENTAL update_param and insert_param
+  - remove EXPERIMENTAL DBIx::Custom::Model relation
 0.1654
-    - selection can contain where clause.
+  - selection can contain where clause.
 0.1653
-    - added EXPERIMENTAL DBIx::Custom::Result remove_filter()
-    - added EXPERIMENTAL DBIx::Custom::Result remove_end_filter()
-    - added EXPERIMENTAL DBIx::Custom::Model insert_at()
-    - added EXPERIMENTAL insert_at()
-    - improved error message
+  - added EXPERIMENTAL DBIx::Custom::Result remove_filter()
+  - added EXPERIMENTAL DBIx::Custom::Result remove_end_filter()
+  - added EXPERIMENTAL DBIx::Custom::Model insert_at()
+  - added EXPERIMENTAL insert_at()
+  - improved error message
 0.1652
-    - all filter can receive array reference and receiving hash reference is DEPRECATED!
+  - all filter can receive array reference and receiving hash reference is DEPRECATED!
 0.1651
-    - add EXPERIMENTAL DBIx::Custom::Model filter attribute.
+  - add EXPERIMENTAL DBIx::Custom::Model filter attribute.
 0.1650
-    - add EXPERIMENTAL DBIx::Custom::Model name() attribute
+  - add EXPERIMENTAL DBIx::Custom::Model name() attribute
 0.1649
-    - add EXPERIMENTAL DBIx::Custom::Model column_clause() method.
-    - select method column option can receive string.
-    - DBIx::Custom::Model select() and select_at() think about relation attirbute
+  - add EXPERIMENTAL DBIx::Custom::Model column_clause() method.
+  - select method column option can receive string.
+  - DBIx::Custom::Model select() and select_at() think about relation attirbute
 0.1648
-    - add EXPERIMENTAL DBIx::Custom::Model relation() attribute
-    - add EXPERIMENTAL update_at(), delete_at(), select_at()
-    - add EXPERIMENTAL setup_model()
-    - add EXPERIMENTAL DBIx::Custom::Model columns attirbute
-    - add EXPERIMENTAL DBIx::Custom::Model foreign_key() attribute 
-    - add EXPERIMENTAL models() attribute
+  - add EXPERIMENTAL DBIx::Custom::Model relation() attribute
+  - add EXPERIMENTAL update_at(), delete_at(), select_at()
+  - add EXPERIMENTAL setup_model()
+  - add EXPERIMENTAL DBIx::Custom::Model columns attirbute
+  - add EXPERIMENTAL DBIx::Custom::Model foreign_key() attribute 
+  - add EXPERIMENTAL models() attribute
 0.1647
-    - add default_dbi_option()
+  - add default_dbi_option()
 0.1646
-    - add feture. all model class in namespace is included by include_model
-    - rename EXPERIMENTAL include_table to include_model
-    - rename EXPERIMENTAL table to model
-    - rename EXPERIMENTAL DBIx::Custom::Table to DBIx::Custom::Model
-    - remame EXPERIMENTAL DBIx::Custom::Table::name() to DBIx::Custom::Model::table();
+  - add feture. all model class in namespace is included by include_model
+  - rename EXPERIMENTAL include_table to include_model
+  - rename EXPERIMENTAL table to model
+  - rename EXPERIMENTAL DBIx::Custom::Table to DBIx::Custom::Model
+  - remame EXPERIMENTAL DBIx::Custom::Table::name() to DBIx::Custom::Model::table();
 0.1645
-    - removed EXPERIMENTAL base_table() for class expandability.
-    - EXPERIMENTAL table() can't set table object any more.
-    - added EXPERIMENTAL include_table().
+  - removed EXPERIMENTAL base_table() for class expandability.
+  - EXPERIMENTAL table() can't set table object any more.
+  - added EXPERIMENTAL include_table().
 0.1644
-    - update pod
+  - update pod
 0.1643
-    - add EXPERIMENTAL selection option to select()
-    - add EXPERIMENTAL table tag
-    - fix bug : filter can't overwirite undef value.
-    - add EXPERIMENTAL feature to apply_filter(). you can apply end filter.
-    - add EXPERIMENTAL feature to apply_filter(). TABLE__COLUMN is filterded now.
+  - add EXPERIMENTAL selection option to select()
+  - add EXPERIMENTAL table tag
+  - fix bug : filter can't overwirite undef value.
+  - add EXPERIMENTAL feature to apply_filter(). you can apply end filter.
+  - add EXPERIMENTAL feature to apply_filter(). TABLE__COLUMN is filterded now.
 0.1642
-    - removed EXPERIMENTAL DBIx::Custom::Table base() method
-    - table created by tabled method can call base_$method correponding to base_table's one
+  - removed EXPERIMENTAL DBIx::Custom::Table base() method
+  - table created by tabled method can call base_$method correponding to base_table's one
 0.1641
-    - select() where can't receive array reference to prevend SQL injection easily(not backward compatible. sorry. use where() instead)
-    - added EXPERIMENTAL safety_column_name attribute
-    - fix SQL injection security hole about column name
+  - select() where can't receive array reference to prevend SQL injection easily(not backward compatible. sorry. use where() instead)
+  - added EXPERIMENTAL safety_column_name attribute
+  - fix SQL injection security hole about column name
 0.1640
-    - autoload DBI method
-    - removed EXPERIMENTAL expand
+  - autoload DBI method
+  - removed EXPERIMENTAL expand
 0.1639
-    - improved delete() and update() where option. you can use DBIx::Custom::Where object
-    - added EXPERIMENTAL not_exists()
+  - improved delete() and update() where option. you can use DBIx::Custom::Where object
+  - added EXPERIMENTAL not_exists()
 0.1638
-    - table object call dbi object method if not found method.
-    - added EXPERIMENTAL base_table attribute and removed EXPERIMENTAL table_class attribute
-    - renamed helper to method.
-    - added EXPERIMENTAL DBIx::Custom::Result::stash()
-    - renamed EXPERIMENTAL DBIx::Custom::Table helper to method
+  - table object call dbi object method if not found method.
+  - added EXPERIMENTAL base_table attribute and removed EXPERIMENTAL table_class attribute
+  - renamed helper to method.
+  - added EXPERIMENTAL DBIx::Custom::Result::stash()
+  - renamed EXPERIMENTAL DBIx::Custom::Table helper to method
 0.1637
-    - renamed dbi_options to dbi_option. dbi_options is available, but deprecated.
-    - renamed DBIx::Custom::TagProcessor to DBIx::Custom::Tag, and function names is cleanuped.
-    - renamed register_tag_processor to register_tag. register_tag_processor is available, but deprecated.
-    - renamed tag_processors to tags. tag_prosessors is available, but deprecated.
-    - improved error message
-    - build all clause if param is undefined.
-    - each_column callback receive self as first argument.
-    - removed EXPERIMENTAL txn_scope
+  - renamed dbi_options to dbi_option. dbi_options is available, but deprecated.
+  - renamed DBIx::Custom::TagProcessor to DBIx::Custom::Tag, and function names is cleanuped.
+  - renamed register_tag_processor to register_tag. register_tag_processor is available, but deprecated.
+  - renamed tag_processors to tags. tag_prosessors is available, but deprecated.
+  - improved error message
+  - build all clause if param is undefined.
+  - each_column callback receive self as first argument.
+  - removed EXPERIMENTAL txn_scope
 0.1636
-    - added tests and cleanup
+  - added tests and cleanup
 0.1635
-    - renamed iterate_all_columns to each_column
+  - renamed iterate_all_columns to each_column
 0.1634
-    - became more useful where method
-    - changed DBIx::Custom::Where greatly
+  - became more useful where method
+  - changed DBIx::Custom::Where greatly
 0.1633
-    - fixed test
+  - fixed test
 0.1632
-    - added EXPERIMENTAL where method
-    - added EXPERIMENTAL DBIx::Custom::Where.
-    - removed DBIx::Custom::Or
+  - added EXPERIMENTAL where method
+  - added EXPERIMENTAL DBIx::Custom::Where.
+  - removed DBIx::Custom::Or
 0.1631
-    - added EXPERIMENTAL DBIx::Custom::Result end_filter method
-    - EXPERIMENTAL extended select method's where option
-    - fix select method empty where failed bug
-    - added EXPERIMENTAL suger method query option
-    - added EXPERIMENTAL or method
+  - added EXPERIMENTAL DBIx::Custom::Result end_filter method
+  - EXPERIMENTAL extended select method's where option
+  - fix select method empty where failed bug
+  - added EXPERIMENTAL suger method query option
+  - added EXPERIMENTAL or method
 0.1630
-    - fix test bug
+  - fix test bug
 0.1629
-    - renamed auto_filter to apply_filter
-    - changed apply_filter method arguments
-    - deprecated cache_method
+  - renamed auto_filter to apply_filter
+  - changed apply_filter method arguments
+  - deprecated cache_method
 0.1628
-    - remove DBIx::Custom::Model
-    - move table method and table_class attribute to DBIx::Custom
-    - added examples
-    - fixed connect method bug
+  - remove DBIx::Custom::Model
+  - move table method and table_class attribute to DBIx::Custom
+  - added examples
+  - fixed connect method bug
 0.1627
-    - added insert, update, update_all, delete, delete_all, select method to DBIx::Custom::Table
-    - added EXPERIMENTAL txn_scope
+  - added insert, update, update_all, delete, delete_all, select method to DBIx::Custom::Table
+  - added EXPERIMENTAL txn_scope
 0.1626
-    - simplified DBIx::Custom::Model and DBIx::Custom::Table
+  - simplified DBIx::Custom::Model and DBIx::Custom::Table
 0.1625
-    - added EXPERIMENTAL DBIx::Custom::Model and DBIx::Custom::Table
+  - added EXPERIMENTAL DBIx::Custom::Model and DBIx::Custom::Table
 0.1624
-    - added EXPERIMENTAL iterate_all_columns method.
+  - added EXPERIMENTAL iterate_all_columns method.
 0.1623
-    - added EXPERIMENTAL auto_filter method
-    - deprecated default_bind_filter and default_fetch_filter because these are global effect.
-    - changed defautl_bind_filter and default_fetch_filter attributes to methods.
-    - changed DBIx::Custom::Result default_filter attribute to method
-    - changed DBIx::Custom::Result filter attribute to method.
-    - filter_check is always done for usability
+  - added EXPERIMENTAL auto_filter method
+  - deprecated default_bind_filter and default_fetch_filter because these are global effect.
+  - changed defautl_bind_filter and default_fetch_filter attributes to methods.
+  - changed DBIx::Custom::Result default_filter attribute to method
+  - changed DBIx::Custom::Result filter attribute to method.
+  - filter_check is always done for usability
 0.1622
-    - deprecated DBIx::Custom::SQLite and DBIx::Custom::MySQL
-    - added dbi_options attribute
-    - checked attributes passed to connect method
+  - deprecated DBIx::Custom::SQLite and DBIx::Custom::MySQL
+  - added dbi_options attribute
+  - checked attributes passed to connect method
 0.1621
-    - cleanup (removed undocumented features)
+  - cleanup (removed undocumented features)
 0.1620
-    - updated document
+  - updated document
 0.1619
-    - updated document
-    - added EXPERIMENTAL expand method
+  - updated document
+  - added EXPERIMENTAL expand method
 0.1618
-    - added helper method
-    - added begin_work, commit, and rollback method
+  - added helper method
+  - added begin_work, commit, and rollback method
 0.1617
-    - L<DBIx::Custom> is now stable. APIs keep backword compatible in the feature.
+  - L<DBIx::Custom> is now stable. APIs keep backword compatible in the feature.
 0.1616
-    - removed EXPERIMENTAL register_method(), and methods attribute, because it is too magical
+  - removed EXPERIMENTAL register_method(), and methods attribute, because it is too magical
 0.1615
-    - fixed DBIx::Custom::QueryBuilder build_query() bug
-    - required Perl 5.008001 to use @CARP_NOT 
+  - fixed DBIx::Custom::QueryBuilder build_query() bug
+  - required Perl 5.008001 to use @CARP_NOT 
 0.1614
-    - removed DBIx::Custom::Query start_tag and end tag attributes
-    - enable escaping '{' and '}' in the source of SQL
-    - fixed Carp Carp trust relationship
+  - removed DBIx::Custom::Query start_tag and end tag attributes
+  - enable escaping '{' and '}' in the source of SQL
+  - fixed Carp Carp trust relationship
 0.1613
-    - added EXPERIMENTAL register_method() method
-    - added EXPERIMENTAL methods attribute
+  - added EXPERIMENTAL register_method() method
+  - added EXPERIMENTAL methods attribute
 0.1612
-    - added tests
-    - updated document
-    - removed DBIx::Custom::SQLite last_insert_rawid() mehtod(not backword compatible)
-    - removed DBIx::Custom::MySQL last_insert_id() method(not backword compatible)
+  - added tests
+  - updated document
+  - removed DBIx::Custom::SQLite last_insert_rawid() mehtod(not backword compatible)
+  - removed DBIx::Custom::MySQL last_insert_id() method(not backword compatible)
 0.1611
-    - renamed update tag to update_param
-    - renamed insert tag to insert_param
-    - renamed sql_builder to query_builder
+  - renamed update tag to update_param
+  - renamed insert tag to insert_param
+  - renamed sql_builder to query_builder
 0.1610
-    - added filter_check attribute.
+  - added filter_check attribute.
 0.1609
-    - updated document.
+  - updated document.
 0.1608
-    - update document
-    - renamed DBIx::Custom::QueryBuilder::TagProcessors functions(not backword compatible)
+  - update document
+  - renamed DBIx::Custom::QueryBuilder::TagProcessors functions(not backword compatible)
 0.1607
-    - where argument of select() method can specify array(string, parameters)
-    - renamed build_query() to create_query()(not backword compatible)
+  - where argument of select() method can specify array(string, parameters)
+  - renamed build_query() to create_query()(not backword compatible)
 0.1606
-    - fix testing bug
+  - fix testing bug
 0.1605
-    - remove DBIx::Custom::QueryBuilder::tag_syntax()  (not backword compatible)
-    - renamed DBIx::Custom::TagProcessor to DBIx::Custom::TagProcessors (not backword compatible)
-    - changed arguments of tag processor(not backword compatible)
-    - renamed DBIx::Custom::QueryBuilder::TagProcessors functions(not backword compatible)
+  - remove DBIx::Custom::QueryBuilder::tag_syntax()  (not backword compatible)
+  - renamed DBIx::Custom::TagProcessor to DBIx::Custom::TagProcessors (not backword compatible)
+  - changed arguments of tag processor(not backword compatible)
+  - renamed DBIx::Custom::QueryBuilder::TagProcessors functions(not backword compatible)
 0.1604
-    - changed argument of tag processor(not backword compatible)
-    - renamed default_query_filter to default_bind_filter(not backword compatible)
-    - renamed DBIx::Custom::SQLTemplate to DBIx::Custom::SQLBuilder(not backword compatible)
-    - renamed create_query to build_query(not backword compatible)
-    - renamed sql_template to sql_builder(not backword compatible)
-    - removed DESTROY method(not backword compatible)
-    - removed disconnect method(not backword compatible)
-    - fixed DBIx::Custom::MySQL connect_memory
+  - changed argument of tag processor(not backword compatible)
+  - renamed default_query_filter to default_bind_filter(not backword compatible)
+  - renamed DBIx::Custom::SQLTemplate to DBIx::Custom::SQLBuilder(not backword compatible)
+  - renamed create_query to build_query(not backword compatible)
+  - renamed sql_template to sql_builder(not backword compatible)
+  - removed DESTROY method(not backword compatible)
+  - removed disconnect method(not backword compatible)
+  - fixed DBIx::Custom::MySQL connect_memory
 0.1603
-    - removed DBIx::Custom commit method (not backword compatible)
-    - removed DBIx::Custom rollback method (not backword compatible)
-    - removed DBIx::Custom auto_commit method (not backword compatible)
+  - removed DBIx::Custom commit method (not backword compatible)
+  - removed DBIx::Custom rollback method (not backword compatible)
+  - removed DBIx::Custom auto_commit method (not backword compatible)
 0.1602
-    - added cache_method attribute
+  - added cache_method attribute
 0.1601
-    - added cache attribute
-    - select, insert, update, update_all, delete, delete_all, execute only receive hash argument(not backword compatible)
+  - added cache attribute
+  - select, insert, update, update_all, delete, delete_all, execute only receive hash argument(not backword compatible)
 0.1503
-    - removed reconnect method
-    - removed connected method
-    - removed reconnect_memroy method
-    - renamed fetch_single to fetch_first
-    - renamed fetch_hash_single to fetch_hash_first
-    - updated document
+  - removed reconnect method
+  - removed connected method
+  - removed reconnect_memroy method
+  - renamed fetch_single to fetch_first
+  - renamed fetch_hash_single to fetch_hash_first
+  - updated document
 0.1502
-    - added commit method
-    - added rollback method
-    - changed select argument, added relation option
-    - moved host attribute to DBIx::Custom::MySQL
-    - moved port attribute to DBIx::Custom::MySQL
-    - moved database attribute to DBIx::Custom::MySQL and DBIx::Custom::SQLite
+  - added commit method
+  - added rollback method
+  - changed select argument, added relation option
+  - moved host attribute to DBIx::Custom::MySQL
+  - moved port attribute to DBIx::Custom::MySQL
+  - moved database attribute to DBIx::Custom::MySQL and DBIx::Custom::SQLite
 0.1501
-    - removed register_format()
-    - removed formats()
-    - removed run_transaction()
-    - removed create_table()
-    - removed drop_table()
-    - changed select() arguments
-    - changed insert() arguments
-    - changed update() arguments
-    - changed update_all() arguments
-    - changed delete() arguments
-    - changed delete_all() arguments
-    - changed execute() arguments
+  - removed register_format()
+  - removed formats()
+  - removed run_transaction()
+  - removed create_table()
+  - removed drop_table()
+  - changed select() arguments
+  - changed insert() arguments
+  - changed update() arguments
+  - changed update_all() arguments
+  - changed delete() arguments
+  - changed delete_all() arguments
+  - changed execute() arguments
 0.1402
-    - remove finish(), error()
-    - can receive code ref to filter()
-    - renamed resist to register
+  - remove finish(), error()
+  - can receive code ref to filter()
+  - renamed resist to register
 0.1401
-    - renamed fetch_rows to fetch_multi
-    - renamed fetch_hash_rows to fetch_hash_multi
+  - renamed fetch_rows to fetch_multi
+  - renamed fetch_hash_rows to fetch_hash_multi
 0.1301
-    - Changed many(not backword compatible)
+  - Changed many(not backword compatible)
 0.1201
-    - Changed many(not backword compatible)
+  - Changed many(not backword compatible)
 0.1101
-    - rename DBIx::Custom::SQLite last_insert_id to last_insert_rowid
+  - rename DBIx::Custom::SQLite last_insert_id to last_insert_rowid
 0.1001
-    - remove run_transaction().
-    - add transaction() and DBIx::Custom::Transaction
-    - rename fetch_first to fetch_single
-    - rename fetch_hash_first to fetch_hash_single
+  - remove run_transaction().
+  - add transaction() and DBIx::Custom::Transaction
+  - rename fetch_first to fetch_single
+  - rename fetch_hash_first to fetch_hash_single
 0.0906
-    - fix some bug
+  - fix some bug
 0.0905
-    - catch up with Object::Simple update
+  - catch up with Object::Simple update
 0.0904
-    - cleanup
+  - cleanup
 0.0903
-    - catch up with Object::Simple update
+  - catch up with Object::Simple update
 0.0902
-    - cleanup
+  - cleanup
 0.0901
-    - DBIx::Basic filter 'encode_utf8' utf8::upgrade process is deleted
+  - DBIx::Basic filter 'encode_utf8' utf8::upgrade process is deleted
 0.0801
-    - add 'create_table', 'drop_table' methods
+  - add 'create_table', 'drop_table' methods
 0.0701
-    - rename sql_template to sql_tmpl (not backword compatible)
-    - rename dbi_options to options (not backword compatible)
+  - rename sql_template to sql_tmpl (not backword compatible)
+  - rename dbi_options to options (not backword compatible)
 0.0605
-    - fix encode_utf8 filter
+  - fix encode_utf8 filter
 0.0604
-    - fix timeformat tests
+  - fix timeformat tests
 0.0603
-    - fix cache system bug
+  - fix cache system bug
 0.0602
-    - update document
+  - update document
 0.0601
-    - bind_filter argument is changed to ($value, $key, $dbi, $infos) (not backword compatible)
-    - fetch_filter argument is changed to ($value, $key, $dbi, $infos) (not backword compatible)
-    - run_transaction argument is changed to ($dbi)
+  - bind_filter argument is changed to ($value, $key, $dbi, $infos) (not backword compatible)
+  - fetch_filter argument is changed to ($value, $key, $dbi, $infos) (not backword compatible)
+  - run_transaction argument is changed to ($dbi)
 0.0502
-    - update document
+  - update document
 0.0501
-    - packaging DBIx::Custom::Result DBIx::Custom::Query DBIx::Custom::MySQL DBIx::Custom::SQLite DBIx::Custom::SQL::Template 
+  - packaging DBIx::Custom::Result DBIx::Custom::Query DBIx::Custom::MySQL DBIx::Custom::SQLite DBIx::Custom::SQL::Template 
 0.0401
-    - catch up with DBIx::Custom::Result version up
+  - catch up with DBIx::Custom::Result version up
 0.0301
-    - exchange filter argument 'key', 'value' (not backword compatible)
+  - exchange filter argument 'key', 'value' (not backword compatible)
 0.0201
-    - rename tranzaction to transaction
-    - add filter_off
+  - rename tranzaction to transaction
+  - add filter_off
 0.0101
-    - First release
+  - First release

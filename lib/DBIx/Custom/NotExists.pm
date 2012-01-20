@@ -13,13 +13,13 @@ DBIx::Custom::NotExists
 
 =head1 SYNOPSYS
 
-    $not_exists = DBIx::Custom::NotExists->singleton;
+  $not_exists = DBIx::Custom::NotExists->singleton;
 
 =head1 METHODS
 
 =head2 C<singleton>
 
-    $not_exists = DBIx::Custom::NotExists->singleton;
+  $not_exists = DBIx::Custom::NotExists->singleton;
 
 L<DBIx::Custom::NotExists> singleton object.
 
