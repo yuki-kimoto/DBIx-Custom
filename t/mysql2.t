@@ -34,32 +34,32 @@ my $rows;
 my $result;
 
 $dbi = DBIx::Custom->connect(
-    dsn => "dbi:mysql:database=$database",
-    user => $user,
-    password => $password
+  dsn => "dbi:mysql:database=$database",
+  user => $user,
+  password => $password
 );
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1 varchar(255), key2 varchar(255))');
 
 test 'connector => 1';
 {
-    my $dbi = DBIx::Custom->connect(dsn => $dsn, user => $user, password => $password,
-      option => {PrintError => 1}, connector => 1);
-    is(ref $dbi->connector, 'DBIx::Connector');
-    ok($dbi->dbh->{PrintError});
-    $dbi->delete_all(table => 'table1');
-    $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
-    die "Can't fork" unless defined (my $pid = fork);
+  my $dbi = DBIx::Custom->connect(dsn => $dsn, user => $user, password => $password,
+    option => {PrintError => 1}, connector => 1);
+  is(ref $dbi->connector, 'DBIx::Connector');
+  ok($dbi->dbh->{PrintError});
+  $dbi->delete_all(table => 'table1');
+  $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
+  die "Can't fork" unless defined (my $pid = fork);
 
-    if ($pid) {
-        # Parent
-        my $result = $dbi->select(table => 'table1');
-        is_deeply($result->fetch_hash_one, {key1 => 1, key2 => 2});
-    }
-    else {
-        # Child
-        my $result = $dbi->select(table => 'table1');
-        die "Not OK" unless $result->fetch_hash_one->{key1} == 1;
-    }
+  if ($pid) {
+    # Parent
+    my $result = $dbi->select(table => 'table1');
+    is_deeply($result->fetch_hash_one, {key1 => 1, key2 => 2});
+  }
+  else {
+    # Child
+    my $result = $dbi->select(table => 'table1');
+    die "Not OK" unless $result->fetch_hash_one->{key1} == 1;
+  }
 }
 
