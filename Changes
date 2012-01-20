@@ -1,3 +1,8 @@
+0.2106
+    - renamed DBIx::Custom::Result::fetch_hash_first to fethc_hash_one
+      because first is misleading name. fethc_hash_first is DEPRECATED!
+    - renamed DBIx::Custom::Result::fetch_first to fetch_one,
+      because first is misleading name. fetch_first is DEPRECATED!
 0.2105
     - added EXPERIMENTAL DBIx::Custom::Result::value method
     - added EXPERIMENTAL DBIx::Custom::Result::column method

@@ -1197,6 +1197,12 @@ $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(column => [$key1, $key1, $key2], table => $table1);
 $result->filter({$key1 => 'three_times'});
+$row = $result->fetch_one;
+is_deeply($row, [3, 3, 4], "default_fetch_filter and filter");
+
+test 'fetch_first DEPRECATED!';
+$result = $dbi->select(column => [$key1, $key1, $key2], table => $table1);
+$result->filter({$key1 => 'three_times'});
 $row = $result->fetch_first;
 is_deeply($row, [3, 3, 4], "default_fetch_filter and filter");
 
@@ -1220,7 +1226,7 @@ $dbi->rollback;
 $dbi->dbh->{AutoCommit} = 1;
 
 $result = $dbi->select(table => $table1);
-ok(! $result->fetch_first, "rollback");
+ok(! $result->fetch_one, "rollback");
 
 
 $dbi = DBIx::Custom->connect;
@@ -1384,11 +1390,16 @@ $dbi->apply_filter(
               $key2 => {out => 'three_times', in => 'twice'});
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->execute("select * from $table1");
-$row   = $result->fetch_hash_first;
+$row   = $result->fetch_hash_one;
 is_deeply($row, {$key1 => 2, $key2 => 6}, "insert");
 $result = $dbi->select(table => $table1);
 $row   = $result->one;
 is_deeply($row, {$key1 => 6, $key2 => 12}, "insert");
+
+test 'fetch_hash_first DEPRECATED!';
+$result = $dbi->execute("select * from $table1");
+$row   = $result->fetch_hash_first;
+is_deeply($row, {$key1 => 2, $key2 => 6}, "insert");
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -1533,7 +1544,7 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(table => $table1);
 $result->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 });
 $result->end_filter($key1 => sub { $_[0] * 3 }, $key2 => sub { $_[0] * 5 });
-$row = $result->fetch_first;
+$row = $result->fetch_one;
 is_deeply($row, [6, 40]);
 
 $dbi = DBIx::Custom->connect;
@@ -1543,7 +1554,7 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(column => [$key1, $key1, $key2], table => $table1);
 $result->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 });
 $result->end_filter($key1 => sub { $_[0] * 3 }, $key2 => sub { $_[0] * 5 });
-$row = $result->fetch_first;
+$row = $result->fetch_one;
 is_deeply($row, [6, 6, 40]);
 
 $dbi = DBIx::Custom->connect;
@@ -1553,7 +1564,7 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(table => $table1);
 $result->filter([$key1, $key2] => sub { $_[0] * 2 });
 $result->end_filter([[$key1, $key2] => sub { $_[0] * 3 }]);
-$row = $result->fetch_first;
+$row = $result->fetch_one;
 is_deeply($row, [6, 12]);
 
 $dbi = DBIx::Custom->connect;
@@ -1563,7 +1574,7 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(table => $table1);
 $result->filter([[$key1, $key2] => sub { $_[0] * 2 }]);
 $result->end_filter([$key1, $key2] => sub { $_[0] * 3 });
-$row = $result->fetch_first;
+$row = $result->fetch_one;
 is_deeply($row, [6, 12]);
 
 $dbi->register_filter(five_times => sub { $_[0] * 5 });
@@ -1613,7 +1624,7 @@ $row = $result
        ->remove_filter
        ->end_filter($key1 => sub { $_[0] * 3 }, $key2 => sub { $_[0] * 5 })
        ->remove_end_filter
-       ->fetch_first;
+       ->fetch_one;
 is_deeply($row, [1, 2]);
 
 test 'empty where select';
@@ -4066,7 +4077,7 @@ $dbi->insert({$key1 => '2010-01-03'},
   table => $table1, filter => {$key1 => sub { my $v = shift || ''; $v =~ s/3/4/; return $v }});
 $result = $dbi->select(table => $table1);
 $result->filter($key1 => sub { my $v = shift || ''; $v =~ s/8/9/; return $v });
-like($result->fetch_first->[0], qr/^2010-01-09/);
+like($result->fetch_one->[0], qr/^2010-01-09/);
 
 
 $dbi = DBIx::Custom->connect;
@@ -4093,7 +4104,7 @@ $result->type_rule(
     }
 );
 $result->filter($key1 => sub { my $v = shift || ''; $v =~ s/8/9/; return $v });
-like($result->fetch_first->[0], qr/^2010-01-09/);
+like($result->fetch_one->[0], qr/^2010-01-09/);
 
 test 'type_rule_off';
 $dbi = DBIx::Custom->connect;
@@ -4333,9 +4344,9 @@ $dbi->type_rule(
 );
 $dbi->insert({$key1 => '2010-01-03'}, table => $table1, type_rule_off => 1);
 $result = $dbi->select(table => $table1);
-like($result->type_rule_off->fetch_first->[0], qr/^2010-01-03/);
+like($result->type_rule_off->fetch_one->[0], qr/^2010-01-03/);
 $result = $dbi->select(table => $table1);
-like($result->type_rule_on->fetch_first->[0], qr/^2010-01-07/);
+like($result->type_rule_on->fetch_one->[0], qr/^2010-01-07/);
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -4357,9 +4368,9 @@ $dbi->type_rule(
 );
 $dbi->insert({$key1 => '2010-01-03'}, table => $table1, type_rule1_off => 1);
 $result = $dbi->select(table => $table1);
-like($result->type_rule1_off->fetch_first->[0], qr/^2010-01-05/);
+like($result->type_rule1_off->fetch_one->[0], qr/^2010-01-05/);
 $result = $dbi->select(table => $table1);
-like($result->type_rule1_on->fetch_first->[0], qr/^2010-01-07/);
+like($result->type_rule1_on->fetch_one->[0], qr/^2010-01-07/);
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -4381,9 +4392,9 @@ $dbi->type_rule(
 );
 $dbi->insert({$key1 => '2010-01-03'}, table => $table1, type_rule2_off => 1);
 $result = $dbi->select(table => $table1);
-like($result->type_rule2_off->fetch_first->[0], qr/^2010-01-06/);
+like($result->type_rule2_off->fetch_one->[0], qr/^2010-01-06/);
 $result = $dbi->select(table => $table1);
-like($result->type_rule2_on->fetch_first->[0], qr/^2010-01-07/);
+like($result->type_rule2_on->fetch_one->[0], qr/^2010-01-07/);
 
 test 'join';
 $dbi = DBIx::Custom->connect;

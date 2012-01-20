@@ -157,20 +157,20 @@ $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
 $dbi->insert({key1 => 3, key2 => 4}, table => 'table1');
 
 $result = $dbi->select(table => 'table1');
-$row = $result->fetch_first;
+$row = $result->fetch_one;
 is_deeply($row, [1, 2], "row");
 $row = $result->fetch;
 ok(!$row, "finished");
 
 $result = $dbi->select(table => 'table1');
-$row = $result->fetch_hash_first;
+$row = $result->fetch_hash_one;
 is_deeply($row, {key1 => 1, key2 => 2}, "row");
 $row = $result->fetch_hash;
 ok(!$row, "finished");
 
 $dbi->execute('create table table2 (key1, key2);');
 $result = $dbi->select(table => 'table2');
-$row = $result->fetch_hash_first;
+$row = $result->fetch_hash_one;
 ok(!$row, "no row fetch");
 
 $dbi = DBIx::Custom->connect;
@@ -254,7 +254,7 @@ $dbi->type_rule(
 $dbi->execute("create table table1 (key1 Date, key2 datetime)");
 $dbi->insert({key1 => 'a'}, table => 'table1');
 $result = $dbi->select(table => 'table1');
-is($result->fetch_first->[0], 'A');
+is($result->fetch_one->[0], 'A');
 
 $result = $dbi->select(table => 'table1');
 is($result->one->{key1}, 'A');
@@ -287,19 +287,19 @@ $result = $dbi->select(
     table => ['table2', 'table3'], relation => {'table2.table3_id' => 'table3.id'},
     column => ['table3.name as table3__name']
 );
-is($result->fetch_first->[0], 'B');
+is($result->fetch_one->[0], 'B');
 
 $result = $dbi->select(
     table => 'table2', relation => {'table2.table3_id' => 'table3.id'},
     column => ['table3.name as table3__name']
 );
-is($result->fetch_first->[0], 'B');
+is($result->fetch_one->[0], 'B');
 
 $result = $dbi->select(
     table => 'table2', relation => {'table2.table3_id' => 'table3.id'},
     column => ['table3.name as "table3.name"']
 );
-is($result->fetch_first->[0], 'B');
+is($result->fetch_one->[0], 'B');
 
 test 'reserved_word_quote';
 $dbi = DBIx::Custom->connect;

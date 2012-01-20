@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.2105';
+our $VERSION = '0.2106';
 use 5.008001;
 
 use Carp 'croak';
@@ -190,7 +190,7 @@ sub connect {
     return $self;
 }
 
-sub count { shift->select(column => 'count(*)', @_)->fetch_first->[0] }
+sub count { shift->select(column => 'count(*)', @_)->fetch_one->[0] }
 
 sub dbh {
     my $self = shift;
@@ -3619,6 +3619,8 @@ L<DBIx::Custom::Result>
     filter_check # will be removed at 2017/1/1
     
     # Methods
+    fetch_first # will be removed at 2017/2/1
+    fetch_hash_first # will be removed 2017/2/1
     filter_on # will be removed at 2017/1/1
     filter_off # will be removed at 2017/1/1
     end_filter # will be removed at 2017/1/1

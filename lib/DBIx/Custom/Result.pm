@@ -162,19 +162,6 @@ sub fetch_all {
     return $rows;
 }
 
-sub fetch_first {
-    my $self = shift;
-    
-    # Fetch
-    my $row = $self->fetch;
-    return unless $row;
-    
-    # Finish statement handle
-    $self->sth->finish;
-    
-    return $row;
-}
-
 sub fetch_hash_all {
     my $self = shift;
     
@@ -185,7 +172,7 @@ sub fetch_hash_all {
     return $rows;
 }
 
-sub fetch_hash_first {
+sub fetch_hash_one {
     my $self = shift;
     
     # Fetch hash
@@ -245,9 +232,23 @@ sub fetch_multi {
     return $rows;
 }
 
+
+sub fetch_one {
+    my $self = shift;
+    
+    # Fetch
+    my $row = $self->fetch;
+    return unless $row;
+    
+    # Finish statement handle
+    $self->sth->finish;
+    
+    return $row;
+}
+
 sub header { shift->sth->{NAME} }
 
-*one = \&fetch_hash_first;
+*one = \&fetch_hash_one;
 
 sub type_rule {
     my $self = shift;
@@ -316,7 +317,7 @@ sub type_rule2_on {
 
 sub value {
     my $self = shift;
-    my $row = $self->fetch_first;
+    my $row = $self->fetch_one;
     my $value = $row ? $row->[0] : undef;
     return $value;
 }
@@ -336,6 +337,20 @@ sub _cache {
         $self->{_columns}{$name} = 1;
     }
     $self->{_cache} = 1;
+}
+
+# DEPRECATED!
+sub fetch_hash_first {
+    my $self = shift;
+    warn "DBIx::Custom::Result::fetch_hash_first is DEPRECATED! use fetch_hash_one instead";
+    return $self->fetch_hash_one(@_);
+}
+
+# DEPRECATED!
+sub fetch_first {
+    my $self = shift;
+    warn "DBIx::Custom::Result::fetch_first is DEPRECATED! use fetch_one instead";
+    return $self->fetch_one(@_);
 }
 
 # DEPRECATED!
@@ -435,7 +450,7 @@ DBIx::Custom::Result - Result of select statement
     }
     
     # Fetch only a first row and put it into array reference
-    my $row = $result->fetch_first;
+    my $row = $result->fetch_one;
     
     # Fetch all rows and put them into array of array reference
     my $rows = $result->fetch_all;
@@ -447,12 +462,12 @@ DBIx::Custom::Result - Result of select statement
     }
     
     # Fetch only a first row and put it into hash reference
-    my $row = $result->fetch_hash_first;
-    my $row = $result->one; # Same as fetch_hash_first
+    my $row = $result->fetch_hash_one;
+    my $row = $result->one; # Alias for "fetch_hash_one"
     
     # Fetch all rows and put them into array of hash reference
     my $rows = $result->fetch_hash_all;
-    my $rows = $result->all; # Same as fetch_hash_all
+    my $rows = $result->all; # Alias for "fetch_hash_all"
 
 =head1 ATTRIBUTES
 
@@ -501,9 +516,9 @@ Fetch a row and put it into array reference.
 
 Fetch all rows and put them into array of array reference.
 
-=head2 C<fetch_first>
+=head2 C<fetch_one>
 
-    my $row = $result->fetch_first;
+    my $row = $result->fetch_one;
 
 Fetch only a first row and put it into array reference,
 and finish statment handle.
@@ -520,9 +535,9 @@ Fetch a row and put it into hash reference.
 
 Fetch all rows and put them into array of hash reference.
 
-=head2 C<fetch_hash_first>
+=head2 C<fetch_hash_one>
     
-    my $row = $result->fetch_hash_first;
+    my $row = $result->fetch_hash_one;
 
 Fetch only a first row and put it into hash reference,
 and finish statment handle.
@@ -558,7 +573,7 @@ Get header column names.
 
     my $row = $result->one;
 
-Same as C<fetch_hash_first>.
+Alias for C<fetch_hash_one>.
 
 =head2 C<stash>
 

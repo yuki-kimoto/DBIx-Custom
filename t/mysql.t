@@ -209,7 +209,7 @@ test 'dbh';
     my $dbi = DBIx::Custom->connect(connector => $connector);
     $dbi->delete_all(table => 'table1');
     $dbi->do('insert into table1 (key1, key2) values (1, 2)');
-    is($dbi->select(table => 'table1')->fetch_hash_first->{key1}, 1);
+    is($dbi->select(table => 'table1')->fetch_hash_one->{key1}, 1);
     
     $dbi = DBIx::Custom->new;
     $dbi->dbh('a');
@@ -293,12 +293,12 @@ test 'fork';
     if ($pid) {
         # Parent
         my $result = $dbi->select(table => 'table1');
-        is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 2});
+        is_deeply($result->fetch_hash_one, {key1 => 1, key2 => 2});
     }
     else {
         # Child
         my $result = $dbi->select(table => 'table1');
-        die "Not OK" unless $result->fetch_hash_first->{key1} == 1;
+        die "Not OK" unless $result->fetch_hash_one->{key1} == 1;
     }
 }
 

@@ -54,12 +54,12 @@ test 'connector => 1';
     if ($pid) {
         # Parent
         my $result = $dbi->select(table => 'table1');
-        is_deeply($result->fetch_hash_first, {key1 => 1, key2 => 2});
+        is_deeply($result->fetch_hash_one, {key1 => 1, key2 => 2});
     }
     else {
         # Child
         my $result = $dbi->select(table => 'table1');
-        die "Not OK" unless $result->fetch_hash_first->{key1} == 1;
+        die "Not OK" unless $result->fetch_hash_one->{key1} == 1;
     }
 }
 
