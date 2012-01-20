@@ -38,9 +38,9 @@ is($model->count, 2);
 $dbi->insert({key1 => 1, key3 => 2}, table => 'table2');
 $dbi->separator('-');
 $row = $model->select(
-    table => 'table1',
-    column => {table2 => [qw/key3/]},
-    join => ['left outer join table2 on table1.key1 = table2.key1']
+  table => 'table1',
+  column => {table2 => [qw/key3/]},
+  join => ['left outer join table2 on table1.key1 = table2.key1']
 )->one;
 is_deeply($row, {"table2-key3" => 2});
 
