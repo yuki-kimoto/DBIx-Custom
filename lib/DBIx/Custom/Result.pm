@@ -327,7 +327,7 @@ sub _cache {
   $self->{_type_map} = {};
   $self->{_pos} = {};
   $self->{_columns} = {};
-  for (my $i = 0; $i < @{$self->{sth}->{NAME}}; $i++) {
+  for (my $i = 0; $i < @{$self->{sth}->{NAME} || []}; $i++) {
     my $type = lc $self->{sth}{TYPE}[$i];
     my $name = $self->{sth}{NAME}[$i];
     $self->{_type_map}{$type} ||= [];
@@ -496,7 +496,7 @@ and implements the following new ones.
 
 Same as C<fetch_hash_all>.
 
-=head2 C<column> EXPERIMENTAL
+=head2 C<column>
 
   my $column = $result->column;
 
@@ -645,7 +645,7 @@ By default, type rule is on.
 Turn C<from2> type rule on.
 By default, type rule is on.
 
-=head2 C<value> EXPERIMENTAL
+=head2 C<value>
 
   my $value = $result->value;
 

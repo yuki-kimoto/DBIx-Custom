@@ -1,3 +1,14 @@
+0.2107
+  - removed EXPERIMENTAL status from the following methods and functinalities.
+      DBIx::Custom::Result::value method
+      DBIx::Custom::Result::column method
+      DBIx::Custom::insert method "bulk_insert" option
+      DBIx::Custom::insert method "multiplue insert functinality"
+      DBIx::Custom::select method "first argument is received as column option"
+      DBIx::Custom::Model::created_at attribute
+      DBIx::Custom::Model::updated_at attribute
+  - added EXPERIMENTAL DBIx::Custom::execute method "prepare_attr" option
+  - added EXPERIMETNAL DBIx::Custom::execute method "statement" option
 0.2106
   - renamed DBIx::Custom::Result::fetch_hash_first to fethc_hash_one
     because first is misleading name. fethc_hash_first is DEPRECATED!

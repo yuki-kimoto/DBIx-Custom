@@ -354,6 +354,7 @@ sub execute {
   # Merge second parameter
   my @cleanup;
   my $saved_param;
+  $opt{statement} ||= '';
   if (($opt{statement} || '') ne 'insert' && ref $params eq 'ARRAY') {
     my $params2 = $params->[1];
     $params = $params->[0];
@@ -395,7 +396,8 @@ sub execute {
             unless $column =~ /^[$c\.]+$/;
         }
       }
-      $query = $self->_create_query($sql,$opt{after_build_sql} || $opt{sqlfilter});
+      $query = $self->_create_query($sql,
+        $opt{after_build_sql} || $opt{sqlfilter}, $opt{prepare_attr});
     }
     $query->{statement} = $opt{statement} || '';
     $opt{reuse}->{$sql} = $query if $opt{reuse};
@@ -554,7 +556,7 @@ sub execute {
   }
   
   # Not select statement
-  return $affected unless $sth->{NUM_OF_FIELDS};
+  return $affected if !$sth->{NUM_OF_FIELDS} && $opt{statement} ne 'select';
 
   # Filter(DEPRECATED!)
   my $infilter = {};
@@ -1269,7 +1271,9 @@ sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
 
 sub _create_query {
   
-  my ($self, $source, $after_build_sql) = @_;
+  my ($self, $source, $after_build_sql, $prepare_attr) = @_;
+  
+  $prepare_attr ||= {};
   
   # Cache
   my $cache = $self->{cache};
@@ -1344,7 +1348,7 @@ sub _create_query {
   
   # Prepare statement handle
   my $sth;
-  eval { $sth = $self->dbh->prepare($query->{sql}) };
+  eval { $sth = $self->dbh->prepare($query->{sql}, $prepare_attr) };
   
   if ($@) {
     $self->_croak($@, qq{. Following SQL is executed.\n}
@@ -2631,6 +2635,13 @@ The following SQL is executed.
 
 Append some statement after SQL.
 
+=item C<prepare_attr> EXPERIMENTAL
+
+  prepare_attr => {async => 1}
+
+Statemend handle attributes,
+this is L<DBI>'s C<prepare> method second argument.
+
 =item C<bind_type>
 
 Specify database bind data type.
@@ -2693,6 +2704,12 @@ because generally creating query object is slow.
   primary_key => ['id1', 'id2']
 
 Priamry key. This is used for C<id> option.
+
+=item C<statement> EXPERIMETAL
+
+  statement => 'select'
+
+If you set statement to C<select>, return value is always L<DBIx::Custom::Result> object.
 
 =item C<table>
   
@@ -2790,7 +2807,6 @@ as parameter value.
   {date => \"NOW()"}
 
 You can pass multiple parameters, this is very fast.
-This is EXPERIMETNAL.
 
   $dbi->insert(
     [
@@ -2801,7 +2817,7 @@ This is EXPERIMETNAL.
   );
 
 In multiple insert, you can't use C<id> option.
-and only first parameter is used by creating sql.
+and only first parameter is used to create sql.
 
 B<options>
 
@@ -2809,8 +2825,8 @@ C<insert> method use all of C<execute> method's options,
 and use the following new ones.
 
 =over 4
-b
-=item C<bulk_insert> EXPERIMENTAL
+
+=item C<bulk_insert>
 
   bulk_insert => 1
 
@@ -3030,7 +3046,6 @@ Register filters, used by C<filter> option of many methods.
 Execute select statement.
 
 You can pass odd number arguments. first argument is C<column>.
-This is EXPERIMENTAL.
 
   my $result = $dbi->select(['author', 'title'], table => 'book');
 
