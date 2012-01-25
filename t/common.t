@@ -82,6 +82,12 @@ my $values_clause;
 my $assign_clause;
 my $reuse;
 my $affected;
+my $dbi1;
+my $dbi2;
+my $dbi3;
+my $dbi4;
+my $dbi5;
+my $pool;
 
 require MyDBI1;
 {
@@ -238,6 +244,33 @@ require MyDBI1;
     return $self;
   }
 }
+
+test 'DBIx::Custom::Pool';
+use DBIx::Custom::Pool;
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$pool = DBIx::Custom::Pool->new;
+$pool->count(3);
+$pool->prepare(sub {
+  DBIx::Custom->connect;
+});
+$dbi1 = $pool->get;
+ok($dbi1);
+$dbi2 = $pool->get;
+ok($dbi1);
+$dbi3 = $pool->get;
+ok($dbi1);
+eval {$pool->get};
+like($@, qr/empty/);
+$pool->back($dbi1);
+undef $dbi1;
+$dbi1 = $pool->get;
+ok($dbi1);
+$pool->back($dbi1);
+eval { $pool->back($dbi1) };
+like($@, qr/already/);
+
 
 test 'execute reuse option';
 eval { $dbi->execute("drop table $table1") };
