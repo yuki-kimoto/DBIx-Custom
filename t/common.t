@@ -245,33 +245,6 @@ require MyDBI1;
   }
 }
 
-test 'DBIx::Custom::Pool';
-use DBIx::Custom::Pool;
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$pool = DBIx::Custom::Pool->new;
-$pool->count(3);
-$pool->prepare(sub {
-  DBIx::Custom->connect;
-});
-$dbi1 = $pool->get;
-ok($dbi1);
-$dbi2 = $pool->get;
-ok($dbi1);
-$dbi3 = $pool->get;
-ok($dbi1);
-eval {$pool->get};
-like($@, qr/empty/);
-$pool->back($dbi1);
-undef $dbi1;
-$dbi1 = $pool->get;
-ok($dbi1);
-$pool->back($dbi1);
-eval { $pool->back($dbi1) };
-like($@, qr/already/);
-
-
 test 'execute reuse option';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);

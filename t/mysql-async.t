@@ -32,12 +32,16 @@ my $rows;
 my $result;
 my $result2;
 my $model;
+my $dbi1;
 my $dbi2;
+my $dbi3;
+my @dbis;
+my @results;
 
 test 'connect';
 eval {
   $dbi = DBIx::Custom->connect(
-    dsn => "dbi:mysql:database=$database;host=localhost;port=10000",
+    dsn => "dbi:mysql:database=$database;",
     user => $user,
     password => $password
   );
@@ -50,8 +54,7 @@ $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
 
 test 'async test';
 
-use AnyEvent;
-use DBI;
+require AnyEvent;
 my $cond = AnyEvent->condvar;
 $result = $dbi->execute('SELECT SLEEP(1), 3', undef,
   prepare_attr => {async => 1}, statement => 'select');
