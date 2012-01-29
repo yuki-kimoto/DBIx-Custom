@@ -344,6 +344,27 @@ sub execute {
   my $params;
   $params = shift if @_ % 2;
   my %opt = @_;
+  
+  # Async query
+  if ($opt{async} && !$self->{_new_connection}) {
+    my $dsn = $self->dsn;
+    croak qq/Data source must be specified when "async" option is used/
+      unless defined $dsn;
+    
+    my $user = $self->user;
+    my $password = $self->password;
+    my $option = $self->_option;
+    
+    my $new_dbi = bless {%$self}, ref $self;
+    $new_dbi->connector(undef);
+    $new_dbi->{dbh} = DBI->connect($dsn, $user, $password,
+      {%{$new_dbi->default_option}, %$option});
+    
+    $new_dbi->{_new_connection} = 1;
+    return $new_dbi->execute($sql, defined $params ? ($params) : (), %opt);
+  }
+  
+  # Options
   warn "sqlfilter option is DEPRECATED" if $opt{sqlfilter};
   $params ||= $opt{param} || {};
   my $tables = $opt{table} || [];
@@ -355,6 +376,7 @@ sub execute {
   my @cleanup;
   my $saved_param;
   $opt{statement} ||= '';
+  $opt{statement} = 'select' if $opt{select};
   if (($opt{statement} || '') ne 'insert' && ref $params eq 'ARRAY') {
     my $params2 = $params->[1];
     $params = $params->[0];
@@ -573,7 +595,7 @@ sub execute {
   }
   
   # Result
-  $self->result_class->new(
+  my $result = $self->result_class->new(
     sth => $sth,
     dbi => $self,
     default_filter => $self->{default_in_filter},
@@ -584,6 +606,22 @@ sub execute {
       from2 => $self->type_rule->{from2}
     },
   );
+  
+  if (my $cb = $opt{async}) {
+    require AnyEvent;
+    my $watcher;
+    weaken $self;
+    $watcher = AnyEvent->io(
+      fh => $self->{dbh}->mysql_fd,
+      poll => 'r',
+      cb   => sub {
+        $cb->($self, $result);
+        $watcher = undef;
+        $result =undef;
+      },
+    );
+  }
+  else { $result }
 }
 
 sub get_table_info {
@@ -2390,6 +2428,56 @@ This is used to create update clause.
 
   "update book set " . $dbi->assign_clause({title => 'a', age => 2});
 
+=head2 C<async> EXPERIMENTAL
+
+  async => sub {
+    my ($dbi, $result) = @_;
+    ...
+  };
+
+Database async access. L<AnyEvent> is required.
+
+This is C<mysql> async access example.
+
+  use AnyEvent;
+
+  my $cond = AnyEvent->condvar;
+
+  my $timer = AnyEvent->timer(
+    interval => 1,
+    cb => sub { 1 }
+  );
+
+  my $count = 0;
+
+  $dbi->execute('SELECT SLEEP(1), 3', undef,
+    prepare_attr => {async => 1}, statement => 'select',
+    async => sub {
+      my ($dbi, $result) = @_;
+      my $row = $result->fetch_one;
+      is($row->[1], 3, 'before');
+      $cond->send if ++$count == 2;
+    }
+  );
+
+  $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
+    async => sub {
+      my ($dbi, $result) = @_;
+      my $row = $result->fetch_one;
+      is($row->[0], 1, 'after1');
+      $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
+        async => sub {
+          my ($dbi, $result) = @_;
+          my $row = $result->fetch_one;
+          is($row->[0], 1, 'after2');
+          $cond->send if ++$count == 2;
+        }
+      )
+    }
+  );
+
+  $cond->recv;
+
 =head2 C<column>
 
   my $column = $dbi->column(book => ['author', 'title']);
@@ -2705,11 +2793,12 @@ because generally creating query object is slow.
 
 Priamry key. This is used for C<id> option.
 
-=item C<statement> EXPERIMETAL
+=item C<select> EXPERIMETAL
 
-  statement => 'select'
+  select => 1
 
-If you set statement to C<select>, return value is always L<DBIx::Custom::Result> object.
+If you set C<select> to 1, this statement become select statement
+and return value is always L<DBIx::Custom::Result> object.
 
 =item C<table>
   

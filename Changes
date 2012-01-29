@@ -1,3 +1,6 @@
+0.2108
+  - added async database access support using AnyEvent
+    and added "async" option to execute method
 0.2107
   - removed EXPERIMENTAL status from the following methods and functinalities.
       DBIx::Custom::Result::value method

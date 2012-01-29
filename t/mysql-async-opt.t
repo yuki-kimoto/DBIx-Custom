@@ -16,7 +16,7 @@ my $database = 'dbix_custom';
 $dsn = "dbi:mysql:database=$database";
 $args = {dsn => $dsn, user => $user, password => $password,};
 
-plan skip_all => 'mysql private test' unless -f "$FindBin::Bin/run/mysql-async.run"
+plan skip_all => 'mysql private test' unless -f "$FindBin::Bin/run/mysql-async-opt.run"
   && eval { $dbi = DBIx::Custom->connect($args); 1 };
 plan 'no_plan';
 
@@ -55,16 +55,8 @@ $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
 test 'async test';
 
 require AnyEvent;
-my $cond = AnyEvent->condvar;
-$result = $dbi->execute('SELECT SLEEP(1), 3', undef,
-  prepare_attr => {async => 1}, statement => 'select');
 
-$dbi2 = DBIx::Custom->connect(
-  dsn => "dbi:mysql:database=$database;host=localhost;port=10000",
-  user => $user,
-  password => $password
-);
-$result2 = $dbi2->select('key1', table => 'table1', prepare_attr => {async => 1});
+my $cond = AnyEvent->condvar;
 
 my $timer = AnyEvent->timer(
   interval => 1,
@@ -75,27 +67,30 @@ my $timer = AnyEvent->timer(
 
 my $count = 0;
 
-my $mysql_watcher;
-$mysql_watcher = AnyEvent->io(
-  fh   => $dbi->dbh->mysql_fd,
-  poll => 'r',
-  cb   => sub {
+$dbi->execute('SELECT SLEEP(1), 3', undef,
+  prepare_attr => {async => 1}, select => 1,
+  async => sub {
+    my ($dbi, $result) = @_;
     my $row = $result->fetch_one;
     is($row->[1], 3, 'before');
     $cond->send if ++$count == 2;
-    undef $result;
-    undef $mysql_watcher;
   }
 );
 
-my $mysql_watcher2= AnyEvent->io(
-  fh   => $dbi2->dbh->mysql_fd,
-  poll => 'r',
-  cb   => sub {
-    my $row = $result2->fetch_one;
-    is($row->[0], 1, 'after');
-    $cond->send if ++$count == 2;
-    undef $result2;
+$dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
+  async => sub {
+    my ($dbi, $result) = @_;
+    my $row = $result->fetch_one;
+    is($row->[0], 1, 'after1');
+    $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
+      async => sub {
+        my ($dbi, $result) = @_;
+        my $row = $result->fetch_one;
+        is($row->[0], 1, 'after2');
+        $cond->send if ++$count == 2;
+      }
+    )
   }
 );
+
 $cond->recv;
