@@ -1979,8 +1979,8 @@ is($dbi->{_tags}->{b}->(), 2);
 
 test 'table not specify exception';
 $dbi = DBIx::Custom->connect;
-eval {$dbi->select};
-like($@, qr/table/);
+eval {$dbi->select($key1)};
+ok($@);
 
 test 'more tests';
 $dbi = DBIx::Custom->connect;

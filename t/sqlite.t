@@ -385,3 +385,10 @@ $result = $dbi->select(
   ]
 );
 is_deeply($result->all, [{"table2.key3" => 4}]);
+
+test 'select table nothing';
+eval { $dbi->execute('drop table table1') };
+eval { $dbi->select('key1') };
+ok($@);
+$result = $dbi->select('3');
+is($result->fetch_one->[0], 3);

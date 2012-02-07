@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.2108';
+our $VERSION = '0.2109';
 use 5.008001;
 
 use Carp 'croak';
@@ -616,8 +616,9 @@ sub execute {
       poll => 'r',
       cb   => sub {
         $cb->($self, $result);
-        $watcher = undef;
-        $result =undef;
+        undef $watcher;
+        undef $result;
+        undef $cb;
       },
     );
   }
@@ -959,13 +960,16 @@ sub select {
   my $self = shift;
   my $column = shift if @_ % 2;
   my %opt = @_;
+  $opt{statement} = 'select';
   $opt{column} = $column if defined $column;
 
   # Options
+  my $table_is_empty;
   my $tables = ref $opt{table} eq 'ARRAY' ? $opt{table}
     : defined $opt{table} ? [$opt{table}]
     : [];
   $opt{table} = $tables;
+  $table_is_empty = 1 unless @$tables;
   my $where_param = $opt{where_param} || delete $opt{param} || {};
   warn "select method where_param option is DEPRECATED!"
     if $opt{where_param};
@@ -1000,13 +1004,17 @@ sub select {
         
         $column = join(' ', $column->[0], 'as', $self->q($column->[1]));
       }
-      unshift @$tables, @{$self->_search_tables($column)};
+      unshift @$tables, @{$self->_search_tables($column)}
+        unless $table_is_empty;
       $sql .= "$column, ";
     }
     $sql =~ s/, $/ /;
   }
   else { $sql .= '* ' }
-  
+
+  # Execute query without table
+  return $self->execute($sql, {}, %opt) if $table_is_empty;
+
   # Table
   $sql .= 'from ';
   if ($opt{relation}) {
@@ -1018,8 +1026,6 @@ sub select {
   }
   else { $sql .= $self->q($tables->[-1] || '') . ' ' }
   $sql =~ s/, $/ /;
-  croak "select method table option must be specified " . _subname
-    unless defined $tables->[-1];
 
   # Add tables in parameter
   unshift @$tables,
@@ -1027,7 +1033,7 @@ sub select {
   
   # Where
   my $w = $self->_where_clause_and_param($opt{where}, $where_param,
-    delete $opt{id}, $opt{primary_key}, $tables->[-1]);
+    delete $opt{id}, $opt{primary_key}, @$tables ? $tables->[-1] : undef);
   
   # Add table names in where clause
   unshift @$tables, @{$self->_search_tables($w->{clause})};
@@ -1043,10 +1049,7 @@ sub select {
     if $opt{relation};
   
   # Execute query
-  $opt{statement} = 'select';
-  my $result = $self->execute($sql, $w->{param}, %opt);
-  
-  $result;
+  return $self->execute($sql, $w->{param}, %opt);
 }
 
 sub setup_model {

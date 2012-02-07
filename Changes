@@ -1,4 +1,6 @@
 0.2108
+  - select method can be called even if table name is not specified
+0.2108
   - added async database access support using AnyEvent
     and added "async" option to execute method(EXPERIMENTAL)
   - EXPERIMETNAL "statement" option is replcaed "select" option
