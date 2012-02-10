@@ -67,8 +67,13 @@ my $timer = AnyEvent->timer(
 
 my $count = 0;
 
+$dbi->async_conf({
+  prepare_attr => {async => 1},
+  fh => sub { shift->dbh->mysql_fd }
+});
+
 $dbi->execute('SELECT SLEEP(1), 3', undef,
-  prepare_attr => {async => 1}, select => 1,
+  select => 1,
   async => sub {
     my ($dbi, $result) = @_;
     my $row = $result->fetch_one;
@@ -77,12 +82,12 @@ $dbi->execute('SELECT SLEEP(1), 3', undef,
   }
 );
 
-$dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
+$dbi->select('key1', table => 'table1',
   async => sub {
     my ($dbi, $result) = @_;
     my $row = $result->fetch_one;
     is($row->[0], 1, 'after1');
-    $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
+    $dbi->select('key1', table => 'table1',
       async => sub {
         my ($dbi, $result) = @_;
         my $row = $result->fetch_one;

@@ -1,4 +1,6 @@
-0.2108
+0.2110
+  - added EXPERIMETNAL aysnc_conf attribute
+0.2109
   - select method can be called even if table name is not specified
 0.2108
   - added async database access support using AnyEvent

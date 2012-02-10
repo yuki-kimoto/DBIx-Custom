@@ -1,7 +1,7 @@
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.2109';
+our $VERSION = '0.2110';
 use 5.008001;
 
 use Carp 'croak';
@@ -22,6 +22,7 @@ use Scalar::Util qw/weaken/;
 
 has [qw/connector dsn password quote user exclude_table user_table_info
      user_column_info safety_character/],
+  async_conf => sub { {} },
   cache => 0,
   cache_method => sub {
     sub {
@@ -346,6 +347,7 @@ sub execute {
   my %opt = @_;
   
   # Async query
+  $opt{prepare_attr} = $self->async_conf->{prepare_attr} if $opt{async};
   if ($opt{async} && !$self->{_new_connection}) {
     my $dsn = $self->dsn;
     croak qq/Data source must be specified when "async" option is used/
@@ -612,7 +614,7 @@ sub execute {
     my $watcher;
     weaken $self;
     $watcher = AnyEvent->io(
-      fh => $self->{dbh}->mysql_fd,
+      fh => $self->async_conf->{fh}->($self),
       poll => 'r',
       cb   => sub {
         $cb->($self, $result);
@@ -2182,6 +2184,22 @@ L<DBIx::Custom::Model>,
 L<DBIx::Custom::Order>
 
 =head1 ATTRIBUTES
+
+=head2 C<async_conf> EXPERIMENTAL
+
+  my $async_conf = $dbi->async_conf;
+  $dbi = $dbi->async_conf($conf);
+
+Setting when C<async> option is used.
+
+  # MySQL
+  $dbi->async_conf({
+    prepare_attr => {async => 1},
+    fh => sub { shift->dbh->mysql_fd }
+  })
+
+C<prepare_attr> is DBI's C<prepare> method second argument,
+C<fh> is callback that return file handle to watch.
 
 =head2 C<connector>
 
