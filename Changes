@@ -1,4 +1,8 @@
+0.2111
+  - "created_at" option is renamed to "ctime" option
+  - "updated_at" option is renamed to "mtime" option
 0.2110
+  - Perl 5.008007 is required.
   - added EXPERIMETNAL aysnc_conf attribute
 0.2109
   - select method can be called even if table name is not specified

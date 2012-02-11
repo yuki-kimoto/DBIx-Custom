@@ -593,7 +593,27 @@ like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key1 => 1};
+$dbi->insert($param, table => $table1, ctime => $key2);
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key1 => 1});
+$row   = $result->one;
+is($row->{$key1}, 1);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key1 => 1};
 $dbi->insert($param, table => $table1, updated_at => $key3);
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key1 => 1});
+$row   = $result->one;
+is($row->{$key1}, 1);
+like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key1 => 1};
+$dbi->insert($param, table => $table1, mtime => $key3);
 $result = $dbi->select(table => $table1);
 is_deeply($param, {$key1 => 1});
 $row   = $result->one;
@@ -614,7 +634,54 @@ is($row->{$key2}, $row->{$key3});
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
+$param = {$key1 => 1};
+$dbi->insert($param, table => $table1, created_at => $key2, mtime => $key3);
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key1 => 1});
+$row   = $result->one;
+is($row->{$key1}, 1);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+is($row->{$key2}, $row->{$key3});
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key1 => 1};
+$dbi->insert($param, table => $table1, ctime => $key2, updated_at => $key3);
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key1 => 1});
+$row   = $result->one;
+is($row->{$key1}, 1);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+is($row->{$key2}, $row->{$key3});
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key1 => 1};
+$dbi->insert($param, table => $table1, ctime => $key2, mtime => $key3);
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key1 => 1});
+$row   = $result->one;
+is($row->{$key1}, 1);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+is($row->{$key2}, $row->{$key3});
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
 $model = $dbi->create_model(table => $table1, created_at => $key2);
+$param = {$key1 => 1};
+$model->insert($param);
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key1 => 1});
+$row   = $result->one;
+is($row->{$key1}, 1);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$model = $dbi->create_model(table => $table1, ctime => $key2);
 $param = {$key1 => 1};
 $model->insert($param);
 $result = $dbi->select(table => $table1);
@@ -637,7 +704,57 @@ like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key1 => 1};
+$model = $dbi->create_model(table => $table1, mtime => $key3);
+$model->insert($param);
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key1 => 1});
+$row   = $result->one;
+is($row->{$key1}, 1);
+like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key1 => 1};
 $model = $dbi->create_model(table => $table1, created_at => $key2, updated_at => $key3);
+$model->insert($param);
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key1 => 1});
+$row   = $result->one;
+is($row->{$key1}, 1);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+is($row->{$key2}, $row->{$key3});
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key1 => 1};
+$model = $dbi->create_model(table => $table1, created_at => $key2, mtime => $key3);
+$model->insert($param);
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key1 => 1});
+$row   = $result->one;
+is($row->{$key1}, 1);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+is($row->{$key2}, $row->{$key3});
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key1 => 1};
+$model = $dbi->create_model(table => $table1, ctime=> $key2, updated_at => $key3);
+$model->insert($param);
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key1 => 1});
+$row   = $result->one;
+is($row->{$key1}, 1);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+is($row->{$key2}, $row->{$key3});
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key1 => 1};
+$model = $dbi->create_model(table => $table1, ctime=> $key2, mtime => $key3);
 $model->insert($param);
 $result = $dbi->select(table => $table1);
 is_deeply($param, {$key1 => 1});
@@ -657,9 +774,25 @@ is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "basic");
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $dbi->insert([{$key1 => 1}, {$key1 => 3}] ,
-table => $table1,
-updated_at => $key2,
-created_at => $key3
+  table => $table1,
+  updated_at => $key2,
+  created_at => $key3
+);
+$result = $dbi->execute("select * from $table1");
+$rows   = $result->all;
+is($rows->[0]->{$key1}, 1);
+is($rows->[1]->{$key1}, 3);
+like($rows->[0]->{$key2}, qr/\d{2}:/);
+like($rows->[1]->{$key2}, qr/\d{2}:/);
+like($rows->[0]->{$key3}, qr/\d{2}:/);
+like($rows->[1]->{$key3}, qr/\d{2}:/);
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$dbi->insert([{$key1 => 1}, {$key1 => 3}] ,
+  table => $table1,
+  mtime => $key2,
+  ctime => $key3
 );
 $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
@@ -1002,6 +1135,17 @@ eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key3 => 4};
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
+$dbi->update($param, table => $table1, mtime => $key2, where => {$key1 => 1});
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key3 => 4});
+$row   = $result->one;
+is($row->{$key3}, 4);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$param = {$key3 => 4};
+$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
 $dbi->update($param, table => $table1, updated_at => $key2, where => {$key3 => 3});
 $result = $dbi->select(table => $table1);
 is_deeply($param, {$key3 => 4});
@@ -1011,7 +1155,30 @@ like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
+$param = {$key3 => 4};
+$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
+$dbi->update($param, table => $table1, mtime => $key2, where => {$key3 => 3});
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key3 => 4});
+$row   = $result->one;
+is($row->{$key3}, 4);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
 $model = $dbi->create_model(table => $table1, updated_at => $key2);
+$param = {$key3 => 4};
+$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
+$model->update($param, where => {$key1 => 1});
+$result = $dbi->select(table => $table1);
+is_deeply($param, {$key3 => 4});
+$row   = $result->one;
+is($row->{$key3}, 4);
+like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$model = $dbi->create_model(table => $table1, mtime => $key2);
 $param = {$key3 => 4};
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
 $model->update($param, where => {$key1 => 1});

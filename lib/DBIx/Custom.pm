@@ -1,7 +1,8 @@
+use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.2110';
+our $VERSION = '0.2111';
 use 5.008001;
 
 use Carp 'croak';
@@ -684,7 +685,7 @@ sub insert {
   
   # Timestamp(DEPRECATED!)
   if (!$multi && $opt{timestamp} && (my $insert_timestamp = $self->insert_timestamp)) {
-    warn "insert timestamp option is DEPRECATED! use created_at with now attribute";
+    warn "insert timestamp option is DEPRECATED! use ctime option";
     my $columns = $insert_timestamp->[0];
     $columns = [$columns] unless ref $columns eq 'ARRAY';
     my $value = $insert_timestamp->[1];
@@ -694,16 +695,24 @@ sub insert {
 
   # Created time and updated time
   my @timestamp_cleanup;
-  if (defined $opt{created_at} || defined $opt{updated_at}) {
+  warn "insert method created_at option is DEPRECATED! "
+      . "use ctime option instead. " . _subname
+    if $opt{created_at};
+  warn "insert method updated_at option is DEPRECATED! "
+      . "use mtime option instead. " . _subname
+    if $opt{updated_at};
+  $opt{ctime} ||= $opt{created_at};
+  $opt{mtime} ||= $opt{updated_at};
+  if (defined $opt{ctime} || defined $opt{mtime}) {
     my $now = $self->now;
     $now = $now->() if ref $now eq 'CODE';
-    if (defined $opt{created_at}) {
-      $_->{$opt{created_at}} = $now for @$params;
-      push @timestamp_cleanup, $opt{created_at};
+    if (defined $opt{ctime}) {
+      $_->{$opt{ctime}} = $now for @$params;
+      push @timestamp_cleanup, $opt{ctime};
     }
-    if (defined $opt{updated_at}) {
-      $_->{$opt{updated_at}} = $now for @$params;
-      push @timestamp_cleanup, $opt{updated_at};
+    if (defined $opt{mtime}) {
+      $_->{$opt{mtime}} = $now for @$params;
+      push @timestamp_cleanup, $opt{mtime};
     }
   }
   
@@ -775,8 +784,7 @@ sub include_model {
     croak qq{"$name_space" is invalid class name } . _subname
       if $name_space =~ /[^\w:]/;
     eval "use $name_space";
-    croak qq{Name space module "$name_space.pm" is needed. $@ }
-        . _subname
+    croak qq{Name space module "$name_space.pm" is needed. $@ } . _subname
       if $@;
     
     # Search model modules
@@ -1193,7 +1201,7 @@ sub update {
   
   # Timestamp(DEPRECATED!)
   if ($opt{timestamp} && (my $update_timestamp = $self->update_timestamp)) {
-    warn "update timestamp option is DEPRECATED! use updated_at and now method";
+    warn "update timestamp option is DEPRECATED! use mtime";
     my $columns = $update_timestamp->[0];
     $columns = [$columns] unless ref $columns eq 'ARRAY';
     my $value = $update_timestamp->[1];
@@ -1203,11 +1211,15 @@ sub update {
 
   # Created time and updated time
   my @timestamp_cleanup;
-  if (defined $opt{updated_at}) {
+  warn "update method update_at option is DEPRECATED! "
+      . "use mtime option instead " . _subname
+    if $opt{updated_at};
+  $opt{mtime} ||= $opt{updated_at};
+  if (defined $opt{mtime}) {
     my $now = $self->now;
     $now = $now->() if ref $now eq 'CODE';
-    $param->{$opt{updated_at}} = $self->now->();
-    push @timestamp_cleanup, $opt{updated_at};
+    $param->{$opt{mtime}} = $self->now->();
+    push @timestamp_cleanup, $opt{mtime};
   }
 
   # Assign clause
@@ -2946,11 +2958,11 @@ The SQL like the following one is executed.
 
   insert into book (id, title) values (?, ?), (?, ?);
 
-=item C<created_at>
+=item C<ctime>
 
-  created_at => 'created_datetime'
+  ctime => 'created_time'
 
-Created timestamp column name. time when row is created is set to the column.
+Created time column name. time when row is created is set to the column.
 default time format is "YYYY-mm-dd HH:MM:SS", which can be changed by
 C<now> attribute.
 
@@ -2990,9 +3002,9 @@ prefix before table name section
 
 Table name.
 
-=item C<updated_at>
+=item C<mtime>
 
-This option is same as C<update> method C<updated_at> option.
+This option is same as C<update> method C<mtime> option.
 
 =item C<wrap>
 
@@ -3471,11 +3483,11 @@ is executed, the following SQL is executed.
 
   update book set price =  ? + 5;
 
-=item C<updated_at>
+=item C<mtime>
 
-  updated_at => 'updated_datetime'
+  mtime => 'modified_time'
 
-Updated timestamp column name. time when row is updated is set to the column.
+Modified time column name. time row is updated is set to the column.
 default time format is C<YYYY-mm-dd HH:MM:SS>, which can be changed by
 C<now> attribute.
 
@@ -3649,6 +3661,8 @@ L<DBIx::Custom>
   update_param_tag # will be removed at 2017/1/1
   
   # Options
+  insert method created_at option # will be removed 2017/3/1
+  update method updated_at option # will be removed 2017/3/1
   select column option [COLUMN => ALIAS] syntax # will be removed 2017/1/1
   execute method id option # will be removed 2017/1/1
   update timestamp option # will be removed 2017/1/1

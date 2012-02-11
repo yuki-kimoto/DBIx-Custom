@@ -7,7 +7,7 @@ use DBIx::Custom::Util '_subname';
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-has [qw/dbi table created_at updated_at bind_type join primary_key/],
+has [qw/dbi table ctime mtime bind_type join primary_key/],
   columns => sub { [] };
 
 our $AUTOLOAD;
@@ -47,8 +47,8 @@ for my $method (@methods) {
 
   
   my @attrs = qw/table type primary_key bind_type/;
-  my @insert_attrs = qw/created_at updated_at/;
-  my @update_attrs = qw/updated_at/;
+  my @insert_attrs = qw/created_at updated_at ctime mtime/;
+  my @update_attrs = qw/updated_at mtime/;
   my @select_attrs = qw/join/;
   if ($method eq 'insert') { push @attrs, @insert_attrs }
   elsif ($method eq 'update') { push @attrs, @update_attrs }
@@ -144,7 +144,7 @@ sub new {
   }
   
   # Cache
-  for my $attr (qw/dbi table created_at updated_at bind_type join primary_key/) {
+  for my $attr (qw/dbi table created_at updated_at ctime mtime bind_type join primary_key/) {
     $self->$attr;
     $self->{$attr} = undef unless exists $self->{$attr};
   }
@@ -157,6 +157,8 @@ sub new {
 has 'filter';
 has 'name';
 has 'type';
+has 'created_at';
+has 'updated_at'; 
 
 # DEPRECATED!
 sub method {
@@ -185,10 +187,10 @@ my $model = DBIx::Custom::Model->new(table => 'books');
 
 L<DBIx::Custom> object.
 
-=head2 C<created_at>
+=head2 C<ctime>
 
-  my $created_at = $model->created_at;
-  $model = $model->created_at('created_datatime');
+  my $ctime = $model->ctime;
+  $model = $model->ctime('created_time');
 
 Create timestamp column, this is passed to C<insert> or C<update> method.
 
@@ -225,10 +227,10 @@ Database data type, this is used as type optioon of C<insert>,
 C<update>, C<update_all>, C<delete>, C<delete_all>,
 and C<select> method
 
-=head2 C<updated_at>
+=head2 C<mtime>
 
-  my $updated_at = $model->updated_at;
-  $model = $model->updated_at('updated_datatime');
+  my $mtime = $model->mtime;
+  $model = $model->mtime('modified_time');
 
 Updated timestamp column, this is passed to C<update> method.
 
