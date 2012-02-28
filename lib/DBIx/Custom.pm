@@ -1697,7 +1697,10 @@ sub _where_clause_and_param {
         if defined $table_quote;
       if (ref $where->{$column} eq 'ARRAY') {
         my $c = join(', ', (":$column") x @{$where->{$column}});
-        push @$clause, "$column_quote in ( $c )";
+        if (@{$where->{$column}}) {
+          push @$clause, "$column_quote in ( $c )";
+        }
+        else { push @$clause, '1 <> 1' }
       }
       else { push @$clause, "$column_quote = :$column" }
     }
