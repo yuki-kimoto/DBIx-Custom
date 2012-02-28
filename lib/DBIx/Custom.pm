@@ -1697,15 +1697,6 @@ sub _where_clause_and_param {
         if defined $table_quote;
       push @$clause, "$column_quote = :$column";
     }
-
-    # Check unsafety column
-    my $safety = $self->{safety_character};
-    unless ($column_join =~ /^[$safety\.]+$/) {
-      for my $column (keys %$where) {
-        croak qq{"$column" is not safety column name } . _subname
-          unless $column =~ /^[$safety\.]+$/;
-      }
-    }
     
     $w->{clause} = @$clause ? "where ( " . join(' and ', @$clause) . " ) " : '' ;
     $w->{param} = $where;

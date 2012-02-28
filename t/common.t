@@ -1348,6 +1348,9 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $row = $dbi->select($key1, table => $table1)->one;
 is_deeply($row, {$key1 => 1});
 
+eval { $dbi->select(table => $table1, where => {';' => 1}) };
+like($@, qr/safety/);
+
 test 'fetch filter';
 eval { $dbi->execute("drop table $table1") };
 $dbi->register_filter(
