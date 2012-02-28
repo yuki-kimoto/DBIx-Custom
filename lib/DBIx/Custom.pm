@@ -2,8 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.2111';
-use 5.008001;
+our $VERSION = '0.22';
 
 use Carp 'croak';
 use DBI;
@@ -1678,43 +1677,46 @@ sub _where_clause_and_param {
   $where = $self->_id_to_param($id, $primary_key, $table) if defined $id;
   $where_param ||= {};
   my $w = {};
-  my $where_clause = '';
 
-  my $obj;
-  
-  if (ref $where) {
-    if (ref $where eq 'HASH') {
-      my $clause = ['and'];
-      my $column_join = '';
-      for my $column (keys %$where) {
-        $column_join .= $column;
-        my $table;
-        my $c;
-        if ($column =~ /(?:(.*?)\.)?(.*)/) {
-          $table = $1;
-          $c = $2;
-        }
-        
-        my $table_quote;
-        $table_quote = $self->q($table) if defined $table;
-        my $column_quote = $self->q($c);
-        $column_quote = $table_quote . '.' . $column_quote
-          if defined $table_quote;
-        push @$clause, "$column_quote = :$column";
-      }
-
-      # Check unsafety column
-      my $safety = $self->{safety_character};
-      unless ($column_join =~ /^[$safety\.]+$/) {
-        for my $column (keys %$where) {
-          croak qq{"$column" is not safety column name } . _subname
-            unless $column =~ /^[$safety\.]+$/;
-        }
+  if (ref $where eq 'HASH') {
+    my $clause = [];
+    my $column_join = '';
+    for my $column (keys %$where) {
+      $column_join .= $column;
+      my $table;
+      my $c;
+      if ($column =~ /(?:(.*?)\.)?(.*)/) {
+        $table = $1;
+        $c = $2;
       }
       
-      $obj = $self->where(clause => $clause, param => $where);
+      my $table_quote;
+      $table_quote = $self->q($table) if defined $table;
+      my $column_quote = $self->q($c);
+      $column_quote = $table_quote . '.' . $column_quote
+        if defined $table_quote;
+      push @$clause, "$column_quote = :$column";
     }
-    elsif (ref $where eq 'DBIx::Custom::Where') { $obj = $where }
+
+    # Check unsafety column
+    my $safety = $self->{safety_character};
+    unless ($column_join =~ /^[$safety\.]+$/) {
+      for my $column (keys %$where) {
+        croak qq{"$column" is not safety column name } . _subname
+          unless $column =~ /^[$safety\.]+$/;
+      }
+    }
+    
+    $w->{clause} = @$clause ? "where ( " . join(' and ', @$clause) . " ) " : '' ;
+    $w->{param} = $where;
+    $w->{param} = keys %$where_param
+      ? $self->merge_param($where_param, $where)
+      : $where;
+  }  
+  elsif (ref $where) {
+    my $obj;
+
+    if (ref $where eq 'DBIx::Custom::Where') { $obj = $where }
     elsif (ref $where eq 'ARRAY') {
       $obj = $self->where(clause => $where->[0], param => $where->[1]);
     }
@@ -1725,10 +1727,10 @@ sub _where_clause_and_param {
         . _subname
       unless ref $obj eq 'DBIx::Custom::Where';
 
+    $w->{clause} = $obj->to_string;
     $w->{param} = keys %$where_param
       ? $self->merge_param($where_param, $obj->param)
       : $obj->param;
-    $w->{clause} = $obj->to_string;
   }
   elsif ($where) {
     $w->{clause} = "where $where";
@@ -3241,7 +3243,7 @@ The above is same as the followin one.
 
 Parameter shown before where clause.
   
-For example, if you want to contain tag in join clause, 
+For example, if you want to contain named placeholder in join clause, 
 you can pass parameter by C<param> option.
 
   join  => ['inner join (select * from table2 where table2.key3 = :table2.key3)' . 

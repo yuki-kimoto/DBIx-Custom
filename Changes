@@ -1,6 +1,7 @@
 0.22
   - added EXPERIMENTAL DBIx::Custom::Result::kv method
   - added EXPERIMENTAL DBIx::Custom::Result::flat method
+  - added where => {name => [val1, val2, val3]} support
 0.2111
   - "created_at" option is renamed to "ctime" option.
     "created_at" is DEPRECATED!
