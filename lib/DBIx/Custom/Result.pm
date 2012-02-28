@@ -18,36 +18,6 @@ sub column {
   return $column;
 }
 
-sub filter {
-  my $self = shift;
-  
-  # Set
-  if (@_) {
-    
-    # Convert filter name to subroutine
-    my $filter = @_ == 1 ? $_[0] : [@_];
-    $filter = _array_to_hash($filter);
-    for my $column (keys %$filter) {
-      my $fname = $filter->{$column};
-      if  (exists $filter->{$column}
-        && defined $fname
-        && ref $fname ne 'CODE') 
-      {
-        croak qq{Filter "$fname" is not registered" } . _subname
-          unless exists $self->dbi->filters->{$fname};
-        $filter->{$column} = $self->dbi->filters->{$fname};
-      }
-    }
-    
-    # Merge
-    $self->{filter} = {%{$self->filter}, %$filter};
-    
-    return $self;
-  }
-  
-  return $self->{filter} ||= {};
-}
-
 sub fetch {
   my $self = shift;
   
@@ -244,6 +214,46 @@ sub fetch_one {
   $self->sth->finish;
   
   return $row;
+}
+
+sub filter {
+  my $self = shift;
+  
+  # Set
+  if (@_) {
+    
+    # Convert filter name to subroutine
+    my $filter = @_ == 1 ? $_[0] : [@_];
+    $filter = _array_to_hash($filter);
+    for my $column (keys %$filter) {
+      my $fname = $filter->{$column};
+      if  (exists $filter->{$column}
+        && defined $fname
+        && ref $fname ne 'CODE') 
+      {
+        croak qq{Filter "$fname" is not registered" } . _subname
+          unless exists $self->dbi->filters->{$fname};
+        $filter->{$column} = $self->dbi->filters->{$fname};
+      }
+    }
+    
+    # Merge
+    $self->{filter} = {%{$self->filter}, %$filter};
+    
+    return $self;
+  }
+  
+  return $self->{filter} ||= {};
+}
+
+sub flat {
+  my $self = shift;
+  
+  my @flat;
+  while (my $row = $self->fetch) {
+    push @flat, @$row;
+  }
+  return @flat;
 }
 
 sub header { shift->sth->{NAME} }
@@ -562,6 +572,29 @@ Fetch multiple rows and put them into array of array reference.
 Set filter for column.
 You can use subroutine or filter name as filter.
 This filter is executed after C<type_rule> filter.
+
+=head2 C<flat> EXPERIMENTAL
+
+  my $flat = $result->flat;
+
+All value is flatten and added to one array reference.
+  
+  my @flat = $dbi->select(['id', 'title'])->flat;
+
+If C<fetch_all> method return the following data
+
+  [
+    [1, 'Perl'],
+    [2, 'Ruby']
+  ]
+
+C<flat> method return the following data.
+
+  (1, 'Perl', 2, 'Ruby')
+
+You can create key-value pair easily.
+
+  my %titles = $dbi->select(['id', 'title'])->flat;
 
 =head2 C<header>
 

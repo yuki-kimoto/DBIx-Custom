@@ -3579,6 +3579,11 @@ $result->filter({$key1 => 'three_times'});
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{$key1 => 3, $key2 => 2}, {$key1 => 9, $key2 => 4}], "hash");
 
+test 'flat';
+$result = $dbi->select(table => $table1);
+$rows = [$result->flat];
+is_deeply($rows, [1, 2, 3, 4]);
+
 test 'DBIx::Custom::Result fetch_multi';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
