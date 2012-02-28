@@ -1351,6 +1351,21 @@ is_deeply($row, {$key1 => 1});
 eval { $dbi->select(table => $table1, where => {';' => 1}) };
 like($@, qr/safety/);
 
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+$dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
+$dbi->insert({$key1 => 5, $key2 => 6}, table => $table1);
+
+$rows = $dbi->select(table => $table1, where => {$key1 => [1, 5]})->all;
+is_deeply($rows, [
+  {$key1 => 1, $key2 => 2},
+  {$key1 => 5, $key2 => 6}
+], "table");
+
+$rows = $dbi->select(table => $table1, where => {$key1 => []})->all;
+is_deeply($rows, [], "table");
+
 test 'fetch filter';
 eval { $dbi->execute("drop table $table1") };
 $dbi->register_filter(

@@ -1695,7 +1695,11 @@ sub _where_clause_and_param {
       my $column_quote = $self->q($c);
       $column_quote = $table_quote . '.' . $column_quote
         if defined $table_quote;
-      push @$clause, "$column_quote = :$column";
+      if (ref $where->{$column} eq 'ARRAY') {
+        my $c = join(', ', (":$column") x @{$where->{$column}});
+        push @$clause, "$column_quote in ( $c )";
+      }
+      else { push @$clause, "$column_quote = :$column" }
     }
     
     $w->{clause} = @$clause ? "where ( " . join(' and ', @$clause) . " ) " : '' ;
@@ -3299,23 +3303,34 @@ Table name.
 
 =item C<where>
   
-  # Hash refrence
-  where => {author => 'Ken', 'title' => 'Perl'}
+  # (1) Hash reference
+  where => {author => 'Ken', 'title' => ['Perl', 'Ruby']}
+  # -> where author = 'Ken' and title in ('Perl', 'Ruby')
   
-  # DBIx::Custom::Where object
+  # (2) DBIx::Custom::Where object
   where => $dbi->where(
     clause => ['and', ':author{=}', ':title{like}'],
     param  => {author => 'Ken', title => '%Perl%'}
-  );
+  )
+  # -> where author = 'Ken' and title like '%Perl%'
   
-  # Array reference, this is same as above
+  # (3) Array reference[Array refenrece, Hash reference]
   where => [
     ['and', ':author{=}', ':title{like}'],
     {author => 'Ken', title => '%Perl%'}
-  ];
+  ]
+  # -> where author = 'Ken' and title like '%Perl%'
   
-  # String
+  # (4) Array reference[String, Hash reference]
+  where => [
+    ':author{=} and :title{like}',
+    {author => 'Ken', title => '%Perl%'}
+  ]
+  #  -> where author = 'Ken' and title like '%Perl%'
+  
+  # (5) String
   where => 'title is null'
+  #  -> where title is null
 
 Where clause. See L<DBIx::Custom::Where>.
   
