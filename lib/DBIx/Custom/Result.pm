@@ -256,6 +256,24 @@ sub flat {
   return @flat;
 }
 
+sub kv {
+  my ($self, %opt) = @_;
+
+  my $key_name = $self->{sth}{NAME}[0];
+  my $kv = {};
+  while (my $row = $self->fetch_hash) {
+    my $key_value = delete $row->{$key_name};
+    next unless defined $key_value;
+    if ($opt{multi}) {
+      $kv->{$key_value} ||= [];
+      push @{$kv->{$key_value}}, $row;
+    }
+    else { $kv->{$key_value} = $row }
+  }
+  
+  return $kv;
+}
+
 sub header { shift->sth->{NAME} }
 
 *one = \&fetch_hash_one;
@@ -595,6 +613,58 @@ C<flat> method return the following data.
 You can create key-value pair easily.
 
   my %titles = $dbi->select(['id', 'title'])->flat;
+
+=head2 C<kv> EXPERIMENTAL
+
+  my $key_value = $result->kv;
+  my $key_values = $result->kv(multi => 1);
+
+Get key-value pairs.
+
+  my $books = $dbi->select(['id', 'title', 'author'])->kv;
+
+If C<all> method return the following data:
+
+  [
+    {id => 1, title => 'Perl', author => 'Ken'},
+    {id => 2, title => 'Ruby', author => 'Taro'}
+  ]
+
+C<kv> method return the following data.
+
+  {
+    1 => {title => 'Perl', author => 'Ken'},
+    2 => {title => 'Ruby', author => 'Taro'}
+  }
+
+First column value become key.
+
+If value contains multipule data, you can push it to
+array refernce by C<multi> option.
+
+  my $books = $dbi->select(['author', 'title', 'price'])->kv(multi => 1);
+
+If C<all> method return the following data:
+
+  [
+    {author => 'Ken', title => 'Perl', price => 1000},
+    {author => 'Ken', title => 'Good', price => 2000},
+    {author => 'Taro', title => 'Ruby', price => 3000}
+    {author => 'Taro', title => 'Sky', price => 4000}
+  ]
+
+C<kv> method return the following data.
+
+  {
+    Ken => [
+      {title => 'Perl', price => 1000},
+      {title => 'Good', price => 2000}
+    ],
+    Taro => [
+      {title => 'Ruby', price => 3000},
+      {title => 'Sky', price => 4000}
+    ]
+  }
 
 =head2 C<header>
 

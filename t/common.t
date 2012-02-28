@@ -3584,6 +3584,39 @@ $result = $dbi->select(table => $table1);
 $rows = [$result->flat];
 is_deeply($rows, [1, 2, 3, 4]);
 
+test 'kv';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert({$key1 => 0, $key2 => 2}, table => $table1);
+$dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
+
+$result = $dbi->select([$key1, $key2], table => $table1, append => "order by $key1");
+$rows = $result->kv;
+is_deeply($rows, {0 => {$key2 => 2}, 3 => {$key2 => 4}});
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1);
+$dbi->insert({$key1 => 0, $key2 => 1}, table => $table1);
+$dbi->insert({$key1 => 0, $key2 => 2}, table => $table1);
+$dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
+$dbi->insert({$key1 => 3, $key2 => 5}, table => $table1);
+
+$result = $dbi->select([$key1, $key2], table => $table1, append => "order by $key2");
+$rows = $result->kv(multi => 1);
+is_deeply($rows, {
+  0 => [
+    {$key2 => 1},
+    {$key2 => 2}
+  ],
+  3 => [
+    {$key2 => 4},
+    {$key2 => 5}
+  ]
+});
+
+
 test 'DBIx::Custom::Result fetch_multi';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
