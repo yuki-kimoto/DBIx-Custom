@@ -1,5 +1,24 @@
+### CentOS 5
+
+# Install MySQL
+yum -y install mysql-server
+yum -y install mysql
+yum -y install mysql-libs
+yum -y install mysql-devel
+chkconfig --level 35 mysqld on
+
+# Start
+service mysqld start
+
+# mysql
+
 # Create database
 create database dbix_custom;
 
 # Create User
 GRANT ALL PRIVILEGES ON dbix_custom.* TO dbix_custom@"localhost" IDENTIFIED BY 'dbix_custom';
+FLUSH PRIVILEGES;
+
+# Install DBD::mysql
+cpanm DBD::mysql
+

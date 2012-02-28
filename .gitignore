@@ -11,3 +11,5 @@ cover_db/*
 t/*.db
 Makefile
 pm_to_blib
+MYMETA.json
+MYMETA.yml

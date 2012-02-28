@@ -1,5 +1,8 @@
+### Cent OS 5
+
 # Download
-http://download.oracle.com/otn/linux/oracle10g/xe/10201/oracle-xe-univ-10.2.0.1-1.0.i386.rpm
+cd /usr/local/src
+curl -L http://download.oracle.com/otn/linux/oracle10g/xe/10201/oracle-xe-univ-10.2.0.1-1.0.i386.rpm > oracle-xe-univ-10.2.0.1-1.0.i386.rpm
 
 # Install
 rpm -ivh oracle-xe-univ-10.2.0.1-1.0.i386.rpm
