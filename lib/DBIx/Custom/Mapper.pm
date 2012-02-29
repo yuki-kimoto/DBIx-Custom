@@ -68,8 +68,16 @@ sub map {
       }
       else {
         if ($condition->($param->{$key})) {
-          $new_param->{$new_key} = defined $value
-            ? $value->($param->{$key}) : $param->{$key};
+          if (defined $value) {
+            if (ref $value) {
+              $new_param->{$new_key} = $value->($param->{$key});
+            }
+            else {
+              $value =~ s/<value>/$param->{$key}/e;
+              $new_param->{$new_key} = $value;
+            }
+          }
+          else { $new_param->{$new_key} = $param->{$key} }
         }
       }
     }
@@ -199,11 +207,17 @@ and implements the following new ones.
 
   my $new_param = $mapper->map(
     price => {key => 'book.price'}
-    title => {value => sub { '%' . $_[0] . '%'}}
-    author => ['book.author' => sub { '%' . $_[0] . '%'}] # Key and value
+    title => {value => '%<value>%'}
+    author => ['book.author' => '%<value>%']
   );
 
-Map C<param> into new parameter.
+  my $new_param = $mapper->map(
+    price => {key => 'book.price'}
+    title => {value => sub { '%' . shift . '%'}}
+    author => ['book.author' => sub { '%' . shift . '%'}]
+  );
+
+Map parameter in C<param> attribute into new parameter.
 
 For example, if C<param> is set to
 
@@ -221,6 +235,53 @@ The following hash reference is returned.
     title => '%Perl%',
     'book.author' => '%Ken%',
   }
+
+=over 2
+
+B<Syntax:>
+
+=item * String => Hash reference
+
+  # String => Hash reference
+  price => {key => 'book.price'}
+  title => {value => '%<value>%'}
+  title => {value => sub { '%' . shift . '%'}}
+
+If C<key> is used, only key name is mapped to new parameter
+
+  # Rule
+  price => {key => 'book.price'}
+  # Parameter
+  price => 1900,
+  # New parameter
+  'book.price' => 1900,
+
+If C<value> is used, only value is mapped to new parameter
+
+  # Rule
+  title => {value => '%<value>%'}
+  title => {value => sub { '%' . shift . '%'}}
+  
+  # Parameter
+  title => 'Perl',
+  # New parameter
+  title => '%Perl%',
+
+C<E<lt>>valueE<gt>> is replaced by original value.
+You can use code reference to convert original value.
+
+=item * String => Array reference
+  
+  # String => Array reference
+  author => ['book.author' => '%<value>%']
+
+Both key name name and value is mapped to new parameter.
+This is same as the following syntax.
+
+  # Rule
+  {key => 'book.author', value => '%<value>%'}
+
+=back
 
 By default, If the value has length, key and value is mapped.
 
@@ -241,7 +302,7 @@ Or you can set C<condtion> option for each key.
     author => ['book.author', sub { '%' . $_[0] . '%'}, 'exists']
   );
 
-If C<pass> attrivute is set, the keys and value is copied without change.
+If C<pass> attribute is set, the keys and value is copied without change.
 
   $mapper->pass([qw/title author/]);
   my $new_param = $mapper->map(price => {key => 'book.price'});

@@ -3288,6 +3288,21 @@ $param = $dbi->mapper(param => {id => 'a', author => 'b', price => 'c'}, pass =>
 ->map(price => {key => 'book.price'});
 is_deeply($param, {id => 'a', author => 'b', 'book.price' => 'c'});
 
+$param = $dbi->mapper(param => {author => 'Ken',})->map(
+  author => ["$table1.author" => '%<value>%'],
+);
+is_deeply($param, {"$table1.author" => '%Ken%'});
+
+$param = $dbi->mapper(param => {author => 'Ken'})->map(
+  author => ["$table1.author" => 'p'],
+);
+is_deeply($param, {"$table1.author" => 'p'});
+
+$param = $dbi->mapper(param => {author => 'Ken',})->map(
+  author => {value => '%<value>%'}
+);
+is_deeply($param, {"author" => '%Ken%'});
+
 test 'order';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
