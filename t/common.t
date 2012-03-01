@@ -58,8 +58,7 @@ my $create_table2 = $dbi->create_table2;
 my $create_table2_2 = $dbi->create_table2_2;
 my $create_table3 = $dbi->create_table3;
 my $create_table_reserved = $dbi->create_table_reserved;
-my $q = substr($dbi->quote, 0, 1);
-my $p = substr($dbi->quote, 1, 1) || $q;
+my ($q, $p) = $dbi->_qp;
 my $date_typename = $dbi->date_typename;
 my $datetime_typename = $dbi->datetime_typename;
 my $date_datatype = $dbi->date_datatype;
@@ -2615,7 +2614,7 @@ $rows = $dbi->select(
   column => "$table1.$key1 as " . u("${table1}_$key1") . ", $key2, $key3",
   where   => {"$table1.$key2" => 3},
   join  => ["inner join (select * from $table2 where {= $table2.$key3})" . 
-            " \"$table2\" on $table1.$key1 = \"$table2\".$key1"],
+            " $q$table2$p on $table1.$key1 = $q$table2$p.$key1"],
   param => {"$table2.$key3" => 5}
 )->all;
 is_deeply($rows, [{u"${table1}_$key1" => 2, $key2 => 3, $key3 => 5}]);
@@ -2625,7 +2624,7 @@ $rows = $dbi->select(
   column => "$table1.$key1 as " . u("${table1}_$key1") . ", $key2, $key3",
   where   => {"$table1.$key2" => 3},
   join  => "inner join (select * from $table2 where {= $table2.$key3})" . 
-           " \"$table2\" on $table1.$key1 = \"$table2\".$key1",
+           " $q$table2$p on $table1.$key1 = $q$table2$p.$key1",
   param => {"$table2.$key3" => 5}
 )->all;
 is_deeply($rows, [{u"${table1}_$key1" => 2, $key2 => 3, $key3 => 5}]);
@@ -3890,32 +3889,32 @@ $dbi->execute("insert into $table2 ($key1, $key3) values (1, 4)");
 $model = $dbi->model($table1);
 $result = $model->select(
   column => [
-    $model->column($table2, {alias => $table2_alias})
+    $model->column($table2, {alias => u$table2_alias})
   ],
-  where => {"$table2_alias.$key3" => 4}
+  where => {u($table2_alias) . ".$key3" => 4}
 );
 is_deeply($result->one, 
-        {"$table2_alias.$key1" => 1, "$table2_alias.$key3" => 4});
+        {u($table2_alias) . ".$key1" => 1, u($table2_alias) . ".$key3" => 4});
 
 $dbi->separator('__');
 $result = $model->select(
   column => [
-    $model->column($table2, {alias => $table2_alias})
+    $model->column($table2, {alias => u$table2_alias})
   ],
-  where => {"$table2_alias.$key3" => 4}
+  where => {u($table2_alias) . ".$key3" => 4}
 );
 is_deeply($result->one, 
-  {"${table2_alias}__$key1" => 1, "${table2_alias}__$key3" => 4});
+  {u(${table2_alias}) . "__$key1" => 1, u(${table2_alias}) . "__$key3" => 4});
 
 $dbi->separator('-');
 $result = $model->select(
   column => [
-      $model->column($table2, {alias => $table2_alias})
+    $model->column($table2, {alias => u$table2_alias})
   ],
-  where => {"$table2_alias.$key3" => 4}
+  where => {u($table2_alias) . ".$key3" => 4}
 );
 is_deeply($result->one, 
-  {"$table2_alias-$key1" => 1, "$table2_alias-$key3" => 4});
+  {u(${table2_alias}) . "-$key1" => 1, u(${table2_alias}) . "-$key3" => 4});
 
 test 'create_model';
 $dbi = DBIx::Custom->connect;
