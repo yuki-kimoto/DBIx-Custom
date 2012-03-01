@@ -150,53 +150,48 @@ DBIx::Custom::Where - Where clause
   # Create DBIx::Custom::Where object
   my $where = $dbi->where;
   
-  # Set clause and parameter
+  # Clause
+  $where->clause(['and', 'title like :title', 'price = :price']);
   $where->clause(['and', ':title{like}', ':price{=}']);
   
-  # Create where clause by to_string method
-  my $where_clause = $where->to_string;
-  
-  # Create where clause by stringify
+  # Stringify where clause
   my $where_clause = "$where";
-  
-  # Created where clause in the above way
-  where :title{=} and :price{like}
+  my $where_clause = $where->to_string;
+    # -> where title like :title and price = :price
   
   # Only price condition
   $where->clause(['and', ':title{like}', ':price{=}']);
   $where->param({price => 1900});
-  my $where_clause = "$where";
-  
-  # Created where clause in the above way
-  where :price{=}
+    # -> where price = :price
   
   # Only title condition
   $where->clause(['and', ':title{like}', ':price{=}']);
   $where->param({title => 'Perl'});
-  my $where_clause = "$where";
-  
-  # Created where clause in the above way
-  where :title{like}
+    # -> where title like :title
   
   # Nothing
   $where->clause(['and', ':title{like}', ':price{=}']);
   $where->param({});
-  my $where_clause = "$where";
+    # => Nothing
   
   # or condition
   $where->clause(['or', ':title{like}', ':price{=}']);
+    # -> where title = :title or price like :price
   
   # More than one parameter
   $where->clause(['and', ':price{>}', ':price{<}']);
   $where->param({price => [1000, 2000]});
+    # -> where price > :price and price < :price
   
   # Only first condition
   $where->clause(['and', ':price{>}', ':price{<}']);
   $where->param({price => [1000, $dbi->not_exists]});
+    # -> where price > :price
   
   # Only second condition
   $where->clause(['and', ':price{>}', ':price{<}']);
   $where->param({price => [$dbi->not_exists, 2000]});
+    # -> where price < :price
   
   # More complex condition
   $where->clause(
@@ -206,13 +201,11 @@ DBIx::Custom::Where - Where clause
       ['or', ':title{=}', ':title{=}', ':title{=}']
     ]
   );
-  my $where_clause = "$where";
-  
-  # Created where clause in the above way
-  where :price{=} and (:title{=} or :title{=} or :title{=})
+    # -> pirce = :price and (title = :title or title = :title or tilte = :title)
   
   # Using Full-qualified column name
   $where->clause(['and', ':book.title{like}', ':book.price{=}']);
+    # -> book.title like :book.title and book.price = :book.price
 
 =head1 ATTRIBUTES
 
