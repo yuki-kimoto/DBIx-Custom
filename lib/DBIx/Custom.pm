@@ -835,10 +835,12 @@ sub include_model {
     }
     else {
       $model_class = $model_name = $model_table = $model_info;
-      $model_name =~ s/::/./;
-      $model_table =~ s/::/./;
     }
-   
+
+    $model_class =~ s/\./::/g;
+    $model_name =~ s/::/./;
+    $model_table =~ s/::/./;
+
     my $mclass = "${name_space}::$model_class";
     croak qq{"$mclass" is invalid class name } . _subname
       if $mclass =~ /[^\w:]/;

@@ -35,6 +35,12 @@ sub hy($) {
   return $value;
 }
 
+sub colon2 {
+  my $value = shift;
+  $value =~ s/\./::/g;
+  return $value;
+}
+
 # Constant
 my $table1 = $dbi->table1;
 my $table2 = $dbi->table2;
@@ -181,6 +187,37 @@ require MyDBI1;
   sub list { shift->select; }
 
   package MyModel2::TABLE2;
+
+  use strict;
+  use warnings;
+
+  use base 'MyModel2::Base1';
+
+  sub insert {
+    my ($self, $param) = @_;
+    
+    return $self->SUPER::insert($param);
+  }
+
+  sub list { shift->select; }
+
+
+  package MyModel2::main::table1;
+
+  use strict;
+  use warnings;
+
+  use base 'MyModel2::Base1';
+
+  sub insert {
+    my ($self, $param) = @_;
+    
+    return $self->SUPER::insert($param);
+  }
+
+  sub list { shift->select; }
+
+  package MyModel2::main::table2;
 
   use strict;
   use warnings;
