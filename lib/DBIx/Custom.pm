@@ -124,7 +124,7 @@ sub assign_clause {
   my ($self, $param, $opts) = @_;
   
   my $wrap = $opts->{wrap} || {};
-  my ($q, $p) = split //, $self->q('');
+  my ($q, $p) = $self->_qp;
   
   # Assign clause (performance is important)
   join(
@@ -155,7 +155,7 @@ sub column {
   # Column clause
   my @column;
   $columns ||= [];
-  push @column, $self->q($table) . "." . $self->q($_) .
+  push @column, $self->_tq($table) . "." . $self->q($_) .
     " as " . $self->q("${table}${separator}$_")
     for @$columns;
   
@@ -240,7 +240,7 @@ sub delete {
   # Delete statement
   my $sql = "delete ";
   $sql .= "$opt{prefix} " if defined $opt{prefix};
-  $sql .= "from " . $self->q($opt{table}) . " $w->{clause} ";
+  $sql .= "from " . $self->_tq($opt{table}) . " $w->{clause} ";
   
   # Execute query
   $opt{statement} = 'delete';
@@ -734,7 +734,7 @@ sub insert {
   # Insert statement
   my $sql = "insert ";
   $sql .= "$opt{prefix} " if defined $opt{prefix};
-  $sql .= "into " . $self->q($opt{table}) . " ";
+  $sql .= "into " . $self->_tq($opt{table}) . " ";
   if ($opt{bulk_insert}) {
     $sql .= $self->_multi_values_clause($params, {wrap => $opt{wrap}}) . " ";
     my $new_param = {};
@@ -886,7 +886,7 @@ sub mycolumn {
   # Create column clause
   my @column;
   $columns ||= [];
-  push @column, $self->q($table) . "." . $self->q($_) . " as " . $self->q($_)
+  push @column, $self->_tq($table) . "." . $self->q($_) . " as " . $self->q($_)
     for @$columns;
   
   return join (', ', @column);
@@ -932,8 +932,10 @@ sub order {
   return DBIx::Custom::Order->new(dbi => $self, @_);
 }
 
-sub q {
-  my ($self, $value, $quotemeta) = @_;
+sub q { shift->_tq($_[0], $_[1], whole => 1) }
+
+sub _tq {
+  my ($self, $value, $quotemeta, %opt) = @_;
   
   my $quote = $self->{reserved_word_quote}
     || $self->{quote} || $self->quote || '';
@@ -950,12 +952,34 @@ sub q {
     $p = quotemeta($p);
   }
   
-  if ($value =~ /\./) {
+  if ($opt{whole}) { return "$q$value$p" }
+  else {
     my @values = split /\./, $value;
+    push @values, '' unless @values;
     for my $v (@values) { $v = "$q$v$p" }
     return join '.', @values;
   }
-  else { return "$q$value$p" }
+}
+
+sub _qp {
+  my ($self, %opt) = @_;
+
+  my $quote = $self->{reserved_word_quote}
+    || $self->{quote} || $self->quote || '';
+  
+  my $q = substr($quote, 0, 1) || '';
+  my $p;
+  if (defined $quote && length $quote > 1) {
+    $p = substr($quote, 1, 1);
+  }
+  else { $p = $q }
+  
+  if ($opt{quotemeta}) {
+    $q = quotemeta($q);
+    $p = quotemeta($p);
+  }
+  
+  return ($q, $p);
 }
 
 sub register_filter {
@@ -1032,11 +1056,11 @@ sub select {
   if ($opt{relation}) {
     my $found = {};
     for my $table (@$tables) {
-      $sql .= $self->q($table) . ', ' unless $found->{$table};
+      $sql .= $self->_tq($table) . ', ' unless $found->{$table};
       $found->{$table} = 1;
     }
   }
-  else { $sql .= $self->q($tables->[-1] || '') . ' ' }
+  else { $sql .= $self->_tq($tables->[-1] || '') . ' ' }
   $sql =~ s/, $/ /;
 
   # Add tables in parameter
@@ -1234,7 +1258,7 @@ sub update {
   # Update statement
   my $sql = "update ";
   $sql .= "$opt{prefix} " if defined $opt{prefix};
-  $sql .= $self->q($opt{table}) . " set $assign_clause $w->{clause} ";
+  $sql .= $self->_tq($opt{table}) . " set $assign_clause $w->{clause} ";
   
   # Execute query
   $opt{statement} = 'update';
@@ -1280,7 +1304,7 @@ sub values_clause {
   my $wrap = $opts->{wrap} || {};
   
   # Create insert parameter tag
-  my ($q, $p) = split //, $self->q('');
+  my ($q, $p) = $self->_qp;
   
   # values clause(performance is important)
   '(' .
@@ -1306,7 +1330,7 @@ sub _multi_values_clause {
   my $wrap = $opts->{wrap} || {};
   
   # Create insert parameter tag
-  my ($q, $p) = split //, $self->q('');
+  my ($q, $p) = $self->_qp;
   
   # Multi values clause
   my $clause = '(' . join(', ', map { "$q$_$p" } sort keys %{$params->[0]}) . ') values ';
@@ -1664,12 +1688,15 @@ sub _search_tables {
   
   # Search tables
   my $tables = [];
-  my $safety_character = $self->{safety_character};
-  my $q = $self->_quote;
-  my $quoted_safety_character_re = $self->q("?([$safety_character]+)", 1);
-  my $table_re = $q ? qr/(?:^|[^$safety_character])${quoted_safety_character_re}?\./
-    : qr/(?:^|[^$safety_character])([$safety_character]+)\./;
-  while ($source =~ /$table_re/g) { push @$tables, $1 }
+  my ($q, $p) = $self->_qp(quotemeta => 1);
+  $source =~ s/$q//g;
+  $source =~ s/$p//g;
+  my $c = $self->safety_character;
+  
+  while ($source =~ /((?:[$c]+?\.[$c]+?)|(?:[$c]+?))\.[$c]+/g) {
+    $DB::single = 1;
+    push @$tables, $1;
+  }
   return $tables;
 }
 
@@ -1688,13 +1715,13 @@ sub _where_clause_and_param {
       $column_join .= $column;
       my $table;
       my $c;
-      if ($column =~ /(?:(.*?)\.)?(.*)/) {
+      if ($column =~ /(?:(.*)\.)?(.*)/) {
         $table = $1;
         $c = $2;
       }
       
       my $table_quote;
-      $table_quote = $self->q($table) if defined $table;
+      $table_quote = $self->_tq($table) if defined $table;
       my $column_quote = $self->q($c);
       $column_quote = $table_quote . '.' . $column_quote
         if defined $table_quote;
@@ -2362,8 +2389,8 @@ Result class, default to L<DBIx::Custom::Result>.
   my $safety_character = $dbi->safety_character;
   $dbi = $dbi->safety_character($character);
 
-Regex of safety character for table and column name, default to '\w'.
-Note that you don't have to specify like '[\w]'.
+Regex of safety character for table and column name, default to 'a-zA-Z_'.
+Note that you don't have to specify like '[a-zA-Z_]'.
 
 =head2 C<separator>
 
