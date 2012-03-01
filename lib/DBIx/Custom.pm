@@ -1212,8 +1212,11 @@ sub type_rule {
             $filter = $self->filters->{$fname};
           }
 
+          my $database = $column_info->{TABLE_SCHEM};
           $self->{"_$into"}{key}{$table}{$column} = $filter;
           $self->{"_$into"}{dot}{"$table.$column"} = $filter;
+          $self->{"_$into"}{key}{"$database.$table"}{$column} = $filter;
+          $self->{"_$into"}{dot}{"$database.$table.$column"} = $filter;
         }
       });
     }

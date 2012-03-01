@@ -41,6 +41,12 @@ sub colon2 {
   return $value;
 }
 
+sub table_only {
+  my $value = shift;
+  $value =~ s/^.+\.//;
+  return $value;
+}
+
 # Constant
 my $table1 = $dbi->table1;
 my $table2 = $dbi->table2;
@@ -4187,10 +4193,10 @@ $dbi->each_column(sub {
 $infos = [sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } @$infos];
 is_deeply($infos, 
   [
-    [$table1, $key1, $key1],
-    [$table1, $key2, $key2],
-    [$table2, $key1, $key1],
-    [$table2, $key3, $key3]
+    [table_only($table1), $key1, $key1],
+    [table_only($table1), $key2, $key2],
+    [table_only($table2), $key1, $key1],
+    [table_only($table2), $key3, $key3]
   ]
   
 );
@@ -4214,8 +4220,8 @@ $dbi->each_table(sub {
 $infos = [sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } @$infos];
 is_deeply($infos, 
   [
-    [$table1, $table1],
-    [$table2, $table2],
+    [table_only($table1), table_only($table1)],
+    [table_only($table2), table_only($table2)],
   ]
 );
 
@@ -4238,9 +4244,9 @@ $dbi->each_table(sub {
 $infos = [sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } @$infos];
 is_deeply($infos, 
   [
-    [$table1, $table1],
-    [$table2, $table2],
-    [$table3, $table3],
+    [table_only($table1), table_only($table1)],
+    [table_only($table2), table_only($table2)],
+    [table_only($table3), table_only($table3)],
   ]
 );
 
@@ -4709,11 +4715,11 @@ $dbi->execute("create table $table3 ($key3 int, $key4 int)");
 $dbi->insert({$key3 => 5, $key4 => 4}, table => $table3);
 $rows = $dbi->select(
   table => $table1,
-  column => "$table1.$key1 as ${table1}_$key1, $table2.$key1 as ${table2}_$key1, $key2, $key3",
+  column => "$table1.$key1 as " . u("${table1}_$key1") . ", $table2.$key1 as " . u("${table2}_$key1") . ", $key2, $key3",
   where   => {"$table1.$key2" => 2},
   join  => ["left outer join $table2 on $table1.$key1 = $table2.$key1"]
 )->all;
-is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}]);
+is_deeply($rows, [{u"${table1}_$key1" => 1, u"${table2}_$key1" => 1, $key2 => 2, $key3 => 5}]);
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
@@ -4728,14 +4734,14 @@ $dbi->execute("create table $table3 ($key3 int, $key4 int)");
 $dbi->insert({$key3 => 5, $key4 => 4}, table => $table3);
 $rows = $dbi->select(
   table => $table1,
-  column => "$table1.$key1 as ${table1}_$key1, $table2.$key1 as ${table2}_$key1, $key2, $key3",
+  column => "$table1.$key1 as " . u("${table1}_$key1") . ", $table2.$key1 as " . u("${table2}_$key1") . ", $key2, $key3",
   where   => {"$table1.$key2" => 2},
   join  => {
     clause => "left outer join $table2 on $table1.$key1 = $table2.$key1",
     table => [$table1, $table2]
   }
 )->all;
-is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}]);
+is_deeply($rows, [{u"${table1}_$key1" => 1, u"${table2}_$key1" => 1, $key2 => 2, $key3 => 5}]);
 
 $rows = $dbi->select(
   table => $table1,
@@ -4753,22 +4759,22 @@ $rows = $dbi->select(
 is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
 
 $rows = $dbi->select(
-  column => "$table3.$key4 as ${table3}__$key4",
+  column => "$table3.$key4 as " . u2("${table3}__$key4"),
   table => $table1,
   where   => {"$table1.$key1" => 1},
   join  => ["left outer join $table2 on $table1.$key1 = $table2.$key1",
             "left outer join $table3 on $table2.$key3 = $table3.$key3"]
 )->all;
-is_deeply($rows, [{"${table3}__$key4" => 4}]);
+is_deeply($rows, [{u2"${table3}__$key4" => 4}]);
 
 $rows = $dbi->select(
-  column => "$table1.$key1 as ${table1}__$key1",
+  column => "$table1.$key1 as " . u2("${table1}__$key1"),
   table => $table1,
   where   => {"$table3.$key4" => 4},
   join  => ["left outer join $table2 on $table1.$key1 = $table2.$key1",
             "left outer join $table3 on $table2.$key3 = $table3.$key3"]
 )->all;
-is_deeply($rows, [{"${table1}__$key1" => 1}]);
+is_deeply($rows, [{u2"${table1}__$key1" => 1}]);
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
