@@ -23,6 +23,18 @@ sub u($) {
   return $value;
 }
 
+sub u2($) {
+  my $value = shift;
+  $value =~ s/\./__/g;
+  return $value;
+}
+
+sub hy($) {
+  my $value = shift;
+  $value =~ s/\./-/g;
+  return $value;
+}
+
 # Constant
 my $table1 = $dbi->table1;
 my $table2 = $dbi->table2;
@@ -52,6 +64,7 @@ my $date_typename = $dbi->date_typename;
 my $datetime_typename = $dbi->datetime_typename;
 my $date_datatype = $dbi->date_datatype;
 my $datetime_datatype = $dbi->datetime_datatype;
+my $setup_model_args = $dbi->can('setup_model_args') ? $dbi->setup_model_args : [];
 
 # Variables
 my $builder;
@@ -2479,7 +2492,7 @@ eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
 $dbi->execute($create_table2);
 $dbi->separator('__');
-$dbi->setup_model;
+$dbi->setup_model(@$setup_model_args);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
 $model = $dbi->model($table1);
@@ -2488,7 +2501,7 @@ $result = $model->select(
   where => {"$table1.$key1" => 1}
 );
 is_deeply($result->one,
-        {$key1 => 1, $key2 => 2, "${table2}__$key1" => 1, "${table2}__$key3" => 3});
+        {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
 
 test 'values_clause';
 $dbi = DBIx::Custom->connect;
@@ -2522,7 +2535,7 @@ eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
 $dbi->execute($create_table2);
-$dbi->setup_model;
+$dbi->setup_model(@$setup_model_args);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
 $model = $dbi->model($table1);
@@ -2599,23 +2612,23 @@ $dbi->insert({$key1 => 1, $key3 => 4}, table => $table2);
 $dbi->insert({$key1 => 2, $key3 => 5}, table => $table2);
 $rows = $dbi->select(
   table => $table1,
-  column => "$table1.$key1 as ${table1}_$key1, $key2, $key3",
+  column => "$table1.$key1 as " . u("${table1}_$key1") . ", $key2, $key3",
   where   => {"$table1.$key2" => 3},
   join  => ["inner join (select * from $table2 where {= $table2.$key3})" . 
-            " $table2 on $table1.$key1 = $table2.$key1"],
+            " \"$table2\" on $table1.$key1 = \"$table2\".$key1"],
   param => {"$table2.$key3" => 5}
 )->all;
-is_deeply($rows, [{"${table1}_$key1" => 2, $key2 => 3, $key3 => 5}]);
+is_deeply($rows, [{u"${table1}_$key1" => 2, $key2 => 3, $key3 => 5}]);
 
 $rows = $dbi->select(
   table => $table1,
-  column => "$table1.$key1 as ${table1}_$key1, $key2, $key3",
+  column => "$table1.$key1 as " . u("${table1}_$key1") . ", $key2, $key3",
   where   => {"$table1.$key2" => 3},
   join  => "inner join (select * from $table2 where {= $table2.$key3})" . 
-           " $table2 on $table1.$key1 = $table2.$key1",
+           " \"$table2\" on $table1.$key1 = \"$table2\".$key1",
   param => {"$table2.$key3" => 5}
 )->all;
-is_deeply($rows, [{"${table1}_$key1" => 2, $key2 => 3, $key3 => 5}]);
+is_deeply($rows, [{u"${table1}_$key1" => 2, $key2 => 3, $key3 => 5}]);
 
 test 'select() string where';
 $dbi = DBIx::Custom->connect;
@@ -2981,7 +2994,7 @@ eval { $dbi->execute("drop table $table1") };
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table1);
 $dbi->execute($create_table2);
-$dbi->setup_model;
+$dbi->setup_model(@$setup_model_args);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
 $model = $dbi->model($table1);
@@ -3017,7 +3030,7 @@ $dbi->create_model(
 $model2 = $dbi->create_model(
   table => $table2,
 );
-$dbi->setup_model;
+$dbi->setup_model(@$setup_model_args);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
 $model = $dbi->model($table1);
@@ -3042,7 +3055,7 @@ $result = $model->select(
   where => {"$table1.$key1" => 1}
 );
 is_deeply($result->one,
-        {$key1 => 1, $key2 => 2, "${table2}__$key1" => 1, "${table2}__$key3" => 3});
+        {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
 is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
 
 $dbi->separator('-');
@@ -3055,7 +3068,7 @@ $result = $model->select(
   where => {"$table1.$key1" => 1}
 );
 is_deeply($result->one,
-  {$key1 => 1, $key2 => 2, "$table2-$key1" => 1, "$table2-$key3" => 3});
+  {$key1 => 1, $key2 => 2, hy"$table2-$key1" => 1, hy"$table2-$key3" => 3});
 is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
 
 
@@ -3074,7 +3087,7 @@ $dbi->create_model(
   ],
   primary_key => [$key1],
 );
-$dbi->setup_model;
+$dbi->setup_model(@$setup_model_args);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $model = $dbi->model($table1);
 $result = $model->select(column => $key1);
@@ -3859,7 +3872,7 @@ test 'dbi method from model';
 $dbi = MyDBI9->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
-$dbi->setup_model;
+$dbi->setup_model(@$setup_model_args);
 $model = $dbi->model($table1);
 eval{$model->execute("select * from $table1")};
 ok(!$@);
@@ -3871,7 +3884,7 @@ eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table2);
-$dbi->setup_model;
+$dbi->setup_model(@$setup_model_args);
 $dbi->execute("insert into $table1 ($key1, $key2) values (1, 2)");
 $dbi->execute("insert into $table2 ($key1, $key3) values (1, 4)");
 $model = $dbi->model($table1);
@@ -3928,7 +3941,7 @@ $dbi->create_model(
     $key1 => {in => sub { uc $_[0] }}
   ]
 );
-$dbi->setup_model;
+$dbi->setup_model(@$setup_model_args);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
 $model = $dbi->model($table1);
@@ -4113,7 +4126,7 @@ eval { $dbi->execute("drop table $table2") };
 
 $dbi->execute($create_table1);
 $dbi->execute($create_table2);
-$dbi->setup_model;
+$dbi->setup_model(@$setup_model_args);
 is_deeply([sort @{$dbi->model($table1)->columns}], [$key1, $key2]);
 is_deeply([sort @{$dbi->model($table2)->columns}], [$key1, $key3]);
 

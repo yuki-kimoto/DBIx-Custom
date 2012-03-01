@@ -153,13 +153,14 @@ sub column {
   my $separator = $self->separator;
   
   # . is replaced
-  $table =~ s/\./$separator/g;
+  my $t = $table;
+  $t =~ s/\./$separator/g;
   
   # Column clause
   my @column;
   $columns ||= [];
   push @column, $self->_tq($table) . "." . $self->q($_) .
-    " as " . $self->q("${table}${separator}$_")
+    " as " . $self->q("${t}${separator}$_")
     for @$columns;
   
   return join (', ', @column);
@@ -290,7 +291,7 @@ sub create_model {
 
 sub each_column {
   my ($self, $cb, %options) = @_;
-
+  
   my $user_column_info = $self->user_column_info;
   
   if ($user_column_info) {
@@ -790,7 +791,6 @@ sub include_model {
       if $@;
     
     # Search model modules
-    $DB::single = 1;
     my $path = $INC{"$name_space.pm"};
     $path =~ s/\.pm$//;
     opendir my $dh, $path
@@ -1113,12 +1113,16 @@ sub select {
 }
 
 sub setup_model {
-  my $self = shift;
+  my ($self, %opt) = @_;
   
   # Setup model
   $self->each_column(
     sub {
       my ($self, $table, $column, $column_info) = @_;
+      my $database = $column_info->{TABLE_SCHEM};
+      return if exists $opt{database} && $opt{database} ne $database;
+      
+      $table = "$database.$table" if exists $opt{prefix};
       if (my $model = $self->models->{$table}) {
         push @{$model->columns}, $column;
       }
@@ -1656,7 +1660,7 @@ sub _push_join {
       
       my @j_clauses = reverse split /\s(and|on)\s/, $j_clause;
       my $c = $self->{safety_character};
-      my $join_re = qr/([$c]+)\.[$c]+[^$c].*?([$c]+)\.[$c]+/sm;
+      my $join_re = qr/((?:[$c]+?\.[$c]+?)|(?:[$c]+?))\.[$c]+[^$c].*?((?:[$c]+?\.[$c]+?)|(?:[$c]+?))\.[$c]+/sm;
       for my $clause (@j_clauses) {
         if ($clause =~ $join_re) {
           $table1 = $1;
@@ -3404,9 +3408,16 @@ See also L<DBIx::Custom::Where> to know how to create where clause.
 =head2 C<setup_model>
 
   $dbi->setup_model;
+  $dbi->setup_model(database => 'main');
+  $dbi->setup_model(database => 'main', prefix => 1);
 
 Setup all model objects.
 C<columns> of model object is automatically set, parsing database information.
+
+If C<database> option is specified, only the database is searched.
+
+If C<prefix> option is specified, Target model is qualified by dabtabase name
+like C<main.book>.
 
 =head2 C<type_rule>
 

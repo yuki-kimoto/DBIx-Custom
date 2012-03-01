@@ -39,6 +39,7 @@ use DBIx::Custom;
   has key8 => $key8;
   has key9 => $key9;
   has key10 => $key10;
+  has setup_model_args => sub { [database => 'main', prefix => 1] };
   
   my $date_typename = 'Date';
   my $datetime_typename = 'Datetime';
