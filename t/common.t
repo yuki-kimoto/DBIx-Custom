@@ -16,6 +16,13 @@ plan 'no_plan';
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 sub test { print "# $_[0]\n" }
 
+# Dot to under score
+sub u($) {
+  my $value = shift;
+  $value =~ s/\./_/g;
+  return $value;
+}
+
 # Constant
 my $table1 = $dbi->table1;
 my $table2 = $dbi->table2;
@@ -1321,18 +1328,19 @@ $dbi->insert({$key1 => 1, $key3 => 5}, table => $table2);
 $DB::single = 1;
 $rows = $dbi->select(
   table => [$table1, $table2],
-  column => "$table1.$key1 as ${table1}_$key1, $table2.$key1 as ${table2}_$key1, $key2, $key3",
+  column => "$table1.$key1 as " . u("${table1}_$key1")
+    . ", $table2.$key1 as " . u("${table2}_$key1") . ", $key2, $key3",
   where   => {"$table1.$key2" => 2},
   relation  => {"$table1.$key1" => "$table2.$key1"}
 )->all;
-is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}], "relation : exists where");
+is_deeply($rows, [{u"${table1}_$key1" => 1, u"${table2}_$key1" => 1, $key2 => 2, $key3 => 5}], "relation : exists where");
 
 $rows = $dbi->select(
   table => [$table1, $table2],
-  column => ["$table1.$key1 as ${table1}_$key1", "${table2}.$key1 as ${table2}_$key1", $key2, $key3],
+  column => ["$table1.$key1 as " . u("${table1}_$key1") . ", ${table2}.$key1 as " . u("${table2}_$key1"), $key2, $key3],
   relation  => {"$table1.$key1" => "$table2.$key1"}
 )->all;
-is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}], "relation : no exists where");
+is_deeply($rows, [{u"${table1}_$key1" => 1, u"${table2}_$key1" => 1, $key2 => 2, $key3 => 5}], "relation : no exists where");
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };

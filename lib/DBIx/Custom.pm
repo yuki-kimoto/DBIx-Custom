@@ -152,6 +152,9 @@ sub column {
   # Separator
   my $separator = $self->separator;
   
+  # . is replaced
+  $table =~ s/\./$separator/g;
+  
   # Column clause
   my @column;
   $columns ||= [];
@@ -1694,7 +1697,6 @@ sub _search_tables {
   my $c = $self->safety_character;
   
   while ($source =~ /((?:[$c]+?\.[$c]+?)|(?:[$c]+?))\.[$c]+/g) {
-    $DB::single = 1;
     push @$tables, $1;
   }
   return $tables;
