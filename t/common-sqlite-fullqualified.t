@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use FindBin;
-use lib "$FindBin::Bin/common";
+use lib "$FindBin::Bin/common_fullqualified";
 $ENV{DBIX_CUSTOM_TEST_RUN} = 1;
 
 use DBIx::Custom;

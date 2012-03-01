@@ -4,6 +4,7 @@ use warnings;
 use FindBin;
 use File::Basename qw/basename fileparse/;
 use File::Copy 'copy';
+use File::Path 'mkpath';
 
 my $top = $FindBin::Bin;
 my $common = "$top/common";
@@ -31,14 +32,14 @@ for my $dir (@dirs) {
         local $/;
         <$fh>;
       };
+
+      $content =~ s/::table(\d)/::main::table$1/g;
+      $content =~ s/([^:])table(\d)/$1main.table$2/g;
       
-      $content =~ s/table(\d)/TABLE$1/g;
-      $content =~ s/TABLE2_alias/TABLE2_ALIAS/g;
-      $content =~ s/key(\d)/KEY$1/g;
-      
+      mkpath "$common_fullqualified/$base_dir/main";
       my $base_name = (fileparse($file, qr/\..+$/))[0];
-      $base_name = uc $base_name;
-      my $new_file = "$common_fullqualified/$base_dir/$base_name.pm";
+      $base_name = $base_name;
+      my $new_file = "$common_fullqualified/$base_dir/main/$base_name.pm";
       
       open my $fh, '>', $new_file
         or die "Can't write file: $!";

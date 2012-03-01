@@ -790,16 +790,32 @@ sub include_model {
       if $@;
     
     # Search model modules
+    $DB::single = 1;
     my $path = $INC{"$name_space.pm"};
     $path =~ s/\.pm$//;
     opendir my $dh, $path
       or croak qq{Can't open directory "$path": $! } . _subname
-    $model_infos = [];
-    while (my $module = readdir $dh) {
-      push @$model_infos, $module
-        if $module =~ s/\.pm$//;
+    my @modules;
+    while (my $file = readdir $dh) {
+      my $file_abs = "$path/$file";
+      if (-d $file_abs) {
+        next if $file eq '.' || $file eq '..';
+        opendir my $fq_dh, $file_abs
+          or croak qq{Can't open directory "$file_abs": $! } . _subname;
+        while (my $fq_file = readdir $fq_dh) {
+          my $fq_file_abs = "$file_abs/$fq_file";
+          push @modules, "${file}::$fq_file" if -f $fq_file_abs;
+        }
+        close $fq_dh;
+      }
+      elsif(-f $file_abs) { push @modules, $file }
     }
     close $dh;
+    
+    $model_infos = [];
+    for my $module (@modules) {
+      if ($module =~ s/\.pm$//) { push @$model_infos, $module }
+    }
   }
   
   # Include models
@@ -817,7 +833,12 @@ sub include_model {
       $model_name  ||= $model_class;
       $model_table ||= $model_name;
     }
-    else { $model_class = $model_name = $model_table = $model_info }
+    else {
+      $model_class = $model_name = $model_table = $model_info;
+      $model_name =~ s/::/./;
+      $model_table =~ s/::/./;
+    }
+   
     my $mclass = "${name_space}::$model_class";
     croak qq{"$mclass" is invalid class name } . _subname
       if $mclass =~ /[^\w:]/;
@@ -3099,6 +3120,14 @@ You can get model object by C<model>.
 
   my $book_model = $dbi->model('book');
   my $company_model = $dbi->model('company');
+
+You can include full-qualified table name like C<main.book>
+
+  lib / MyModel.pm
+      / MyModel / main / book.pm
+                       / company.pm
+
+  my $main_book = $self->model('main.book');
 
 See L<DBIx::Custom::Model> to know model features.
 
