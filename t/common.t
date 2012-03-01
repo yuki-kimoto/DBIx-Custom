@@ -1318,6 +1318,7 @@ is_deeply($rows, [{$key1 => 1, $key2 => 2}], "filter");
 eval { $dbi->execute("drop table $table2") };
 $dbi->execute($create_table2);
 $dbi->insert({$key1 => 1, $key3 => 5}, table => $table2);
+$DB::single = 1;
 $rows = $dbi->select(
   table => [$table1, $table2],
   column => "$table1.$key1 as ${table1}_$key1, $table2.$key1 as ${table2}_$key1, $key2, $key3",

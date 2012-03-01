@@ -937,8 +937,6 @@ sub q {
   
   my $quote = $self->{reserved_word_quote}
     || $self->{quote} || $self->quote || '';
-  return "$quote$value$quote"
-    if !$quotemeta && ($quote eq '`' || $quote eq '"');
   
   my $q = substr($quote, 0, 1) || '';
   my $p;
@@ -952,7 +950,12 @@ sub q {
     $p = quotemeta($p);
   }
   
-  return "$q$value$p";
+  if ($value =~ /\./) {
+    my @values = split /\./, $value;
+    for my $v (@values) { $v = "$q$v$p" }
+    return join '.', @values;
+  }
+  else { return "$q$value$p" }
 }
 
 sub register_filter {
@@ -2049,8 +2052,8 @@ sub _push_relation {
   if (keys %{$relation || {}}) {
     $$sql .= $need_where ? 'where ' : 'and ';
     for my $rcolumn (keys %$relation) {
-      my $table1 = (split (/\./, $rcolumn))[0];
-      my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
+      my ($table1) = $rcolumn =~ /^(.+)\.(.+)$/;
+      my ($table2) = $relation->{$rcolumn} =~ /^(.+)\.(.+)$/;
       push @$tables, ($table1, $table2);
       $$sql .= "$rcolumn = " . $relation->{$rcolumn} .  'and ';
     }
@@ -2064,8 +2067,8 @@ sub _add_relation_table {
   
   if (keys %{$relation || {}}) {
     for my $rcolumn (keys %$relation) {
-      my $table1 = (split (/\./, $rcolumn))[0];
-      my $table2 = (split (/\./, $relation->{$rcolumn}))[0];
+      my ($table1) = $rcolumn =~ /^(.+)\.(.+)$/;
+      my ($table2) = $relation->{$rcolumn} =~ /^(.+)\.(.+)$/;
       my $table1_exists;
       my $table2_exists;
       for my $table (@$tables) {
