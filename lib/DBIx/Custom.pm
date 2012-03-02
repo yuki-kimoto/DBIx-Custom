@@ -1126,11 +1126,16 @@ sub setup_model {
     sub {
       my ($self, $table, $column, $column_info) = @_;
       my $schema = $column_info->{TABLE_SCHEM};
-      return if exists $opt{schema} && $opt{schema} ne $schema;
       
-      $table = "$schema.$table" if exists $opt{prefix};
+      my $default_schema = $self->default_schema;
+      
       if (my $model = $self->models->{$table}) {
-        push @{$model->columns}, $column;
+        if (!defined $default_schema || $default_schema eq $schema) {
+          push @{$model->columns}, $column;
+        }
+      }
+      if (my $fullqualified_model = $self->models->{"$schema.$table"}) {
+        push @{$fullqualified_model->columns}, $column;
       }
     }
   );
@@ -1218,7 +1223,7 @@ sub type_rule {
           
           my $schema = $column_info->{TABLE_SCHEM};
           my $default_schema = $self->default_schema;
-          if (!defined $default_schema || (defined $default_schema && $default_schema eq $schema)) {
+          if (!defined $default_schema || $default_schema eq $schema) {
             $self->{"_$into"}{key}{$table}{$column} = $filter;
             $self->{"_$into"}{dot}{"$table.$column"} = $filter;
           }
@@ -3431,16 +3436,9 @@ See also L<DBIx::Custom::Where> to know how to create where clause.
 =head2 C<setup_model>
 
   $dbi->setup_model;
-  $dbi->setup_model(schema => 'main');
-  $dbi->setup_model(schema => 'main', prefix => 1);
 
 Setup all model objects.
 C<columns> of model object is automatically set, parsing database information.
-
-If C<database> option is specified, only the database is searched.
-
-If C<prefix> option is specified, Target model is qualified by dabtabase name
-like C<main.book>.
 
 =head2 C<type_rule>
 
