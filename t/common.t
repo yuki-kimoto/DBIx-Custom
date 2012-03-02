@@ -4785,11 +4785,11 @@ $dbi->execute($create_table2);
 $dbi->insert({$key1 => 1, $key3 => 5}, table => $table2);
 $rows = $dbi->select(
   table => $table1,
-  column => "${q}$table1$p.${q}$key1$p as ${q}${table1}_$key1$p, ${q}$table2$p.${q}$key1$p as ${q}${table2}_$key1$p, ${q}$key2$p, ${q}$key3$p",
+  column => $dbi->_tq($table1) . ".${q}$key1$p as ${q}" . u("${table1}_$key1") . "$p, " . $dbi->_tq($table2) . ".${q}$key1$p as ${q}" . u("${table2}_$key1") . "$p, ${q}$key2$p, ${q}$key3$p",
   where   => {"$table1.$key2" => 2},
-  join  => ["left outer join ${q}$table2$p on ${q}$table1$p.${q}$key1$p = ${q}$table2$p.${q}$key1$p"],
+  join  => ["left outer join " . $dbi->_tq($table2) . " on " . $dbi->_tq($table1) . ".${q}$key1$p = " . $dbi->_tq($table2) . ".${q}$key1$p"],
 )->all;
-is_deeply($rows, [{"${table1}_$key1" => 1, "${table2}_$key1" => 1, $key2 => 2, $key3 => 5}],
+is_deeply($rows, [{u"${table1}_$key1" => 1, u"${table2}_$key1" => 1, $key2 => 2, $key3 => 5}],
   'quote');
 
 
@@ -4806,13 +4806,14 @@ where t1.$key2 = (
 )
 ) $table3 on $table1.$key1 = $table3.$key1
 EOS
+$sql =~ s/\Qmain.table3/main_table3/g;
 $join = [$sql];
 $rows = $dbi->select(
   table => $table1,
-  column => "$table3.$key1 as ${table3}__$key1",
+  column => u($table3) . ".$key1 as " . u2("${table3}__$key1"),
   join  => $join
 )->all;
-is_deeply($rows, [{"${table3}__$key1" => 1}]);
+is_deeply($rows, [{u2"${table3}__$key1" => 1}]);
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
