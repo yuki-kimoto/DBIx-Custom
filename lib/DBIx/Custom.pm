@@ -317,7 +317,6 @@ sub each_column {
         eval {$sth_columns = $self->dbh->column_info(undef, $schema, $table, '%')};
         next if $@;
         while (my $column_info = $sth_columns->fetchrow_hashref) {
-          $DB::single = 1;
           my $column = $column_info->{COLUMN_NAME};
           $self->$cb($table, $column, $column_info);
         }

@@ -237,7 +237,38 @@ require MyDBI1;
   }
 
   sub list { shift->select; }
+
+  package MyModel2::dbix_custom::table1;
+
+  use strict;
+  use warnings;
+
+  use base 'MyModel2::Base1';
+
+  sub insert {
+    my ($self, $param) = @_;
+    
+    return $self->SUPER::insert($param);
+  }
+
+  sub list { shift->select; }
+
+  package MyModel2::dbix_custom::table2;
+
+  use strict;
+  use warnings;
+
+  use base 'MyModel2::Base1';
+
+  sub insert {
+    my ($self, $param) = @_;
+    
+    return $self->SUPER::insert($param);
+  }
+
+  sub list { shift->select; }
 }
+
 {
    package MyDBI5;
 
@@ -3930,6 +3961,7 @@ $dbi->setup_model(@$setup_model_args);
 $dbi->execute("insert into $table1 ($key1, $key2) values (1, 2)");
 $dbi->execute("insert into $table2 ($key1, $key3) values (1, 4)");
 $model = $dbi->model($table1);
+$DB::single = 1;
 $result = $model->select(
   column => [
     $model->column($table2, {alias => u$table2_alias})
@@ -4800,13 +4832,13 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $sql = <<"EOS";
 left outer join (
 select * from $table1 t1
-where t1.$key2 = (
-  select max(t2.$key2) from $table1 t2
-  where t1.$key1 = t2.$key1
-)
+  where t1.$key2 = (
+    select max(t2.$key2) from $table1 t2
+    where t1.$key1 = t2.$key1
+  )
 ) $table3 on $table1.$key1 = $table3.$key1
 EOS
-$sql =~ s/\Qmain.table3/main_table3/g;
+$sql =~ s/\Q.table3/_table3/g;
 $join = [$sql];
 $rows = $dbi->select(
   table => $table1,
