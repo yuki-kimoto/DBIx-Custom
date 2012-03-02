@@ -1,5 +1,6 @@
 0.24
-  - support full-qualified table name.
+  - support full-qualified table name
+  - added EXPERIMENTAL default_schema attribute
 0.23
   - DBIx::Custom::Mapper::map method support
     {value => '%<value>%'} syntax

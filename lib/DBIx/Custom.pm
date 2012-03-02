@@ -20,7 +20,7 @@ use Encode qw/encode encode_utf8 decode_utf8/;
 use Scalar::Util qw/weaken/;
 
 
-has [qw/connector dsn password quote user exclude_table user_table_info
+has [qw/connector dsn default_schema password quote user exclude_table user_table_info
      user_column_info safety_character/],
   async_conf => sub { {} },
   cache => 0,
@@ -304,7 +304,6 @@ sub each_column {
     $self->each_table(sub {
       my ($dbi, $table, $table_info) = @_;
       my $schema = $table_info->{TABLE_SCHEM};
-      
       $tables->{$schema}{$table}++;
     });
 
@@ -317,7 +316,6 @@ sub each_column {
         eval {$sth_columns = $self->dbh->column_info(undef, $schema, $table, '%')};
         next if $@;
         while (my $column_info = $sth_columns->fetchrow_hashref) {
-          $DB::single = 1;
           my $column = $column_info->{COLUMN_NAME};
           $self->$cb($table, $column, $column_info);
         }
@@ -1219,8 +1217,12 @@ sub type_rule {
           }
           
           my $schema = $column_info->{TABLE_SCHEM};
-          $self->{"_$into"}{key}{$table}{$column} = $filter;
-          $self->{"_$into"}{dot}{"$table.$column"} = $filter;
+          my $default_schema = $self->default_schema;
+          if (!defined $default_schema || (defined $default_schema && $default_schema eq $schema)) {
+            $self->{"_$into"}{key}{$table}{$column} = $filter;
+            $self->{"_$into"}{dot}{"$table.$column"} = $filter;
+          }
+          
           $self->{"_$into"}{key}{"$schema.$table"}{$column} = $filter;
           $self->{"_$into"}{dot}{"$schema.$table.$column"} = $filter;
         }
@@ -2310,6 +2312,16 @@ L<DBIx::Connector> is automatically set to C<connector>
   my $connector = $dbi->connector; # DBIx::Connector
 
 Note that L<DBIx::Connector> must be installed.
+
+=head2 C<default_schema> EXPERIMETNAL
+
+  my $default_schema = $self->default_schema;
+  $dbi = $self->default_schema('public');
+
+schema name. if database has multiple schema,
+type_rule->{into} filter don't work well.
+
+If you set C<default_schema>, type_rule->{into} filter work well.
 
 =head2 C<dsn>
 
