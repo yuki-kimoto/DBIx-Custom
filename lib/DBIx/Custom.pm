@@ -300,21 +300,27 @@ sub each_column {
   else {
     my $re = $self->exclude_table || $options{exclude_table};
     # Tables
-    my %tables;
-    $self->each_table(sub { $tables{$_[1]}++ });
+    my $tables = {};
+    $self->each_table(sub {
+      my ($dbi, $table, $table_info) = @_;
+      my $schema = $table_info->{TABLE_SCHEM};
+      
+      $tables->{$schema}{$table}++;
+    });
 
     # Iterate all tables
-    my @tables = sort keys %tables;
-    for (my $i = 0; $i < @tables; $i++) {
-      my $table = $tables[$i];
-      
-      # Iterate all columns
-      my $sth_columns;
-      eval {$sth_columns = $self->dbh->column_info(undef, undef, $table, '%')};
-      next if $@;
-      while (my $column_info = $sth_columns->fetchrow_hashref) {
-        my $column = $column_info->{COLUMN_NAME};
-        $self->$cb($table, $column, $column_info);
+    for my $schema (sort keys %$tables) {
+      for my $table (sort keys %{$tables->{$schema}}) {
+        
+        # Iterate all columns
+        my $sth_columns;
+        eval {$sth_columns = $self->dbh->column_info(undef, $schema, $table, '%')};
+        next if $@;
+        while (my $column_info = $sth_columns->fetchrow_hashref) {
+          $DB::single = 1;
+          my $column = $column_info->{COLUMN_NAME};
+          $self->$cb($table, $column, $column_info);
+        }
       }
     }
   }
@@ -1211,7 +1217,7 @@ sub type_rule {
             
             $filter = $self->filters->{$fname};
           }
-
+          
           my $database = $column_info->{TABLE_SCHEM};
           $self->{"_$into"}{key}{$table}{$column} = $filter;
           $self->{"_$into"}{dot}{"$table.$column"} = $filter;
