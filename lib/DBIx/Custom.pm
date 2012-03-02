@@ -1126,7 +1126,7 @@ sub setup_model {
     sub {
       my ($self, $table, $column, $column_info) = @_;
       my $schema = $column_info->{TABLE_SCHEM};
-      return if exists $opt{database} && $opt{database} ne $schema;
+      return if exists $opt{schema} && $opt{schema} ne $schema;
       
       $table = "$schema.$table" if exists $opt{prefix};
       if (my $model = $self->models->{$table}) {
@@ -3431,8 +3431,8 @@ See also L<DBIx::Custom::Where> to know how to create where clause.
 =head2 C<setup_model>
 
   $dbi->setup_model;
-  $dbi->setup_model(database => 'main');
-  $dbi->setup_model(database => 'main', prefix => 1);
+  $dbi->setup_model(schema => 'main');
+  $dbi->setup_model(schema => 'main', prefix => 1);
 
 Setup all model objects.
 C<columns> of model object is automatically set, parsing database information.
