@@ -317,6 +317,7 @@ sub each_column {
         eval {$sth_columns = $self->dbh->column_info(undef, $schema, $table, '%')};
         next if $@;
         while (my $column_info = $sth_columns->fetchrow_hashref) {
+          $DB::single = 1;
           my $column = $column_info->{COLUMN_NAME};
           $self->$cb($table, $column, $column_info);
         }
@@ -1126,10 +1127,10 @@ sub setup_model {
   $self->each_column(
     sub {
       my ($self, $table, $column, $column_info) = @_;
-      my $database = $column_info->{TABLE_SCHEM};
-      return if exists $opt{database} && $opt{database} ne $database;
+      my $schema = $column_info->{TABLE_SCHEM};
+      return if exists $opt{database} && $opt{database} ne $schema;
       
-      $table = "$database.$table" if exists $opt{prefix};
+      $table = "$schema.$table" if exists $opt{prefix};
       if (my $model = $self->models->{$table}) {
         push @{$model->columns}, $column;
       }
@@ -1217,11 +1218,11 @@ sub type_rule {
             $filter = $self->filters->{$fname};
           }
           
-          my $database = $column_info->{TABLE_SCHEM};
+          my $schema = $column_info->{TABLE_SCHEM};
           $self->{"_$into"}{key}{$table}{$column} = $filter;
           $self->{"_$into"}{dot}{"$table.$column"} = $filter;
-          $self->{"_$into"}{key}{"$database.$table"}{$column} = $filter;
-          $self->{"_$into"}{dot}{"$database.$table.$column"} = $filter;
+          $self->{"_$into"}{key}{"$schema.$table"}{$column} = $filter;
+          $self->{"_$into"}{dot}{"$schema.$table.$column"} = $filter;
         }
       });
     }

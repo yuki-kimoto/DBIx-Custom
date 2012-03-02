@@ -3961,7 +3961,6 @@ $dbi->setup_model(@$setup_model_args);
 $dbi->execute("insert into $table1 ($key1, $key2) values (1, 2)");
 $dbi->execute("insert into $table2 ($key1, $key3) values (1, 4)");
 $model = $dbi->model($table1);
-$DB::single = 1;
 $result = $model->select(
   column => [
     $model->column($table2, {alias => u$table2_alias})
