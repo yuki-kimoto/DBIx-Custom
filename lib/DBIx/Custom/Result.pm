@@ -2,21 +2,12 @@ package DBIx::Custom::Result;
 use Object::Simple -base;
 
 use Carp 'croak';
-use DBIx::Custom::Util qw/_array_to_hash _subname/;
+use DBIx::Custom::Util qw/_array_to_hash _subname _deprecate/;
 
 has [qw/dbi sth/],
   stash => sub { {} };
 
 *all = \&fetch_hash_all;
-
-sub column {
-  my $self = shift;
-  
-  my $column = [];
-  my $rows = $self->fetch_all;
-  push @$column, $_->[0] for @$rows;
-  return $column;
-}
 
 sub fetch {
   my $self = shift;
@@ -350,6 +341,15 @@ sub value {
   return $value;
 }
 
+sub values {
+  my $self = shift;
+  
+  my $values = [];
+  my $rows = $self->fetch_all;
+  push @$values, $_->[0] for @$rows;
+  return $values;
+}
+
 sub _cache {
   my $self = shift;
   $self->{_type_map} = {};
@@ -368,22 +368,34 @@ sub _cache {
 }
 
 # DEPRECATED!
+sub column {
+  my $self = shift;
+  
+  _deprecate('0.25', "DBIx::Custom::Result::column method is DEPRECATED. "
+    . "use values method instead");
+  
+  return $self->values(@_);
+}
+
+# DEPRECATED!
 sub fetch_hash_first {
   my $self = shift;
-  warn "DBIx::Custom::Result::fetch_hash_first is DEPRECATED! use fetch_hash_one instead";
+  _deprecate('0.24', "DBIx::Custom::Result::fetch_hash_first is DEPRECATED! "
+    . "use fetch_hash_one instead");
   return $self->fetch_hash_one(@_);
 }
 
 # DEPRECATED!
 sub fetch_first {
   my $self = shift;
-  warn "DBIx::Custom::Result::fetch_first is DEPRECATED! use fetch_one instead";
+  _deprecate('0.24', "DBIx::Custom::Result::fetch_first is DEPRECATED! "
+    . " use fetch_one instead");
   return $self->fetch_one(@_);
 }
 
 # DEPRECATED!
 sub filter_off {
-  warn "filter_off method is DEPRECATED!";
+  _deprecate('0.24', "filter_off method is DEPRECATED!");
   my $self = shift;
   $self->{filter_off} = 1;
   return $self;
@@ -391,7 +403,7 @@ sub filter_off {
 
 # DEPRECATED!
 sub filter_on {
-  warn "filter_on method is DEPRECATED!";
+  _deprecated('0.24', "filter_on method is DEPRECATED!");
   my $self = shift;
   $self->{filter_off} = 0;
   return $self;
@@ -399,7 +411,7 @@ sub filter_on {
 
 # DEPRECATED!
 sub end_filter {
-  warn "end_filter method is DEPRECATED!";
+  _deprecate('0.24', "end_filter method is DEPRECATED!");
   my $self = shift;
   if (@_) {
     my $end_filter = {};
@@ -427,21 +439,21 @@ sub end_filter {
 }
 # DEPRECATED!
 sub remove_end_filter {
-  warn "remove_end_filter is DEPRECATED!";
+  _deprecate('0.24', "remove_end_filter is DEPRECATED!");
   my $self = shift;
   $self->{end_filter} = {};
   return $self;
 }
 # DEPRECATED!
 sub remove_filter {
-  warn "remove_filter is DEPRECATED!";
+  _deprecate('0.24', "remove_filter is DEPRECATED!");
   my $self = shift;
   $self->{filter} = {};
   return $self;
 }
 # DEPRECATED!
 sub default_filter {
-  warn "default_filter is DEPRECATED!";
+  _deprecate('0.24', "default_filter is DEPRECATED!");
   my $self = shift;
   if (@_) {
     my $fname = $_[0];
@@ -523,14 +535,6 @@ and implements the following new ones.
   my $rows = $result->all;
 
 Same as C<fetch_hash_all>.
-
-=head2 C<column>
-
-  my $column = $result->column;
-
-Get first column's all values.
-
-  my $names = $dbi->select('name', table => 'book')->column;
 
 =head2 C<fetch>
 
@@ -755,5 +759,13 @@ By default, type rule is on.
 Get first column's first value.
 
   my $count = $dbi->select('count(*)')->value;
+
+=head2 C<values>
+
+  my $values = $result->values;
+
+Get first column's values.
+
+  my $names = $dbi->select('name', table => 'book')->values;
 
 =cut

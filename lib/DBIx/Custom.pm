@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.24';
+our $VERSION = '0.25';
 
 use Carp 'croak';
 use DBI;
@@ -13,7 +13,7 @@ use DBIx::Custom::Where;
 use DBIx::Custom::Model;
 use DBIx::Custom::Tag;
 use DBIx::Custom::Order;
-use DBIx::Custom::Util qw/_array_to_hash _subname/;
+use DBIx::Custom::Util qw/_array_to_hash _subname _deprecate/;
 use DBIx::Custom::Mapper;
 use DBIx::Custom::NotExists;
 use Encode qw/encode encode_utf8 decode_utf8/;
@@ -230,7 +230,7 @@ sub dbh {
 
 sub delete {
   my ($self, %opt) = @_;
-  warn "delete method where_param option is DEPRECATED!"
+  _deprecate('0.24', "delete method where_param option is DEPRECATED!")
     if $opt{where_param};
   
   # Don't allow delete all rows
@@ -278,7 +278,7 @@ sub create_model {
       ? [%{$model->filter}]
       : $model->filter;
     $filter ||= [];
-    warn "DBIx::Custom::Model filter method is DEPRECATED!"
+    _deprecate('0.24', "DBIx::Custom::Model filter method is DEPRECATED!")
       if @$filter;
     $self->_apply_filter($model->table, @$filter);
   }
@@ -375,7 +375,7 @@ sub execute {
   }
   
   # Options
-  warn "sqlfilter option is DEPRECATED" if $opt{sqlfilter};
+  _deprecate('0.24', "sqlfilter option is DEPRECATED") if $opt{sqlfilter};
   $params ||= $opt{param} || {};
   my $tables = $opt{table} || [];
   $tables = [$tables] unless ref $tables eq 'ARRAY';
@@ -414,8 +414,9 @@ sub execute {
   my $query;
   if (ref $sql) {
     $query = $sql;
-    warn "execute method receiving query object as first parameter is DEPRECATED!" .
-      "because this is very buggy.";
+    _deprecate('0.24', "execute method receiving query " .
+      "object as first parameter is DEPRECATED!" .
+      "because this is very buggy.");
   }
   else {
     $query = $opt{reuse}->{$sql} if $opt{reuse};
@@ -456,7 +457,8 @@ sub execute {
   # Merge id to parameter
   if (defined $opt{id}) {
     my $statement = $query->{statement};
-    warn "execute method id option is DEPRECATED!" unless $statement;
+    _deprecate('0.24', "execute method id option is DEPRECATED!")
+      unless $statement;
     croak "execute id option must be specified with primary_key option"
       unless $opt{primary_key};
     $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key};
@@ -683,7 +685,8 @@ sub insert {
   # Options
   my $params = @_ % 2 ? shift : undef;
   my %opt = @_;
-  warn "insert method param option is DEPRECATED!" if $opt{param};
+  _deprecate('0.24', "insert method param option is DEPRECATED!")
+    if $opt{param};
   $params ||= delete $opt{param} || {};
   
   my $multi;
@@ -692,7 +695,7 @@ sub insert {
   
   # Timestamp(DEPRECATED!)
   if (!$multi && $opt{timestamp} && (my $insert_timestamp = $self->insert_timestamp)) {
-    warn "insert timestamp option is DEPRECATED! use ctime option";
+    _deprecate('0.24', "insert timestamp option is DEPRECATED! use ctime option");
     my $columns = $insert_timestamp->[0];
     $columns = [$columns] unless ref $columns eq 'ARRAY';
     my $value = $insert_timestamp->[1];
@@ -702,11 +705,11 @@ sub insert {
 
   # Created time and updated time
   my @timestamp_cleanup;
-  warn "insert method created_at option is DEPRECATED! "
-      . "use ctime option instead. " . _subname
+  _deprecate('0.24', "insert method created_at option is DEPRECATED! " .
+      "use ctime option instead. ")
     if $opt{created_at};
-  warn "insert method updated_at option is DEPRECATED! "
-      . "use mtime option instead. " . _subname
+  _deprecate('0.24', "insert method updated_at option is DEPRECATED! " .
+      "use mtime option instead. ")
     if $opt{updated_at};
   $opt{ctime} ||= $opt{created_at};
   $opt{mtime} ||= $opt{updated_at};
@@ -768,7 +771,7 @@ sub insert {
 sub insert_timestamp {
   my $self = shift;
   
-  warn "insert_timestamp method is DEPRECATED! use now attribute";
+  _deprecate('0.24', "insert_timestamp method is DEPRECATED! use now attribute");
   
   if (@_) {
     $self->{insert_timestamp} = [@_];
@@ -1037,12 +1040,12 @@ sub select {
   $opt{table} = $tables;
   $table_is_empty = 1 unless @$tables;
   my $where_param = $opt{where_param} || delete $opt{param} || {};
-  warn "select method where_param option is DEPRECATED!"
+  _deprecate('0.24', "select method where_param option is DEPRECATED!")
     if $opt{where_param};
   
   # Add relation tables(DEPRECATED!);
   if ($opt{relation}) {
-    warn "select() relation option is DEPRECATED!";
+    _deprecate('0.24', "select() relation option is DEPRECATED!");
     $self->_add_relation_table($tables, $opt{relation});
   }
   
@@ -1061,10 +1064,10 @@ sub select {
         $column = $self->column(%$column) if ref $column eq 'HASH';
       }
       elsif (ref $column eq 'ARRAY') {
-        warn "select column option [COLUMN => ALIAS] syntax is DEPRECATED!" .
-          "use q method to quote the value";
+        _deprecate('0.24', "select column option [COLUMN => ALIAS] syntax " .
+          "is DEPRECATED! use q method to quote the value");
         if (@$column == 3 && $column->[1] eq 'as') {
-          warn "[COLUMN, as => ALIAS] is DEPRECATED! use [COLUMN => ALIAS]";
+          _deprecate('0.24', "[COLUMN, as => ALIAS] is DEPRECATED! use [COLUMN => ALIAS]");
           splice @$column, 1, 1;
         }
         
@@ -1262,8 +1265,8 @@ sub update {
   # Options
   my $param = @_ % 2 ? shift : undef;
   my %opt = @_;
-  warn "update param option is DEPRECATED!" if $opt{param};
-  warn "update method where_param option is DEPRECATED!"
+  _deprecate('0.24', "update param option is DEPRECATED!") if $opt{param};
+  _deprecate('0.24', "update method where_param option is DEPRECATED!")
     if $opt{where_param};
   $param ||= $opt{param} || {};
   
@@ -1273,7 +1276,7 @@ sub update {
   
   # Timestamp(DEPRECATED!)
   if ($opt{timestamp} && (my $update_timestamp = $self->update_timestamp)) {
-    warn "update timestamp option is DEPRECATED! use mtime";
+    _deprecate('0.24', "update timestamp option is DEPRECATED! use mtime");
     my $columns = $update_timestamp->[0];
     $columns = [$columns] unless ref $columns eq 'ARRAY';
     my $value = $update_timestamp->[1];
@@ -1283,8 +1286,8 @@ sub update {
 
   # Created time and updated time
   my @timestamp_cleanup;
-  warn "update method update_at option is DEPRECATED! "
-      . "use mtime option instead " . _subname
+  _deprecate('0.24', "update method update_at option is DEPRECATED! " .
+      "use mtime option instead.")
     if $opt{updated_at};
   $opt{mtime} ||= $opt{updated_at};
   if (defined $opt{mtime}) {
@@ -1334,7 +1337,7 @@ sub update_or_insert {
 sub update_timestamp {
   my $self = shift;
   
-  warn "update_timestamp method is DEPRECATED! use now method";
+  _deprecate('0.24', "update_timestamp method is DEPRECATED! use now method");
   
   if (@_) {
     $self->{update_timestamp} = [@_];
@@ -1575,7 +1578,7 @@ sub _connect {
   
   # Attributes
   my $dsn = $self->data_source;
-  warn "data_source is DEPRECATED!\n"
+  _deprecate('0.24', "data_source is DEPRECATED!\n")
     if $dsn;
   $dsn ||= $self->dsn;
   croak qq{"dsn" must be specified } . _subname
@@ -1631,9 +1634,9 @@ sub _need_tables {
 sub _option {
   my $self = shift;
   my $option = {%{$self->dbi_options}, %{$self->dbi_option}, %{$self->option}};
-  warn "dbi_options is DEPRECATED! use option instead\n"
+  _deprecate('0.24', "dbi_options is DEPRECATED! use option instead\n")
     if keys %{$self->dbi_options};
-  warn "dbi_option is DEPRECATED! use option instead\n"
+  _deprecate('0.24', "dbi_option is DEPRECATED! use option instead\n")
     if keys %{$self->dbi_option};
   return $option;
 }
@@ -1887,15 +1890,15 @@ has filter_check  => 1;
 has 'reserved_word_quote';
 has dbi_option => sub { {} };
 has default_dbi_option => sub {
-  warn "default_dbi_option is DEPRECATED! use default_option instead";
+  _deprecate('0.24', "default_dbi_option is DEPRECATED! use default_option instead");
   return shift->default_option;
 };
 
 # DEPRECATED
 sub tag_parse {
  my $self = shift;
- warn "tag_parse is DEPRECATED! use \$ENV{DBIX_CUSTOM_TAG_PARSE} " .
-   "environment variable";
+ _deprecate('0.24', "tag_parse is DEPRECATED! use \$ENV{DBIX_CUSTOM_TAG_PARSE} " .
+   "environment variable");
   if (@_) {
     $self->{tag_parse} = $_[0];
     return $self;
@@ -1905,14 +1908,14 @@ sub tag_parse {
 
 # DEPRECATED!
 sub method {
-  warn "method is DEPRECATED! use helper instead";
+  _deprecate('0.24', "method is DEPRECATED! use helper instead");
   return shift->helper(@_);
 }
 
 # DEPRECATED!
 sub assign_param {
   my $self = shift;
-  warn "assing_param is DEPRECATED! use assign_clause instead";
+  _deprecate('0.24', "assing_param is DEPRECATED! use assign_clause instead");
   return $self->assign_clause(@_);
 }
 
@@ -1920,7 +1923,7 @@ sub assign_param {
 sub update_param {
   my ($self, $param, $opts) = @_;
   
-  warn "update_param is DEPRECATED! use assign_clause instead.";
+  _deprecate('0.24', "update_param is DEPRECATED! use assign_clause instead.");
   
   # Create update parameter tag
   my $tag = $self->assign_clause($param, $opts);
@@ -1931,7 +1934,7 @@ sub update_param {
 
 # DEPRECATED!
 sub create_query {
-  warn "create_query is DEPRECATED! use query option of each method";
+  _deprecate('0.24', "create_query is DEPRECATED! use query option of each method");
   shift->_create_query(@_);
 }
 
@@ -1939,7 +1942,7 @@ sub create_query {
 sub apply_filter {
   my $self = shift;
   
-  warn "apply_filter is DEPRECATED!";
+  _deprecate('0.24', "apply_filter is DEPRECATED!");
   return $self->_apply_filter(@_);
 }
 
@@ -1947,7 +1950,7 @@ sub apply_filter {
 sub select_at {
   my ($self, %opt) = @_;
 
-  warn "select_at is DEPRECATED! use select method id option instead";
+  _deprecate('0.24', "select_at is DEPRECATED! use select method id option instead");
 
   # Options
   my $primary_keys = delete $opt{primary_key};
@@ -1969,7 +1972,7 @@ sub select_at {
 sub delete_at {
   my ($self, %opt) = @_;
 
-  warn "delete_at is DEPRECATED! use delete method id option instead";
+  _deprecate('0.24', "delete_at is DEPRECATED! use delete method id option instead");
   
   # Options
   my $primary_keys = delete $opt{primary_key};
@@ -1985,7 +1988,7 @@ sub delete_at {
 sub update_at {
   my $self = shift;
 
-  warn "update_at is DEPRECATED! use update method id option instead";
+  _deprecate('0.24', "update_at is DEPRECATED! use update method id option instead");
   
   # Options
   my $param;
@@ -2006,7 +2009,7 @@ sub update_at {
 sub insert_at {
   my $self = shift;
   
-  warn "insert_at is DEPRECATED! use insert method id option instead";
+  _deprecate('0.24', "insert_at is DEPRECATED! use insert method id option instead");
   
   # Options
   my $param;
@@ -2029,7 +2032,7 @@ sub insert_at {
 sub register_tag {
   my $self = shift;
   
-  warn "register_tag is DEPRECATED!";
+  _deprecate('0.24', "register_tag is DEPRECATED!");
   
   # Merge tag
   my $tags = ref $_[0] eq 'HASH' ? $_[0] : {@_};
@@ -2041,7 +2044,7 @@ sub register_tag {
 # DEPRECATED!
 sub register_tag_processor {
   my $self = shift;
-  warn "register_tag_processor is DEPRECATED!";
+  _deprecate('0.24', "register_tag_processor is DEPRECATED!");
   # Merge tag
   my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
   $self->{_tags} = {%{$self->{_tags} || {}}, %{$tag_processors}};
@@ -2052,7 +2055,7 @@ sub register_tag_processor {
 sub default_bind_filter {
   my $self = shift;
   
-  warn "default_bind_filter is DEPRECATED!";
+  _deprecate('0.24', "default_bind_filter is DEPRECATED!");
   
   if (@_) {
     my $fname = $_[0];
@@ -2076,7 +2079,7 @@ sub default_bind_filter {
 sub default_fetch_filter {
   my $self = shift;
 
-  warn "default_fetch_filter is DEPRECATED!";
+  _deprecate('0.24', "default_fetch_filter is DEPRECATED!");
   
   if (@_) {
     my $fname = $_[0];
@@ -2100,21 +2103,21 @@ sub default_fetch_filter {
 # DEPRECATED!
 sub insert_param {
   my $self = shift;
-  warn "insert_param is DEPRECATED! use values_clause instead";
+  _deprecate('0.24', "insert_param is DEPRECATED! use values_clause instead");
   return $self->values_clause(@_);
 }
 
 # DEPRECATED!
 sub insert_param_tag {
-  warn "insert_param_tag is DEPRECATED! " .
-    "use insert_param instead!";
+  _deprecate('0.24', "insert_param_tag is DEPRECATED! " .
+    "use insert_param instead!");
   return shift->insert_param(@_);
 }
 
 # DEPRECATED!
 sub update_param_tag {
-  warn "update_param_tag is DEPRECATED! " .
-    "use update_param instead";
+  _deprecate('0.24', "update_param_tag is DEPRECATED! " .
+    "use update_param instead");
   return shift->update_param(@_);
 }
 # DEPRECATED!
@@ -3722,14 +3725,20 @@ executed SQL and bind values are printed to STDERR.
 
 DEBUG output encoding. Default to UTF-8.
 
-=head2 C<DBIX_CUSTOM_TAG_PARSE>
-
-If you set DBIX_CUSTOM_TAG_PARSE to 0, tag parsing is off.
-
 =head2 C<DBIX_CUSTOM_DISABLE_MODEL_EXECUTE>
 
 If you set DBIX_CUSTOM_DISABLE_MODEL_EXECUTE to 1,
 L<DBIx::Custom::Model> execute method call L<DBIx::Custom> execute.
+
+=head2 C<DBIX_CUSTOM_SUPPRESS_DEPRECATION>
+
+  $ENV{DBIX_CUSTOM_SUPPRESS_DEPRECATION} = '0.25';
+
+Suppress deprecation warnings before specified version.
+
+=head2 C<DBIX_CUSTOM_TAG_PARSE>
+
+If you set DBIX_CUSTOM_TAG_PARSE to 0, tag parsing is off.
 
 =head1 DEPRECATED FUNCTIONALITY
 
@@ -3834,6 +3843,7 @@ L<DBIx::Custom::Result>
   filter_check # will be removed at 2017/1/1
   
   # Methods
+  column (from 0.25) # will be removed at 2017/2/1
   fetch_first # will be removed at 2017/2/1
   fetch_hash_first # will be removed 2017/2/1
   filter_on # will be removed at 2017/1/1
@@ -3855,14 +3865,15 @@ L<DBIx::Custom::Order>
 
 =head1 BACKWARDS COMPATIBILITY POLICY
 
-If a functionality is DEPRECATED, you can know it by DEPRECATED warnings
-except for attribute method.
-You can check all DEPRECATED functionalities by document.
-DEPRECATED functionality is removed after five years,
-but if at least one person use the functionality and tell me that thing
+If a feature is DEPRECATED, you can know it by DEPRECATED warnings.
+DEPRECATED feature is removed after C<five years>,
+but if at least one person use the feature and tell me that thing
 I extend one year each time he tell me it.
 
-EXPERIMENTAL functionality will be changed without warnings.
+DEPRECATION warnings can be suppressed by C<DBIX_CUSTOM_SUPPRESS_DEPRECATION>
+environment variable.
+
+EXPERIMENTAL features will be changed without warnings.
 
 =head1 BUGS
 

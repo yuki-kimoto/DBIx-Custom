@@ -1,5 +1,7 @@
 package DBIx::Custom::Order;
 use Object::Simple -base;
+use DBIx::Custom::Util '_deprecate';
+
 use overload
   'bool'   => sub {1},
   '""'     => sub { shift->to_string },
@@ -13,8 +15,8 @@ sub prepend {
   
   for my $order (reverse @_) {
     if (ref $order eq 'ARRAY') {
-      warn "prepend method receiving array reference is DEPRECATED! " .
-           "use q method to quote column name.";
+      _deprecate('0.24', "prepend method receiving array reference is DEPRECATED! " .
+        "use q method to quote column name.");
       my $column = shift @$order;
       $column = $self->dbi->q($column) if defined $column;
       my $derection = shift @$order;

@@ -5,7 +5,7 @@ use warnings;
 
 use base 'Exporter';
 
-our @EXPORT_OK = qw/_array_to_hash _subname/;
+our @EXPORT_OK = qw/_array_to_hash _subname _deprecate/;
 
 sub _array_to_hash {
   my $array = shift;
@@ -28,6 +28,15 @@ sub _array_to_hash {
 }
 
 sub _subname { '(' . (caller 1)[3] . ')' }
+
+sub _deprecate {
+  my ($deprecated_version, $message) = @_;
+  
+  my $suppress_version = $ENV{DBIX_CUSTOM_SUPPRESS_DEPRECATION} || 0;
+  
+  warn "$message (Version: $deprecated_version) (" . (caller 1)[3] . ")\n"
+    if $suppress_version < $deprecated_version;
+}
 
 1;
 

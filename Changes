@@ -1,5 +1,5 @@
 0.25
-  - added DBIX_CUSTOM_SUPPRESS_DEPRECTION environment varaible
+  - added DBIX_CUSTOM_SUPPRESS_DEPRECATION environment varaible
     to suppress deprecation warnings
   - removed EXPERIMENTAL status from DBIx::Custom::Result::kv method
   - removed EXPERIMETNAL status from DBIx::Custom::Result::flat method

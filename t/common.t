@@ -5,6 +5,8 @@ use Encode qw/encode_utf8/;
 use FindBin;
 use Scalar::Util 'isweak';
 
+$ENV{DBIX_CUSTOM_SUPPRESS_DEPRECATION} = '0.25';
+
 my $dbi;
 
 plan skip_all => $ENV{DBIX_CUSTOM_SKIP_MESSAGE} || 'common.t is always skipped'
@@ -13,7 +15,6 @@ plan skip_all => $ENV{DBIX_CUSTOM_SKIP_MESSAGE} || 'common.t is always skipped'
 
 plan 'no_plan';
 
-$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 sub test { print "# $_[0]\n" }
 
 # Dot to under score
@@ -403,6 +404,7 @@ $rows = $result->fetch_hash_all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "all");
 
 is_deeply($dbi->select($key1, table => $table1)->column, [1, 3]);
+is_deeply($dbi->select($key1, table => $table1)->values, [1, 3]);
 
 is($dbi->select('count(*)', table => $table1)->value, 2);
 ok(!defined $dbi->select($key1, table => $table1, where => {$key1 => 10})->value);
@@ -4183,6 +4185,12 @@ $dbi = MyDBI1->connect;
 $model = $dbi->model($table1);
 $model->primary_key([$key1, $key2]);
 is_deeply($model->primary_key, [$key1, $key2]);
+
+test 'columns';
+$dbi = MyDBI1->connect;
+$model = $dbi->model($table1);
+$model->columns([$key1, $key2]);
+is_deeply($model->columns, [$key1, $key2]);
 
 test 'columns';
 $dbi = MyDBI1->connect;

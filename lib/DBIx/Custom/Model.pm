@@ -2,7 +2,7 @@ package DBIx::Custom::Model;
 use Object::Simple -base;
 
 use Carp 'croak';
-use DBIx::Custom::Util '_subname';
+use DBIx::Custom::Util qw/_subname _deprecate/;
 
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
@@ -93,11 +93,12 @@ sub execute {
       $self->dbi->execute(@_);
   }
   else {
-    warn "DBIx::Custom::Model execute method is DEPRECATED! " .
-     "use DBIx::Custom execute method. " .
-     "If you want to call DBIx::Custom execute method directory from model, " .
-     "set \$ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE} to 1 " .
-     "until DBIx::Custom::Model execute method is removed in the future." ;
+    _deprecate('0.24', "DBIx::Custom::Model execute method is DEPRECATED! " .
+      "use DBIx::Custom execute method. " .
+      "If you want to call DBIx::Custom execute method directory from model, " .
+      "set \$ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE} to 1 " .
+      "until DBIx::Custom::Model execute method is removed in the future." );
+    
     return $self->dbi->execute(
       shift,
       shift,
@@ -162,7 +163,7 @@ has 'updated_at';
 
 # DEPRECATED!
 sub method {
-  warn "method method is DEPRECATED! use helper instead";
+  _deprecate('0.24', "method method is DEPRECATED! use helper instead");
   return shift->helper(@_);
 }
 

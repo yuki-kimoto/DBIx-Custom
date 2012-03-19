@@ -2,7 +2,7 @@ package DBIx::Custom::Query;
 use Object::Simple -base;
 
 use Carp 'croak';
-use DBIx::Custom::Util '_subname';
+use DBIx::Custom::Util qw/_subname _deprecate/;
 
 has [qw/sth statement/],
   sql => '',
@@ -11,7 +11,7 @@ has [qw/sth statement/],
 # DEPRECATED!
 has 'default_filter';
 sub filters {
-  warn "DBIx::Custom::Query filters attribute method is DEPRECATED!";
+  _depredcate('0.24', "DBIx::Custom::Query filters attribute method is DEPRECATED!");
   my $self = shift;
   if (@_) {
     $self->{filters} = $_[0];
@@ -22,7 +22,7 @@ sub filters {
 
 # DEPRECATED!
 sub tables {
-  warn "DBIx::Custom::Query tables attribute method is DEPRECATED!";
+  _deprecate('0.24', "DBIx::Custom::Query tables attribute method is DEPRECATED!");
   my $self = shift;
   if (@_) {
     $self->{tables} = $_[0];
@@ -33,7 +33,7 @@ sub tables {
 
 #DEPRECATED!
 sub filter {
-  Carp::carp "DBIx::Custom::Query filter method is DEPRECATED!";
+  _deprecate('0.24', "DBIx::Custom::Query filter method is DEPRECATED!");
   my $self = shift;
   if (@_) {
     my $filter = {};

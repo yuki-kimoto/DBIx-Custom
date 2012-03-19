@@ -4,7 +4,7 @@ use Object::Simple -base;
 use DBIx::Custom::NotExists;
 
 use Carp 'croak';
-use DBIx::Custom::Util '_subname';
+use DBIx::Custom::Util qw/_subname _deprecate/;
 
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
@@ -43,13 +43,13 @@ sub map {
     }
     elsif (!ref $mapping) {
       $new_key = $mapping;
-      warn qq/map method's string value "$mapping" is DEPRECATED. / .
-           qq/use {key => ...} syntax instead/
+      _deprecate('0.24', qq/map method's string value "$mapping" is DEPRECATED. / .
+        qq/use {key => ...} syntax instead/);
     }
     elsif (ref $mapping eq 'CODE') {
       $value = $mapping;
-      warn qq/map method's code reference value "$mapping" is DEPRECATED. / .
-           qq/use {value => ...} syntax instead/
+      _deprecate('0.24', qq/map method's code reference value "$mapping" is DEPRECATED. / .
+        qq/use {value => ...} syntax instead/);
     }
     
     $new_key = $key unless defined $new_key;

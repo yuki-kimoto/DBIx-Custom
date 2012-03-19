@@ -5,7 +5,7 @@ use Object::Simple -base;
 
 use Carp 'croak';
 use DBIx::Custom::Query;
-use DBIx::Custom::Util '_subname';
+use DBIx::Custom::Util qw/_subname _deprecate/;
 
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
@@ -17,8 +17,8 @@ sub build_query {
 
   my $query = $self->_parse_tag($sql);
   my $tag_count = delete $query->{tag_count};
-  warn qq/Tag system such as {? name} is DEPRECATED! / .
-      qq/use parameter system such as :name instead/
+  _deprecate('0.24', qq/Tag system such as {? name} is DEPRECATED! / .
+      qq/use parameter system such as :name instead/)
     if $tag_count;
   my $query2 = $self->_parse_parameter($query->sql);
   $query->sql($query2->sql);
@@ -70,7 +70,7 @@ has tags => sub { {} };
 sub register_tag {
   my $self = shift;
   
-  warn "register_tag is DEPRECATED!";
+  _deprecate('0.24', "register_tag is DEPRECATED!");
   
   # Merge tag
   my $tags = ref $_[0] eq 'HASH' ? $_[0] : {@_};
@@ -260,7 +260,7 @@ has tag_processors => sub { {} };
 # DEPRECATED!
 sub register_tag_processor {
   my $self = shift;
-  warn "register_tag_processor is DEPRECATED!";
+  _deprecate('0.24', "register_tag_processor is DEPRECATED!");
   # Merge tag
   my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
   $self->tag_processors({%{$self->tag_processors}, %{$tag_processors}});
