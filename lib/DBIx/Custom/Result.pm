@@ -591,7 +591,7 @@ Set filter for column.
 You can use subroutine or filter name as filter.
 This filter is executed after C<type_rule> filter.
 
-=head2 C<flat> EXPERIMENTAL
+=head2 C<flat>
 
   my $flat = $result->flat;
 
@@ -614,7 +614,7 @@ You can create key-value pair easily.
 
   my %titles = $dbi->select(['id', 'title'])->flat;
 
-=head2 C<kv> EXPERIMENTAL
+=head2 C<kv>
 
   my $key_value = $result->kv;
   my $key_values = $result->kv(multi => 1);
