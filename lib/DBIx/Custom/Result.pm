@@ -597,18 +597,11 @@ This filter is executed after C<type_rule> filter.
 
 =head2 C<flat>
 
-  my $flat = $result->flat;
+  my @list = $result->flat;
 
-All value is flatten and added to one array reference.
+All values is added to flatten list.
   
-  my @flat = $dbi->select(['id', 'title'])->flat;
-
-If C<fetch_all> method return the following data
-
-  [
-    [1, 'Perl'],
-    [2, 'Ruby']
-  ]
+  my @list = $dbi->select(['id', 'title'])->flat;
 
 C<flat> method return the following data.
 
@@ -758,7 +751,11 @@ By default, type rule is on.
 
 Get first column's first value.
 
-  my $count = $dbi->select('count(*)')->value;
+  my $count = $dbi->select('count(*)', table => 'book')->value;
+
+This is almost same as the following one.
+
+  my $count = $dbi->select('count(*)')->fetch_one->[0];
 
 =head2 C<values>
 
@@ -766,6 +763,11 @@ Get first column's first value.
 
 Get first column's values.
 
-  my $names = $dbi->select('name', table => 'book')->values;
+  my $tables = $dbi->select('show tables')->values;
+
+This is same as the following one.
+
+  my $rows = $dbi->select('show tables')->fetch_all;
+  my $tables = [map { $_->[0] } @$rows];
 
 =cut
