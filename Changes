@@ -1,3 +1,5 @@
+0.26
+  - fixed bug that when id option's value is object, don't work.
 0.25
   - added DBIX_CUSTOM_SUPPRESS_DEPRECATION environment varaible
     to suppress deprecation warnings

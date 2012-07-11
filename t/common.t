@@ -2818,6 +2818,16 @@ is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
 is($dbi->select(table => $table1)->one->{$key3}, 3);
 
+$dbi->insert(
+  {$key3 => 3},
+  primary_key => [$key1, $key2], 
+  table => $table1,
+  id => [1, 2],
+);
+is($dbi->select(table => $table1)->one->{$key1}, 1);
+is($dbi->select(table => $table1)->one->{$key2}, 2);
+is($dbi->select(table => $table1)->one->{$key3}, 3);
+
 $dbi->delete_all(table => $table1);
 $dbi->insert(
   {$key2 => 2, $key3 => 3},
@@ -2828,6 +2838,19 @@ $dbi->insert(
 
 is($dbi->select(table => $table1)->one->{$key1}, 0);
 is($dbi->select(table => $table1)->one->{$key2}, 2);
+is($dbi->select(table => $table1)->one->{$key3}, 3);
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_2);
+$dbi->insert(
+  {$key3 => 3},
+  primary_key => $key1, 
+  table => $table1,
+  id => bless({value => 1}, 'AAAA'),
+  filter => {$key1 => sub { shift->{value} }}
+);
+is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key3}, 3);
 
 $dbi = DBIx::Custom->connect;
@@ -3868,10 +3891,10 @@ $dbi->register_tag(
 
 test 'Default tag Error case';
 eval{$builder->build_query("{= }")};
-like($@, qr/Column name must be specified in tag "{= }"/, "basic '=' : key not exist");
+like($@, qr/\QColumn name must be specified in tag "{= }"/, "basic '=' : key not exist");
 
 eval{$builder->build_query("{in }")};
-like($@, qr/Column name and count of values must be specified in tag "{in }"/, "in : key not exist");
+like($@, qr/\QColumn name and count of values must be specified in tag "{in }"/, "in : key not exist");
 
 eval{$builder->build_query("{in a}")};
 like($@, qr/\QColumn name and count of values must be specified in tag "{in }"/,
@@ -3904,7 +3927,7 @@ like($@, qr/unexpected "}"/, "error : 1");
 
 $source = "a {= {}";
 eval{$builder->build_query($source)};
-like($@, qr/unexpected "{"/, "error : 2");
+like($@, qr/\Qunexpected "{"/, "error : 2");
 
 test 'select() sqlfilter option';
 $dbi = DBIx::Custom->connect;

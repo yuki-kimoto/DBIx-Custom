@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.25';
+our $VERSION = '0.26';
 
 use Carp 'croak';
 use DBI;
@@ -461,8 +461,8 @@ sub execute {
       unless $statement;
     croak "execute id option must be specified with primary_key option"
       unless $opt{primary_key};
-    $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key};
-    $opt{id} = [$opt{id}] unless ref $opt{id};
+    $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key} eq 'ARRAY';
+    $opt{id} = [$opt{id}] unless ref $opt{id} eq 'ARRAY';
     for (my $i = 0; $i < @{$opt{id}}; $i++) {
       my $key = $opt{primary_key}->[$i];
       $key = "$main_table.$key" if $statement eq 'update' ||
@@ -732,8 +732,8 @@ sub insert {
   if (defined $opt{id} && !$multi) {
     croak "insert id option must be specified with primary_key option"
       unless $opt{primary_key};
-    $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key};
-    $opt{id} = [$opt{id}] unless ref $opt{id};
+    $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key} eq 'ARRAY';
+    $opt{id} = [$opt{id}] unless ref $opt{id} eq 'ARRAY';
     for (my $i = 0; $i < @{$opt{primary_key}}; $i++) {
       my $key = $opt{primary_key}->[$i];
       next if exists $params->[0]->{$key};
@@ -851,8 +851,8 @@ sub include_model {
     my $mclass = "${name_space}::$model_class";
     croak qq{"$mclass" is invalid class name } . _subname
       if $mclass =~ /[^\w:]/;
-    unless ($mclass->can('isa')) {
-      eval "use $mclass";
+    unless ($mclass->can('new')) {
+      eval "require $mclass";
       croak "$@ " . _subname if $@;
     }
     
@@ -1562,7 +1562,7 @@ sub _id_to_param {
   # Create parameter
   my $param = {};
   if (defined $id) {
-    $id = [$id] unless ref $id;
+    $id = [$id] unless ref $id eq 'ARRAY';
     for(my $i = 0; $i < @$id; $i++) {
       my $key = $primary_keys->[$i];
       $key = "$table." . $key if $table;
@@ -2016,7 +2016,7 @@ sub insert_at {
   $param = shift if @_ % 2;
   my %opt = @_;
   my $primary_key = delete $opt{primary_key};
-  $primary_key = [$primary_key] unless ref $primary_key;
+  $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
   my $where = delete $opt{where};
   my $p = delete $opt{param} || {};
   $param  ||= $p;
