@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.26';
+our $VERSION = '0.27';
 
 use Carp 'croak';
 use DBI;
@@ -2185,33 +2185,38 @@ DBIx::Custom - DBI extension to execute insert, update, delete, and select easil
   $dbi->delete(table  => 'book', where => {author => 'Ken'});
 
   # Select
-  my $result = $dbi->select(table  => 'book',
-    column => ['title', 'author'], where  => {author => 'Ken'});
+  #   select title, author from book where author = ?
+  my $result = $dbi->select(
+    ['title', 'author'],
+    table  => 'book',
+    where  => {author => 'Ken'}
+  );
 
   # Select, more complex
+  #   select book.title as book.title,
+  #     book.author as book.author,
+  #     comnapy.name as company.name
+  #   form book
+  #     left outer join company on book.company_id = company.id
+  #   where book.author = ?
+  #   order by id limit 0, 5
   my $result = $dbi->select(
-    table  => 'book',
-    column => [
+    [
       {book => [qw/title author/]},
       {company => ['name']}
     ],
+    table  => 'book',
     where  => {'book.author' => 'Ken'},
     join => ['left outer join company on book.company_id = company.id'],
-    append => 'order by id limit 5'
+    append => 'order by id limit 0, 5'
   );
   
-  # Fetch
-  while (my $row = $result->fetch) {
-      
-  }
+  # Get all rows or only one row
+  my $rows = $result->all;
+  my $row = $result->one;
   
-  # Fetch as hash
-  while (my $row = $result->fetch_hash) {
-      
-  }
-  
-  # Execute SQL with parameter.
-  $dbi->execute(
+  # Execute SQL.
+  my $result = $dbi->execute(
     "select id from book where author = :author and title like :title",
     {author => 'ken', title => '%Perl%'}
   );
@@ -2259,19 +2264,13 @@ Create C<order by> clause flexibly
 
 =back
 
-=head1 DOCUMENTATION
+=head1 DOCUMENTS
 
-L<DBIx::Custom::Guide> - How to use L<DBIx::Custom>
+L<DBIx::Custom Documents|https://github.com/yuki-kimoto/DBIx-Custom/wiki/DBIx::Custom-Documents>
 
-L<DBIx::Custom Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
-- Theare are various examples.
+L<DBIx::Custom API reference|http://search.cpan.org/~kimoto/DBIx-Custom/>
 
-Module documentations - 
-L<DBIx::Custom::Result>,
-L<DBIx::Custom::Query>,
-L<DBIx::Custom::Where>,
-L<DBIx::Custom::Model>,
-L<DBIx::Custom::Order>
+L<DBIx::Custom Examples|Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
 
 =head1 ATTRIBUTES
 
@@ -2939,9 +2938,9 @@ You must set C<table> option.
 
 =item C<table_alias>
 
-  table_alias => {user => 'worker'}
+  table_alias => {worker => 'user'} # {ALIAS => TABLE}
 
-Table alias. Key is real table name, value is alias table name.
+Table alias. Key is alias table name, value is real table name, .
 If you set C<table_alias>, you can enable C<into1> and C<into2> type rule
 on alias table name.
 

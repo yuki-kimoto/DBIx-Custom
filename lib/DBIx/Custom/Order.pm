@@ -51,7 +51,7 @@ sub to_string {
 
 =head1 NAME
 
-DBIx::Custom::Order - Order by
+DBIx::Custom::Order - Order by clause
 
 =head1 SYNOPSIS
 

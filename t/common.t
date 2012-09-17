@@ -4989,4 +4989,39 @@ $model->insert({$key1 => 1, $key3 => 3});
 is($model->count(id => 1), 1);
 is($model->count(where => {"$table2.$key3" => 3}), 1);
 
+test 'table_alias option';
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_type);
+$dbi->insert({$key1 => '2010-01-01'}, table => $table1);
+$dbi->user_column_info($user_column_info);
+$dbi->type_rule(
+  into1 => {
+    $date_typename => sub { '2010-' . $_[0] }
+  }
+);
+$result = $dbi->execute(
+  "select * from $table1 TABLE1_ALIAS where :TABLE1_ALIAS.${key1}{=}",
+  {"TABLE1_ALIAS.${key1}" => '01-01'},
+  table_alias => {TABLE1_ALIAS => $table1}
+);
+like($result->one->{$key1}, qr/^2010-01-01/);
+
+$dbi = DBIx::Custom->connect;
+eval { $dbi->execute("drop table $table1") };
+$dbi->execute($create_table1_type);
+$dbi->insert({$key1 => '2010-01-01'}, table => $table1);
+$dbi->user_column_info($user_column_info);
+$dbi->type_rule(
+  into2 => {
+    $date_typename => sub { '2010-' . $_[0] }
+  }
+);
+$result = $dbi->execute(
+  "select * from $table1 TABLE1_ALIAS where :TABLE1_ALIAS.${key1}{=}",
+  {"TABLE1_ALIAS.${key1}" => '01-01'},
+  table_alias => {TABLE1_ALIAS => $table1}
+);
+like($result->one->{$key1}, qr/^2010-01-01/);
+
 1;

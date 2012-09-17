@@ -171,7 +171,7 @@ sub method {
 
 =head1 NAME
 
-DBIx::Custom::Model - Model
+DBIx::Custom::Model - Model object
 
 =head1 SYNOPSIS
 

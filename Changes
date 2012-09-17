@@ -1,3 +1,5 @@
+0.27 (2012-09-17)
+  - fixed documentation miss about execute method's table_alias option.
 0.26
   - fixed bug that when id option's value is object, don't work.
 0.25

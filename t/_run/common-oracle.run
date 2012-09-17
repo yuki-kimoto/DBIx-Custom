@@ -55,4 +55,8 @@ XE =
     )
   )
 
+If "the password will expire within 7 days" is displayed on test,
+please change password
+
+  PASSWORD
 

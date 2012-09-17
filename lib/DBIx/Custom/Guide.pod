@@ -1,9 +1,0 @@
-=head1 NAME
-
-DBIx::Custom::Guide - DBIx::Custom Guide
-
-=head1 LINK
-
-Guide is moved to the following page.
-
-L<https://github.com/yuki-kimoto/DBIx-Custom/wiki/DBIx%3A%3ACustom-Guide>
