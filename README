@@ -1,15 +1,53 @@
-DBIx-Custom
+DBIx::Custom
 
-DBI interface, having hash parameter binding and filtering system
+  DBIx::Custom is Perl module to execute insert, update, delete, and
+  select easily.
+
+EXAMPLE
+
+  use DBIx::Custom;
+  
+  # Connect
+  my $dbi = DBIx::Custom->connect(dsn => "dbi:SQLite:dbname=$database");
+
+  # Insert 
+  $dbi->insert({title => 'Perl', author => 'Ken'}, table  => 'book');
+  
+  # Update 
+  $dbi->update({title => 'Perl', author => 'Ken'}, table  => 'book',
+    where  => {id => 5});
+  
+  # Delete
+  $dbi->delete(table  => 'book', where => {author => 'Ken'});
+
+  # Select
+  my $result = $dbi->select(table => 'book');
+  my $rows = $result->all;
 
 INSTALLATION
 
-cpan DBIx::Custom
+  cpan DBIx::Custom
+  
+FEATURES
 
-COPYRIGHT AND LICENCE
+  - Execute insert, update, delete, or select statement easily
+  - Create where clause flexibly
+  - Named place holder support
+  - Model support
+  - Connection manager support
+  - Choice your favorite relational database management system, MySQL,
+    SQLite, PostgreSQL, Oracle, Microsoft SQL Srver, Microsoft Access,
+    or anything,
+  - Filtering by data type or column name
+  - Create order by clause flexibly
 
-Copyright (C) 2009 Yuki Kimoto
+DOCUMENTS
 
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
-
+  DBIx::Custom Documents
+  https://github.com/yuki-kimoto/DBIx-Custom/wiki
+  
+  API reference
+  http://search.cpan.org/~kimoto/DBIx-Custom/
+  
+  CPAN
+  http://search.cpan.org/~kimoto/DBIx-Custom/lib/DBIx/Custom.pm

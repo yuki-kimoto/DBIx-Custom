@@ -2266,11 +2266,9 @@ Create C<order by> clause flexibly
 
 =head1 DOCUMENTS
 
-L<DBIx::Custom Documents|https://github.com/yuki-kimoto/DBIx-Custom/wiki/DBIx::Custom-Documents>
+L<DBIx::Custom Documents|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
 
 L<DBIx::Custom API reference|http://search.cpan.org/~kimoto/DBIx-Custom/>
-
-L<DBIx::Custom Examples|Wiki|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
 
 =head1 ATTRIBUTES
 
@@ -3876,7 +3874,7 @@ EXPERIMENTAL features will be changed without warnings.
 
 =head1 BUGS
 
-Please tell me bugs if found.
+Please tell me bugs if you find bug.
 
 C<< <kimoto.yuki at gmail.com> >>
 
