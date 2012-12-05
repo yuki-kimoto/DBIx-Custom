@@ -2264,6 +2264,10 @@ Create C<order by> clause flexibly
 
 =back
 
+=head1 WEB SITE
+
+L<DBIx::Custom - Perl O/R Mapper|http://dbix-custom.hateblo.jp>
+
 =head1 DOCUMENTS
 
 L<DBIx::Custom Documents|https://github.com/yuki-kimoto/DBIx-Custom/wiki>
