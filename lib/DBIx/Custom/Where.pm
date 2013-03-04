@@ -209,7 +209,7 @@ DBIx::Custom::Where - Where clause
 
 =head1 ATTRIBUTES
 
-=head2 C<clause>
+=head2 clause
 
   my $clause = $where->clause;
   $where = $where->clause(
@@ -224,7 +224,7 @@ If all parameter names is exists.
 
   where title = :title and ( date < :date or date > :date )
 
-=head2 C<param>
+=head2 param
 
   my $param = $where->param;
   $where = $where->param({
@@ -232,7 +232,7 @@ If all parameter names is exists.
     date => ['2010-11-11', '2011-03-05'],
   });
 
-=head2 C<dbi>
+=head2 dbi
 
   my $dbi = $where->dbi;
   $where = $where->dbi($dbi);
@@ -244,7 +244,7 @@ L<DBIx::Custom> object.
 L<DBIx::Custom::Where> inherits all methods from L<Object::Simple>
 and implements the following new ones.
 
-=head2 C<to_string>
+=head2 to_string
 
   $where->to_string;
 

@@ -62,14 +62,14 @@ DBIx::Custom::Order - Order by clause
   
 =head1 ATTRIBUTES
 
-=head2 C<dbi>
+=head2 dbi
 
   my $dbi = $order->dbi;
   $order = $order->dbi($dbi);
 
 L<DBIx::Custom> object.
 
-=head2 C<orders>
+=head2 orders
 
   my $orders = $result->orders;
   $result = $result->orders(\%orders);
@@ -81,13 +81,13 @@ Parts of order by clause
 L<DBIx::Custom::Result> inherits all methods from L<Object::Simple>
 and implements the following new ones.
 
-=head2 C<prepend>
+=head2 prepend
 
   $order->prepend('title', 'author desc');
 
 Prepend order parts to C<orders>.
 
-=head2 C<to_string>
+=head2 to_string
 
   my $order_by = $order->to_string;
 

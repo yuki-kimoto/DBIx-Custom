@@ -2276,7 +2276,7 @@ L<DBIx::Custom API reference|http://search.cpan.org/~kimoto/DBIx-Custom/>
 
 =head1 ATTRIBUTES
 
-=head2 C<async_conf> EXPERIMENTAL
+=head2 async_conf EXPERIMENTAL
 
   my $async_conf = $dbi->async_conf;
   $dbi = $dbi->async_conf($conf);
@@ -2292,7 +2292,7 @@ Setting when C<async> option is used.
 C<prepare_attr> is DBI's C<prepare> method second argument,
 C<fh> is callback that return file handle to watch.
 
-=head2 C<connector>
+=head2 connector
 
   my $connector = $dbi->connector;
   $dbi = $dbi->connector($connector);
@@ -2322,7 +2322,7 @@ L<DBIx::Connector> is automatically set to C<connector>
 
 Note that L<DBIx::Connector> must be installed.
 
-=head2 C<default_schema> EXPERIMETNAL
+=head2 default_schema EXPERIMETNAL
 
   my $default_schema = $self->default_schema;
   $dbi = $self->default_schema('public');
@@ -2332,14 +2332,14 @@ type_rule->{into} filter don't work well.
 
 If you set C<default_schema>, type_rule->{into} filter work well.
 
-=head2 C<dsn>
+=head2 dsn
 
   my $dsn = $dbi->dsn;
   $dbi = $dbi->dsn("DBI:mysql:database=dbname");
 
 Data source name, used when C<connect> method is executed.
 
-=head2 C<default_option>
+=head2 default_option
 
   my $default_option = $dbi->default_option;
   $dbi = $dbi->default_option($default_option);
@@ -2353,7 +2353,7 @@ default to the following values.
     AutoCommit => 1,
   }
 
-=head2 C<exclude_table>
+=head2 exclude_table
 
   my $exclude_table = $dbi->exclude_table;
   $dbi = $dbi->exclude_table(qr/pg_/);
@@ -2362,21 +2362,21 @@ Excluded table regex.
 C<each_column>, C<each_table>, C<type_rule>,
 and C<setup_model> methods ignore matching tables.
 
-=head2 C<filters>
+=head2 filters
 
   my $filters = $dbi->filters;
   $dbi = $dbi->filters(\%filters);
 
 Filters, registered by C<register_filter> method.
 
-=head2 C<last_sql>
+=head2 last_sql
 
   my $last_sql = $dbi->last_sql;
   $dbi = $dbi->last_sql($last_sql);
 
 Get last successed SQL executed by C<execute> method.
 
-=head2 C<now>
+=head2 now
 
   my $now = $dbi->now;
   $dbi = $dbi->now($now);
@@ -2395,14 +2395,14 @@ This return the time like C<2011-10-14 05:05:27>.
 This is used by C<insert> method's C<created_at> option and C<updated_at> option,
 and C<update> method's C<updated_at> option.
 
-=head2 C<models>
+=head2 models
 
   my $models = $dbi->models;
   $dbi = $dbi->models(\%models);
 
 Models, included by C<include_model> method.
 
-=head2 C<option>
+=head2 option
 
   my $option = $dbi->option;
   $dbi = $dbi->option($option);
@@ -2410,20 +2410,20 @@ Models, included by C<include_model> method.
 L<DBI> option, used when C<connect> method is executed.
 Each value in option override the value of C<default_option>.
 
-=head2 C<password>
+=head2 password
 
   my $password = $dbi->password;
   $dbi = $dbi->password('lkj&le`@s');
 
 Password, used when C<connect> method is executed.
 
-=head2 C<query_builder>
+=head2 query_builder
 
   my $builder = $dbi->query_builder;
 
 Creat query builder. This is L<DBIx::Custom::QueryBuilder>.
 
-=head2 C<quote>
+=head2 quote
 
   my quote = $dbi->quote;
   $dbi = $dbi->quote('"');
@@ -2436,14 +2436,14 @@ You can set quote pair.
 
   $dbi->quote('[]');
 
-=head2 C<result_class>
+=head2 result_class
 
   my $result_class = $dbi->result_class;
   $dbi = $dbi->result_class('DBIx::Custom::Result');
 
 Result class, default to L<DBIx::Custom::Result>.
 
-=head2 C<safety_character>
+=head2 safety_character
 
   my $safety_character = $dbi->safety_character;
   $dbi = $dbi->safety_character($character);
@@ -2451,7 +2451,7 @@ Result class, default to L<DBIx::Custom::Result>.
 Regex of safety character for table and column name, default to 'a-zA-Z_'.
 Note that you don't have to specify like '[a-zA-Z_]'.
 
-=head2 C<separator>
+=head2 separator
 
   my $separator = $dbi->separator;
   $dbi = $dbi->separator('-');
@@ -2462,7 +2462,7 @@ and C<select> method's column option.
 
 Default to C<.>.
 
-=head2 C<tag_parse>
+=head2 tag_parse
 
   my $tag_parse = $dbi->tag_parse(0);
   $dbi = $dbi->tag_parse;
@@ -2470,14 +2470,14 @@ Default to C<.>.
 Enable DEPRECATED tag parsing functionality, default to 1.
 If you want to disable tag parsing functionality, set to 0.
 
-=head2 C<user>
+=head2 user
 
   my $user = $dbi->user;
   $dbi = $dbi->user('Ken');
 
 User name, used when C<connect> method is executed.
 
-=head2 C<user_column_info>
+=head2 user_column_info
 
   my $user_column_info = $dbi->user_column_info;
   $dbi = $dbi->user_column_info($user_column_info);
@@ -2498,7 +2498,7 @@ Usually, you set return value of C<get_column_info>.
 If C<user_column_info> is set, C<each_column> use C<user_column_info>
 to find column info. this is very fast.
 
-=head2 C<user_table_info>
+=head2 user_table_info
 
   my $user_table_info = $dbi->user_table_info;
   $dbi = $dbi->user_table_info($user_table_info);
@@ -2524,21 +2524,21 @@ L<DBIx::Custom> inherits all methods from L<Object::Simple>
 and use all methods of L<DBI>
 and implements the following new ones.
 
-=head2 C<available_datatype>
+=head2 available_datatype
 
   print $dbi->available_datatype;
 
 Get available data types. You can use these data types
 in C<type rule>'s C<from1> and C<from2> section.
 
-=head2 C<available_typename>
+=head2 available_typename
 
   print $dbi->available_typename;
 
 Get available type names. You can use these type names in
 C<type_rule>'s C<into1> and C<into2> section.
 
-=head2 C<assign_clause>
+=head2 assign_clause
 
   my $assign_clause = $dbi->assign_clause({title => 'a', age => 2});
 
@@ -2550,7 +2550,7 @@ This is used to create update clause.
 
   "update book set " . $dbi->assign_clause({title => 'a', age => 2});
 
-=head2 C<async> EXPERIMENTAL
+=head2 async EXPERIMENTAL
 
   async => sub {
     my ($dbi, $result) = @_;
@@ -2600,7 +2600,7 @@ This is C<mysql> async access example.
 
   $cond->recv;
 
-=head2 C<column>
+=head2 column
 
   my $column = $dbi->column(book => ['author', 'title']);
 
@@ -2617,7 +2617,7 @@ You can change separator by C<separator> attribute.
   book.author as "book-author",
   book.title as "book-title"
   
-=head2 C<connect>
+=head2 connect
 
   my $dbi = DBIx::Custom->connect(
     dsn => "dbi:mysql:database=dbname",
@@ -2632,7 +2632,7 @@ L<DBIx::Custom> is a wrapper of L<DBI>.
 C<AutoCommit> and C<RaiseError> options are true, 
 and C<PrintError> option is false by default.
 
-=head2 C<count>
+=head2 count
 
   my $count = $dbi->count(table => 'book');
 
@@ -2640,7 +2640,7 @@ Get rows count.
 
 Options is same as C<select> method's ones.
 
-=head2 C<create_model>
+=head2 create_model
 
   my $model = $dbi->create_model(
     table => 'book',
@@ -2655,14 +2655,14 @@ the module is also used from C<model> method.
 
  $dbi->model('book')->select(...);
 
-=head2 C<dbh>
+=head2 dbh
 
   my $dbh = $dbi->dbh;
 
 Get L<DBI> database handle. if C<connector> is set, you can get
 database handle through C<connector> object.
 
-=head2 C<delete>
+=head2 delete
 
   $dbi->delete(table => 'book', where => {title => 'Perl'});
 
@@ -2715,14 +2715,14 @@ Same as C<select> method's C<where> option.
 
 =back
 
-=head2 C<delete_all>
+=head2 delete_all
 
   $dbi->delete_all(table => $table);
 
 Execute delete statement for all rows.
 Options is same as C<delete>.
 
-=head2 C<each_column>
+=head2 each_column
 
   $dbi->each_column(
     sub {
@@ -2749,7 +2749,7 @@ the following way.
   $dbi->user_column_info($column_info);
   $dbi->each_column(sub { ... });
 
-=head2 C<each_table>
+=head2 each_table
 
   $dbi->each_table(
     sub {
@@ -2772,7 +2772,7 @@ the following way.
   $dbi->user_table_info($table_info);
   $dbi->each_table(sub { ... });
 
-=head2 C<execute>
+=head2 execute
 
   my $result = $dbi->execute(
     "select * from book where title = :title and author like :author",
@@ -2966,7 +2966,7 @@ Turn C<into2> type rule off.
 
 =back
 
-=head2 C<get_column_info>
+=head2 get_column_info
 
   my $column_infos = $dbi->get_column_info(exclude_table => qr/^system_/);
 
@@ -2977,7 +2977,7 @@ get column infomation except for one which match C<exclude_table> pattern.
     {table => 'author', column => 'name' info => {...}}
   ]
 
-=head2 C<get_table_info>
+=head2 get_table_info
 
   my $table_infos = $dbi->get_table_info(exclude => qr/^system_/);
 
@@ -2990,7 +2990,7 @@ get table infomation except for one which match C<exclude> pattern.
 
 You can set this value to C<user_table_info>.
 
-=head2 C<helper>
+=head2 helper
 
   $dbi->helper(
     find_or_create   => sub {
@@ -3005,7 +3005,7 @@ Register helper. These helper is called directly from L<DBIx::Custom> object.
 
   $dbi->find_or_create;
 
-=head2 C<insert>
+=head2 insert
 
   $dbi->insert({title => 'Perl', author => 'Ken'}, table  => 'book');
 
@@ -3114,7 +3114,7 @@ is executed, the following SQL is executed.
 
 =over 4
 
-=head2 C<include_model>
+=head2 include_model
 
   $dbi->include_model('MyModel');
 
@@ -3167,7 +3167,7 @@ You can include full-qualified table name like C<main.book>
 
 See L<DBIx::Custom::Model> to know model features.
 
-=head2 C<like_value>
+=head2 like_value
 
   my $like_value = $dbi->like_value
 
@@ -3175,13 +3175,13 @@ Code reference which return a value for the like value.
 
   sub { "%$_[0]%" }
 
-=head2 C<mapper>
+=head2 mapper
 
   my $mapper = $dbi->mapper(param => $param);
 
 Create a new L<DBIx::Custom::Mapper> object.
 
-=head2 C<merge_param>
+=head2 merge_param
 
   my $param = $dbi->merge_param({key1 => 1}, {key1 => 1, key2 => 2});
 
@@ -3191,14 +3191,14 @@ Merge parameters. The following new parameter is created.
 
 If same keys contains, the value is converted to array reference.
 
-=head2 C<model>
+=head2 model
 
   my $model = $dbi->model('book');
 
 Get a L<DBIx::Custom::Model> object
 create by C<create_model> or C<include_model>
 
-=head2 C<mycolumn>
+=head2 mycolumn
 
   my $column = $dbi->mycolumn(book => ['author', 'title']);
 
@@ -3207,7 +3207,7 @@ Create column clause for myself. The follwoing column clause is created.
   book.author as author,
   book.title as title
 
-=head2 C<new>
+=head2 new
 
   my $dbi = DBIx::Custom->new(
     dsn => "dbi:mysql:database=dbname",
@@ -3218,26 +3218,26 @@ Create column clause for myself. The follwoing column clause is created.
 
 Create a new L<DBIx::Custom> object.
 
-=head2 C<not_exists>
+=head2 not_exists
 
   my $not_exists = $dbi->not_exists;
 
 DBIx::Custom::NotExists object, indicating the column is not exists.
 This is used in C<param> of L<DBIx::Custom::Where> .
 
-=head2 C<order>
+=head2 order
 
   my $order = $dbi->order;
 
 Create a new L<DBIx::Custom::Order> object.
 
-=head2 C<q>
+=head2 q
 
   my $quooted = $dbi->q("title");
 
 Quote string by value of C<quote>.
 
-=head2 C<register_filter>
+=head2 register_filter
 
   $dbi->register_filter(
     # Time::Piece object to database DATE format
@@ -3254,7 +3254,7 @@ Quote string by value of C<quote>.
   
 Register filters, used by C<filter> option of many methods.
 
-=head2 C<select>
+=head2 select
 
   my $result = $dbi->select(
     column => ['author', 'title'],
@@ -3437,14 +3437,14 @@ See also L<DBIx::Custom::Where> to know how to create where clause.
   
 =back
 
-=head2 C<setup_model>
+=head2 setup_model
 
   $dbi->setup_model;
 
 Setup all model objects.
 C<columns> of model object is automatically set, parsing database information.
 
-=head2 C<type_rule>
+=head2 type_rule
 
   $dbi->type_rule(
     into1 => {
@@ -3518,7 +3518,7 @@ You can also specify multiple types at once.
     ],
   );
 
-=head2 C<update>
+=head2 update
 
   $dbi->update({title => 'Perl'}, table  => 'book', where  => {id => 4});
 
@@ -3602,15 +3602,15 @@ C<now> attribute.
 
 =back
 
-=head2 C<update_all>
+=head2 update_all
 
   $dbi->update_all({title => 'Perl'}, table => 'book', );
 
 Execute update statement for all rows.
 Options is same as C<update> method.
 
-=head2 C<update_or_insert>
-  
+=head2 update_or_insert
+
   # ID
   $dbi->update_or_insert(
     {title => 'Perl'},
@@ -3663,7 +3663,7 @@ you can use C<option> option.
 select method option,
 select method is used to check the row is already exists.
 
-=head2 C<show_datatype>
+=head2 show_datatype
 
   $dbi->show_datatype($table);
 
@@ -3675,13 +3675,13 @@ Show data type of the columns of specified table.
 
 This data type is used in C<type_rule>'s C<from1> and C<from2>.
 
-=head2 C<show_tables>
+=head2 show_tables
 
   $dbi->show_tables;
 
 Show tables.
 
-=head2 C<show_typename>
+=head2 show_typename
 
   $dbi->show_typename($table);
 
@@ -3693,7 +3693,7 @@ Show type name of the columns of specified table.
 
 This type name is used in C<type_rule>'s C<into1> and C<into2>.
 
-=head2 C<values_clause>
+=head2 values_clause
 
   my $values_clause = $dbi->values_clause({title => 'a', age => 2});
 
@@ -3705,7 +3705,7 @@ You can use this in insert statement.
 
   my $insert_sql = "insert into book $values_clause";
 
-=head2 C<where>
+=head2 where
 
   my $where = $dbi->where(
     clause => ['and', 'title = :title', 'author = :author'],
@@ -3717,27 +3717,27 @@ See L<DBIx::Custom::Where> to know how to create where clause.
 
 =head1 ENVIRONMENTAL VARIABLES
 
-=head2 C<DBIX_CUSTOM_DEBUG>
+=head2 DBIX_CUSTOM_DEBUG
 
 If environment variable C<DBIX_CUSTOM_DEBUG> is set to true,
 executed SQL and bind values are printed to STDERR.
 
-=head2 C<DBIX_CUSTOM_DEBUG_ENCODING>
+=head2 DBIX_CUSTOM_DEBUG_ENCODING
 
 DEBUG output encoding. Default to UTF-8.
 
-=head2 C<DBIX_CUSTOM_DISABLE_MODEL_EXECUTE>
+=head2 DBIX_CUSTOM_DISABLE_MODEL_EXECUTE
 
 If you set DBIX_CUSTOM_DISABLE_MODEL_EXECUTE to 1,
 L<DBIx::Custom::Model> execute method call L<DBIx::Custom> execute.
 
-=head2 C<DBIX_CUSTOM_SUPPRESS_DEPRECATION>
+=head2 DBIX_CUSTOM_SUPPRESS_DEPRECATION
 
   $ENV{DBIX_CUSTOM_SUPPRESS_DEPRECATION} = '0.25';
 
 Suppress deprecation warnings before specified version.
 
-=head2 C<DBIX_CUSTOM_TAG_PARSE>
+=head2 DBIX_CUSTOM_TAG_PARSE
 
 If you set DBIX_CUSTOM_TAG_PARSE to 0, tag parsing is off.
 
@@ -3853,6 +3853,9 @@ L<DBIx::Custom::Result>
   remove_end_filter # will be removed at 2017/1/1
   remove_filter # will be removed at 2017/1/1
   default_filter # will be removed at 2017/1/1
+  
+  # Options
+  kv method's multi option (from 0.28) # will be removed at 2018/3/1
 
 L<DBIx::Custom::Tag>
 

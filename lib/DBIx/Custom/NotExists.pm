@@ -17,7 +17,7 @@ DBIx::Custom::NotExists - Not exsits object
 
 =head1 METHODS
 
-=head2 C<singleton>
+=head2 singleton
 
   $not_exists = DBIx::Custom::NotExists->singleton;
 

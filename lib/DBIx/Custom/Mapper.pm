@@ -148,21 +148,21 @@ DBIx::Custom::Mapper - Mapper of parameter
 
 =head1 ATTRIBUTES
 
-=head2 C<param>
+=head2 param
 
   my $param = $mapper->param;
   $mapper = $mapper->param({title => 'Perl', author => 'Ken'});
 
 Parameter.
 
-=head2 C<pass>
+=head2 pass
 
   my $pass = $mapper->pass;
   $mapper = $mapper->pass([qw/title author/]);
 
 the key and value is copied without change when C<map> method is executed.
 
-=head2 C<condition>
+=head2 condition
 
   my $condition = $mapper->condition;
   $mapper = $mapper->condition('exists');
@@ -173,25 +173,25 @@ You can set the following values to C<condition>.
 
 =over 4
 
-=item * C<exists>
+=item * exists
  
   condition => 'exists'
 
 If key exists, key and value is mapped.
 
-=item * C<defined>
+=item * defined
 
   condition => 'defined';
 
 If value is defined, key and value is mapped.
 
-=item * C<length>
+=item * length
 
   condition => 'length';
 
 If value is defined and has length, key and value is mapped.
 
-=item * C<code reference>
+=item * code reference
 
   condition => sub { defined $_[0] }
 
@@ -203,7 +203,7 @@ The subroutine return true, key and value is mapped.
 L<DBIx::Custom::Mapper> inherits all methods from L<Object::Simple>
 and implements the following new ones.
 
-=head2 C<map>
+=head2 map
 
   my $new_param = $mapper->map(
     price => {key => 'book.price'}

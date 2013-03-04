@@ -181,21 +181,21 @@ my $model = DBIx::Custom::Model->new(table => 'books');
 
 =head1 ATTRIBUTES
 
-=head2 C<dbi>
+=head2 dbi
 
   my $dbi = $model->dbi;
   $model = $model->dbi($dbi);
 
 L<DBIx::Custom> object.
 
-=head2 C<ctime>
+=head2 ctime
 
   my $ctime = $model->ctime;
   $model = $model->ctime('created_time');
 
 Create timestamp column, this is passed to C<insert> or C<update> method.
 
-=head2 C<join>
+=head2 join
 
   my $join = $model->join;
   $model = $model->join(
@@ -204,7 +204,7 @@ Create timestamp column, this is passed to C<insert> or C<update> method.
   
 Join clause, this value is passed to C<select> method.
 
-=head2 C<primary_key>
+=head2 primary_key
 
   my $primary_key = $model->primary_key;
   $model = $model->primary_key(['id', 'number']);
@@ -212,14 +212,14 @@ Join clause, this value is passed to C<select> method.
 Primary key,this is passed to C<insert>, C<update>,
 C<delete>, and C<select> method.
 
-=head2 C<table>
+=head2 table
 
   my $model = $model->table;
   $model = $model->table('book');
 
 Table name, this is passed to C<select> method.
 
-=head2 C<bind_type>
+=head2 bind_type
 
   my $type = $model->bind_type;
   $model = $model->bind_type(['image' => DBI::SQL_BLOB]);
@@ -228,7 +228,7 @@ Database data type, this is used as type optioon of C<insert>,
 C<update>, C<update_all>, C<delete>, C<delete_all>,
 and C<select> method
 
-=head2 C<mtime>
+=head2 mtime
 
   my $mtime = $model->mtime;
   $model = $model->mtime('modified_time');
@@ -241,7 +241,7 @@ L<DBIx::Custom::Model> inherits all methods from L<Object::Simple>,
 and you can use all methods of L<DBIx::Custom> and L<DBI>
 and implements the following new ones.
 
-=head2 C<count>
+=head2 count
 
   my $count = $model->count;
 
@@ -249,28 +249,28 @@ Get rows count.
 
 Options is same as C<select> method's ones.
 
-=head2 C<delete>
+=head2 delete
 
   $model->delete(...);
   
 Same as C<delete> of L<DBIx::Custom> except that
 you don't have to specify options if you set attribute in model.
 
-=head2 C<delete_all>
+=head2 delete_all
 
   $model->delete_all(...);
   
 Same as C<delete_all> of L<DBIx::Custom> except that
 you don't have to specify options if you set attribute in model.
 
-=head2 C<insert>
+=head2 insert
 
   $model->insert(...);
   
 Same as C<insert> of L<DBIx::Custom> except that
 you don't have to specify options if you set attribute in model.
 
-=head2 C<helper>
+=head2 helper
 
   $model->helper(
     update_or_insert => sub {
@@ -290,7 +290,7 @@ Register helper. These helper is called directly from L<DBIx::Custom::Model> obj
   $model->update_or_insert;
   $model->find_or_create;
 
-=head2 C<mycolumn>
+=head2 mycolumn
 
   my $column = $self->mycolumn;
   my $column = $self->mycolumn(book => ['author', 'title']);
@@ -304,34 +304,34 @@ Create column clause for myself. The follwoing column clause is created.
 If table name is ommited, C<table> attribute of the model is used.
 If column names is omitted, C<columns> attribute of the model is used.
 
-=head2 C<new>
+=head2 new
 
   my $model = DBIx::Custom::Model->new;
 
 Create a L<DBIx::Custom::Model> object.
 
-=head2 C<select>
+=head2 select
 
   $model->select(...);
   
 Same as C<select> of L<DBIx::Custom> except that
 you don't have to specify options if you set attribute in model.
 
-=head2 C<update>
+=head2 update
 
   $model->update(...);
   
 Same as C<update> of L<DBIx::Custom> except that
 you don't have to specify options if you set attribute in model.
 
-=head2 C<update_all>
+=head2 update_all
 
   $model->update_all(param => \%param);
   
 Same as C<update_all> of L<DBIx::Custom> except that
 you don't have to specify options if you set attribute in model.
 
-=head2 C<update_or_insert>
+=head2 update_or_insert
 
   $model->update_or_insert(...);
   

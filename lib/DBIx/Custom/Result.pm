@@ -528,14 +528,14 @@ DBIx::Custom::Result - Result of select statement
 
 =head1 ATTRIBUTES
 
-=head2 C<dbi>
+=head2 dbi
 
   my $dbi = $result->dbi;
   $result = $result->dbi($dbi);
 
 L<DBIx::Custom> object.
 
-=head2 C<sth>
+=head2 sth
 
   my $sth = $reuslt->sth
   $result = $result->sth($sth);
@@ -547,63 +547,63 @@ Statement handle of L<DBI>.
 L<DBIx::Custom::Result> inherits all methods from L<Object::Simple>
 and implements the following new ones.
 
-=head2 C<all>
+=head2 all
 
   my $rows = $result->all;
 
-Same as C<fetch_hash_all>.
+Same as fetch_hash_all.
 
-=head2 C<fetch>
+=head2 fetch
 
   my $row = $result->fetch;
 
 Fetch a row and put it into array reference.
 
-=head2 C<fetch_all>
+=head2 fetch_all
 
   my $rows = $result->fetch_all;
 
 Fetch all rows and put them into array of array reference.
 
-=head2 C<fetch_one>
+=head2 fetch_one
 
   my $row = $result->fetch_one;
 
 Fetch only a first row and put it into array reference,
 and finish statment handle.
 
-=head2 C<fetch_hash>
+=head2 fetch_hash
 
   my $row = $result->fetch_hash;
 
 Fetch a row and put it into hash reference.
 
-=head2 C<fetch_hash_all>
+=head2 fetch_hash_all
 
   my $rows = $result->fetch_hash_all;
 
 Fetch all rows and put them into array of hash reference.
 
-=head2 C<fetch_hash_one>
+=head2 fetch_hash_one
   
   my $row = $result->fetch_hash_one;
 
 Fetch only a first row and put it into hash reference,
 and finish statment handle.
 
-=head2 C<fetch_hash_multi>
+=head2 fetch_hash_multi
 
   my $rows = $result->fetch_hash_multi(5);
   
 Fetch multiple rows and put them into array of hash reference.
 
-=head2 C<fetch_multi>
+=head2 fetch_multi
 
   my $rows = $result->fetch_multi(5);
   
 Fetch multiple rows and put them into array of array reference.
 
-=head2 C<filter>
+=head2 filter
 
   $result->filter(title  => sub { uc $_[0] }, author => 'to_upper');
   $result->filter([qw/title author/] => 'to_upper');
@@ -612,7 +612,7 @@ Set filter for column.
 You can use subroutine or filter name as filter.
 This filter is executed after C<type_rule> filter.
 
-=head2 C<flat>
+=head2 flat
 
   my @list = $result->flat;
 
@@ -628,7 +628,7 @@ You can create key-value pair easily.
 
   my %titles = $dbi->select(['id', 'title'])->flat;
 
-=head2 C<kv>
+=head2 kv
 
   my $key_value = $result->kv;
 
@@ -652,7 +652,7 @@ C<kv> method return the following data.
 
 First column value become key.
 
-=head2 C<kvs>
+=head2 kvs
 
   my $key_values = $result->kvs;
 
@@ -682,19 +682,19 @@ C<kvs> method return the following data.
     ]
   }
 
-=head2 C<header>
+=head2 header
 
   my $header = $result->header;
 
 Get header column names.
 
-=head2 C<one>
+=head2 one
 
   my $row = $result->one;
 
 Alias for C<fetch_hash_one>.
 
-=head2 C<stash>
+=head2 stash
 
   my $stash = $result->stash;
   my $foo = $result->stash->{foo};
@@ -702,7 +702,7 @@ Alias for C<fetch_hash_one>.
 
 Stash is hash reference to save some data.
 
-=head2 C<type_rule>
+=head2 type_rule
   
   # Merge type rule
   $result->type_rule(
@@ -722,49 +722,49 @@ Stash is hash reference to save some data.
 
 This is same as L<DBIx::Custom>'s C<type_rule>'s <from>.
 
-=head2 C<type_rule_off>
+=head2 type_rule_off
 
   $result = $result->type_rule_off;
 
 Turn C<from1> and C<from2> type rule off.
 By default, type rule is on.
 
-=head2 C<type_rule_on>
+=head2 type_rule_on
 
   $result = $result->type_rule_on;
 
 Turn C<from1> and C<from2> type rule on.
 By default, type rule is on.
 
-=head2 C<type_rule1_off>
+=head2 type_rule1_off
 
   $result = $result->type_rule1_off;
 
 Turn C<from1> type rule off.
 By default, type rule is on.
 
-=head2 C<type_rule1_on>
+=head2 type_rule1_on
 
   $result = $result->type_rule1_on;
 
 Turn C<from1> type rule on.
 By default, type rule is on.
 
-=head2 C<type_rule2_off>
+=head2 type_rule2_off
 
   $result = $result->type_rule2_off;
 
 Turn C<from2> type rule off.
 By default, type rule is on.
 
-=head2 C<type_rule2_on>
+=head2 type_rule2_on
 
   $result = $result->type_rule2_on;
 
 Turn C<from2> type rule on.
 By default, type rule is on.
 
-=head2 C<value>
+=head2 value
 
   my $value = $result->value;
 
@@ -776,7 +776,7 @@ This is almost same as the following one.
 
   my $count = $dbi->select('count(*)')->fetch_one->[0];
 
-=head2 C<values>
+=head2 values
 
   my $values = $result->values;
 
