@@ -5,7 +5,7 @@ use Encode qw/encode_utf8/;
 use FindBin;
 use Scalar::Util 'isweak';
 
-$ENV{DBIX_CUSTOM_SUPPRESS_DEPRECATION} = '0.25';
+$ENV{DBIX_CUSTOM_SUPPRESS_DEPRECATION} = '0.28';
 
 my $dbi;
 
@@ -3767,6 +3767,18 @@ is_deeply($rows, {
   ]
 });
 
+$result = $dbi->select([$key1, $key2], table => $table1, append => "order by $key2");
+$rows = $result->kvs;
+is_deeply($rows, {
+  0 => [
+    {$key2 => 1},
+    {$key2 => 2}
+  ],
+  3 => [
+    {$key2 => 4},
+    {$key2 => 5}
+  ]
+});
 
 test 'DBIx::Custom::Result fetch_multi';
 eval { $dbi->execute("drop table $table1") };

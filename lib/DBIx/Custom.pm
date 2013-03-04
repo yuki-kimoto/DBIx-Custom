@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.27';
+our $VERSION = '0.28';
 
 use Carp 'croak';
 use DBI;

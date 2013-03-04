@@ -256,10 +256,27 @@ sub kv {
     my $key_value = delete $row->{$key_name};
     next unless defined $key_value;
     if ($opt{multi}) {
+      _deprecate('0.28', "DBIx::Custom::Result::kv method's "
+        . 'multi option is DEPRECATED. use kvs method instead');
       $kv->{$key_value} ||= [];
       push @{$kv->{$key_value}}, $row;
     }
     else { $kv->{$key_value} = $row }
+  }
+  
+  return $kv;
+}
+
+sub kvs {
+  my ($self, %opt) = @_;
+
+  my $key_name = $self->{sth}{NAME}[0];
+  my $kv = {};
+  while (my $row = $self->fetch_hash) {
+    my $key_value = delete $row->{$key_name};
+    next unless defined $key_value;
+    $kv->{$key_value} ||= [];
+    push @{$kv->{$key_value}}, $row;
   }
   
   return $kv;
@@ -614,7 +631,6 @@ You can create key-value pair easily.
 =head2 C<kv>
 
   my $key_value = $result->kv;
-  my $key_values = $result->kv(multi => 1);
 
 Get key-value pairs.
 
@@ -636,10 +652,13 @@ C<kv> method return the following data.
 
 First column value become key.
 
-If value contains multipule data, you can push it to
-array refernce by C<multi> option.
+=head2 C<kvs>
 
-  my $books = $dbi->select(['author', 'title', 'price'])->kv(multi => 1);
+  my $key_values = $result->kvs;
+
+Get key-values pairs.
+
+  my $books = $dbi->select(['author', 'title', 'price'])->kvs;
 
 If C<all> method return the following data:
 
@@ -650,7 +669,7 @@ If C<all> method return the following data:
     {author => 'Taro', title => 'Sky', price => 4000}
   ]
 
-C<kv> method return the following data.
+C<kvs> method return the following data.
 
   {
     Ken => [
