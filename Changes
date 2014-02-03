@@ -1,3 +1,8 @@
+0.29
+  - (EXPERIMENTAL) add select method column option syntax
+    {__MY__ => '*'}
+    You can sepcify column names of main table very easy
+  - (EXPERIMENTAL) add mycolumn_symbol attribute
 0.28
   - DBIx::Custom::Result::kv method's multi option is DEPRECATED!
     added DBIx::Custom::Result::kvs method instead.

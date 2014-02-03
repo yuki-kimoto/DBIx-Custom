@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.28';
+our $VERSION = '0.29';
 
 use Carp 'croak';
 use DBI;
@@ -67,6 +67,8 @@ has [qw/connector dsn default_schema password quote user exclude_table user_tabl
   result_class  => 'DBIx::Custom::Result',
   separator => '.',
   stash => sub { {} };
+
+has mycolumn_symbol => '__MY__';
 
 sub available_datatype {
   my $self = shift;
@@ -145,8 +147,8 @@ sub column {
   my $table = $option->{alias} || $real_table;
   
   # Columns
-  unless (defined $columns) {
-    $columns ||= $self->model($real_table)->columns;
+  if (!defined $columns || $columns eq '*') {
+    $columns = $self->model($real_table)->columns;
   }
   
   # Separator
@@ -916,9 +918,12 @@ sub model {
 sub mycolumn {
   my ($self, $table, $columns) = @_;
   
+  if (!$columns || $columns eq '*') {
+    $columns = $self->model($table)->columns;
+  }
+
   # Create column clause
   my @column;
-  $columns ||= [];
   push @column, $self->_tq($table) . "." . $self->q($_) . " as " . $self->q($_)
     for @$columns;
   
@@ -1061,7 +1066,16 @@ sub select {
       = ref $opt{column} eq 'ARRAY' ? $opt{column} : [$opt{column}];
     for my $column (@$columns) {
       if (ref $column eq 'HASH') {
-        $column = $self->column(%$column) if ref $column eq 'HASH';
+        my $mycolumn_symbol = $opt{mycolumn_symbol} || $self->mycolumn_symbol;
+        my $table = (keys %$column)[0];
+        my $columns = $column->{$table};
+        
+        if ($table eq $mycolumn_symbol) {
+          $column = $self->mycolumn($tables->[0] => $columns);
+        }
+        else {
+          $column = $self->column($table => $columns);
+        }
       }
       elsif (ref $column eq 'ARRAY') {
         _deprecate('0.24', "select column option [COLUMN => ALIAS] syntax " .
@@ -2402,6 +2416,12 @@ and C<update> method's C<updated_at> option.
 
 Models, included by C<include_model> method.
 
+=head2 mycolumn_symbol
+
+Symbol to sepecify own columns in select method column option, default to '__MY__'.
+
+  $dbi->table('book')->select({__MY__ => '*'});
+
 =head2 option
 
   my $option = $dbi->option;
@@ -3300,16 +3320,18 @@ This is expanded to the following one by using C<colomn> method.
   person.name as "person.name",
   person.age as "person.age"
 
-You can specify array of array reference, first argument is
-column name, second argument is alias.
+You can specify own column by C<__MY__>.
 
   column => [
-    ['date(book.register_datetime)' => 'book.register_date']
-  ];
+    {__MY__ => [qw/author title/]},
+  ]
 
-Alias is quoted properly and joined.
+This is expanded to the following one by using C<mycolomn> method.
 
-  date(book.register_datetime) as "book.register_date"
+  book.author as "author",
+  book.title as "title",
+
+C<__MY__> can be changed by C<mycolumn_symbol> attribute.
 
 =item C<id>
 

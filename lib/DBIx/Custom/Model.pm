@@ -129,6 +129,7 @@ sub mycolumn {
   my $columns = shift;
   
   $table ||= $self->table || '';
+  
   $columns ||= $self->columns;
   
   return $self->dbi->mycolumn($table, $columns);
