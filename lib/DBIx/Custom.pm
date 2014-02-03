@@ -3893,7 +3893,7 @@ Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009-2011 Yuki Kimoto, all rights reserved.
+Copyright 2009-2013 Yuki Kimoto, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
