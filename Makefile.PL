@@ -13,7 +13,7 @@ WriteMakefile(
     PL_FILES            => {},
       PREREQ_PM => {
         'Test::More' => 0,
-        'Object::Simple' => 3.0621,
+        'Object::Simple' => 3.10,
         'DBD::SQLite' => '1.25',
         'DBI' => '1.605'
     },
