@@ -2598,14 +2598,14 @@ $result = $model->select(
     {$table2 => '*'}
   ],
   where => {"$table1.$key1" => 1},
-  mycolumn_symbol => '__MY2__'
+  mytable_symbol => '__MY2__'
 );
 is_deeply($result->one,
         {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
 
 {
-  my $original = $model->dbi->mycolumn_symbol;
-  $model->dbi->mycolumn_symbol('__MY2__');
+  my $original = $model->dbi->mytable_symbol;
+  $model->dbi->mytable_symbol('__MY2__');
   $result = $model->select(
     column => [
       {__MY2__ => '*'},
@@ -2615,7 +2615,7 @@ is_deeply($result->one,
   );
   is_deeply($result->one,
           {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
-  $model->dbi->mycolumn_symbol($original);
+  $model->dbi->mytable_symbol($original);
 }
 
 test 'values_clause';

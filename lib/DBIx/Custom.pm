@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.29';
+our $VERSION = '0.30';
 
 use Carp 'croak';
 use DBI;
@@ -68,7 +68,7 @@ has [qw/connector dsn default_schema password quote user exclude_table user_tabl
   separator => '.',
   stash => sub { {} };
 
-has mycolumn_symbol => '__MY__';
+has mytable_symbol => '__MY__';
 
 sub available_datatype {
   my $self = shift;
@@ -1066,11 +1066,11 @@ sub select {
       = ref $opt{column} eq 'ARRAY' ? $opt{column} : [$opt{column}];
     for my $column (@$columns) {
       if (ref $column eq 'HASH') {
-        my $mycolumn_symbol = $opt{mycolumn_symbol} || $self->mycolumn_symbol;
+        my $mytable_symbol = $opt{mytable_symbol} || $self->mytable_symbol;
         my $table = (keys %$column)[0];
         my $columns = $column->{$table};
         
-        if ($table eq $mycolumn_symbol) {
+        if ($table eq $mytable_symbol) {
           $column = $self->mycolumn($tables->[0] => $columns);
         }
         else {
@@ -2416,7 +2416,7 @@ and C<update> method's C<updated_at> option.
 
 Models, included by C<include_model> method.
 
-=head2 mycolumn_symbol
+=head2 mytable_symbol
 
 Symbol to sepecify own columns in select method column option, default to '__MY__'.
 
@@ -3331,7 +3331,7 @@ This is expanded to the following one by using C<mycolomn> method.
   book.author as "author",
   book.title as "title",
 
-C<__MY__> can be changed by C<mycolumn_symbol> attribute.
+C<__MY__> can be changed by C<mytable_symbol> attribute.
 
 =item C<id>
 

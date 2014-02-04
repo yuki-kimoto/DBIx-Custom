@@ -1,3 +1,5 @@
+0.30
+  - (EXPERIMENTAL) rename mycolumn_symbol attribute to mytable_symbol
 0.29
   - (EXPERIMENTAL) add select method column option syntax
     {__MY__ => '*'}
