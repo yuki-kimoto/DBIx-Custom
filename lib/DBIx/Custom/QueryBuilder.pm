@@ -90,7 +90,7 @@ sub _parse_tag {
   my $value = '';
   # State
   my $state = 'text';
-  # Before charactor
+  # Before character
   my $before = '';
   # Position
   my $pos = 0;
@@ -106,9 +106,9 @@ sub _parse_tag {
     }
     # State is text
     if ($state eq 'text') {
-      # Tag start charactor
+      # Tag start character
       if ($c eq '{') {
-        # Escaped charactor
+        # Escaped character
         if ($before eq "\\") {
           substr($value, -1, 1, '');
           $value .= $c;
@@ -124,9 +124,9 @@ sub _parse_tag {
           $value = '';
         }
       }
-      # Tag end charactor
+      # Tag end character
       elsif ($c eq '}') {
-        # Escaped charactor
+        # Escaped character
         if ($before eq "\\") {
           substr($value, -1, 1, '');
           $value .= $c;
@@ -137,14 +137,14 @@ sub _parse_tag {
             . qq{pos $pos of "$original" } . _subname
         }
       }
-      # Normal charactor
+      # Normal character
       else { $value .= $c }
     }
     # State is tags
     else {
-      # Tag start charactor
+      # Tag start character
       if ($c eq '{') {
-        # Escaped charactor
+        # Escaped character
         if ($before eq "\\") {
           substr($value, -1, 1, '');
           $value .= $c;
@@ -155,9 +155,9 @@ sub _parse_tag {
               . qq{pos $pos of "$original" } . _subname
         }
       }
-      # Tag end charactor
+      # Tag end character
       elsif ($c eq '}') {
-        # Escaped charactor
+        # Escaped character
         if ($before eq "\\") {
           substr($value, -1, 1, '');
           $value .= $c;
@@ -176,10 +176,10 @@ sub _parse_tag {
           $tag_count++;
         }
       }
-      # Normal charactor
+      # Normal character
       else { $value .= $c }
     }
-    # Save before charactor
+    # Save before character
     $before = $c;
     # increment position
     $pos++;
@@ -236,7 +236,7 @@ sub _parse_tag {
       croak qq{Tag "$tag_name" must return [STRING, ARRAY_REFERENCE] }
           . _subname
         unless ref $r eq 'ARRAY' && defined $r->[0] && ref $r->[1] eq 'ARRAY';
-      # Part of SQL statement and colum names
+      # Part of SQL statement and column names
       my ($part, $columns) = @$r;
       # Add columns
       push @$all_columns, @$columns;
