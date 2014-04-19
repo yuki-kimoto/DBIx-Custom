@@ -92,7 +92,7 @@ Prepend order parts to C<orders>.
   my $order_by = $order->to_string;
 
 Create order by clause. If column name is duplicated, First one is used.
-C<to_string> override stringification. so you can write the follwoing way.
+C<to_string> override stringification. so you can write the following way.
 
   my $order_by = "$order";
 
