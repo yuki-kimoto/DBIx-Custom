@@ -225,7 +225,7 @@ Table name, this is passed to C<select> method.
   my $type = $model->bind_type;
   $model = $model->bind_type(['image' => DBI::SQL_BLOB]);
   
-Database data type, this is used as type optioon of C<insert>, 
+Database data type, this is used as type option of C<insert>, 
 C<update>, C<update_all>, C<delete>, C<delete_all>,
 and C<select> method
 
@@ -297,12 +297,12 @@ Register helper. These helper is called directly from L<DBIx::Custom::Model> obj
   my $column = $self->mycolumn(book => ['author', 'title']);
   my $column = $self->mycolumn(['author', 'title']);
 
-Create column clause for myself. The follwoing column clause is created.
+Create column clause for myself. The following column clause is created.
 
   book.author as author,
   book.title as title
 
-If table name is ommited, C<table> attribute of the model is used.
+If table name is omitted, C<table> attribute of the model is used.
 If column names is omitted, C<columns> attribute of the model is used.
 
 =head2 new
