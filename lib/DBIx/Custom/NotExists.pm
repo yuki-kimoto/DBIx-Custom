@@ -9,7 +9,7 @@ sub singleton { $not_exists }
 
 =head1 NAME
 
-DBIx::Custom::NotExists - Not exsits object
+DBIx::Custom::NotExists - Not exists object
 
 =head1 SYNOPSYS
 

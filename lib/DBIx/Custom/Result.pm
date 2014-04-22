@@ -172,7 +172,7 @@ sub fetch_hash_multi {
 sub fetch_multi {
   my ($self, $count) = @_;
   
-  # Row count not specifed
+  # Row count not specified
   croak 'Row count must be specified ' . _subname
     unless $count;
   
@@ -570,7 +570,7 @@ Fetch all rows and put them into array of array reference.
   my $row = $result->fetch_one;
 
 Fetch only a first row and put it into array reference,
-and finish statment handle.
+and finish statement handle.
 
 =head2 fetch_hash
 
@@ -589,7 +589,7 @@ Fetch all rows and put them into array of hash reference.
   my $row = $result->fetch_hash_one;
 
 Fetch only a first row and put it into hash reference,
-and finish statment handle.
+and finish statement handle.
 
 =head2 fetch_hash_multi
 

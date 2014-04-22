@@ -275,7 +275,7 @@ You can use code reference to convert original value.
   # String => Array reference
   author => ['book.author' => '%<value>%']
 
-Both key name name and value is mapped to new parameter.
+Both key name and value is mapped to new parameter.
 This is same as the following syntax.
 
   # Rule
@@ -294,7 +294,7 @@ You can set change mapping condition by C<condition> attribute.
 
   $mapper->condition('defined');
 
-Or you can set C<condtion> option for each key.
+Or you can set C<condition> option for each key.
 
   my $new_param = $mapper->map(
     price => {key => 'book.price', condition => 'defined'}]
