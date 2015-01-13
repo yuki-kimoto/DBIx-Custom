@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.30';
+our $VERSION = '0.31';
 
 use Carp 'croak';
 use DBI;
@@ -590,53 +590,76 @@ sub execute {
   for my $column (@cleanup, @{$opt{cleanup} || []}) {
     delete $_->{$column} for @$params;
   }
-  
-  # Not select statement
-  return $affected if !$sth->{NUM_OF_FIELDS} && $opt{statement} ne 'select';
 
-  # Filter(DEPRECATED!)
-  my $infilter = {};
-  if ($self->{filter}{on}) {
-    $infilter->{in}  = {};
-    $infilter->{end} = {};
-    push @$tables, $main_table if $main_table;
-    for my $table (@$tables) {
-      for my $way (qw/in end/) {
-        $infilter->{$way} = {%{$infilter->{$way}},
-          %{$self->{filter}{$way}{$table} || {}}};
+  # Affected of insert, update, or delete
+  if (!$sth->{NUM_OF_FIELDS} && $opt{statement} ne 'select') {
+    # Non-Blocking
+    if (my $cb = $opt{async}) {
+      require AnyEvent;
+      my $watcher;
+      weaken $self;
+      $watcher = AnyEvent->io(
+        fh => $self->async_conf->{fh}->($self),
+        poll => 'r',
+        cb   => sub {
+          $cb->($self, $affected);
+          undef $watcher;
+          undef $affected;
+          undef $cb;
+        },
+      );
+    }
+    # Blocking
+    else { return $affected }
+  }
+  # Reulst of select statement
+  else {
+    # Filter(DEPRECATED!)
+    my $infilter = {};
+    if ($self->{filter}{on}) {
+      $infilter->{in}  = {};
+      $infilter->{end} = {};
+      push @$tables, $main_table if $main_table;
+      for my $table (@$tables) {
+        for my $way (qw/in end/) {
+          $infilter->{$way} = {%{$infilter->{$way}},
+            %{$self->{filter}{$way}{$table} || {}}};
+        }
       }
     }
-  }
-  
-  # Result
-  my $result = $self->result_class->new(
-    sth => $sth,
-    dbi => $self,
-    default_filter => $self->{default_in_filter},
-    filter => $infilter->{in} || {},
-    end_filter => $infilter->{end} || {},
-    type_rule => {
-      from1 => $self->type_rule->{from1},
-      from2 => $self->type_rule->{from2}
-    },
-  );
-  
-  if (my $cb = $opt{async}) {
-    require AnyEvent;
-    my $watcher;
-    weaken $self;
-    $watcher = AnyEvent->io(
-      fh => $self->async_conf->{fh}->($self),
-      poll => 'r',
-      cb   => sub {
-        $cb->($self, $result);
-        undef $watcher;
-        undef $result;
-        undef $cb;
+    
+    # Result
+    my $result = $self->result_class->new(
+      sth => $sth,
+      dbi => $self,
+      default_filter => $self->{default_in_filter},
+      filter => $infilter->{in} || {},
+      end_filter => $infilter->{end} || {},
+      type_rule => {
+        from1 => $self->type_rule->{from1},
+        from2 => $self->type_rule->{from2}
       },
     );
+    
+    # Non-Blocking
+    if (my $cb = $opt{async}) {
+      require AnyEvent;
+      my $watcher;
+      weaken $self;
+      $watcher = AnyEvent->io(
+        fh => $self->async_conf->{fh}->($self),
+        poll => 'r',
+        cb   => sub {
+          $cb->($self, $result);
+          undef $watcher;
+          undef $result;
+          undef $cb;
+        },
+      );
+    }
+    # Blocking
+    else { return $result }
   }
-  else { $result }
 }
 
 sub get_table_info {

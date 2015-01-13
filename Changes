@@ -1,3 +1,5 @@
+0.31
+  - (EXPERIMENTAL) fix aync insert not working bug.
 0.30
   - (EXPERIMENTAL) rename mycolumn_symbol attribute to mytable_symbol
 0.29
