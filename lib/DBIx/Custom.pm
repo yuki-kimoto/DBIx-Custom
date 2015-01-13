@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.32';
+our $VERSION = '0.33';
 
 use Carp 'croak';
 use DBI;
@@ -595,6 +595,8 @@ sub execute {
   # Affected of insert, update, or delete
   $self->last_sth($sth);
   if (!$sth->{NUM_OF_FIELDS} && $opt{statement} ne 'select') {
+    my $driver = $self->_driver;
+    
     # Non-Blocking
     if (my $cb = $opt{async}) {
       require AnyEvent;
@@ -603,7 +605,11 @@ sub execute {
         fh => $self->async_conf->{fh}->($self),
         poll => 'w',
         cb => sub {
-          $cb->($self);
+          my $affected;
+          if ($driver eq 'mysql') {
+            $affected = $sth->mysql_async_result;
+          }
+          $cb->($self, $affected);
           undef $watcher;
           undef $cb;
           undef $self;
@@ -2327,7 +2333,8 @@ Setting when C<async> option is used.
   $dbi->async_conf({
     prepare_attr => {async => 1},
     fh => sub { shift->dbh->mysql_fd }
-  })
+    my $dbi = shift;
+  });
 
 C<prepare_attr> is DBI's C<prepare> method second argument,
 C<fh> is callback that return file handle to watch.
@@ -2602,7 +2609,7 @@ This is used to create update clause.
 
   "update book set " . $dbi->assign_clause({title => 'a', age => 2});
 
-=head2 async EXPERIMENTAL
+=head2 async EXPERIMENTAL (Currently, Only work in MySQL)
 
   async => sub {
     my ($dbi, $result) = @_;
