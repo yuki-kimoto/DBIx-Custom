@@ -49,7 +49,8 @@ $dbi->insert(
   {key1 => 1, key2 => 2},
   table => 'table1',
   async => sub {
-    my ($dbi, $result) = @_;
+    my ($dbi) = @_;
+    is($dbi->last_sth->mysql_async_result, 1);
     $cond->send;
   }
 );

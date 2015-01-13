@@ -1,5 +1,8 @@
+0.32
+  - (EXPERIMENTAL) add EXPERIMENTAL last_sth method.
+  - (EXPERIMENTAL) fix async insert logic.
 0.31
-  - (EXPERIMENTAL) fix aync insert not working bug.
+  - (EXPERIMENTAL) fix async insert not working bug.
   - fix Model subdirectory namespcae not working bug.
 0.30
   - (EXPERIMENTAL) rename mycolumn_symbol attribute to mytable_symbol

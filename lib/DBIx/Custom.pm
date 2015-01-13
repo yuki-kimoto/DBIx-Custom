@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.31';
+our $VERSION = '0.32';
 
 use Carp 'croak';
 use DBI;
@@ -69,6 +69,7 @@ has [qw/connector dsn default_schema password quote user exclude_table user_tabl
   stash => sub { {} };
 
 has mytable_symbol => '__MY__';
+has 'last_sth';
 
 sub available_datatype {
   my $self = shift;
@@ -592,21 +593,21 @@ sub execute {
   }
 
   # Affected of insert, update, or delete
+  $self->last_sth($sth);
   if (!$sth->{NUM_OF_FIELDS} && $opt{statement} ne 'select') {
     # Non-Blocking
     if (my $cb = $opt{async}) {
       require AnyEvent;
       my $watcher;
-      weaken $self;
       $watcher = AnyEvent->io(
         fh => $self->async_conf->{fh}->($self),
-        poll => 'r',
-        cb   => sub {
-          $cb->($self, $affected);
+        poll => 'w',
+        cb => sub {
+          $cb->($self);
           undef $watcher;
-          undef $affected;
           undef $cb;
-        },
+          undef $self;
+        }
       );
     }
     # Blocking
@@ -645,7 +646,6 @@ sub execute {
     if (my $cb = $opt{async}) {
       require AnyEvent;
       my $watcher;
-      weaken $self;
       $watcher = AnyEvent->io(
         fh => $self->async_conf->{fh}->($self),
         poll => 'r',
@@ -654,6 +654,7 @@ sub execute {
           undef $watcher;
           undef $result;
           undef $cb;
+          undef $self;
         },
       );
     }
@@ -2414,6 +2415,12 @@ Filters, registered by C<register_filter> method.
   $dbi = $dbi->last_sql($last_sql);
 
 Get last succeeded SQL executed by C<execute> method.
+
+=head2 (EXPERIMENTAL) last_sth
+
+  my $last_sth = $dbi->last_sth;
+
+Get last executed statement handle.
 
 =head2 now
 
