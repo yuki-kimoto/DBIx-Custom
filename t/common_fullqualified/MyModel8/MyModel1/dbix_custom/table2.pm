@@ -1,5 +1,5 @@
-package MyModel8::table2;
-use MyModel8 -base;
+package MyModel8::MyModel1::dbix_custom::table2;
+use MyModel8::MyModel1 -base;
 
 has filter => sub {
   {

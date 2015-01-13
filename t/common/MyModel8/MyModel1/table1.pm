@@ -1,5 +1,5 @@
-package MyModel8::table1;
-use MyModel8 -base;
+package MyModel8::MyModel1::table1;
+use MyModel8::MyModel1 -base;
 
 has join => sub {
   my $self = shift;

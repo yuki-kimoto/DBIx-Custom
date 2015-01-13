@@ -332,7 +332,7 @@ require MyDBI1;
   sub connect {
     my $self = shift->SUPER::connect(@_);
     
-    $self->include_model('MyModel8');
+    $self->include_model('MyModel8::MyModel1');
     
     return $self;
   }

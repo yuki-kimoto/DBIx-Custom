@@ -823,7 +823,9 @@ sub include_model {
       if $@;
     
     # Search model modules
-    my $path = $INC{"$name_space.pm"};
+    my $name_space_dir = $name_space;
+    $name_space_dir =~ s/::/\//g;
+    my $path = $INC{"$name_space_dir.pm"};
     $path =~ s/\.pm$//;
     opendir my $dh, $path
       or croak qq{Can't open directory "$path": $! } . _subname
