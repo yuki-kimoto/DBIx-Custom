@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.33';
+our $VERSION = '0.34';
 
 use Carp 'croak';
 use DBI;
@@ -371,7 +371,7 @@ sub execute {
     my $new_dbi = bless {%$self}, ref $self;
     $new_dbi->connector(undef);
     $new_dbi->{dbh} = DBI->connect($dsn, $user, $password,
-      {%{$new_dbi->default_option}, %$option});
+      {%{$new_dbi->default_option}, %$option, PrintError => 0, RaiseError => 0});
     
     $new_dbi->{_new_connection} = 1;
     return $new_dbi->execute($sql, defined $params ? ($params) : (), %opt);
@@ -595,8 +595,6 @@ sub execute {
   # Affected of insert, update, or delete
   $self->last_sth($sth);
   if (!$sth->{NUM_OF_FIELDS} && $opt{statement} ne 'select') {
-    my $driver = $self->_driver;
-    
     # Non-Blocking
     if (my $cb = $opt{async}) {
       require AnyEvent;
@@ -606,6 +604,7 @@ sub execute {
         poll => 'w',
         cb => sub {
           my $affected;
+          my $driver = $self->_driver;
           if ($driver eq 'mysql') {
             $affected = $sth->mysql_async_result;
           }
@@ -656,6 +655,12 @@ sub execute {
         fh => $self->async_conf->{fh}->($self),
         poll => 'r',
         cb   => sub {
+          my $error;
+          my $driver = $self->_driver;
+          if ($driver eq 'mysql') {
+            $sth->mysql_async_result;
+          }
+          
           $cb->($self, $result);
           undef $watcher;
           undef $result;

@@ -56,46 +56,104 @@ test 'async test';
 
 require AnyEvent;
 
-my $cond = AnyEvent->condvar;
-
-my $timer = AnyEvent->timer(
-  interval => 1,
-  cb => sub {
-    1;
-  }
-);
-
-my $count = 0;
-
 $dbi->async_conf({
   prepare_attr => {async => 1},
   fh => sub { shift->dbh->mysql_fd }
 });
 
-$dbi->execute('SELECT SLEEP(1), 3', undef,
-  select => 1,
-  async => sub {
-    my ($dbi, $result) = @_;
-    my $row = $result->fetch_one;
-    is($row->[1], 3, 'before');
-    $cond->send if ++$count == 2;
-  }
-);
+# Select
+{
+  my $cond = AnyEvent->condvar;
 
-$dbi->select('key1', table => 'table1',
-  async => sub {
-    my ($dbi, $result) = @_;
-    my $row = $result->fetch_one;
-    is($row->[0], 1, 'after1');
-    $dbi->select('key1', table => 'table1',
-      async => sub {
-        my ($dbi, $result) = @_;
-        my $row = $result->fetch_one;
-        is($row->[0], 1, 'after2');
-        $cond->send if ++$count == 2;
-      }
-    )
-  }
-);
+  my $timer = AnyEvent->timer(
+    interval => 1,
+    cb => sub {
+      1;
+    }
+  );
 
-$cond->recv;
+  my $count = 0;
+
+  $dbi->execute('SELECT SLEEP(1), 3', undef,
+    select => 1,
+    async => sub {
+      my ($dbi, $result) = @_;
+      my $row = $result->fetch_one;
+      is($row->[1], 3, 'before');
+      ok(!$dbi->errstr);
+      $cond->send if ++$count == 2;
+    }
+  );
+
+  $dbi->select('key1', table => 'table1',
+    async => sub {
+      my ($dbi, $result) = @_;
+      my $row = $result->fetch_one;
+      is($row->[0], 1, 'after1');
+      $dbi->select('key1', table => 'table1',
+        async => sub {
+          my ($dbi, $result) = @_;
+          my $row = $result->fetch_one;
+          is($row->[0], 1, 'after2');
+          $cond->send if ++$count == 2;
+        }
+      )
+    }
+  );
+
+  $cond->recv;
+}
+
+# Select error
+{
+  my $cond = AnyEvent->condvar;
+  $dbi->select('key1', table => 'table_not_exists',
+    async => sub {
+      my ($dbi, $result) = @_;
+      ok($dbi->errstr);
+      $cond->send;
+    }
+  );
+  
+  $cond->recv;
+}
+
+# insert
+{
+  $dbi->do('delete from table1');
+  my $cond = AnyEvent->condvar;
+
+  $dbi->insert(
+    {key1 => 1, key2 => 2},
+    table => 'table1',
+    async => sub {
+      my ($dbi, $affected) = @_;
+      is($affected, 1);
+      ok(!$dbi->errstr);
+      $cond->send;
+    }
+  );
+
+  $cond->recv;
+
+  my $rows = $dbi->select(table => 'table1')->all;
+  is_deeply($rows, [{key1 => 1, key2 => 2}]);
+}
+
+# insert error
+{
+  $dbi->do('delete from table1');
+  my $cond = AnyEvent->condvar;
+
+  $dbi->insert(
+    {key1 => 1, key2 => 2},
+    table => 'table_not_exists',
+    async => sub {
+      my ($dbi, $affected) = @_;
+      ok($dbi->errstr);
+      $cond->send;
+    }
+  );
+
+  $cond->recv;
+}
