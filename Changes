@@ -1,3 +1,8 @@
+0.35
+  - remove EXPERIMENTAL status the following.
+    add select method column option syntax
+    {__MY__ => '*'}
+  - remove EXPERIMENTAL last_sql attribute
 0.34
   - (EXPERIMENTAL) fix async select not getting err bug.
 0.33

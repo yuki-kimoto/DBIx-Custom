@@ -3523,16 +3523,6 @@ test 'DBIX_CUSTOM_TAG_PARSE environment variable';
   delete$ENV{DBIX_CUSTOM_TAG_PARSE};
 }
 
-test 'last_sql';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$dbi->execute("select * from $table1");
-is($dbi->last_sql, " select * from $table1");
-
-eval{$dbi->execute("aaa")};
-is($dbi->last_sql, ' aaa');
-
 test 'DBIx::Custom header';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };

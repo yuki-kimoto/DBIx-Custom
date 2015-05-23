@@ -69,7 +69,6 @@ has [qw/connector dsn default_schema password quote user exclude_table user_tabl
   stash => sub { {} };
 
 has mytable_symbol => '__MY__';
-has 'last_sth';
 
 sub available_datatype {
   my $self = shift;
@@ -593,7 +592,6 @@ sub execute {
   }
 
   # Affected of insert, update, or delete
-  $self->last_sth($sth);
   if (!$sth->{NUM_OF_FIELDS} && $opt{statement} ne 'select') {
     # Non-Blocking
     if (my $cb = $opt{async}) {
@@ -2427,12 +2425,6 @@ Filters, registered by C<register_filter> method.
   $dbi = $dbi->last_sql($last_sql);
 
 Get last succeeded SQL executed by C<execute> method.
-
-=head2 (EXPERIMENTAL) last_sth
-
-  my $last_sth = $dbi->last_sth;
-
-Get last executed statement handle.
 
 =head2 now
 
