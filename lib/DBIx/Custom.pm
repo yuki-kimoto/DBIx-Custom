@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.34';
+our $VERSION = '0.35';
 
 use Carp 'croak';
 use DBI;
@@ -18,7 +18,6 @@ use DBIx::Custom::Mapper;
 use DBIx::Custom::NotExists;
 use Encode qw/encode encode_utf8 decode_utf8/;
 use Scalar::Util qw/weaken/;
-
 
 has [qw/connector dsn default_schema password quote user exclude_table user_table_info
      user_column_info safety_character/],
@@ -3775,10 +3774,10 @@ You can use this in insert statement.
 
 =head2 where
 
-  my $where = $dbi->where(
-    clause => ['and', 'title = :title', 'author = :author'],
-    param => {title => 'Perl', author => 'Ken'}
-  );
+  my $where = $dbi->where;
+  $where->clause(['and', 'title = :title', 'author = :author']);
+  $where->param({title => 'Perl', author => 'Ken'});
+  $where->join(['left join author on book.author = author.id]);
 
 Create a new L<DBIx::Custom::Where> object.
 See L<DBIx::Custom::Where> to know how to create where clause.
