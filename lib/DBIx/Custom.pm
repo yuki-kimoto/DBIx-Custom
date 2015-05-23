@@ -1157,7 +1157,22 @@ sub select {
   unshift @$tables, @{$self->_search_tables($w->{clause})};
   
   # Join statement
-  $self->_push_join(\$sql, $opt{join}, $tables) if defined $opt{join};
+  my $join = [];
+  if (defined $opt{join}) {
+    my $opt_join = $opt{join};
+    if (ref $opt_join eq 'ARRAY') {
+      push @$join, @$opt_join;
+    }
+    else { push @$join, $opt_join }
+  }
+  if (defined $w->{join}) {
+    my $where_join = $w->{join};
+    if (ref $where_join eq 'ARRAY') {
+      push @$join, @$where_join;
+    }
+    else { push @$join, $where_join }
+  }
+  $self->_push_join(\$sql, $join, $tables) if @$join;
   
   # Add where clause
   $sql .= "$w->{clause} ";
@@ -1692,11 +1707,6 @@ sub _option {
 
 sub _push_join {
   my ($self, $sql, $join, $join_tables) = @_;
-  
-  $join = [$join] unless ref $join eq 'ARRAY';
-  
-  # No join
-  return unless @$join;
   
   # Push join clause
   my $tree = {};

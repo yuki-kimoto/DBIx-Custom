@@ -5067,4 +5067,28 @@ $result = $dbi->execute(
 );
 like($result->one->{$key1}, qr/^2010-01-01/);
 
-1;
+# DBIx::Custom join
+{
+  my $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1);
+  $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+  $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
+  eval { $dbi->execute("drop table $table2") };
+  $dbi->execute($create_table2);
+  $dbi->insert({$key1 => 1, $key3 => 5}, table => $table2);
+  eval { $dbi->execute("drop table $table3") };
+  $dbi->execute("create table $table3 ($key3 int, $key4 int)");
+  $dbi->insert({$key3 => 5, $key4 => 4}, table => $table3);
+  
+  my $where = $dbi->where;
+  $where->param({$key1 => 1});
+  $where->clause(":${key1}{=}");
+  $where->join(["left outer join $table3 on $table2.$key3 = $table3.$key3"]);
+  $rows = $dbi->select(
+    table => $table1,
+    where   => $where,
+    join  => ["left outer join $table2 on $table1.$key1 = $table2.$key1"]
+  )->all;
+  is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
+}
