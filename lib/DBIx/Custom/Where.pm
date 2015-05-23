@@ -9,8 +9,9 @@ use overload '""' => sub { shift->to_string }, fallback => 1;
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-has [qw/dbi param/],
-  clause => sub { [] };
+has 'dbi';
+has 'param';
+has clause => sub { [] };
 
 sub new {
   my $self = shift->SUPER::new(@_);

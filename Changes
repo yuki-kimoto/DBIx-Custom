@@ -3,6 +3,8 @@
     add select method column option syntax
     {__MY__ => '*'}
   - remove EXPERIMENTAL last_sql attribute
+  - add join attribute to DBIx::Custom::Where
+    to add join infomartion to select method
 0.34
   - (EXPERIMENTAL) fix async select not getting err bug.
 0.33
