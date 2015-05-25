@@ -1,3 +1,7 @@
+0.36
+  - Fix the bug that the following feature which is add to 0.35 don't work.
+    add join attribute to DBIx::Custom::Where
+    to add join infomartion to select method
 0.35
   - remove EXPERIMENTAL status the following.
     add select method column option syntax

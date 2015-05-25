@@ -5067,7 +5067,7 @@ $result = $dbi->execute(
 );
 like($result->one->{$key1}, qr/^2010-01-01/);
 
-# DBIx::Custom join
+# DBIx::Custom::Where join
 {
   my $dbi = DBIx::Custom->connect;
   eval { $dbi->execute("drop table $table1") };
@@ -5081,14 +5081,45 @@ like($result->one->{$key1}, qr/^2010-01-01/);
   $dbi->execute("create table $table3 ($key3 int, $key4 int)");
   $dbi->insert({$key3 => 5, $key4 => 4}, table => $table3);
   
-  my $where = $dbi->where;
-  $where->param({$key1 => 1});
-  $where->clause(":${key1}{=}");
-  $where->join(["left outer join $table3 on $table2.$key3 = $table3.$key3"]);
-  $rows = $dbi->select(
-    table => $table1,
-    where   => $where,
-    join  => ["left outer join $table2 on $table1.$key1 = $table2.$key1"]
-  )->all;
-  is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
+  {
+    my $where = $dbi->where;
+    $where->param({$key1 => 1});
+    $where->clause(":${key1}{=}");
+    $where->join(["left outer join $table3 on $table2.$key3 = $table3.$key3"]);
+
+    my $rows = $dbi->select(
+      table => $table1,
+      where   => $where,
+      join  => ["left outer join $table2 on $table1.$key1 = $table2.$key1"]
+    )->all;
+    is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
+  }
+  {
+    my $where = $dbi->where;
+    $where->param({"$table1.$key1" => 1});
+    $where->clause(":$table1.${key1}{=}");
+    $where->join(["left outer join $table3 on $table2.$key3 = $table3.$key3"]);
+
+    my $rows = $dbi->select(
+      column => "$table3.$key4 as " . u2("${table3}__$key4"),
+      table => $table1,
+      where   => $where,
+      join  => ["left outer join $table2 on $table1.$key1 = $table2.$key1"]
+    )->all;
+    is_deeply($rows, [{u2"${table3}__$key4" => 4}]);
+  }
+  {
+    my $where = $dbi->where;
+    $where->param({"$table3.$key4" => 4});
+    $where->clause(":$table3.${key4}{=}");
+    $where->join(["left outer join $table3 on $table2.$key3 = $table3.$key3"]);
+
+    my $rows = $dbi->select(
+      column => "$table1.$key1 as " . u2("${table1}__$key1"),
+      table => $table1,
+      where   => $where,
+      join  => ["left outer join $table2 on $table1.$key1 = $table2.$key1"]
+    )->all;
+    is_deeply($rows, [{u2"${table1}__$key1" => 1}]);
+  }
 }

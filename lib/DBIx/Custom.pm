@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.35';
+our $VERSION = '0.36';
 
 use Carp 'croak';
 use DBI;
@@ -1865,6 +1865,7 @@ sub _where_clause_and_param {
     $w->{param} = keys %$where_param
       ? $self->merge_param($where_param, $obj->param)
       : $obj->param;
+    $w->{join} = $obj->{join};
   }
   elsif ($where) {
     $w->{clause} = "where $where";
