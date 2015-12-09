@@ -198,6 +198,8 @@ If value is defined and has length, key and value is mapped.
 You can set code reference to C<condtion>.
 The subroutine return true, key and value is mapped.
 
+=back
+
 =head1 METHODS
 
 L<DBIx::Custom::Mapper> inherits all methods from L<Object::Simple>
@@ -236,9 +238,9 @@ The following hash reference is returned.
     'book.author' => '%Ken%',
   }
 
-=over 2
-
 B<Syntax:>
+
+=over 2
 
 =item * String => Hash reference
 
