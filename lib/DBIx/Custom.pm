@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.36';
+our $VERSION = '0.37';
 
 use Carp 'croak';
 use DBI;
@@ -20,52 +20,53 @@ use Encode qw/encode encode_utf8 decode_utf8/;
 use Scalar::Util qw/weaken/;
 
 has [qw/connector dsn default_schema password quote user exclude_table user_table_info
-     user_column_info safety_character/],
-  async_conf => sub { {} },
-  cache => 0,
-  cache_method => sub {
-    sub {
-      my $self = shift;
-      $self->{_cached} ||= {};
-      if (@_ > 1) { $self->{_cached}{$_[0]} = $_[1] }
-      else { return $self->{_cached}{$_[0]} }
-    }
-  },
-  option => sub { {} },
-  default_option => sub {
-    {
-      RaiseError => 1,
-      PrintError => 0,
-      AutoCommit => 1
-    }
-  },
-  filters => sub {
-    {
-      encode_utf8 => sub { encode_utf8($_[0]) },
-      decode_utf8 => sub { decode_utf8($_[0]) }
-    }
-  },
-  last_sql => '',
-  models => sub { {} },
-  now => sub {
-    sub {
-      my ($sec, $min, $hour, $mday, $mon, $year) = localtime;
-      $mon++;
-      $year += 1900;
-      my $now = sprintf("%04d-%02d-%02d %02d:%02d:%02d",
-        $year, $mon, $mday, $hour, $min, $sec);
-      return $now;
-    }
-  },
-  query_builder => sub {
+     user_column_info safety_character/];
+has async_conf => sub { {} };
+has cache => 0;
+has cache_method => sub {
+  sub {
     my $self = shift;
-    my $builder = DBIx::Custom::QueryBuilder->new(dbi => $self);
-    weaken $builder->{dbi};
-    return $builder;
-  },
-  result_class  => 'DBIx::Custom::Result',
-  separator => '.',
-  stash => sub { {} };
+    $self->{_cached} ||= {};
+    if (@_ > 1) { $self->{_cached}{$_[0]} = $_[1] }
+    else { return $self->{_cached}{$_[0]} }
+  }
+};
+has option => sub { {} };
+has default_option => sub {
+  {
+    RaiseError => 1,
+    PrintError => 0,
+    AutoCommit => 1
+  }
+};
+has filters => sub {
+  {
+    encode_utf8 => sub { encode_utf8($_[0]) },
+    decode_utf8 => sub { decode_utf8($_[0]) }
+  }
+};
+has last_sql => '';
+has models => sub { {} };
+has now => sub {
+  sub {
+    my ($sec, $min, $hour, $mday, $mon, $year) = localtime;
+    $mon++;
+    $year += 1900;
+    my $now = sprintf("%04d-%02d-%02d %02d:%02d:%02d",
+      $year, $mon, $mday, $hour, $min, $sec);
+    return $now;
+  }
+};
+has query_builder => sub {
+  my $self = shift;
+  my $builder = DBIx::Custom::QueryBuilder->new(dbi => $self);
+  weaken $builder->{dbi};
+  return $builder;
+};
+
+has result_class  => 'DBIx::Custom::Result';
+has separator => '.';
+has stash => sub { {} };
 
 has mytable_symbol => '__MY__';
 

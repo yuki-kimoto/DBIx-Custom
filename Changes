@@ -1,3 +1,5 @@
+0.37
+  - catch up Object::Simple 3.16. fix DEPRECATED warnings.
 0.36
   - Fix the bug that the following feature which is add to 0.35 don't work.
     add join attribute to DBIx::Custom::Where

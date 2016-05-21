@@ -9,11 +9,11 @@ use DBIx::Custom::Util qw/_subname _deprecate/;
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-has [qw/param/],
-  condition => sub {
-    sub { defined $_[0] && length $_[0] }
-  },
-  pass => sub { [] };
+has 'param';
+has condition => sub {
+  sub { defined $_[0] && length $_[0] }
+};
+has pass => sub { [] };
 
 sub map {
   my ($self, %rule) = @_;

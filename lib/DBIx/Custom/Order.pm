@@ -7,8 +7,8 @@ use overload
   '""'     => sub { shift->to_string },
   fallback => 1;
 
-has 'dbi',
-  orders => sub { [] };
+has 'dbi';
+has orders => sub { [] };
 
 sub prepend {
   my $self = shift;

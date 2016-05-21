@@ -4,9 +4,9 @@ use Object::Simple -base;
 use Carp 'croak';
 use DBIx::Custom::Util qw/_subname _deprecate/;
 
-has [qw/sth statement/],
-  sql => '',
-  columns => sub { [] };
+has [qw/sth statement/];
+has sql => '';
+has columns => sub { [] };
 
 # DEPRECATED!
 has 'default_filter';

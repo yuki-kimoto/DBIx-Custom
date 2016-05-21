@@ -4,8 +4,8 @@ use Object::Simple -base;
 use Carp 'croak';
 use DBIx::Custom::Util qw/_array_to_hash _subname _deprecate/;
 
-has [qw/dbi sth/],
-  stash => sub { {} };
+has [qw/dbi sth/];
+has stash => sub { {} };
 
 *all = \&fetch_hash_all;
 

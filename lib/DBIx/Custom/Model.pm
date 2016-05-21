@@ -7,8 +7,8 @@ use DBIx::Custom::Util qw/_subname _deprecate/;
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-has [qw/dbi table ctime mtime bind_type join primary_key/],
-  columns => sub { [] };
+has [qw/dbi table ctime mtime bind_type join primary_key/];
+has columns => sub { [] };
 
 our $AUTOLOAD;
 
