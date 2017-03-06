@@ -60,3 +60,8 @@ please change password
 
   PASSWORD
 
+
+STOP
+
+  $ORACLE_HOME/bin/dbstop
+ 
