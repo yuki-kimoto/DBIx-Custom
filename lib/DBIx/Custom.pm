@@ -2112,55 +2112,6 @@ sub register_tag_processor {
 }
 
 # DEPRECATED!
-sub default_bind_filter {
-  my $self = shift;
-  
-  _deprecate('0.24', "default_bind_filter is DEPRECATED!");
-  
-  if (@_) {
-    my $fname = $_[0];
-    
-    if (@_ && !$fname) {
-      $self->{default_out_filter} = undef;
-    }
-    else {
-      croak qq{Filter "$fname" is not registered}
-        unless exists $self->filters->{$fname};
-  
-      $self->{default_out_filter} = $self->filters->{$fname};
-    }
-    return $self;
-  }
-  
-  return $self->{default_out_filter};
-}
-
-# DEPRECATED!
-sub default_fetch_filter {
-  my $self = shift;
-
-  _deprecate('0.24', "default_fetch_filter is DEPRECATED!");
-  
-  if (@_) {
-    my $fname = $_[0];
-
-    if (@_ && !$fname) {
-      $self->{default_in_filter} = undef;
-    }
-    else {
-      croak qq{Filter "$fname" is not registered}
-        unless exists $self->filters->{$fname};
-  
-      $self->{default_in_filter} = $self->filters->{$fname};
-    }
-    
-    return $self;
-  }
-  
-  return $self->{default_in_filter};
-}
-
-# DEPRECATED!
 sub insert_param {
   my $self = shift;
   _deprecate('0.24', "insert_param is DEPRECATED! use values_clause instead");
@@ -3838,8 +3789,6 @@ L<DBIx::Custom>
   update_at # will be removed at 2017/1/1
   insert_at # will be removed at 2017/1/1
   register_tag # will be removed at 2017/1/1
-  default_bind_filter # will be removed at 2017/1/1
-  default_fetch_filter # will be removed at 2017/1/1
   insert_param_tag # will be removed at 2017/1/1
   register_tag # will be removed at 2017/1/1
   register_tag_processor # will be removed at 2017/1/1
@@ -3921,7 +3870,6 @@ L<DBIx::Custom::Result>
   end_filter # will be removed at 2017/1/1
   remove_end_filter # will be removed at 2017/1/1
   remove_filter # will be removed at 2017/1/1
-  default_filter # will be removed at 2017/1/1
   
   # Options
   kv method's multi option (from 0.28) # will be removed at 2018/3/1

@@ -586,20 +586,13 @@ is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "basic");
 
 $dbi->execute("delete from $table1");
 $dbi->register_filter(
-  twice       => sub { $_[0] * 2 },
   three_times => sub { $_[0] * 3 }
 );
-$dbi->default_bind_filter('twice');
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, filter => {$key1 => 'three_times'});
 $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
-is_deeply($rows, [{$key1 => 3, $key2 => 4}], "filter");
+is_deeply($rows, [{$key1 => 3, $key2 => 2}], "filter");
 $dbi->delete_all(table => $table1);
-$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$result = $dbi->execute("select * from $table1");
-$rows   = $result->all;
-is_deeply($rows, [{$key1 => 2, $key2 => 4}], "filter");
-$dbi->default_bind_filter(undef);
 
 
 eval { $dbi->execute("drop table $table1") };
@@ -987,18 +980,15 @@ eval {
 };
 like($@, qr/one/);
 
-test 'default_bind_filter';
+test 'bind filter';
 $dbi->execute("delete from $table1");
 $dbi->register_filter(
-  twice       => sub { $_[0] * 2 },
   three_times => sub { $_[0] * 3 }
 );
-$dbi->default_bind_filter('twice');
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, filter => {$key1 => 'three_times'});
 $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
-is_deeply($rows, [{$key1 => 3, $key2 => 4}], "filter");
-$dbi->default_bind_filter(undef);
+is_deeply($rows, [{$key1 => 3, $key2 => 2}], "filter");
 
 test 'update';
 eval { $dbi->execute("drop table $table1") };
@@ -1464,31 +1454,22 @@ is_deeply($rows, [], "table");
 test 'fetch filter';
 eval { $dbi->execute("drop table $table1") };
 $dbi->register_filter(
-  twice       => sub { $_[0] * 2 },
   three_times => sub { $_[0] * 3 }
 );
-$dbi->default_fetch_filter('twice');
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(table => $table1);
 $result->filter({$key1 => 'three_times'});
 $row = $result->one;
-is_deeply($row, {$key1 => 3, $key2 => 4}, "default_fetch_filter and filter");
+is_deeply($row, {$key1 => 3, $key2 => 2});
 
-$dbi->default_fetch_filter('twice');
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(column => [$key1, $key1, $key2], table => $table1);
 $result->filter({$key1 => 'three_times'});
 $row = $result->fetch_one;
-is_deeply($row, [3, 3, 4], "default_fetch_filter and filter");
-
-test 'fetch_first DEPRECATED!';
-$result = $dbi->select(column => [$key1, $key1, $key2], table => $table1);
-$result->filter({$key1 => 'three_times'});
-$row = $result->fetch_first;
-is_deeply($row, [3, 3, 4], "default_fetch_filter and filter");
+is_deeply($row, [3, 3, 2]);
 
 test 'filters';
 $dbi = DBIx::Custom->new;
@@ -2315,19 +2296,6 @@ eval {$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1,
            filter => {$key1 => 'no'}) };
 like($@, qr//);
 
-$dbi->register_filter(one => sub { });
-$dbi->default_fetch_filter('one');
-ok($dbi->default_fetch_filter);
-$dbi->default_bind_filter('one');
-ok($dbi->default_bind_filter);
-eval{$dbi->default_fetch_filter('no')};
-like($@, qr/not registered/);
-eval{$dbi->default_bind_filter('no')};
-like($@, qr/not registered/);
-$dbi->default_bind_filter(undef);
-ok(!defined $dbi->default_bind_filter);
-$dbi->default_fetch_filter(undef);
-ok(!defined $dbi->default_fetch_filter);
 eval {$dbi->execute("select * from $table1 {} {= author") };
 like($@, qr/Tag not finished/);
 
@@ -2340,10 +2308,6 @@ eval {$result->filter($key1 => 'no')};
 like($@, qr/not registered/);
 eval {$result->end_filter($key1 => 'no')};
 like($@, qr/not registered/);
-$result->default_filter(undef);
-ok(!defined $result->default_filter);
-$result->default_filter('one');
-is($result->default_filter->(), 1);
 
 test 'option';
 $dbi = DBIx::Custom->connect(option => {PrintError => 1});

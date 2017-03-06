@@ -1,3 +1,11 @@
+0.38
+  ---------------------------------------------------
+  NOTE: This release remove many deprecated features. 
+  ---------------------------------------------------
+  - remove DEPRECATED default_filter method(DBIx::Custom::Result).
+  - remove DEPRECATED default_fetch_filter(DBIx::Custom).
+  - remove DEPRECATED default_bind_filter(DBIx::Custom)
+  
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.
 0.36
