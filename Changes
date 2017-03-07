@@ -13,6 +13,8 @@
   - remove DBIX_CUSTOM_TAG_PARSE environment variable
   - remove DEPRECATED register_tag_processor(DBIx::Custom)
   - remove DEPRECATED register_tag(DBIx::Custom)
+  - remove DEPRECATED prepend method(DBIx::Custom::Order) array reference receiving
+
 
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.
