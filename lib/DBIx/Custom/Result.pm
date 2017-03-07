@@ -40,7 +40,7 @@ sub fetch {
   }
   
   # Filter
-  if (($self->{filter}) && !$self->{filter_off}) {
+  if ($self->{filter}) {
      my @columns = keys %{$self->{filter}};
      
      for my $column (@columns) {
@@ -50,15 +50,8 @@ sub fetch {
          for @{$self->{_pos}{$column} || []};
      }
   }
-  if ($self->{end_filter} && !$self->{filter_off}) {
-     for my $column (keys %{$self->{end_filter}}) {
-       next unless $self->{end_filter}->{$column};
-       $row[$_] = $self->{end_filter}->{$column}->($row[$_])
-         for @{$self->{_pos}{$column} || []};
-     }
-  }
 
-  return \@row;
+  \@row;
 }
 
 sub fetch_hash {
@@ -90,8 +83,7 @@ sub fetch_hash {
     }
   }        
   # Filter
-  if (($self->{filter}) && !$self->{filter_off})
-  {
+  if ($self->{filter}) {
      my @columns = keys %{$self->{filter}};
      
      for my $column (@columns) {
@@ -100,11 +92,7 @@ sub fetch_hash {
        $row->{$column} = $filter->($row->{$column}) if $filter;
      }
   }
-  if ($self->{end_filter} && !$self->{filter_off}) {
-     exists $self->{_columns}{$_} && $self->{end_filter}->{$_} and
-         $row->{$_} = $self->{end_filter}->{$_}->($row->{$_})
-       for keys %{$self->{end_filter}};
-  }
+
   $row;
 }
 
@@ -405,50 +393,6 @@ sub fetch_first {
   return $self->fetch_one(@_);
 }
 
-# DEPRECATED!
-sub filter_off {
-  _deprecate('0.24', "filter_off method is DEPRECATED!");
-  my $self = shift;
-  $self->{filter_off} = 1;
-  return $self;
-}
-
-# DEPRECATED!
-sub filter_on {
-  _deprecated('0.24', "filter_on method is DEPRECATED!");
-  my $self = shift;
-  $self->{filter_off} = 0;
-  return $self;
-}
-
-# DEPRECATED!
-sub end_filter {
-  _deprecate('0.24', "end_filter method is DEPRECATED!");
-  my $self = shift;
-  if (@_) {
-    my $end_filter = {};
-    if (ref $_[0] eq 'HASH') { $end_filter = $_[0] }
-    else { 
-      $end_filter = _array_to_hash(
-          @_ > 1 ? [@_] : $_[0]
-      );
-    }
-    for my $column (keys %$end_filter) {
-      my $fname = $end_filter->{$column};
-      if (exists $end_filter->{$column}
-        && defined $fname
-        && ref $fname ne 'CODE') 
-      {
-        croak qq{Filter "$fname" is not registered" } . _subname
-          unless exists $self->dbi->filters->{$fname};
-        $end_filter->{$column} = $self->dbi->filters->{$fname};
-      }
-    }
-    $self->{end_filter} = {%{$self->end_filter}, %$end_filter};
-    return $self;
-  }
-  return $self->{end_filter} ||= {};
-}
 # DEPRECATED!
 has 'filter_check'; 
 

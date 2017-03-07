@@ -3731,9 +3731,6 @@ L<DBIx::Custom::Result>
   column (from 0.25) # will be removed at 2017/2/1
   fetch_first # will be removed at 2017/2/1
   fetch_hash_first # will be removed 2017/2/1
-  filter_on # will be removed at 2017/1/1
-  filter_off # will be removed at 2017/1/1
-  end_filter # will be removed at 2017/1/1
   
   # Options
   kv method's multi option (from 0.28) # will be removed at 2018/3/1
