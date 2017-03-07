@@ -367,35 +367,6 @@ sub _cache {
   $self->{_cache} = 1;
 }
 
-# DEPRECATED!
-sub column {
-  my $self = shift;
-  
-  _deprecate('0.25', "DBIx::Custom::Result::column method is DEPRECATED. "
-    . "use values method instead");
-  
-  return $self->values(@_);
-}
-
-# DEPRECATED!
-sub fetch_hash_first {
-  my $self = shift;
-  _deprecate('0.24', "DBIx::Custom::Result::fetch_hash_first is DEPRECATED! "
-    . "use fetch_hash_one instead");
-  return $self->fetch_hash_one(@_);
-}
-
-# DEPRECATED!
-sub fetch_first {
-  my $self = shift;
-  _deprecate('0.24', "DBIx::Custom::Result::fetch_first is DEPRECATED! "
-    . " use fetch_one instead");
-  return $self->fetch_one(@_);
-}
-
-# DEPRECATED!
-has 'filter_check'; 
-
 1;
 
 =head1 NAME

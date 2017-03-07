@@ -16,10 +16,13 @@
   - remove DEPRECATED prepend method(DBIx::Custom::Order) array reference receiving
   - remove DEPRECATED remote_end_filter(DIBx::Custom::Result)
   - remote DEPRECATED remove_filter(DIBx::Custom::Result)
-  - remove DEPRECATED filter_on(DIBx::Custom::Result)
-  - remove DEPRECATED filter_off(DIBx::Custom::Result)
-  - remove DEPRECATED end_filter(DIBx::Custom::Result)
-
+  - remove DEPRECATED filter_on(DBIx::Custom::Result)
+  - remove DEPRECATED filter_off(DBIx::Custom::Result)
+  - remove DEPRECATED end_filter(DBIx::Custom::Result)
+  - remove DEPRECATED filter_check(DBIx::Custom::Result)
+  - remove DEPRECATED column(DBIx::Custom::Result)
+  - remove DEPRECATED fetch_first(DBIx::Custom::Result)
+  - remove DEPRECATED fetch_hash_first(DBIx::Custom::Result)
 
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.

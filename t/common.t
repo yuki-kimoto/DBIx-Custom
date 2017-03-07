@@ -403,7 +403,6 @@ $result = $dbi->execute($query);
 $rows = $result->fetch_hash_all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "all");
 
-is_deeply($dbi->select($key1, table => $table1)->column, [1, 3]);
 is_deeply($dbi->select($key1, table => $table1)->values, [1, 3]);
 
 is($dbi->select('count(*)', table => $table1)->value, 2);
@@ -1523,11 +1522,6 @@ is_deeply($row, {$key1 => 2, $key2 => 6}, "insert");
 $result = $dbi->select(table => $table1);
 $row   = $result->one;
 is_deeply($row, {$key1 => 6, $key2 => 12}, "insert");
-
-test 'fetch_hash_first DEPRECATED!';
-$result = $dbi->execute("select * from $table1");
-$row   = $result->fetch_hash_first;
-is_deeply($row, {$key1 => 2, $key2 => 6}, "insert");
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };

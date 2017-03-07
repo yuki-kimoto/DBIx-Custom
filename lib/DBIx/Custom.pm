@@ -3723,14 +3723,6 @@ L<DBIx::Custom::Model>
 
 L<DBIx::Custom::Result>
   
-  # Attribute methods
-  filter_check # will be removed at 2017/1/1
-  
-  # Methods
-  column (from 0.25) # will be removed at 2017/2/1
-  fetch_first # will be removed at 2017/2/1
-  fetch_hash_first # will be removed 2017/2/1
-  
   # Options
   kv method's multi option (from 0.28) # will be removed at 2018/3/1
 
