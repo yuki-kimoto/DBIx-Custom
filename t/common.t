@@ -1729,20 +1729,6 @@ $result->end_filter($key1 => undef);
 $row = $result->fetch;
 is_deeply($row, [1, 1, 40], 'apply_filter overwrite');
 
-test 'remove_end_filter and remove_filter';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$result = $dbi->select(table => $table1);
-$row = $result
-  ->filter($key1 => sub { $_[0] * 2 }, $key2 => sub { $_[0] * 4 })
-  ->remove_filter
-  ->end_filter($key1 => sub { $_[0] * 3 }, $key2 => sub { $_[0] * 5 })
-  ->remove_end_filter
-  ->fetch_one;
-is_deeply($row, [1, 2]);
-
 test 'empty where select';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };

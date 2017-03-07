@@ -450,20 +450,6 @@ sub end_filter {
   return $self->{end_filter} ||= {};
 }
 # DEPRECATED!
-sub remove_end_filter {
-  _deprecate('0.24', "remove_end_filter is DEPRECATED!");
-  my $self = shift;
-  $self->{end_filter} = {};
-  return $self;
-}
-# DEPRECATED!
-sub remove_filter {
-  _deprecate('0.24', "remove_filter is DEPRECATED!");
-  my $self = shift;
-  $self->{filter} = {};
-  return $self;
-}
-# DEPRECATED!
 has 'filter_check'; 
 
 1;

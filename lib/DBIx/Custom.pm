@@ -3734,8 +3734,6 @@ L<DBIx::Custom::Result>
   filter_on # will be removed at 2017/1/1
   filter_off # will be removed at 2017/1/1
   end_filter # will be removed at 2017/1/1
-  remove_end_filter # will be removed at 2017/1/1
-  remove_filter # will be removed at 2017/1/1
   
   # Options
   kv method's multi option (from 0.28) # will be removed at 2018/3/1

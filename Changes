@@ -14,6 +14,8 @@
   - remove DEPRECATED register_tag_processor(DBIx::Custom)
   - remove DEPRECATED register_tag(DBIx::Custom)
   - remove DEPRECATED prepend method(DBIx::Custom::Order) array reference receiving
+  - remove DEPRECATED remote_end_filter(DIBx::Custom::Result)
+  - remote DEPRECATED remove_filter(DIBx::Custom::Result)
 
 
 0.37
