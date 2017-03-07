@@ -7,8 +7,6 @@ our $VERSION = '0.37';
 use Carp 'croak';
 use DBI;
 use DBIx::Custom::Result;
-use DBIx::Custom::Query;
-use DBIx::Custom::QueryBuilder;
 use DBIx::Custom::Where;
 use DBIx::Custom::Model;
 use DBIx::Custom::Tag;
@@ -57,13 +55,6 @@ has now => sub {
     return $now;
   }
 };
-has query_builder => sub {
-  my $self = shift;
-  my $builder = DBIx::Custom::QueryBuilder->new(dbi => $self);
-  weaken $builder->{dbi};
-  return $builder;
-};
-
 has result_class  => 'DBIx::Custom::Result';
 has separator => '.';
 has stash => sub { {} };
@@ -992,7 +983,6 @@ sub new {
     'insert_param' => \&DBIx::Custom::Tag::insert_param,
     'update_param' => \&DBIx::Custom::Tag::update_param
   };
-  $self->{tag_parse} = 1 unless exists $self->{tag_parse};
   $self->{cache} = 0 unless exists $self->{cache};
   
   return $self;
@@ -1472,67 +1462,29 @@ sub _create_query {
   # Cache
   my $cache = $self->{cache};
   
-  # Query
-  my $query;
-  
-  # Get cached query
-  if ($cache) {
-    
-    # Get query
-    my $q = $self->cache_method->($self, $source);
-    
-    # Create query
-    if ($q) {
-      $query = DBIx::Custom::Query->new($q);
-      $query->{filters} = $self->filters;
-    }
+  # Create query
+  my $sql = " " . $source || '';
+  my @columns;
+  my $c = $self->{safety_character};
+  my $re = $c eq 'a-zA-Z0-9_'
+    ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
+    : qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
+  my %duplicate;
+  my $duplicate;
+  # Parameter regex
+  $sql =~ s/([0-9]):/$1\\:/g;
+  my $new_sql = '';
+  while ($sql =~ /$re/) {
+    push @columns, $2;
+    $duplicate = 1 if ++$duplicate{$columns[-1]} > 1;
+    ($new_sql, $sql) = defined $3 ?
+      ($new_sql . "$1$2 $3 ?", " $4") : ($new_sql . "$1?", " $4");
   }
+  $new_sql .= $sql;
+  $new_sql =~ s/\\:/:/g if index($new_sql, "\\:") != -1;
   
   # Create query
-  unless ($query) {
-
-    # Create query
-    my $tag_parse = exists $ENV{DBIX_CUSTOM_TAG_PARSE}
-      ? $ENV{DBIX_CUSTOM_TAG_PARSE} : $self->{tag_parse};
-
-    my $sql = " " . $source || '';
-    if ($tag_parse && ($sql =~ /\s\{/)) {
-      $query = $self->query_builder->build_query($sql);
-    }
-    else {
-      my @columns;
-      my $c = $self->{safety_character};
-      my $re = $c eq 'a-zA-Z0-9_'
-        ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
-        : qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
-      my %duplicate;
-      my $duplicate;
-      # Parameter regex
-      $sql =~ s/([0-9]):/$1\\:/g;
-      my $new_sql = '';
-      while ($sql =~ /$re/) {
-        push @columns, $2;
-        $duplicate = 1 if ++$duplicate{$columns[-1]} > 1;
-        ($new_sql, $sql) = defined $3 ?
-          ($new_sql . "$1$2 $3 ?", " $4") : ($new_sql . "$1?", " $4");
-      }
-      $new_sql .= $sql;
-      $new_sql =~ s/\\:/:/g if index($new_sql, "\\:") != -1;
-
-      # Create query
-      $query = {sql => $new_sql, columns => \@columns, duplicate => $duplicate};
-    }
-    
-    # Save query to cache
-    $self->cache_method->(
-      $self, $source,
-      {
-        sql     => $query->{sql}, 
-        columns => $query->{columns},
-        tables  => $query->{tables} || []
-      }
-    ) if $cache;
-  }
+  my $query = {sql => $new_sql, columns => \@columns, duplicate => $duplicate};
 
   # Filter SQL
   $query->{sql} = $after_build_sql->($query->{sql}) if $after_build_sql;
@@ -1954,18 +1906,6 @@ has default_dbi_option => sub {
   return shift->default_option;
 };
 
-# DEPRECATED
-sub tag_parse {
- my $self = shift;
- _deprecate('0.24', "tag_parse is DEPRECATED! use \$ENV{DBIX_CUSTOM_TAG_PARSE} " .
-   "environment variable");
-  if (@_) {
-    $self->{tag_parse} = $_[0];
-    return $self;
-  }
-  return $self->{tag_parse};
-}
-
 # DEPRECATED!
 sub method {
   _deprecate('0.24', "method is DEPRECATED! use helper instead");
@@ -2086,29 +2026,6 @@ sub insert_at {
   $param = $self->merge_param($where_param, $param);
   
   return $self->insert(param => $param, %opt);
-}
-
-# DEPRECATED!
-sub register_tag {
-  my $self = shift;
-  
-  _deprecate('0.24', "register_tag is DEPRECATED!");
-  
-  # Merge tag
-  my $tags = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-  $self->{_tags} = {%{$self->{_tags} || {}}, %$tags};
-  
-  return $self;
-}
-
-# DEPRECATED!
-sub register_tag_processor {
-  my $self = shift;
-  _deprecate('0.24', "register_tag_processor is DEPRECATED!");
-  # Merge tag
-  my $tag_processors = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-  $self->{_tags} = {%{$self->{_tags} || {}}, %{$tag_processors}};
-  return $self;
 }
 
 # DEPRECATED!
@@ -2435,12 +2352,6 @@ Each value in option override the value of C<default_option>.
 
 Password, used when C<connect> method is executed.
 
-=head2 query_builder
-
-  my $builder = $dbi->query_builder;
-
-Creat query builder. This is L<DBIx::Custom::QueryBuilder>.
-
 =head2 quote
 
   my quote = $dbi->quote;
@@ -2479,14 +2390,6 @@ This have effect to C<column> and C<mycolumn> method,
 and C<select> method's column option.
 
 Default to C<.>.
-
-=head2 tag_parse
-
-  my $tag_parse = $dbi->tag_parse(0);
-  $dbi = $dbi->tag_parse;
-
-Enable DEPRECATED tag parsing functionality, default to 1.
-If you want to disable tag parsing functionality, set to 0.
 
 =head2 user
 
@@ -3757,23 +3660,17 @@ L<DBIx::Custom::Model> execute method call L<DBIx::Custom> execute.
 
 Suppress deprecation warnings before specified version.
 
-=head2 DBIX_CUSTOM_TAG_PARSE
-
-If you set DBIX_CUSTOM_TAG_PARSE to 0, tag parsing is off.
-
 =head1 DEPRECATED FUNCTIONALITY
 
 L<DBIx::Custom>
 
   # Attribute methods
-  tag_parse # will be removed 2017/1/1
   default_dbi_option # will be removed 2017/1/1
   dbi_option # will be removed 2017/1/1
   data_source # will be removed at 2017/1/1
   dbi_options # will be removed at 2017/1/1
   filter_check # will be removed at 2017/1/1
   reserved_word_quote # will be removed at 2017/1/1
-  cache_method # will be removed at 2017/1/1
   
   # Methods
   update_timestamp # will be removed at 2017/1/1
@@ -3788,10 +3685,7 @@ L<DBIx::Custom>
   delete_at # will be removed at 2017/1/1
   update_at # will be removed at 2017/1/1
   insert_at # will be removed at 2017/1/1
-  register_tag # will be removed at 2017/1/1
   insert_param_tag # will be removed at 2017/1/1
-  register_tag # will be removed at 2017/1/1
-  register_tag_processor # will be removed at 2017/1/1
   update_param_tag # will be removed at 2017/1/1
   
   # Options
@@ -3827,34 +3721,6 @@ L<DBIx::Custom::Model>
   filter # will be removed at 2017/1/1
   name # will be removed at 2017/1/1
   type # will be removed at 2017/1/1
-
-L<DBIx::Custom::Query>
-
-This module is DEPRECATED! # will be removed at 2017/1/1
-  
-  # Attribute methods
-  default_filter # will be removed at 2017/1/1
-  table # will be removed at 2017/1/1
-  filters # will be removed at 2017/1/1
-  
-  # Methods
-  filter # will be removed at 2017/1/1
-
-L<DBIx::Custom::QueryBuilder>
-
-This module is DEPRECATED! # will be removed at 2017/1/1
-  
-  # Attribute methods
-  tags # will be removed at 2017/1/1
-  tag_processors # will be removed at 2017/1/1
-  
-  # Methods
-  register_tag # will be removed at 2017/1/1
-  register_tag_processor # will be removed at 2017/1/1
-  
-  # Others
-  build_query("select * from {= title}"); # tag parsing functionality
-                                          # will be removed at 2017/1/1
 
 L<DBIx::Custom::Result>
   

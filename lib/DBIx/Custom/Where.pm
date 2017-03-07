@@ -38,7 +38,6 @@ sub to_string {
   # Parse
   my $where = [];
   my $count = {};
-  $self->{_query_builder} = $self->dbi->query_builder;
   my $c = $self->dbi->safety_character;
   $self->{_re} = $c eq 'a-zA-Z0-9_' ?
     qr/[^\\]:([$c\.]+)/so : qr/[^\\]:([$c\.]+)/s;
@@ -98,14 +97,9 @@ sub _parse {
     
     my $column;
     my $sql = " " . $clause || '';
-    if ($self->{_tag_parse} && ($sql =~ /\s\{/)) {
-      my $columns = $self->dbi->query_builder->build_query($sql)->{columns};
-      $column = $columns->[0];
-    }
-    else {
-      $sql =~ s/([0-9]):/$1\\:/g;
-      ($column) = $sql =~ /$re/;
-    }
+    $sql =~ s/([0-9]):/$1\\:/g;
+    ($column) = $sql =~ /$re/;
+
     unless (defined $column) {
       push @$where, $clause;
       $pushed = 1;

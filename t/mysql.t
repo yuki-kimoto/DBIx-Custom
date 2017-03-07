@@ -129,18 +129,6 @@ $model->update_or_insert(
 $row = $dbi->select(id => 1, table => 'table1', primary_key => 'key1')->one;
 is_deeply($row, {key1 => 1, key2 => 3}, "basic");
 
-# Test memory leaks
-for (1 .. 200) {
-  $dbi = DBIx::Custom->connect(
-    dsn => "dbi:mysql:database=$database;host=localhost;port=10000",
-    user => $user,
-    password => $password
-  );
-  $dbi->query_builder;
-  $dbi->create_model(table => 'table1');
-  $dbi->create_model(table => 'table2');
-}
-
 test 'limit';
 $dbi = DBIx::Custom->connect(
   dsn => "dbi:mysql:database=$database",
@@ -151,18 +139,6 @@ $dbi->delete_all(table => 'table1');
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 2});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 4});
 $dbi->insert(table => 'table1', param => {key1 => 1, key2 => 6});
-$dbi->register_tag(
-  limit => sub {
-    my ($count, $offset) = @_;
-    
-    my $s = '';
-    $offset = 0 unless defined $offset;
-    $s .= "limit $offset";
-    $s .= ", $count";
-    
-    return [$s, []];
-  }
-);
 $rows = $dbi->select(
 table => 'table1',
 where => {key1 => 1},

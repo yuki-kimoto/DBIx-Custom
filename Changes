@@ -4,8 +4,16 @@
   ---------------------------------------------------
   - remove DEPRECATED default_filter method(DBIx::Custom::Result).
   - remove DEPRECATED default_fetch_filter(DBIx::Custom).
-  - remove DEPRECATED default_bind_filter(DBIx::Custom)
-  
+  - remove DEPRECATED default_bind_filter(DBIx::Custom).
+  - remove DEPRECATED DBIx::Custom::Query.
+  - remove DEPRECATED DBIx::Custom::QueryBuilder.
+  - remove DEPRECATED cache_method(DBIx::Custom).
+  - remove DEPRECATED query_builder(DBIx::Custom).
+  - remove DEPRECATED tag_parse(DBIx::Custom)
+  - remove DBIX_CUSTOM_TAG_PARSE environment variable
+  - remove DEPRECATED register_tag_processor(DBIx::Custom)
+  - remove DEPRECATED register_tag(DBIx::Custom)
+
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.
 0.36

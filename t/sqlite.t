@@ -321,35 +321,6 @@ $dbi->execute($create_table1);
 $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
 $dbi->insert({key1 => 1, key2 => 4}, table => 'table1');
 $dbi->insert({key1 => 1, key2 => 6}, table => 'table1');
-$dbi->register_tag(
-  limit => sub {
-    my ($count, $offset) = @_;
-    
-    my $s = '';
-    $s .= "limit $count";
-    $s .= " offset $offset" if defined $offset;
-    
-    return [$s, []];
-  }
-);
-$rows = $dbi->select(
-table => 'table1',
-where => {key1 => 1},
-append => "order by key2 {limit 1 0}"
-)->all;
-is_deeply($rows, [{key1 => 1, key2 => 2}]);
-$rows = $dbi->select(
-table => 'table1',
-where => {key1 => 1},
-append => "order by key2 {limit 2 1}"
-)->all;
-is_deeply($rows, [{key1 => 1, key2 => 4},{key1 => 1, key2 => 6}]);
-$rows = $dbi->select(
-table => 'table1',
-where => {key1 => 1},
-append => "order by key2 {limit 1}"
-)->all;
-is_deeply($rows, [{key1 => 1, key2 => 2}]);
 
 test 'join function';
 $dbi = DBIx::Custom->connect;
