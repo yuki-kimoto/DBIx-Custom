@@ -9,7 +9,6 @@ use DBI;
 use DBIx::Custom::Result;
 use DBIx::Custom::Where;
 use DBIx::Custom::Model;
-use DBIx::Custom::Tag;
 use DBIx::Custom::Order;
 use DBIx::Custom::Util qw/_array_to_hash _subname _deprecate/;
 use DBIx::Custom::Mapper;
