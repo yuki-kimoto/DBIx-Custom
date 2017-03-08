@@ -571,16 +571,6 @@ is($rows->[0]->{$key1}, $rows->[0]->{$key2});
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key1 => 1};
-$dbi->insert($param, table => $table1, created_at => $key2);
-$result = $dbi->select(table => $table1);
-is_deeply($param, {$key1 => 1});
-$row   = $result->one;
-is($row->{$key1}, 1);
-like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$param = {$key1 => 1};
 $dbi->insert($param, table => $table1, ctime => $key2);
 $result = $dbi->select(table => $table1);
 is_deeply($param, {$key1 => 1});
@@ -591,58 +581,12 @@ like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key1 => 1};
-$dbi->insert($param, table => $table1, updated_at => $key3);
-$result = $dbi->select(table => $table1);
-is_deeply($param, {$key1 => 1});
-$row   = $result->one;
-is($row->{$key1}, 1);
-like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$param = {$key1 => 1};
 $dbi->insert($param, table => $table1, mtime => $key3);
 $result = $dbi->select(table => $table1);
 is_deeply($param, {$key1 => 1});
 $row   = $result->one;
 is($row->{$key1}, 1);
 like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$param = {$key1 => 1};
-$dbi->insert($param, table => $table1, created_at => $key2, updated_at => $key3);
-$result = $dbi->select(table => $table1);
-is_deeply($param, {$key1 => 1});
-$row   = $result->one;
-is($row->{$key1}, 1);
-like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-is($row->{$key2}, $row->{$key3});
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$param = {$key1 => 1};
-$dbi->insert($param, table => $table1, created_at => $key2, mtime => $key3);
-$result = $dbi->select(table => $table1);
-is_deeply($param, {$key1 => 1});
-$row   = $result->one;
-is($row->{$key1}, 1);
-like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-is($row->{$key2}, $row->{$key3});
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$param = {$key1 => 1};
-$dbi->insert($param, table => $table1, ctime => $key2, updated_at => $key3);
-$result = $dbi->select(table => $table1);
-is_deeply($param, {$key1 => 1});
-$row   = $result->one;
-is($row->{$key1}, 1);
-like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-is($row->{$key2}, $row->{$key3});
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
@@ -658,17 +602,6 @@ is($row->{$key2}, $row->{$key3});
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
-$model = $dbi->create_model(table => $table1, created_at => $key2);
-$param = {$key1 => 1};
-$model->insert($param);
-$result = $dbi->select(table => $table1);
-is_deeply($param, {$key1 => 1});
-$row   = $result->one;
-is($row->{$key1}, 1);
-like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
 $model = $dbi->create_model(table => $table1, ctime => $key2);
 $param = {$key1 => 1};
 $model->insert($param);
@@ -681,17 +614,6 @@ like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key1 => 1};
-$model = $dbi->create_model(table => $table1, updated_at => $key3);
-$model->insert($param);
-$result = $dbi->select(table => $table1);
-is_deeply($param, {$key1 => 1});
-$row   = $result->one;
-is($row->{$key1}, 1);
-like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$param = {$key1 => 1};
 $model = $dbi->create_model(table => $table1, mtime => $key3);
 $model->insert($param);
 $result = $dbi->select(table => $table1);
@@ -699,45 +621,6 @@ is_deeply($param, {$key1 => 1});
 $row   = $result->one;
 is($row->{$key1}, 1);
 like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$param = {$key1 => 1};
-$model = $dbi->create_model(table => $table1, created_at => $key2, updated_at => $key3);
-$model->insert($param);
-$result = $dbi->select(table => $table1);
-is_deeply($param, {$key1 => 1});
-$row   = $result->one;
-is($row->{$key1}, 1);
-like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-is($row->{$key2}, $row->{$key3});
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$param = {$key1 => 1};
-$model = $dbi->create_model(table => $table1, created_at => $key2, mtime => $key3);
-$model->insert($param);
-$result = $dbi->select(table => $table1);
-is_deeply($param, {$key1 => 1});
-$row   = $result->one;
-is($row->{$key1}, 1);
-like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-is($row->{$key2}, $row->{$key3});
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$param = {$key1 => 1};
-$model = $dbi->create_model(table => $table1, ctime=> $key2, updated_at => $key3);
-$model->insert($param);
-$result = $dbi->select(table => $table1);
-is_deeply($param, {$key1 => 1});
-$row   = $result->one;
-is($row->{$key1}, 1);
-like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-like($row->{$key3}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-is($row->{$key2}, $row->{$key3});
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
@@ -758,22 +641,6 @@ $dbi->insert([{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}] , table => $ta
 $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "basic");
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert([{$key1 => 1}, {$key1 => 3}] ,
-  table => $table1,
-  updated_at => $key2,
-  created_at => $key3
-);
-$result = $dbi->execute("select * from $table1");
-$rows   = $result->all;
-is($rows->[0]->{$key1}, 1);
-is($rows->[1]->{$key1}, 3);
-like($rows->[0]->{$key2}, qr/\d{2}:/);
-like($rows->[1]->{$key2}, qr/\d{2}:/);
-like($rows->[0]->{$key3}, qr/\d{2}:/);
-like($rows->[1]->{$key3}, qr/\d{2}:/);
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
@@ -1109,17 +976,6 @@ eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key3 => 4};
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->update($param, table => $table1, updated_at => $key2, where => {$key1 => 1});
-$result = $dbi->select(table => $table1);
-is_deeply($param, {$key3 => 4});
-$row   = $result->one;
-is($row->{$key3}, 4);
-like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$param = {$key3 => 4};
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
 $dbi->update($param, table => $table1, mtime => $key2, where => {$key1 => 1});
 $result = $dbi->select(table => $table1);
 is_deeply($param, {$key3 => 4});
@@ -1131,30 +987,7 @@ eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_2);
 $param = {$key3 => 4};
 $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->update($param, table => $table1, updated_at => $key2, where => {$key3 => 3});
-$result = $dbi->select(table => $table1);
-is_deeply($param, {$key3 => 4});
-$row   = $result->one;
-is($row->{$key3}, 4);
-like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$param = {$key3 => 4};
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
 $dbi->update($param, table => $table1, mtime => $key2, where => {$key3 => 3});
-$result = $dbi->select(table => $table1);
-is_deeply($param, {$key3 => 4});
-$row   = $result->one;
-is($row->{$key3}, 4);
-like($row->{$key2}, qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$model = $dbi->create_model(table => $table1, updated_at => $key2);
-$param = {$key3 => 4};
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$model->update($param, where => {$key1 => 1});
 $result = $dbi->select(table => $table1);
 is_deeply($param, {$key3 => 4});
 $row   = $result->one;
@@ -1485,14 +1318,14 @@ $dbi->dbh->disconnect;
 eval{$dbi->execute($query, {$key1 => {a => 1}})};
 ok($@, "execute fail");
 
-test 'method';
+test 'helper';
 $dbi->helper(
   one => sub { 1 }
 );
 $dbi->helper(
   two => sub { 2 }
 );
-$dbi->method({
+$dbi->helper({
   twice => sub {
     my $self = shift;
     return $_[0] * 2;
@@ -1978,8 +1811,6 @@ eval {$dbi->apply_filter($table1, $key2, {out => 'no'})};
 like($@, qr/not registered/);
 eval {$dbi->apply_filter($table1, $key2, {in => 'no'})};
 like($@, qr/not registered/);
-$dbi->method({one => sub { 1 }});
-is($dbi->one, 1);
 
 eval{DBIx::Custom->connect(dsn => undef)};
 like($@, qr/_connect/);
@@ -3230,7 +3061,7 @@ $rows = [
   my $query;
   for my $row (@$rows) {
     $query ||= $model->insert($row, query => 1);
-    $model->execute($query, $row, filter => {$key7 => sub { $_[0] * 2 }});
+    $dbi->execute($query, $row, filter => {$key7 => sub { $_[0] * 2 }});
   }
   is_deeply($dbi->select(table => $table1, append => 'order by key2')->all,
     [
@@ -3239,89 +3070,6 @@ $rows = [
     ]
   );
 }
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-{
-  $ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE} = 1;
-  $model = $dbi->create_model(table => $table1, primary_key => $key1);
-  eval {$model->execute("select * from $table1 where :${key1}{=}", id => 1)};
-  like($@, qr/primary_key/);
-  delete $ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE};
-}
-
-{
-  $ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE} = 1;
-  $model = $dbi->create_model(table => $table1, primary_key => $key1);
-  $model->insert({$key1 => 1});
-  $result = $model->execute("select * from $table1 where :${key1}{=}", id => 1,
-    table => $table1, primary_key => $key1);
-  is($result->one->{$key1}, 1);
-  delete $ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE};
-}
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-{
-  $model = $dbi->create_model(table => $table1, primary_key => $key1);
-  $model->insert({$key1 => 1});
-  eval {$result = $model->execute("select * from $table1 where :${key1}{=}", {}, id => 1)};
-  is($result->one->{$key1}, 1);
-}
-
-test 'id option more';
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_highperformance);
-$row = {
-  $key7 => 10, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => 2
-};
-$model = $dbi->create_model(table => $table1, primary_key => $key1);
-$model->insert($row);
-$query = $model->update({$key7 => 11}, id => 1, query => 1);
-$model->execute($query, {$key7 => 11}, id => 1, filter => {"$table1.$key1" => sub { $_[0] * 2 }});
-is_deeply($dbi->select(table => $table1)->one,
-  {$key7 => 11, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => 2},
-);
-
-eval { $dbi->execute("drop table $table1") };
-eval { $dbi->execute("drop table $table2") };
-$dbi->execute($create_table1);
-$dbi->execute($create_table2);
-$model = $dbi->create_model(table => $table1, primary_key => $key1);
-$model->insert({$key1 => 1, $key2 => 2});
-$model = $dbi->create_model(table => $table2, primary_key => $key1,
-  join => ["left outer join $table1 on $table2.$key1 = $table1.$key1"]);
-$model->insert({$key1 => 1, $key3 => 3});
-$result = $model->select(
-  column => {$table1 => ["$key2"]},
-  id => 1
-);
-is_deeply($result->all, [{"$table1.$key2" => 2}]);
-
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_highperformance);
-$row = {
-  $key7 => 10, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => 2
-};
-$model = $dbi->create_model(table => $table1, primary_key => $key1);
-$model->insert($row);
-$query = $model->delete(id => 1, query => 1);
-$model->execute($query, {}, id => 1, , filter => {"$table1.$key1" => sub { $_[0] * 2 }});
-is_deeply($dbi->select(table => $table1)->all, []);
-
-eval { $dbi->execute("drop table $table1") };
-eval { $dbi->execute($create_table1_highperformance) };
-$row = {
-  $key7 => 10, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => 2
-};
-$model = $dbi->create_model(table => $table1, primary_key => $key1);
-$model->insert($row);
-$query = $model->select(id => 1, query => 1);
-$model->execute($query, {$key7 => 11}, id => 1, filter => {"$table1.$key1" => sub { $_[0] * 2 }});
-$query = undef;
-is_deeply($dbi->select(table => $table1)->one,
-  {$key7 => 10, $key6 => 2, $key5 => 3, $key4 => 4, $key3 => 5, $key2 => 5, $key1 => 2},
-);
 
 test 'result';
 $dbi = DBIx::Custom->connect;
@@ -3558,34 +3306,6 @@ $dbi->create_model(
 $model2 = $dbi->create_model(
   table => $table2
 );
-$dbi->create_model(
-  table => $table3,
-  filter => [
-    $key1 => {in => sub { uc $_[0] }}
-  ]
-);
-$dbi->setup_model;
-$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
-$model = $dbi->model($table1);
-$result = $model->select(
-  column => [$model->mycolumn, $model->column($table2)],
-  where => {"$table1.$key1" => 1}
-);
-is_deeply($result->one,
-  {$key1 => 1, $key2 => 2, "$table2.$key1" => 1, "$table2.$key3" => 3});
-is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
-
-test 'model method';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table2") };
-$dbi->execute($create_table2);
-$dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
-$model = $dbi->create_model(
-  table => $table2
-);
-$model->method(foo => sub { shift->select(@_) });
-is_deeply($model->foo->one, {$key1 => 1, $key3 => 3});
 
 test 'model helper';
 $dbi = DBIx::Custom->connect;

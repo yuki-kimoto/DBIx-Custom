@@ -23,7 +23,13 @@
   - remove DEPRECATED column(DBIx::Custom::Result)
   - remove DEPRECATED fetch_first(DBIx::Custom::Result)
   - remove DEPRECATED fetch_hash_first(DBIx::Custom::Result)
-
+  - remove DEPRECATED execute(DBIx::Custom::Model)
+  - remove DEPRECATED method(DBIx::Custom::Model)
+  - remove DEPRECATED filter(DBIx::Custom::Model)
+  - remove DEPRECATED name(DBIx::Custom::Model)
+  - remove DEPRECATED type(DBIx::Custom::Model)
+  - remove DEPRECATED DBIX_CUSTOM_DISABLE_MODEL_EXECUTE environment variable
+  
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.
 0.36

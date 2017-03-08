@@ -60,12 +60,12 @@ $rows   = $result->all;
 is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
 
 
-test 'insert created_at and updated_at scalar reference';
+test 'insert ctime and mtime scalar reference';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2, key3)');
 $dbi->now(\"datetime('now')");
-$dbi->insert({key1 => \"datetime('now')"}, created_at => 'key2', updated_at => 'key3', table => 'table1');
+$dbi->insert({key1 => \"datetime('now')"}, ctime => 'key2', mtime => 'key3', table => 'table1');
 $result = $dbi->select(table => 'table1');
 $row   = $result->one;
 is($row->{key1}, $row->{key2});
@@ -75,39 +75,39 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2, key3)');
 $dbi->now(\"datetime('now')");
-$model = $dbi->create_model(created_at => 'key2', updated_at => 'key3', table => 'table1');
+$model = $dbi->create_model(ctime => 'key2', mtime => 'key3', table => 'table1');
 $model->insert({key1 => \"datetime('now')"});
 $result = $dbi->select(table => 'table1');
 $row = $result->one;
 is($row->{key1}, $row->{key2});
 is($row->{key1}, $row->{key3});
 
-test 'insert created_at and updated_at scalar reference';
+test 'insert ctime and mtime scalar reference';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2, key3)');
 $dbi->now(\"datetime('now')");
-$dbi->insert({key1 => \"datetime('now')"}, created_at => 'key2', updated_at => 'key3', table => 'table1');
+$dbi->insert({key1 => \"datetime('now')"}, ctime => 'key2', mtime => 'key3', table => 'table1');
 $result = $dbi->select(table => 'table1');
 $row   = $result->one;
 is($row->{key1}, $row->{key2});
 is($row->{key1}, $row->{key3});
 
-test 'update updated_at scalar reference';
+test 'update mtime scalar reference';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2)');
 $dbi->now(\"datetime('now')");
-$dbi->insert({key1 => \"datetime('now')"}, updated_at => 'key2', table => 'table1');
+$dbi->insert({key1 => \"datetime('now')"}, mtime => 'key2', table => 'table1');
 $result = $dbi->select(table => 'table1');
 $row   = $result->one;
 is($row->{key1}, $row->{key2});
 
-test 'update_or_insert created_at and updated_at';
+test 'update_or_insert ctime and mtime';
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2, key3, key4)');
 $dbi->now(\"datetime('now')");
-$model = $dbi->create_model(created_at => 'key2', updated_at => 'key3', table => 'table1',
+$model = $dbi->create_model(ctime => 'key2', mtime => 'key3', table => 'table1',
 primary_key => 'key4');
 $model->update_or_insert({key1 => \"datetime('now')"}, id => 1);
 $result = $model->select(table => 'table1', id => 1);
@@ -119,7 +119,7 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2)');
 $dbi->now(\"datetime('now')");
-$model = $dbi->create_model(updated_at => 'key2', table => 'table1');
+$model = $dbi->create_model(mtime => 'key2', table => 'table1');
 $model->insert({key1 => \"datetime('now')"});
 $result = $dbi->select(table => 'table1');
 $row   = $result->one;

@@ -47,7 +47,7 @@ for my $method (@methods) {
 
   
   my @attrs = qw/table type primary_key bind_type/;
-  my @insert_attrs = qw/created_at updated_at ctime mtime/;
+  my @insert_attrs = qw/ctime mtime/;
   my @update_attrs = qw/updated_at mtime/;
   my @select_attrs = qw/join/;
   if ($method eq 'insert') { push @attrs, @insert_attrs }
@@ -86,31 +86,6 @@ sub update_or_insert {
   else { croak "selected row must be one " . _subname }
 }
 
-sub execute {
-  my $self = shift;
-  
-  if ($ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE}) {
-      $self->dbi->execute(@_);
-  }
-  else {
-    _deprecate('0.24', "DBIx::Custom::Model execute method is DEPRECATED! " .
-      "use DBIx::Custom execute method. " .
-      "If you want to call DBIx::Custom execute method directory from model, " .
-      "set \$ENV{DBIX_CUSTOM_DISABLE_MODEL_EXECUTE} to 1 " .
-      "until DBIx::Custom::Model execute method is removed in the future." );
-    
-    return $self->dbi->execute(
-      shift,
-      shift,
-      table => $self->table,
-      bind_type => $self->bind_type,
-      primary_key => $self->primary_key,
-      type => $self->type,
-      @_
-    );    
-  }
-}
-
 sub DESTROY { }
 
 sub helper {
@@ -146,26 +121,13 @@ sub new {
   }
   
   # Cache
-  for my $attr (qw/dbi table created_at updated_at ctime mtime bind_type join primary_key/) {
+  for my $attr (qw/dbi table ctime mtime bind_type join primary_key/) {
     $self->$attr;
     $self->{$attr} = undef unless exists $self->{$attr};
   }
   $self->columns;
   
   return $self;
-}
-
-# DEPRECATED!
-has 'filter';
-has 'name';
-has 'type';
-has 'created_at';
-has 'updated_at'; 
-
-# DEPRECATED!
-sub method {
-  _deprecate('0.24', "method method is DEPRECATED! use helper instead");
-  return shift->helper(@_);
 }
 
 1;

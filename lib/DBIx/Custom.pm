@@ -261,7 +261,6 @@ sub create_model {
   # Create model
   my $model = $model_class->new($opt);
   weaken $model->{dbi};
-  $model->name($model_name) unless $model->name;
   $model->table($model_table) unless $model->table;
   
   # Apply filter(DEPRECATED logic)
@@ -276,9 +275,9 @@ sub create_model {
   }
   
   # Set model
-  $self->model($model->name, $model);
+  $self->model($model->table, $model);
   
-  return $self->model($model->name);
+  return $self->model($model->table);
 }
 
 sub each_column {
@@ -730,14 +729,6 @@ sub insert {
 
   # Created time and updated time
   my @timestamp_cleanup;
-  _deprecate('0.24', "insert method created_at option is DEPRECATED! " .
-      "use ctime option instead. ")
-    if $opt{created_at};
-  _deprecate('0.24', "insert method updated_at option is DEPRECATED! " .
-      "use mtime option instead. ")
-    if $opt{updated_at};
-  $opt{ctime} ||= $opt{created_at};
-  $opt{mtime} ||= $opt{updated_at};
   if (defined $opt{ctime} || defined $opt{mtime}) {
     my $now = $self->now;
     $now = $now->() if ref $now eq 'CODE';
@@ -2320,8 +2311,8 @@ Code reference which return current time, default to the following code referenc
 
 This return the time like C<2011-10-14 05:05:27>.
 
-This is used by C<insert> method's C<created_at> option and C<updated_at> option,
-and C<update> method's C<updated_at> option.
+This is used by C<insert> method's C<ctime> option and C<mtime> option,
+and C<update> method's C<mtime> option.
 
 =head2 models
 
@@ -3648,11 +3639,6 @@ executed SQL and bind values are printed to STDERR.
 
 DEBUG output encoding. Default to UTF-8.
 
-=head2 DBIX_CUSTOM_DISABLE_MODEL_EXECUTE
-
-If you set DBIX_CUSTOM_DISABLE_MODEL_EXECUTE to 1,
-L<DBIx::Custom::Model> execute method call L<DBIx::Custom> execute.
-
 =head2 DBIX_CUSTOM_SUPPRESS_DEPRECATION
 
   $ENV{DBIX_CUSTOM_SUPPRESS_DEPRECATION} = '0.25';
@@ -3688,8 +3674,6 @@ L<DBIx::Custom>
   update_param_tag # will be removed at 2017/1/1
   
   # Options
-  insert method created_at option # will be removed 2017/3/1
-  update method updated_at option # will be removed 2017/3/1
   select column option [COLUMN => ALIAS] syntax # will be removed 2017/1/1
   execute method id option # will be removed 2017/1/1
   update timestamp option # will be removed 2017/1/1
@@ -3711,15 +3695,6 @@ L<DBIx::Custom>
                                       # tag parsing functionality
                                       # will be removed at 2017/1/1
   Query caching # will be removed at 2017/1/1
-
-L<DBIx::Custom::Model>
-
-  # Attribute methods
-  execute # will be removed at 2017/1/1
-  method # will be removed at 2017/1/1
-  filter # will be removed at 2017/1/1
-  name # will be removed at 2017/1/1
-  type # will be removed at 2017/1/1
 
 L<DBIx::Custom::Result>
   
