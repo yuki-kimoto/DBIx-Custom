@@ -169,7 +169,7 @@ sub connect {
     my $dsn = $self->dsn;
     my $user = $self->user;
     my $password = $self->password;
-    my $option = $self->_option;
+    my $option = $self->option;
     my $connector = DBIx::Connector->new($dsn, $user, $password,
       {%{$self->default_option} , %$option});
     $self->connector($connector);
@@ -207,7 +207,7 @@ sub dbh {
     $self->{dbh} ||= $self->_connect;
     
     # Quote
-    if (!defined $self->reserved_word_quote && !defined $self->quote) {
+    if (!defined $self->quote) {
       my $driver = $self->_driver;
       my $quote =  $driver eq 'odbc' ? '[]'
         : $driver eq 'ado' ? '[]'
@@ -354,7 +354,7 @@ sub execute {
     
     my $user = $self->user;
     my $password = $self->password;
-    my $option = $self->_option;
+    my $option = $self->option;
     
     my $new_dbi = bless {%$self}, ref $self;
     $new_dbi->connector(undef);
@@ -990,8 +990,7 @@ sub q { shift->_tq($_[0], $_[1], whole => 1) }
 sub _tq {
   my ($self, $value, $quotemeta, %opt) = @_;
   
-  my $quote = $self->{reserved_word_quote}
-    || $self->{quote} || $self->quote || '';
+  my $quote = $self->{quote} || $self->quote || '';
   
   my $q = substr($quote, 0, 1) || '';
   my $p;
@@ -1017,8 +1016,7 @@ sub _tq {
 sub _qp {
   my ($self, %opt) = @_;
 
-  my $quote = $self->{reserved_word_quote}
-    || $self->{quote} || $self->quote || '';
+  my $quote = $self->{quote} || $self->quote || '';
   
   my $q = substr($quote, 0, 1) || '';
   my $p;
@@ -1583,15 +1581,12 @@ sub _connect {
   my $self = shift;
   
   # Attributes
-  my $dsn = $self->data_source;
-  _deprecate('0.24', "data_source is DEPRECATED!\n")
-    if $dsn;
-  $dsn ||= $self->dsn;
+  my $dsn = $self->dsn;
   croak qq{"dsn" must be specified } . _subname
     unless $dsn;
   my $user        = $self->user;
   my $password    = $self->password;
-  my $option = $self->_option;
+  my $option = $self->option;
   $option = {%{$self->default_option}, %$option};
   
   # Connect
@@ -1635,16 +1630,6 @@ sub _need_tables {
       $self->_need_tables($tree, $need_tables, [$tree->{$table}{parent}])
     }
   }
-}
-
-sub _option {
-  my $self = shift;
-  my $option = {%{$self->dbi_options}, %{$self->dbi_option}, %{$self->option}};
-  _deprecate('0.24', "dbi_options is DEPRECATED! use option instead\n")
-    if keys %{$self->dbi_options};
-  _deprecate('0.24', "dbi_option is DEPRECATED! use option instead\n")
-    if keys %{$self->dbi_option};
-  return $option;
 }
 
 sub _push_join {
@@ -1714,7 +1699,7 @@ sub _push_join {
 
 sub _quote {
   my $self = shift;
-  return $self->{reserved_word_quote} || $self->quote || '';
+  return $self->quote || '';
 }
 
 sub _remove_duplicate_table {
@@ -1884,17 +1869,6 @@ sub _apply_filter {
   
   return $self;
 }
-
-# DEPRECATED!
-has 'data_source';
-has dbi_options => sub { {} };
-has filter_check  => 1;
-has 'reserved_word_quote';
-has dbi_option => sub { {} };
-has default_dbi_option => sub {
-  _deprecate('0.24', "default_dbi_option is DEPRECATED! use default_option instead");
-  return shift->default_option;
-};
 
 # DEPRECATED!
 sub method {
@@ -3649,14 +3623,6 @@ Suppress deprecation warnings before specified version.
 
 L<DBIx::Custom>
 
-  # Attribute methods
-  default_dbi_option # will be removed 2017/1/1
-  dbi_option # will be removed 2017/1/1
-  data_source # will be removed at 2017/1/1
-  dbi_options # will be removed at 2017/1/1
-  filter_check # will be removed at 2017/1/1
-  reserved_word_quote # will be removed at 2017/1/1
-  
   # Methods
   update_timestamp # will be removed at 2017/1/1
   insert_timestamp # will be removed at 2017/1/1

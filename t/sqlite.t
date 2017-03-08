@@ -46,7 +46,7 @@ $dbi = DBIx::Custom->connect;
 ### SQLite only test
 test 'dbi_option default';
 $dbi = DBIx::Custom->new;
-is_deeply($dbi->dbi_option, {});
+is_deeply($dbi->option, {});
 
 
 test 'prefix';
@@ -216,8 +216,8 @@ like($@, qr/Row count must be specified/, "Not specified row count");
 
 test 'type option'; # DEPRECATED!
 $dbi = DBIx::Custom->connect(
-  data_source => 'dbi:SQLite:dbname=:memory:',
-  dbi_option => {
+  dsn => 'dbi:SQLite:dbname=:memory:',
+  option => {
     $DBD::SQLite::VERSION > 1.26 ? (sqlite_unicode => 1) : (unicode => 1)
   }
 );
@@ -301,10 +301,10 @@ $result = $dbi->select(
 );
 is($result->fetch_one->[0], 'B');
 
-test 'reserved_word_quote';
+test 'quote';
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
-$dbi->reserved_word_quote('"');
+$dbi->quote('"');
 $dbi->execute($create_table_reserved);
 $dbi->apply_filter('table', select => {out => sub { $_[0] * 2}});
 $dbi->apply_filter('table', update => {out => sub { $_[0] * 3}});
