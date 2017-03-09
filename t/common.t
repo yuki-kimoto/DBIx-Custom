@@ -1845,205 +1845,6 @@ is_deeply($result->stash, {}, 'default');
 $result->stash->{foo} = 1;
 is($result->stash->{foo}, 1, 'get and set');
 
-test 'delete_at';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->delete_at(
-  table => $table1,
-  primary_key => [$key1, $key2],
-  where => [1, 2],
-);
-is_deeply($dbi->select(table => $table1)->all, []);
-
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->delete_at(
-  table => $table1,
-  primary_key => $key1,
-  where => 1,
-);
-is_deeply($dbi->select(table => $table1)->all, []);
-
-test 'insert_at';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert_at(
-  {$key3 => 3},
-  primary_key => [$key1, $key2], 
-  table => $table1,
-  where => [1, 2],
-);
-is($dbi->select(table => $table1)->one->{$key1}, 1);
-is($dbi->select(table => $table1)->one->{$key2}, 2);
-is($dbi->select(table => $table1)->one->{$key3}, 3);
-
-$dbi->delete_all(table => $table1);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->insert_at(
-  {$key2 => 2, $key3 => 3},
-  primary_key => $key1, 
-  table => $table1,
-  where => 1,
-);
-
-is($dbi->select(table => $table1)->one->{$key1}, 1);
-is($dbi->select(table => $table1)->one->{$key2}, 2);
-is($dbi->select(table => $table1)->one->{$key3}, 3);
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert_at(
-  {$key3 => 3},
-  primary_key => [$key1, $key2], 
-  table => $table1,
-  where => [1, 2],
-);
-is($dbi->select(table => $table1)->one->{$key1}, 1);
-is($dbi->select(table => $table1)->one->{$key2}, 2);
-is($dbi->select(table => $table1)->one->{$key3}, 3);
-
-test 'update_at';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->update_at(
-  {$key3 => 4},
-  table => $table1,
-  primary_key => [$key1, $key2],
-  where => [1, 2],
-);
-is($dbi->select(table => $table1)->one->{$key1}, 1);
-is($dbi->select(table => $table1)->one->{$key2}, 2);
-is($dbi->select(table => $table1)->one->{$key3}, 4);
-
-$dbi->delete_all(table => $table1);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->update_at(
-  {$key3 => 4},
-  table => $table1,
-  primary_key => $key1,
-  where => 1,
-);
-is($dbi->select(table => $table1)->one->{$key1}, 1);
-is($dbi->select(table => $table1)->one->{$key2}, 2);
-is($dbi->select(table => $table1)->one->{$key3}, 4);
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->update_at(
-  {$key3 => 4},
-  table => $table1,
-  primary_key => [$key1, $key2],
-  where => [1, 2]
-);
-is($dbi->select(table => $table1)->one->{$key1}, 1);
-is($dbi->select(table => $table1)->one->{$key2}, 2);
-is($dbi->select(table => $table1)->one->{$key3}, 4);
-
-test 'select_at';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$result = $dbi->select_at(
-  table => $table1,
-  primary_key => [$key1, $key2],
-  where => [1, 2]
-);
-$row = $result->one;
-is($row->{$key1}, 1);
-is($row->{$key2}, 2);
-is($row->{$key3}, 3);
-
-$dbi->delete_all(table => $table1);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$result = $dbi->select_at(
-  table => $table1,
-  primary_key => $key1,
-  where => 1,
-);
-$row = $result->one;
-is($row->{$key1}, 1);
-is($row->{$key2}, 2);
-is($row->{$key3}, 3);
-
-$dbi->delete_all(table => $table1);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$result = $dbi->select_at(
-  table => $table1,
-  primary_key => [$key1, $key2],
-  where => [1, 2]
-);
-$row = $result->one;
-is($row->{$key1}, 1);
-is($row->{$key2}, 2);
-is($row->{$key3}, 3);
-
-test 'model delete_at';
-$dbi = MyDBI6->connect;
-eval { $dbi->execute("drop table $table1") };
-eval { $dbi->execute("drop table $table2") };
-eval { $dbi->execute("drop table $table3") };
-$dbi->execute($create_table1_2);
-$dbi->execute($create_table2_2);
-$dbi->execute($create_table3);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->model($table1)->delete_at(where => [1, 2]);
-is_deeply($dbi->select(table => $table1)->all, []);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table2);
-$dbi->model($table1)->delete_at(where => [1, 2]);
-is_deeply($dbi->select(table => $table1)->all, []);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table3);
-$dbi->model($table3)->delete_at(where => [1, 2]);
-is_deeply($dbi->select(table => $table3)->all, []);
-
-test 'model insert_at';
-$dbi = MyDBI6->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->model($table1)->insert_at(
-  {$key3 => 3},
-  where => [1, 2],
-);
-$result = $dbi->model($table1)->select;
-$row = $result->one;
-is($row->{$key1}, 1);
-is($row->{$key2}, 2);
-is($row->{$key3}, 3);
-
-test 'model update_at';
-$dbi = MyDBI6->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$dbi->model($table1)->update_at(
-  {$key3 => 4},
-  where => [1, 2],
-);
-$result = $dbi->model($table1)->select;
-$row = $result->one;
-is($row->{$key1}, 1);
-is($row->{$key2}, 2);
-is($row->{$key3}, 4);
-
-test 'model select_at';
-$dbi = MyDBI6->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$result = $dbi->model($table1)->select_at(where => [1, 2]);
-$row = $result->one;
-is($row->{$key1}, 1);
-is($row->{$key2}, 2);
-is($row->{$key3}, 3);
-
-
 test 'mycolumn and column';
 $dbi = MyDBI7->connect;
 $dbi->user_table_info($user_table_info);
@@ -2140,7 +1941,7 @@ $dbi->setup_model;
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
 $model = $dbi->model($table1);
-$result = $model->select_at(
+$result = $model->select(
   column => [
     $model->mycolumn,
     $model->column($table2)
@@ -2149,7 +1950,7 @@ $result = $model->select_at(
 is_deeply($result->one,
   {$key1 => 1, $key2 => 2, "$table2.$key1" => 1, "$table2.$key3" => 3});
 
-$result = $model->select_at(
+$result = $model->select(
   column => [
     $model->mycolumn([$key1]),
     $model->column($table2 => [$key1])
@@ -2157,7 +1958,7 @@ $result = $model->select_at(
 );
 is_deeply($result->one,
         {$key1 => 1, "$table2.$key1" => 1});
-$result = $model->select_at(
+$result = $model->select(
   column => [
     $model->mycolumn([$key1]),
     {$table2 => [$key1]}
@@ -2166,7 +1967,7 @@ $result = $model->select_at(
 is_deeply($result->one,
         {$key1 => 1, "$table2.$key1" => 1});
 
-$result = $model->select_at(
+$result = $model->select(
   column => [
     $model->mycolumn([$key1]),
     ["$table2.$key1", as => "$table2.$key1"]
@@ -2175,7 +1976,7 @@ $result = $model->select_at(
 is_deeply($result->one,
   {$key1 => 1, "$table2.$key1" => 1});
 
-$result = $model->select_at(
+$result = $model->select(
   column => [
     $model->mycolumn([$key1]),
     ["$table2.$key1" => "$table2.$key1"]
@@ -2599,17 +2400,6 @@ is($row->{$key1}, 1);
 is($row->{$key2}, 2);
 is($row->{$key3}, 3);
 
-
-test 'model select_at';
-$dbi = MyDBI6->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
-$result = $dbi->model($table1)->select(id => [1, 2]);
-$row = $result->one;
-is($row->{$key1}, 1);
-is($row->{$key2}, 2);
-is($row->{$key3}, 3);
 
 test 'column separator is default .';
 $dbi = MyDBI7->connect;

@@ -35,8 +35,7 @@ sub AUTOLOAD {
   }
 }
 
-my @methods = qw/insert insert_at update update_at update_all
-delete delete_at delete_all select select_at count/;
+my @methods = qw(insert update update_all delete delete_all select count);
 for my $method (@methods) {
   
   my $code =
@@ -48,7 +47,7 @@ for my $method (@methods) {
   
   my @attrs = qw/table type primary_key bind_type/;
   my @insert_attrs = qw/ctime mtime/;
-  my @update_attrs = qw/updated_at mtime/;
+  my @update_attrs = qw/mtime/;
   my @select_attrs = qw/join/;
   if ($method eq 'insert') { push @attrs, @insert_attrs }
   elsif ($method eq 'update') { push @attrs, @update_attrs }

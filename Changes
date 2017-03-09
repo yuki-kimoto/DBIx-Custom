@@ -35,6 +35,12 @@
   - remove DEPRECATED dbi_options(DBIx::Custom)
   - remove DEPRECATED filter_check(DBIx::Custom)
   - remove DEPRECATED reserved_word_quote(DBIx::Custom)
+  - remove DEPRECATED select_at(DBIx::Custom)
+  - remove DEPRECATED delete_at(DBIx::Custom)
+  - remove DEPRECATED update_at(DBIx::Custom)
+  - remove DEPRECATED insert_at(DBIx::Custom)
+  - remove DEPRECATED insert_param_tag(DBIx::Custom)
+  - remove DEPRECATED update_param_tag(DBIx::Custom)
 
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.

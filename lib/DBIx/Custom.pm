@@ -1911,107 +1911,12 @@ sub apply_filter {
 }
 
 # DEPRECATED!
-sub select_at {
-  my ($self, %opt) = @_;
-
-  _deprecate('0.24', "select_at is DEPRECATED! use select method id option instead");
-
-  # Options
-  my $primary_keys = delete $opt{primary_key};
-  my $where = delete $opt{where};
-  my $param = delete $opt{param};
-  
-  # Table
-  croak qq{"table" option must be specified } . _subname
-    unless $opt{table};
-  my $table = ref $opt{table} ? $opt{table}->[-1] : $opt{table};
-  
-  # Create where parameter
-  my $where_param = $self->_id_to_param($where, $primary_keys);
-  
-  return $self->select(where => $where_param, %opt);
-}
-
-# DEPRECATED!
-sub delete_at {
-  my ($self, %opt) = @_;
-
-  _deprecate('0.24', "delete_at is DEPRECATED! use delete method id option instead");
-  
-  # Options
-  my $primary_keys = delete $opt{primary_key};
-  my $where = delete $opt{where};
-  
-  # Create where parameter
-  my $where_param = $self->_id_to_param($where, $primary_keys);
-  
-  return $self->delete(where => $where_param, %opt);
-}
-
-# DEPRECATED!
-sub update_at {
-  my $self = shift;
-
-  _deprecate('0.24', "update_at is DEPRECATED! use update method id option instead");
-  
-  # Options
-  my $param;
-  $param = shift if @_ % 2;
-  my %opt = @_;
-  my $primary_keys = delete $opt{primary_key};
-  my $where = delete $opt{where};
-  my $p = delete $opt{param} || {};
-  $param  ||= $p;
-  
-  # Create where parameter
-  my $where_param = $self->_id_to_param($where, $primary_keys);
-  
-  return $self->update(where => $where_param, param => $param, %opt);
-}
-
-# DEPRECATED!
-sub insert_at {
-  my $self = shift;
-  
-  _deprecate('0.24', "insert_at is DEPRECATED! use insert method id option instead");
-  
-  # Options
-  my $param;
-  $param = shift if @_ % 2;
-  my %opt = @_;
-  my $primary_key = delete $opt{primary_key};
-  $primary_key = [$primary_key] unless ref $primary_key eq 'ARRAY';
-  my $where = delete $opt{where};
-  my $p = delete $opt{param} || {};
-  $param  ||= $p;
-  
-  # Create where parameter
-  my $where_param = $self->_id_to_param($where, $primary_key);
-  $param = $self->merge_param($where_param, $param);
-  
-  return $self->insert(param => $param, %opt);
-}
-
-# DEPRECATED!
 sub insert_param {
   my $self = shift;
   _deprecate('0.24', "insert_param is DEPRECATED! use values_clause instead");
   return $self->values_clause(@_);
 }
 
-# DEPRECATED!
-sub insert_param_tag {
-  _deprecate('0.24', "insert_param_tag is DEPRECATED! " .
-    "use insert_param instead!");
-  return shift->insert_param(@_);
-}
-
-# DEPRECATED!
-sub update_param_tag {
-  _deprecate('0.24', "update_param_tag is DEPRECATED! " .
-    "use update_param instead");
-  return shift->update_param(@_);
-}
 # DEPRECATED!
 sub _push_relation {
   my ($self, $sql, $tables, $relation, $need_where) = @_;
@@ -3632,12 +3537,6 @@ L<DBIx::Custom>
   insert_param # will be removed at 2017/1/1
   create_query # will be removed at 2017/1/1
   apply_filter # will be removed at 2017/1/1
-  select_at # will be removed at 2017/1/1
-  delete_at # will be removed at 2017/1/1
-  update_at # will be removed at 2017/1/1
-  insert_at # will be removed at 2017/1/1
-  insert_param_tag # will be removed at 2017/1/1
-  update_param_tag # will be removed at 2017/1/1
   
   # Options
   select column option [COLUMN => ALIAS] syntax # will be removed 2017/1/1
