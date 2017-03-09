@@ -263,17 +263,6 @@ sub create_model {
   weaken $model->{dbi};
   $model->table($model_table) unless $model->table;
   
-  # Apply filter(DEPRECATED logic)
-  if ($model->{filter}) {
-    my $filter = ref $model->filter eq 'HASH'
-      ? [%{$model->filter}]
-      : $model->filter;
-    $filter ||= [];
-    _deprecate('0.24', "DBIx::Custom::Model filter method is DEPRECATED!")
-      if @$filter;
-    $self->_apply_filter($model->table, @$filter);
-  }
-  
   # Set model
   $self->model($model->table, $model);
   
@@ -403,29 +392,21 @@ sub execute {
   
   # Query
   my $query;
-  if (ref $sql) {
-    $query = $sql;
-    _deprecate('0.24', "execute method receiving query " .
-      "object as first parameter is DEPRECATED!" .
-      "because this is very buggy.");
-  }
-  else {
-    $query = $opt{reuse}->{$sql} if $opt{reuse};
-    unless ($query) {
-      my $c = $self->{safety_character};
-      # Check unsafety keys
-      unless ((join('', keys %{$params->[0]}) || '') =~ /^[$c\.]+$/) {
-        for my $column (keys %{$params->[0]}) {
-          croak qq{"$column" is not safety column name } . _subname
-            unless $column =~ /^[$c\.]+$/;
-        }
+  $query = $opt{reuse}->{$sql} if $opt{reuse};
+  unless ($query) {
+    my $c = $self->{safety_character};
+    # Check unsafety keys
+    unless ((join('', keys %{$params->[0]}) || '') =~ /^[$c\.]+$/) {
+      for my $column (keys %{$params->[0]}) {
+        croak qq{"$column" is not safety column name } . _subname
+          unless $column =~ /^[$c\.]+$/;
       }
-      $query = $self->_create_query($sql,
-        $opt{after_build_sql} || $opt{sqlfilter}, $opt{prepare_attr});
     }
-    $query->{statement} = $opt{statement} || '';
-    $opt{reuse}->{$sql} = $query if $opt{reuse};
+    $query = $self->_create_query($sql,
+      $opt{after_build_sql} || $opt{sqlfilter}, $opt{prepare_attr});
   }
+  $query->{statement} = $opt{statement} || '';
+  $opt{reuse}->{$sql} = $query if $opt{reuse};
       
   # Save query
   $self->{last_sql} = $query->{sql};
@@ -959,20 +940,6 @@ sub new {
   $self->{safety_character} = 'a-zA-Z0-9_'
     unless exists $self->{safety_character};
 
-  # DEPRECATED
-  $self->{_tags} = {
-    '?'     => \&DBIx::Custom::Tag::placeholder,
-    '='     => \&DBIx::Custom::Tag::equal,
-    '<>'    => \&DBIx::Custom::Tag::not_equal,
-    '>'     => \&DBIx::Custom::Tag::greater_than,
-    '<'     => \&DBIx::Custom::Tag::lower_than,
-    '>='    => \&DBIx::Custom::Tag::greater_than_equal,
-    '<='    => \&DBIx::Custom::Tag::lower_than_equal,
-    'like'  => \&DBIx::Custom::Tag::like,
-    'in'    => \&DBIx::Custom::Tag::in,
-    'insert_param' => \&DBIx::Custom::Tag::insert_param,
-    'update_param' => \&DBIx::Custom::Tag::update_param
-  };
   $self->{cache} = 0 unless exists $self->{cache};
   
   return $self;
@@ -1801,120 +1768,6 @@ sub _where_clause_and_param {
   }
   
   return $w;
-}
-
-sub _apply_filter {
-  my ($self, $table, @cinfos) = @_;
-
-  # Initialize filters
-  $self->{filter} ||= {};
-  $self->{filter}{on} = 1;
-  $self->{filter}{out} ||= {};
-  $self->{filter}{in} ||= {};
-  $self->{filter}{end} ||= {};
-  
-  # Usage
-  my $usage = "Usage: \$dbi->apply_filter(" .
-    "TABLE, COLUMN1, {in => INFILTER1, out => OUTFILTER1, end => ENDFILTER1}, " .
-    "COLUMN2, {in => INFILTER2, out => OUTFILTER2, end => ENDFILTER2}, ...)";
-  
-  # Apply filter
-  for (my $i = 0; $i < @cinfos; $i += 2) {
-    
-    # Column
-    my $column = $cinfos[$i];
-    if (ref $column eq 'ARRAY') {
-      for my $c (@$column) { push @cinfos, $c, $cinfos[$i + 1] }
-      next;
-    }
-    
-    # Filter information
-    my $finfo = $cinfos[$i + 1] || {};
-    croak "$usage (table: $table) " . _subname
-      unless  ref $finfo eq 'HASH';
-    for my $ftype (keys %$finfo) {
-      croak "$usage (table: $table) " . _subname
-        unless $ftype eq 'in' || $ftype eq 'out' || $ftype eq 'end'; 
-    }
-    
-    # Set filters
-    for my $way (qw/in out end/) {
-  
-      # Filter
-      my $filter = $finfo->{$way};
-      
-      # Filter state
-      my $state = !exists $finfo->{$way} ? 'not_exists'
-        : !defined $filter        ? 'not_defined'
-        : ref $filter eq 'CODE'   ? 'code'
-        : 'name';
-      
-      # Filter is not exists
-      next if $state eq 'not_exists';
-      
-      # Check filter name
-      croak qq{Filter "$filter" is not registered } . _subname
-        if  $state eq 'name' && ! exists $self->filters->{$filter};
-      
-      # Set filter
-      my $f = $state eq 'not_defined' ? undef
-        : $state eq 'code' ? $filter
-        : $self->filters->{$filter};
-      $self->{filter}{$way}{$table}{$column} = $f;
-      $self->{filter}{$way}{$table}{"$table.$column"} = $f;
-      $self->{filter}{$way}{$table}{"${table}__$column"} = $f;
-      $self->{filter}{$way}{$table}{"${table}-$column"} = $f;
-    }
-  }
-  
-  return $self;
-}
-
-# DEPRECATED!
-sub method {
-  _deprecate('0.24', "method is DEPRECATED! use helper instead");
-  return shift->helper(@_);
-}
-
-# DEPRECATED!
-sub assign_param {
-  my $self = shift;
-  _deprecate('0.24', "assing_param is DEPRECATED! use assign_clause instead");
-  return $self->assign_clause(@_);
-}
-
-# DEPRECATED
-sub update_param {
-  my ($self, $param, $opts) = @_;
-  
-  _deprecate('0.24', "update_param is DEPRECATED! use assign_clause instead.");
-  
-  # Create update parameter tag
-  my $tag = $self->assign_clause($param, $opts);
-  $tag = "set $tag" unless $opts->{no_set};
-
-  return $tag;
-}
-
-# DEPRECATED!
-sub create_query {
-  _deprecate('0.24', "create_query is DEPRECATED! use query option of each method");
-  shift->_create_query(@_);
-}
-
-# DEPRECATED!
-sub apply_filter {
-  my $self = shift;
-  
-  _deprecate('0.24', "apply_filter is DEPRECATED!");
-  return $self->_apply_filter(@_);
-}
-
-# DEPRECATED!
-sub insert_param {
-  my $self = shift;
-  _deprecate('0.24', "insert_param is DEPRECATED! use values_clause instead");
-  return $self->values_clause(@_);
 }
 
 # DEPRECATED!
@@ -3531,12 +3384,6 @@ L<DBIx::Custom>
   # Methods
   update_timestamp # will be removed at 2017/1/1
   insert_timestamp # will be removed at 2017/1/1
-  method # will be removed at 2017/1/1
-  assign_param # will be removed at 2017/1/1
-  update_param # will be removed at 2017/1/1
-  insert_param # will be removed at 2017/1/1
-  create_query # will be removed at 2017/1/1
-  apply_filter # will be removed at 2017/1/1
   
   # Options
   select column option [COLUMN => ALIAS] syntax # will be removed 2017/1/1

@@ -41,6 +41,11 @@
   - remove DEPRECATED insert_at(DBIx::Custom)
   - remove DEPRECATED insert_param_tag(DBIx::Custom)
   - remove DEPRECATED update_param_tag(DBIx::Custom)
+  - remove DEPRECATED assign_param(DBIx::Custom)
+  - remove DEPRECATED update_param(DBIx::Custom)
+  - remove DEPRECATED insert_param(DBIx::Custom)
+  - remove DEPRECATED create_query(DBIx::Custom)
+  - remove DEPRECATED apply_filter(DBIx::Custom)
 
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.
