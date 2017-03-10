@@ -687,16 +687,6 @@ sub insert {
   if (ref $params eq 'ARRAY') { $multi = 1 }
   else { $params = [$params] }
   
-  # Timestamp(DEPRECATED!)
-  if (!$multi && $opt{timestamp} && (my $insert_timestamp = $self->insert_timestamp)) {
-    _deprecate('0.24', "insert timestamp option is DEPRECATED! use ctime option");
-    my $columns = $insert_timestamp->[0];
-    $columns = [$columns] unless ref $columns eq 'ARRAY';
-    my $value = $insert_timestamp->[1];
-    $value = $value->() if ref $value eq 'CODE';
-    $params->[0]->{$_} = $value for @$columns;
-  }
-
   # Created time and updated time
   my @timestamp_cleanup;
   if (defined $opt{ctime} || defined $opt{mtime}) {
@@ -752,19 +742,6 @@ sub insert {
   $opt{statement} = 'insert';
   $opt{cleanup} = \@timestamp_cleanup;
   $self->execute($sql, $params, %opt);
-}
-
-sub insert_timestamp {
-  my $self = shift;
-  
-  _deprecate('0.24', "insert_timestamp method is DEPRECATED! use now attribute");
-  
-  if (@_) {
-    $self->{insert_timestamp} = [@_];
-    
-    return $self;
-  }
-  return $self->{insert_timestamp};
 }
 
 sub include_model {
@@ -1270,16 +1247,6 @@ sub update {
   croak qq{update method where option must be specified } . _subname
     if !$opt{where} && !defined $opt{id} && !$opt{allow_update_all};
   
-  # Timestamp(DEPRECATED!)
-  if ($opt{timestamp} && (my $update_timestamp = $self->update_timestamp)) {
-    _deprecate('0.24', "update timestamp option is DEPRECATED! use mtime");
-    my $columns = $update_timestamp->[0];
-    $columns = [$columns] unless ref $columns eq 'ARRAY';
-    my $value = $update_timestamp->[1];
-    $value = $value->() if ref $value eq 'CODE';
-    $param->{$_} = $value for @$columns;
-  }
-
   # Created time and updated time
   my @timestamp_cleanup;
   _deprecate('0.24', "update method update_at option is DEPRECATED! " .
@@ -1328,19 +1295,6 @@ sub update_or_insert {
     return $self->update($param, %opt, %{$statement_opt->{update} || {}});
   }
   else { croak "selected row must be one " . _subname }
-}
-
-sub update_timestamp {
-  my $self = shift;
-  
-  _deprecate('0.24', "update_timestamp method is DEPRECATED! use now method");
-  
-  if (@_) {
-    $self->{update_timestamp} = [@_];
-    
-    return $self;
-  }
-  return $self->{update_timestamp};
 }
 
 sub values_clause {
@@ -3365,10 +3319,6 @@ Suppress deprecation warnings before specified version.
 
 L<DBIx::Custom>
 
-  # Methods
-  update_timestamp # will be removed at 2017/1/1
-  insert_timestamp # will be removed at 2017/1/1
-  
   # Options
   select column option [COLUMN => ALIAS] syntax # will be removed 2017/1/1
   execute method id option # will be removed 2017/1/1
