@@ -3385,13 +3385,6 @@ L<DBIx::Custom>
   select method column option [COLUMN, as => ALIAS] format
     # will be removed at 2017/1/1
   execute method's sqlfilter option # will be removed at 2017/1/1
-  
-  # Others
-  execute($query, ...) # execute method receiving query object.
-                       # this is removed at 2017/1/1
-  execute("select * from {= title}"); # execute method's
-                                      # tag parsing functionality
-                                      # will be removed at 2017/1/1
 
 L<DBIx::Custom::Result>
   

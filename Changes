@@ -7,12 +7,14 @@
   - remove DEPRECATED default_bind_filter(DBIx::Custom).
   - remove DEPRECATED DBIx::Custom::Query.
   - remove DEPRECATED DBIx::Custom::QueryBuilder.
+  - remove DEPRECATED execute method receiving query object
   - remove DEPRECATED cache_method(DBIx::Custom).
   - remove DEPRECATED query_builder(DBIx::Custom).
   - remove DEPRECATED tag_parse(DBIx::Custom)
   - remove DBIX_CUSTOM_TAG_PARSE environment variable
   - remove DEPRECATED register_tag_processor(DBIx::Custom)
   - remove DEPRECATED register_tag(DBIx::Custom)
+  - remove DEPRECATED tag parsing functionality
   - remove DEPRECATED prepend method(DBIx::Custom::Order) array reference receiving
   - remove DEPRECATED remote_end_filter(DIBx::Custom::Result)
   - remote DEPRECATED remove_filter(DIBx::Custom::Result)
@@ -48,7 +50,6 @@
   - remove DEPRECATED apply_filter(DBIx::Custom)
   - remove DEPRECATED query caching system
   - remove DEPRECATED cache(DBIx::Custom) attribute
-  - remove DEPRECATED cache_method(DBIx::Custom) attribute
 
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.
