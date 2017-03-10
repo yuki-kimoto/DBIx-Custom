@@ -346,7 +346,6 @@ sub execute {
   }
   
   # Options
-  _deprecate('0.24', "sqlfilter option is DEPRECATED") if $opt{sqlfilter};
   $params ||= $opt{param} || {};
   my $tables = $opt{table} || [];
   $tables = [$tables] unless ref $tables eq 'ARRAY';
@@ -393,8 +392,7 @@ sub execute {
           unless $column =~ /^[$c\.]+$/;
       }
     }
-    $query = $self->_create_query($sql,
-      $opt{after_build_sql} || $opt{sqlfilter}, $opt{prepare_attr});
+    $query = $self->_create_query($sql, $opt{after_build_sql}, $opt{prepare_attr});
   }
   $query->{statement} = $opt{statement} || '';
   $opt{reuse}->{$sql} = $query if $opt{reuse};
@@ -3384,7 +3382,6 @@ L<DBIx::Custom>
   select method relation option # will be removed at 2017/1/1
   select method column option [COLUMN, as => ALIAS] format
     # will be removed at 2017/1/1
-  execute method's sqlfilter option # will be removed at 2017/1/1
 
 L<DBIx::Custom::Result>
   

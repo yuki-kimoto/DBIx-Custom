@@ -49,7 +49,8 @@
   - remove DEPRECATED create_query(DBIx::Custom)
   - remove DEPRECATED apply_filter(DBIx::Custom)
   - remove DEPRECATED query caching system
-  - remove DEPRECATED cache(DBIx::Custom) attribute
+  - remove DEPRECATED cache(DBIx::Custom)
+  - remove DEPRECATED execute method(DBIx::Custom)'s sqlfilter option
 
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.

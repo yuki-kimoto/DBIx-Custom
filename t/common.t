@@ -2700,24 +2700,6 @@ is_deeply($rows, [{$key1 => 5, $key2 => 6}]);
 $rows = $result->fetch_hash_multi(2);
 ok(!$rows);
 
-test 'select() sqlfilter option';
-$dbi = DBIx::Custom->connect;
-$dbi->user_table_info($user_table_info);
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert({$key1 => 2, $key2 => 3}, table => $table1);
-$rows = $dbi->select(
-  table => $table1,
-  column => $key1,
-  sqlfilter => sub {
-    my $sql = shift;
-    $sql = "select * from ( $sql ) t where $key1 = 1";
-    return $sql;
-  }
-)->all;
-is_deeply($rows, [{$key1 => 1}]);
-
 test 'select() after_build_sql option';
 $dbi = DBIx::Custom->connect;
 $dbi->user_table_info($user_table_info);
