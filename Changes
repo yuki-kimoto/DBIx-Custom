@@ -27,7 +27,7 @@
   - remove DEPRECATED method(DBIx::Custom::Model)
   - remove DEPRECATED filter(DBIx::Custom::Model)
   - remove DEPRECATED name(DBIx::Custom::Model)
-  - remove DEPRECATED type(::Model)
+  - remove DEPRECATED type(DBIx::Custom::Model)
   - remove DEPRECATED DBIX_CUSTOM_DISABLE_MODEL_EXECUTE environment variable
   - remove DEPRECATED default_dbi_option(DBIx::Custom)
   - remove DEPRECATED dbi_option(DBIx::Custom)
@@ -46,6 +46,9 @@
   - remove DEPRECATED insert_param(DBIx::Custom)
   - remove DEPRECATED create_query(DBIx::Custom)
   - remove DEPRECATED apply_filter(DBIx::Custom)
+  - remove DEPRECATED query caching system
+  - remove DEPRECATED cache(DBIx::Custom) attribute
+  - remove DEPRECATED cache_method(DBIx::Custom) attribute
 
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.

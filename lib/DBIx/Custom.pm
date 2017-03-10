@@ -19,15 +19,6 @@ use Scalar::Util qw/weaken/;
 has [qw/connector dsn default_schema password quote user exclude_table user_table_info
      user_column_info safety_character/];
 has async_conf => sub { {} };
-has cache => 0;
-has cache_method => sub {
-  sub {
-    my $self = shift;
-    $self->{_cached} ||= {};
-    if (@_ > 1) { $self->{_cached}{$_[0]} = $_[1] }
-    else { return $self->{_cached}{$_[0]} }
-  }
-};
 has option => sub { {} };
 has default_option => sub {
   {
@@ -939,8 +930,6 @@ sub new {
   
   $self->{safety_character} = 'a-zA-Z0-9_'
     unless exists $self->{safety_character};
-
-  $self->{cache} = 0 unless exists $self->{cache};
   
   return $self;
 }
@@ -1413,9 +1402,6 @@ sub _create_query {
   my ($self, $source, $after_build_sql, $prepare_attr) = @_;
   
   $prepare_attr ||= {};
-  
-  # Cache
-  my $cache = $self->{cache};
   
   # Create query
   my $sql = " " . $source || '';
@@ -3406,7 +3392,6 @@ L<DBIx::Custom>
   execute("select * from {= title}"); # execute method's
                                       # tag parsing functionality
                                       # will be removed at 2017/1/1
-  Query caching # will be removed at 2017/1/1
 
 L<DBIx::Custom::Result>
   
