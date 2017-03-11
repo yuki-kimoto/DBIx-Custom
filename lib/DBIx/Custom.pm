@@ -556,27 +556,11 @@ sub execute {
   }
   # Reulst of select statement
   else {
-    # Filter(DEPRECATED!)
-    my $infilter = {};
-    if ($self->{filter}{on}) {
-      $infilter->{in}  = {};
-      $infilter->{end} = {};
-      push @$tables, $main_table if $main_table;
-      for my $table (@$tables) {
-        for my $way (qw/in end/) {
-          $infilter->{$way} = {%{$infilter->{$way}},
-            %{$self->{filter}{$way}{$table} || {}}};
-        }
-      }
-    }
     
     # Result
     my $result = $self->result_class->new(
       sth => $sth,
       dbi => $self,
-      default_filter => $self->{default_in_filter},
-      filter => $infilter->{in} || {},
-      end_filter => $infilter->{end} || {},
       type_rule => {
         from1 => $self->type_rule->{from1},
         from2 => $self->type_rule->{from2}
