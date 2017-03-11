@@ -3232,8 +3232,6 @@ L<DBIx::Custom>
   # Options
   select column option [COLUMN => ALIAS] syntax # will be removed 2017/1/1
   execute method id option # will be removed 2017/1/1
-  update timestamp option # will be removed 2017/1/1
-  insert timestamp option # will be removed 2017/1/1
   select method where_param option # will be removed 2017/1/1
   delete method where_param option # will be removed 2017/1/1
   update method where_param option # will be removed 2017/1/1

@@ -54,6 +54,8 @@
   - remove DEPRECATED update_timestamp
   - remove DEPRECATED insert_timestamp
   - remove DEPRECATED select method relation option
+  - remove DEPRECATED update timestamp option
+  - remove DEPRECATED insert timestamp option
 
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.
