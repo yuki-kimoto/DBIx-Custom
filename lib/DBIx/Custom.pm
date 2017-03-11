@@ -454,18 +454,6 @@ sub execute {
     }
   }
   
-  # Applied filter(DEPRECATED!)
-  if ($self->{filter}{on}) {
-    my $applied_filter = {};
-    for my $table (@$tables) {
-      $applied_filter = {
-        %$applied_filter,
-        %{$self->{filter}{out}->{$table} || {}}
-      }
-    }
-    $filter = {%$applied_filter, %$filter};
-  }
-  
   # Replace filter name to code
   for my $column (keys %$filter) {
     my $name = $filter->{$column};
