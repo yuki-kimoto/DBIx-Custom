@@ -213,8 +213,6 @@ sub dbh {
 
 sub delete {
   my ($self, %opt) = @_;
-  _deprecate('0.24', "delete method where_param option is DEPRECATED!")
-    if $opt{where_param};
   
   # Don't allow delete all rows
   croak qq{delete method where or id option must be specified } . _subname
@@ -408,9 +406,6 @@ sub execute {
     return $query;
   };
   
-  # Merge query filter(DEPRECATED!)
-  $filter ||= $query->{filter} || {};
-  
   # Tables
   unshift @$tables, @{$query->{tables} || []};
   my $main_table = @{$tables}[-1];
@@ -433,10 +428,6 @@ sub execute {
       push @cleanup, $key;1
     }
   }
-  
-  # Cleanup tables(DEPRECATED!)
-  $tables = $self->_remove_duplicate_table($tables, $main_table)
-    if @$tables > 1;
   
   # Type rule
   my $type_filters = {};
@@ -992,12 +983,6 @@ sub select {
   _deprecate('0.24', "select method where_param option is DEPRECATED!")
     if $opt{where_param};
   
-  # Add relation tables(DEPRECATED!);
-  if ($opt{relation}) {
-    _deprecate('0.24', "select() relation option is DEPRECATED!");
-    $self->_add_relation_table($tables, $opt{relation});
-  }
-  
   # Select statement
   my $sql = 'select ';
   
@@ -1044,14 +1029,7 @@ sub select {
 
   # Table
   $sql .= 'from ';
-  if ($opt{relation}) {
-    my $found = {};
-    for my $table (@$tables) {
-      $sql .= $self->_tq($table) . ', ' unless $found->{$table};
-      $found->{$table} = 1;
-    }
-  }
-  else { $sql .= $self->_tq($tables->[-1] || '') . ' ' }
+  $sql .= $self->_tq($tables->[-1] || '') . ' ';
   $sql =~ s/, $/ /;
 
   # Add tables in parameter
@@ -1085,10 +1063,6 @@ sub select {
   
   # Add where clause
   $sql .= "$w->{clause} ";
-  
-  # Relation(DEPRECATED!);
-  $self->_push_relation(\$sql, $tables, $opt{relation}, $w->{clause} eq '' ? 1 : 0)
-    if $opt{relation};
   
   # Execute query
   return $self->execute($sql, $w->{param}, %opt);
@@ -1706,42 +1680,6 @@ sub _where_clause_and_param {
   }
   
   return $w;
-}
-
-# DEPRECATED!
-sub _push_relation {
-  my ($self, $sql, $tables, $relation, $need_where) = @_;
-  
-  if (keys %{$relation || {}}) {
-    $$sql .= $need_where ? 'where ' : 'and ';
-    for my $rcolumn (keys %$relation) {
-      my ($table1) = $rcolumn =~ /^(.+)\.(.+)$/;
-      my ($table2) = $relation->{$rcolumn} =~ /^(.+)\.(.+)$/;
-      push @$tables, ($table1, $table2);
-      $$sql .= "$rcolumn = " . $relation->{$rcolumn} .  'and ';
-    }
-  }
-  $$sql =~ s/and $/ /;
-}
-
-# DEPRECATED!
-sub _add_relation_table {
-  my ($self, $tables, $relation) = @_;
-  
-  if (keys %{$relation || {}}) {
-    for my $rcolumn (keys %$relation) {
-      my ($table1) = $rcolumn =~ /^(.+)\.(.+)$/;
-      my ($table2) = $relation->{$rcolumn} =~ /^(.+)\.(.+)$/;
-      my $table1_exists;
-      my $table2_exists;
-      for my $table (@$tables) {
-        $table1_exists = 1 if $table eq $table1;
-        $table2_exists = 1 if $table eq $table2;
-      }
-      unshift @$tables, $table1 unless $table1_exists;
-      unshift @$tables, $table2 unless $table2_exists;
-    }
-  }
 }
 
 1;
@@ -3329,7 +3267,6 @@ L<DBIx::Custom>
   update method where_param option # will be removed 2017/1/1
   insert method param option # will be removed at 2017/1/1
   insert method id option # will be removed at 2017/1/1
-  select method relation option # will be removed at 2017/1/1
   select method column option [COLUMN, as => ALIAS] format
     # will be removed at 2017/1/1
 

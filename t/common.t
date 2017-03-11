@@ -1027,25 +1027,6 @@ $rows = $dbi->select(table => $table1, where => {$key1 => 2}, filter => {$key1 =
           ->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}], "filter");
 
-eval { $dbi->execute("drop table $table2") };
-$dbi->execute($create_table2);
-$dbi->insert({$key1 => 1, $key3 => 5}, table => $table2);
-$rows = $dbi->select(
-  table => [$table1, $table2],
-  column => "$table1.$key1 as " . u("${table1}_$key1")
-    . ", $table2.$key1 as " . u("${table2}_$key1") . ", $key2, $key3",
-  where   => {"$table1.$key2" => 2},
-  relation  => {"$table1.$key1" => "$table2.$key1"}
-)->all;
-is_deeply($rows, [{u"${table1}_$key1" => 1, u"${table2}_$key1" => 1, $key2 => 2, $key3 => 5}], "relation : exists where");
-
-$rows = $dbi->select(
-  table => [$table1, $table2],
-  column => ["$table1.$key1 as " . u("${table1}_$key1") . ", ${table2}.$key1 as " . u("${table2}_$key1"), $key2, $key3],
-  relation  => {"$table1.$key1" => "$table2.$key1"}
-)->all;
-is_deeply($rows, [{u"${table1}_$key1" => 1, u"${table2}_$key1" => 1, $key2 => 2, $key3 => 5}], "relation : no exists where");
-
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
