@@ -1195,10 +1195,6 @@ sub update {
   
   # Created time and updated time
   my @timestamp_cleanup;
-  _deprecate('0.24', "update method update_at option is DEPRECATED! " .
-      "use mtime option instead.")
-    if $opt{updated_at};
-  $opt{mtime} ||= $opt{updated_at};
   if (defined $opt{mtime}) {
     my $now = $self->now;
     $now = $now->() if ref $now eq 'CODE';
@@ -3271,7 +3267,7 @@ Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009-2013 Yuki Kimoto, all rights reserved.
+Copyright 2009-2017 Yuki Kimoto, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
