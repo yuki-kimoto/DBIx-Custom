@@ -288,7 +288,7 @@ you don't have to specify options if you set attribute in model.
 
 =head2 update_all
 
-  $model->update_all(param => \%param);
+  $model->update_all(\%param);
   
 Same as C<update_all> of L<DBIx::Custom> except that
 you don't have to specify options if you set attribute in model.

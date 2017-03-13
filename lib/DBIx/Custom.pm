@@ -642,9 +642,7 @@ sub insert {
   # Options
   my $params = @_ % 2 ? shift : undef;
   my %opt = @_;
-  _deprecate('0.24', "insert method param option is DEPRECATED!")
-    if $opt{param};
-  $params ||= delete $opt{param} || {};
+  $params ||= {};
   
   my $multi;
   if (ref $params eq 'ARRAY') { $multi = 1 }
@@ -3230,7 +3228,6 @@ L<DBIx::Custom>
   select method where_param option # will be removed 2017/1/1
   delete method where_param option # will be removed 2017/1/1
   update method where_param option # will be removed 2017/1/1
-  insert method param option # will be removed at 2017/1/1
   insert method id option # will be removed at 2017/1/1
   select method column option [COLUMN, as => ALIAS] format
     # will be removed at 2017/1/1

@@ -476,7 +476,7 @@ is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "basic");
 
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
-$dbi->insert(table => $table1, param => {$key1 => 1, $key2 => 2});
+$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
 $result = $dbi->execute("select * from $table1");
 $rows   = $result->all;
@@ -1771,7 +1771,7 @@ $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
 $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert(table => $table1, param => {$key1 => 2, $key2 => 3});
+$dbi->insert({$key1 => 2, $key2 => 3}, table => $table1);
 $dbi->delete(
   table => $table1,
   where => "$key1 = :$key1 and $key2 = :$key2",
