@@ -57,6 +57,7 @@
   - remove DEPRECATED update timestamp option
   - remove DEPRECATED insert timestamp option
   - remove DEPRECATED update(DBIx::Custom) method's updated_at option
+  - remove DEPRECATDD update(DBIx::Custom) method's param option
   
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.
