@@ -639,24 +639,27 @@ sub insert {
   else { $params = [$params] }
   
   # Created time and updated time
-  my @timestamp_cleanup;
   if (defined $opt{ctime} || defined $opt{mtime}) {
+    for my $param (@$params) {
+      $param = {%$param};
+    }
     my $now = $self->now;
     $now = $now->() if ref $now eq 'CODE';
     if (defined $opt{ctime}) {
       $_->{$opt{ctime}} = $now for @$params;
-      push @timestamp_cleanup, $opt{ctime};
     }
     if (defined $opt{mtime}) {
       $_->{$opt{mtime}} = $now for @$params;
-      push @timestamp_cleanup, $opt{mtime};
     }
   }
   
   # Merge id to parameter
-  my @cleanup;
   my $id_param = {};
   if (defined $opt{id} && !$multi) {
+    for my $param (@$params) {
+      $param = {%$param};
+    }
+    
     croak "insert id option must be specified with primary_key option"
       unless $opt{primary_key};
     $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key} eq 'ARRAY';
@@ -665,7 +668,6 @@ sub insert {
       my $key = $opt{primary_key}->[$i];
       next if exists $params->[0]->{$key};
       $params->[0]->{$key} = $opt{id}->[$i];
-      push @cleanup, $key;
     }
   }
   
@@ -685,13 +687,9 @@ sub insert {
   else {
     $sql .= $self->values_clause($params->[0], {wrap => $opt{wrap}}) . " ";
   }
-
-  # Remove id from parameter
-  delete $params->[0]->{$_} for @cleanup;
   
   # Execute query
   $opt{statement} = 'insert';
-  $opt{cleanup} = \@timestamp_cleanup;
   $self->execute($sql, $params, %opt);
 }
 
