@@ -1660,24 +1660,6 @@ $result = $model->select(
 is_deeply($result->one,
         {$key1 => 1, "$table2.$key1" => 1});
 
-$result = $model->select(
-  column => [
-    $model->mycolumn([$key1]),
-    ["$table2.$key1", as => "$table2.$key1"]
-  ]
-);
-is_deeply($result->one,
-  {$key1 => 1, "$table2.$key1" => 1});
-
-$result = $model->select(
-  column => [
-    $model->mycolumn([$key1]),
-    ["$table2.$key1" => "$table2.$key1"]
-  ]
-);
-is_deeply($result->one,
-  {$key1 => 1, "$table2.$key1" => 1});
-
 test 'merge_param';
 $dbi = DBIx::Custom->new;
 $params = [

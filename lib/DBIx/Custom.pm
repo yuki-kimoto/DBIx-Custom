@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.37';
+our $VERSION = '0.38';
 
 use Carp 'croak';
 use DBI;
@@ -975,16 +975,6 @@ sub select {
         else {
           $column = $self->column($table => $columns);
         }
-      }
-      elsif (ref $column eq 'ARRAY') {
-        _deprecate('0.24', "select column option [COLUMN => ALIAS] syntax " .
-          "is DEPRECATED! use q method to quote the value");
-        if (@$column == 3 && $column->[1] eq 'as') {
-          _deprecate('0.24', "[COLUMN, as => ALIAS] is DEPRECATED! use [COLUMN => ALIAS]");
-          splice @$column, 1, 1;
-        }
-        
-        $column = join(' ', $column->[0], 'as', $self->q($column->[1]));
       }
       unshift @$tables, @{$self->_search_tables($column)}
         unless $table_is_empty;
@@ -3229,8 +3219,6 @@ L<DBIx::Custom>
   delete method where_param option # will be removed 2017/1/1
   update method where_param option # will be removed 2017/1/1
   insert method id option # will be removed at 2017/1/1
-  select method column option [COLUMN, as => ALIAS] format
-    # will be removed at 2017/1/1
 
 L<DBIx::Custom::Result>
   

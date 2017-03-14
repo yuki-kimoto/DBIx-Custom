@@ -59,6 +59,8 @@
   - remove DEPRECATED update(DBIx::Custom) method's updated_at option
   - remove DEPRECATED update(DBIx::Custom) method's param option
   - remove DEPRECATED insert method param option
+  - remove DEPRECATED select method column option [COLUMN, as => ALIAS] format
+  - remove DEPRECATED select method column option [COLUMN => ALIAS] format
 
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.
