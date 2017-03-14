@@ -1178,6 +1178,7 @@ sub update {
   my $w = $self->_where_clause_and_param($opt{where}, delete $opt{id}, $opt{primary_key}, $opt{table});
   
   # Merge update parameter with where parameter
+  $param = $self->merge_param($param, $w->{param});
   
   # Update statement
   my $sql = "update ";
@@ -1186,7 +1187,7 @@ sub update {
   
   # Execute query
   $opt{statement} = 'update';
-  $self->execute($sql, [$param, $w->{param}], %opt);
+  $self->execute($sql, $param, %opt);
 }
 
 sub update_all { shift->update(@_, allow_update_all => 1) };
