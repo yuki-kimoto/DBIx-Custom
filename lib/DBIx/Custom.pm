@@ -47,7 +47,6 @@ has now => sub {
 };
 has result_class  => 'DBIx::Custom::Result';
 has separator => '.';
-has stash => sub { {} };
 
 has mytable_symbol => '__MY__';
 
