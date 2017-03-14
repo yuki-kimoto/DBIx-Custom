@@ -219,9 +219,8 @@ sub delete {
     if !$opt{where} && !defined $opt{id} && !$opt{allow_delete_all};
   
   # Where
-  my $w = $self->_where_clause_and_param($opt{where}, $opt{where_param},
-    delete $opt{id}, $opt{primary_key}, $opt{table});
-
+  my $w = $self->_where_clause_and_param($opt{where}, delete $opt{id}, $opt{primary_key}, $opt{table});
+  
   # Delete statement
   my $sql = "delete ";
   $sql .= "$opt{prefix} " if defined $opt{prefix};
@@ -425,7 +424,7 @@ sub execute {
         $statement eq 'delete' || $statement eq 'select';
       next if exists $params->[0]->{$key};
       $params->[0]->{$key} = $opt{id}->[$i];
-      push @cleanup, $key;1
+      push @cleanup, $key;
     }
   }
   
@@ -949,9 +948,7 @@ sub select {
     : [];
   $opt{table} = $tables;
   $table_is_empty = 1 unless @$tables;
-  my $where_param = $opt{where_param} || delete $opt{param} || {};
-  _deprecate('0.24', "select method where_param option is DEPRECATED!")
-    if $opt{where_param};
+  $opt{param} ||= {};
   
   # Select statement
   my $sql = 'select ';
@@ -993,12 +990,11 @@ sub select {
   $sql =~ s/, $/ /;
 
   # Add tables in parameter
-  unshift @$tables,
-    @{$self->_search_tables(join(' ', keys %$where_param) || '')};
+  unshift @$tables, @{$self->_search_tables(join(' ', keys %{$opt{param}}) || '')};
   
   # Where
-  my $w = $self->_where_clause_and_param($opt{where}, $where_param,
-    delete $opt{id}, $opt{primary_key}, @$tables ? $tables->[-1] : undef);
+  my $w = $self->_where_clause_and_param($opt{where}, delete $opt{id}, $opt{primary_key}, @$tables ? $tables->[-1] : undef);
+  $opt{param} = $self->merge_param($opt{param}, $w->{param});
   
   # Add table names in where clause
   unshift @$tables, @{$self->_search_tables($w->{clause})};
@@ -1025,7 +1021,7 @@ sub select {
   $sql .= "$w->{clause} ";
   
   # Execute query
-  return $self->execute($sql, $w->{param}, %opt);
+  return $self->execute($sql, %opt);
 }
 
 sub setup_model {
@@ -1193,8 +1189,7 @@ sub update {
   my $assign_clause = $self->assign_clause($param, {wrap => $opt{wrap}});
   
   # Where
-  my $w = $self->_where_clause_and_param($opt{where}, $opt{where_param},
-    delete $opt{id}, $opt{primary_key}, $opt{table});
+  my $w = $self->_where_clause_and_param($opt{where}, delete $opt{id}, $opt{primary_key}, $opt{table});
   
   # Update statement
   my $sql = "update ";
@@ -1569,11 +1564,10 @@ sub _search_tables {
 }
 
 sub _where_clause_and_param {
-  my ($self, $where, $where_param, $id, $primary_key, $table) = @_;
+  my ($self, $where, $id, $primary_key, $table) = @_;
 
   $where ||= {};
   $where = $self->_id_to_param($id, $primary_key, $table) if defined $id;
-  $where_param ||= {};
   my $w = {};
 
   if (ref $where eq 'HASH') {
@@ -1605,9 +1599,6 @@ sub _where_clause_and_param {
     
     $w->{clause} = @$clause ? "where ( " . join(' and ', @$clause) . " ) " : '' ;
     $w->{param} = $where;
-    $w->{param} = keys %$where_param
-      ? $self->merge_param($where_param, $where)
-      : $where;
   }  
   elsif (ref $where) {
     my $obj;
@@ -1624,14 +1615,11 @@ sub _where_clause_and_param {
       unless ref $obj eq 'DBIx::Custom::Where';
 
     $w->{clause} = $obj->to_string;
-    $w->{param} = keys %$where_param
-      ? $self->merge_param($where_param, $obj->param)
-      : $obj->param;
+    $w->{param} = $obj->param;
     $w->{join} = $obj->{join};
   }
   elsif ($where) {
     $w->{clause} = "where $where";
-    $w->{param} = $where_param;
   }
   
   return $w;
@@ -3214,9 +3202,6 @@ L<DBIx::Custom>
 
   # Options
   execute method id option # will be removed 2017/1/1
-  select method where_param option # will be removed 2017/1/1
-  delete method where_param option # will be removed 2017/1/1
-  update method where_param option # will be removed 2017/1/1
   insert method id option # will be removed at 2017/1/1
 
 L<DBIx::Custom::Result>

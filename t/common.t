@@ -1715,8 +1715,7 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 2, $key2 => 3}, table => $table1);
 $rows = $dbi->select(
   table => $table1,
-  where => "$key1 = :$key1 and $key2 = :$key2",
-  where_param => {$key1 => 1, $key2 => 2}
+  where => ["$key1 = :$key1 and $key2 = :$key2", {$key1 => 1, $key2 => 2}]
 )->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
 
@@ -1756,8 +1755,7 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->insert({$key1 => 2, $key2 => 3}, table => $table1);
 $dbi->delete(
   table => $table1,
-  where => "$key1 = :$key1 and $key2 = :$key2",
-  where_param => {$key1 => 1, $key2 => 2}
+  where => ["$key1 = :$key1 and $key2 = :$key2", {$key1 => 1, $key2 => 2}]
 );
 $rows = $dbi->select(table => $table1)->all;
 is_deeply($rows, [{$key1 => 2, $key2 => 3}]);
@@ -1786,8 +1784,7 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $dbi->update(
   {$key1 => 5},
   table => $table1,
-  where => "$key1 = :$key1 and $key2 = :$key2",
-  where_param => {$key1 => 1, $key2 => 2}
+  where => ["$key1 = :$key1 and $key2 = :$key2", {$key1 => 1, $key2 => 2}]
 );
 $rows = $dbi->select(table => $table1)->all;
 is_deeply($rows, [{$key1 => 5, $key2 => 2}]);
