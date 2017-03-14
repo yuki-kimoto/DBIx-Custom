@@ -7,6 +7,7 @@
   - remove DEPRECATED default_bind_filter(DBIx::Custom).
   - remove DEPRECATED DBIx::Custom::Query.
   - remove DEPRECATED DBIx::Custom::QueryBuilder.
+  - remove DEPRECATED execute(DBIx::Custom) method's query option
   - remove DEPRECATED execute method receiving query object
   - remove DEPRECATED cache_method(DBIx::Custom).
   - remove DEPRECATED query_builder(DBIx::Custom).

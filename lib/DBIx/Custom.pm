@@ -2339,16 +2339,6 @@ registered by C<register_filter>.
 This filter is executed before data is saved into database.
 and before type rule filter is executed.
 
-=item C<query>
-
-  query => 1
-
-C<execute> method return hash reference which contain SQL and column
-information
-
-  my $sql = $query->{sql};
-  my $columns = $query->{columns};
-  
 =item C<reuse>
   
   reuse => $hash_ref
