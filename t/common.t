@@ -462,9 +462,6 @@ test 'Error case';
 eval {DBIx::Custom->connect(dsn => 'dbi:SQLit')};
 ok($@, "connect error");
 
-eval{$dbi->execute("{p }", {}, query => 1)};
-ok($@, "create_query invalid SQL template");
-
 test 'insert';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1);
@@ -1174,11 +1171,6 @@ $dbi->execute($create_table1);
   like($@, qr/Custom.*\.t /s, "fail : verbose");
 }
 
-$query = $dbi->execute("select * from $table1 where $key1 = :$key1", {}, query => 1);
-$dbi->dbh->disconnect;
-eval{$dbi->execute($query, {$key1 => {a => 1}})};
-ok($@, "execute fail");
-
 test 'helper';
 $dbi->helper(
   one => sub { 1 }
@@ -1228,19 +1220,6 @@ $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
 $result = $dbi->select(table => $table1, where => {});
 $row = $result->one;
 is_deeply($row, {$key1 => 1, $key2 => 2});
-
-test 'select query option';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$query = $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, query => 1);
-ok(ref $query);
-$query = $dbi->update({$key2 => 2}, table => $table1, where => {$key1 => 1}, query => 1);
-ok(ref $query);
-$query = $dbi->delete(table => $table1, where => {$key1 => 1}, query => 1);
-ok(ref $query);
-$query = $dbi->select(table => $table1, where => {$key1 => 1, $key2 => 2}, query => 1);
-ok(ref $query);
 
 test 'where';
 $dbi = DBIx::Custom->connect;
@@ -1892,20 +1871,6 @@ $dbi->insert(
 is($dbi->select(table => $table1)->one->{$key1}, 1);
 is($dbi->select(table => $table1)->one->{$key2}, 4);
 is($dbi->select(table => $table1)->one->{$key3}, 3);
-is_deeply($param, {$key3 => 3, $key2 => 4});
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$param = {$key3 => 3, $key2 => 4};
-$query = $dbi->insert(
-  $param,
-  primary_key => [$key1, $key2], 
-  table => $table1,
-  id => [1, 2],
-  query => 1
-);
-ok(ref $query);
 is_deeply($param, {$key3 => 3, $key2 => 4});
 
 test 'model insert id and primary_key option';

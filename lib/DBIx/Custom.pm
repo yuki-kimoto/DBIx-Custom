@@ -353,7 +353,7 @@ sub execute {
   my $saved_param;
   $opt{statement} ||= '';
   $opt{statement} = 'select' if $opt{select};
-  if (($opt{statement} || '') ne 'insert' && ref $params eq 'ARRAY') {
+  if ($opt{statement} eq 'update' && ref $params eq 'ARRAY') {
     my $params2 = $params->[1];
     $params = $params->[0];
     for my $column (keys %$params2) {
@@ -395,14 +395,6 @@ sub execute {
       
   # Save query
   $self->{last_sql} = $query->{sql};
-
-  # Return query
-  if ($opt{query}) {
-    for my $column (@cleanup, @{$opt{cleanup} || []}) {
-      delete $_->{$column} for @$params;
-    }
-    return $query;
-  };
   
   # Tables
   unshift @$tables, @{$query->{tables} || []};
@@ -1187,6 +1179,8 @@ sub update {
   
   # Where
   my $w = $self->_where_clause_and_param($opt{where}, delete $opt{id}, $opt{primary_key}, $opt{table});
+  
+  # Merge update parameter with where parameter
   
   # Update statement
   my $sql = "update ";
