@@ -349,28 +349,8 @@ sub execute {
     _array_to_hash($opt{filter}) : $opt{filter};
   
   # Merge second parameter
-  my @cleanup;
-  my $saved_param;
   $opt{statement} ||= '';
   $opt{statement} = 'select' if $opt{select};
-  if ($opt{statement} eq 'update' && ref $params eq 'ARRAY') {
-    my $params2 = $params->[1];
-    $params = $params->[0];
-    for my $column (keys %$params2) {
-      if (!exists $params->{$column}) {
-        $params->{$column} = $params2->{$column};
-        push @cleanup, $column;
-      }
-      else {
-        delete $params->{$_} for @cleanup;
-        @cleanup = ();
-        $saved_param  = $params;
-        $params = $self->merge_param($params, $params2);
-        delete $saved_param->{$_} for (@{$opt{cleanup} || []});
-        last;
-      }
-    }
-  }
   $params = [$params] unless ref $params eq 'ARRAY';
   
   # Append
@@ -399,25 +379,6 @@ sub execute {
   # Tables
   unshift @$tables, @{$query->{tables} || []};
   my $main_table = @{$tables}[-1];
-
-  # Merge id to parameter
-  if (defined $opt{id}) {
-    my $statement = $query->{statement};
-    _deprecate('0.24', "execute method id option is DEPRECATED!")
-      unless $statement;
-    croak "execute id option must be specified with primary_key option"
-      unless $opt{primary_key};
-    $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key} eq 'ARRAY';
-    $opt{id} = [$opt{id}] unless ref $opt{id} eq 'ARRAY';
-    for (my $i = 0; $i < @{$opt{id}}; $i++) {
-      my $key = $opt{primary_key}->[$i];
-      $key = "$main_table.$key" if $statement eq 'update' ||
-        $statement eq 'delete' || $statement eq 'select';
-      next if exists $params->[0]->{$key};
-      $params->[0]->{$key} = $opt{id}->[$i];
-      push @cleanup, $key;
-    }
-  }
   
   # Type rule
   my $type_filters = {};
@@ -513,12 +474,7 @@ sub execute {
   
   $self->_croak($@, qq{. Following SQL is executed.\n}
     . qq{$query->{sql}\n} . _subname) if $@;
-
-  # Remove id from parameter
-  for my $column (@cleanup, @{$opt{cleanup} || []}) {
-    delete $_->{$column} for @$params;
-  }
-
+  
   # Affected of insert, update, or delete
   if (!$sth->{NUM_OF_FIELDS} && $opt{statement} ne 'select') {
     # Non-Blocking
