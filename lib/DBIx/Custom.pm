@@ -1167,8 +1167,6 @@ sub update {
   # Options
   my $param = @_ % 2 ? shift : undef;
   my %opt = @_;
-  _deprecate('0.24', "update method where_param option is DEPRECATED!")
-    if $opt{where_param};
   $param ||= {};
   
   # Don't allow update all rows
