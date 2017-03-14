@@ -3199,7 +3199,6 @@ L<DBIx::Custom>
 
   # Options
   execute method id option # will be removed 2017/1/1
-  insert method id option # will be removed at 2017/1/1
 
 L<DBIx::Custom::Result>
   
