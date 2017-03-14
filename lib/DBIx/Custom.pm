@@ -354,7 +354,7 @@ sub execute {
   $params = [$params] unless ref $params eq 'ARRAY';
   
   # Append
-  $sql .= $opt{append} if defined $opt{append} && !ref $sql;
+  $sql .= $opt{append} if defined $opt{append};
   
   # Query
   my $query;
