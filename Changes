@@ -65,6 +65,7 @@
   - remove DEPRECATED select method where_param option
   - remove DEPRECATED delete method where_param option
   - remove DEPRECATED update method where_param option
+  - remove DEPRECATED execute(DBIx::Custom) method's id option
 
 0.37
   - catch up Object::Simple 3.16. fix DEPRECATED warnings.

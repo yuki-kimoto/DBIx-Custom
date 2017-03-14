@@ -422,7 +422,7 @@ sub execute {
   my $sth = $query->{sth};
   my $affected;
   if ((!$query->{duplicate} || $opt{bulk_insert}) && $type_rule_off
-    && !keys %$filter && !$self->{default_out_filter}
+    && !keys %$filter
     && !$opt{bind_type} && !$opt{type} && !$ENV{DBIX_CUSTOM_DEBUG})
   {
     eval {
@@ -434,8 +434,7 @@ sub execute {
       }
       else {
         for my $param (@$params) {
-          $affected = $sth->execute(map { $param->{$_} }
-            @{$query->{columns}});
+          $affected = $sth->execute(map { $param->{$_} } @{$query->{columns}});
         }
       }
     };
@@ -1303,7 +1302,7 @@ sub _create_bind_values {
     else { push @bind, $params->{$column} }
     
     # Filter
-    if (my $f = $filter->{$column} || $self->{default_out_filter} || '') {
+    if (my $f = $filter->{$column} || '') {
       $bind[-1] = $f->($bind[-1]);
     }
     
@@ -3131,11 +3130,6 @@ DEBUG output encoding. Default to UTF-8.
 Suppress deprecation warnings before specified version.
 
 =head1 DEPRECATED FUNCTIONALITY
-
-L<DBIx::Custom>
-
-  # Options
-  execute method id option # will be removed 2017/1/1
 
 L<DBIx::Custom::Result>
   
