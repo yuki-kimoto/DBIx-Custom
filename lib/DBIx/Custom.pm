@@ -1164,12 +1164,11 @@ sub update {
     if !$opt{where} && !defined $opt{id} && !$opt{allow_update_all};
   
   # Created time and updated time
-  my @timestamp_cleanup;
   if (defined $opt{mtime}) {
+    $param = {%$param};
     my $now = $self->now;
     $now = $now->() if ref $now eq 'CODE';
     $param->{$opt{mtime}} = $self->now->();
-    push @timestamp_cleanup, $opt{mtime};
   }
 
   # Assign clause
@@ -1187,7 +1186,6 @@ sub update {
   
   # Execute query
   $opt{statement} = 'update';
-  $opt{cleanup} = \@timestamp_cleanup;
   $self->execute($sql, [$param, $w->{param}], %opt);
 }
 
