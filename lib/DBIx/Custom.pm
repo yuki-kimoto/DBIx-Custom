@@ -317,8 +317,8 @@ sub execute {
   my $sql = shift;
 
   # Options
-  my $params;
-  $params = shift if @_ % 2;
+  my $param;
+  $param = shift if @_ % 2;
   my %opt = @_;
   
   # Async query
@@ -338,11 +338,11 @@ sub execute {
       {%{$new_dbi->default_option}, %$option, PrintError => 0, RaiseError => 0});
     
     $new_dbi->{_new_connection} = 1;
-    return $new_dbi->execute($sql, defined $params ? ($params) : (), %opt);
+    return $new_dbi->execute($sql, defined $param ? ($param) : (), %opt);
   }
   
   # Options
-  $params ||= $opt{param} || {};
+  $param ||= $opt{param} || {};
   my $tables = $opt{table} || [];
   $tables = [$tables] unless ref $tables eq 'ARRAY';
   my $filter = ref $opt{filter} eq 'ARRAY' ?
@@ -351,7 +351,6 @@ sub execute {
   # Merge second parameter
   $opt{statement} ||= '';
   $opt{statement} = 'select' if $opt{select};
-  $params = [$params] unless ref $params eq 'ARRAY';
   
   # Append
   $sql .= $opt{append} if defined $opt{append};
@@ -362,8 +361,8 @@ sub execute {
   unless ($query) {
     my $c = $self->{safety_character};
     # Check unsafety keys
-    unless ((join('', keys %{$params->[0]}) || '') =~ /^[$c\.]+$/) {
-      for my $column (keys %{$params->[0]}) {
+    unless ((join('', keys %$param) || '') =~ /^[$c\.]+$/) {
+      for my $column (keys %$param) {
         croak qq{"$column" is not safety column name } . _subname
           unless $column =~ /^[$c\.]+$/;
       }
@@ -428,47 +427,43 @@ sub execute {
     eval {
       if ($opt{bulk_insert}) {
         my %count;
-        my $param = $params->[0];
         $affected = $sth->execute(map { $param->{$_}->[++$count{$_} - 1] }
           @{$query->{columns}});
       }
       else {
-        for my $param (@$params) {
-          $affected = $sth->execute(map { $param->{$_} } @{$query->{columns}});
-        }
+        $affected = $sth->execute(map { $param->{$_} } @{$query->{columns}});
       }
     };
   }
   else {
-    for my $param (@$params) {
-      # Create bind values
-      my ($bind, $bind_types) = $self->_create_bind_values($param, $query->{columns},
-        $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
+    
+    # Create bind values
+    my ($bind, $bind_types) = $self->_create_bind_values($param, $query->{columns},
+      $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
 
-      # Execute
-      eval {
-        if ($opt{bind_type} || $opt{type}) {
-          $sth->bind_param($_ + 1, $bind->[$_],
-              $bind_types->[$_] ? $bind_types->[$_] : ())
-            for (0 .. @$bind - 1);
-          $affected = $sth->execute;
-        }
-        else { $affected = $sth->execute(@$bind) }
+    # Execute
+    eval {
+      if ($opt{bind_type} || $opt{type}) {
+        $sth->bind_param($_ + 1, $bind->[$_],
+            $bind_types->[$_] ? $bind_types->[$_] : ())
+          for (0 .. @$bind - 1);
+        $affected = $sth->execute;
+      }
+      else { $affected = $sth->execute(@$bind) }
 
-        # DEBUG message
-        if ($ENV{DBIX_CUSTOM_DEBUG}) {
-          warn "SQL:\n" . $query->{sql} . "\n";
-          my @output;
-          for my $value (@$bind) {
-            $value = 'undef' unless defined $value;
-            $value = encode($ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8', $value)
-              if utf8::is_utf8($value);
-            push @output, $value;
-          }
-          warn "Bind values: " . join(', ', @output) . "\n\n";
+      # DEBUG message
+      if ($ENV{DBIX_CUSTOM_DEBUG}) {
+        warn "SQL:\n" . $query->{sql} . "\n";
+        my @output;
+        for my $value (@$bind) {
+          $value = 'undef' unless defined $value;
+          $value = encode($ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8', $value)
+            if utf8::is_utf8($value);
+          push @output, $value;
         }
-      };
-    }
+        warn "Bind values: " . join(', ', @output) . "\n\n";
+      }
+    };
   }
   
   $self->_croak($@, qq{. Following SQL is executed.\n}
@@ -645,7 +640,14 @@ sub insert {
   
   # Execute query
   $opt{statement} = 'insert';
-  $self->execute($sql, $params, %opt);
+  if ($multi) {
+    for my $param (@$params) {
+      $self->execute($sql, $param, %opt);
+    }
+  }
+  else {
+    $self->execute($sql, $params->[0], %opt);
+  }
 }
 
 sub include_model {
