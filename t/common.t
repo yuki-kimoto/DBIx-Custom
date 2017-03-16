@@ -79,7 +79,6 @@ my $datetime_datatype = $dbi->datetime_datatype;
 
 # Variables
 my $param;
-my $params;
 my $result;
 my $row;
 my $rows;
@@ -1632,22 +1631,29 @@ $result = $model->select(
 is_deeply($result->one,
         {$key1 => 1, "$table2.$key1" => 1});
 
-test 'merge_param';
-$dbi = DBIx::Custom->new;
-$params = [
-  {$key1 => 1, $key2 => 2, $key3 => 3},
-  {$key1 => 1, $key2 => 2},
-  {$key1 => 1}
-];
-$param = $dbi->merge_param($params->[0], $params->[1], $params->[2]);
-is_deeply($param, {$key1 => [1, 1, 1], $key2 => [2, 2], $key3 => 3});
-
-$params = [
-  {$key1 => [1, 2], $key2 => 1, $key3 => [1, 2]},
-  {$key1 => [3, 4], $key2 => [2, 3], $key3 => 3}
-];
-$param = $dbi->merge_param($params->[0], $params->[1]);
-is_deeply($param, {$key1 => [1, 2, 3, 4], $key2 => [1, 2, 3], $key3 => [1, 2, 3]});
+# merge_param
+{
+  my $dbi = DBIx::Custom->new;
+  
+  {
+    my $params = [
+      {$key1 => 1, $key2 => 2, $key3 => 3},
+      {$key1 => 1, $key2 => 2},
+      {$key1 => 1}
+    ];
+    $param = $dbi->merge_param($params->[0], $params->[1], $params->[2]);
+    is_deeply($param, {$key1 => [1, 1, 1], $key2 => [2, 2], $key3 => 3});
+  }
+  
+  {
+    my $params = [
+      {$key1 => [1, 2], $key2 => 1, $key3 => [1, 2]},
+      {$key1 => [3, 4], $key2 => [2, 3], $key3 => 3}
+    ];
+    $param = $dbi->merge_param($params->[0], $params->[1]);
+    is_deeply($param, {$key1 => [1, 2, 3, 4], $key2 => [1, 2, 3], $key3 => [1, 2, 3]});
+  }
+}
 
 test 'select() param option';
 $dbi = DBIx::Custom->connect;
