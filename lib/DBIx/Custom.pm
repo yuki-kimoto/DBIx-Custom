@@ -2244,26 +2244,6 @@ The following SQL is executed.
 
   select count(*) from (select distinct(name) from book) as t1;
 
-=item C<around> (EXPERIMENTAL)
-
-You can filter sql after the sql is build.
-
-  after_build_sql => $code_ref
-
-The following one is one example.
-
-  $dbi->select(
-    table => 'book',
-    column => 'distinct(name)',
-    after_build_sql => sub {
-      "select count(*) from ($_[0]) as t1"
-    }
-  );
-
-The following SQL is executed.
-
-  select count(*) from (select distinct(name) from book) as t1;
-
 =item C<append>
 
   append => 'order by name'
