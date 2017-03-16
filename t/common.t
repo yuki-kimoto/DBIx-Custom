@@ -78,30 +78,13 @@ my $date_datatype = $dbi->date_datatype;
 my $datetime_datatype = $dbi->datetime_datatype;
 
 # Variables
-my $builder;
-my $datas;
-my $sth;
 my $source;
-my @sources;
-my $select_source;
-my $insert_source;
-my $update_source;
 my $param;
 my $params;
-my $sql;
 my $result;
 my $row;
-my @rows;
 my $rows;
-my $query;
-my @queries;
-my $select_query;
-my $insert_query;
-my $update_query;
-my $ret_val;
-my $infos;
 my $model;
-my $model2;
 my $where;
 
 require MyDBI1;
@@ -361,38 +344,44 @@ $model = $dbi->create_model(table => $table1);
 $model->insert({$key1 => 1, $key2 => 2});
 is_deeply($model->select($key1)->all, [{$key1 => 1}]);
 
-test 'DBIx::Custom::Result test';
-$dbi->delete_all(table => $table1);
-$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
-$source = "select $key1, $key2 from $table1";
-$result = $dbi->execute($source);
+# DBIx::Custom::Result test
+{
+  $dbi->delete_all(table => $table1);
+  $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+  $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
+  $source = "select $key1, $key2 from $table1";
+  $result = $dbi->execute($source);
+  
+  {
+    my @rows = ();
+    while (my $row = $result->fetch) {
+      push @rows, [@$row];
+    }
+    is_deeply(\@rows, [[1, 2], [3, 4]], "fetch");
+  }
+  
+  {
+    $result = $dbi->execute($source);
+    my @rows = ();
+    while (my $row = $result->fetch_hash) {
+      push @rows, {%$row};
+    }
+    is_deeply(\@rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "fetch_hash");
+  }
+  
+  $result = $dbi->execute($source);
+  $rows = $result->fetch_all;
+  is_deeply($rows, [[1, 2], [3, 4]]);
 
-@rows = ();
-while (my $row = $result->fetch) {
-  push @rows, [@$row];
+  $result = $dbi->execute($source);
+  $rows = $result->fetch_hash_all;
+  is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "all");
+
+  is_deeply($dbi->select($key1, table => $table1)->values, [1, 3]);
+
+  is($dbi->select('count(*)', table => $table1)->value, 2);
+  ok(!defined $dbi->select($key1, table => $table1, where => {$key1 => 10})->value);
 }
-is_deeply(\@rows, [[1, 2], [3, 4]], "fetch");
-
-$result = $dbi->execute($source);
-@rows = ();
-while (my $row = $result->fetch_hash) {
-  push @rows, {%$row};
-}
-is_deeply(\@rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "fetch_hash");
-
-$result = $dbi->execute($source);
-$rows = $result->fetch_all;
-is_deeply($rows, [[1, 2], [3, 4]]);
-
-$result = $dbi->execute($source);
-$rows = $result->fetch_hash_all;
-is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "all");
-
-is_deeply($dbi->select($key1, table => $table1)->values, [1, 3]);
-
-is($dbi->select('count(*)', table => $table1)->value, 2);
-ok(!defined $dbi->select($key1, table => $table1, where => {$key1 => 10})->value);
 
 test 'Named placeholder';
 eval { $dbi->execute("drop table $table1") };
@@ -2057,65 +2046,66 @@ $result = $model->select(
 is_deeply($result->one,
         {"$table2.$key1" => 1, "$table2.$key3" => 3});
 
-test 'separator';
-$dbi = DBIx::Custom->connect;
-$dbi->user_table_info($user_table_info);
-eval { $dbi->execute("drop table $table1") };
-eval { $dbi->execute("drop table $table2") };
-$dbi->execute($create_table1);
-$dbi->execute($create_table2);
+# separator
+{
+  $dbi = DBIx::Custom->connect;
+  $dbi->user_table_info($user_table_info);
+  eval { $dbi->execute("drop table $table1") };
+  eval { $dbi->execute("drop table $table2") };
+  $dbi->execute($create_table1);
+  $dbi->execute($create_table2);
 
-$dbi->create_model(
-  table => $table1,
-  join => [
-   "left outer join $table2 on $table1.$key1 = $table2.$key1"
-  ],
-  primary_key => [$key1],
-);
-$model2 = $dbi->create_model(
-  table => $table2,
-);
-$dbi->setup_model;
-$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
-$model = $dbi->model($table1);
-$result = $model->select(
-  column => [
-    $model->mycolumn,
-    {$table2 => [$key1, $key3]}
-  ],
-  where => {"$table1.$key1" => 1}
-);
-is_deeply($result->one,
-        {$key1 => 1, $key2 => 2, "$table2.$key1" => 1, "$table2.$key3" => 3});
-is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
+  $dbi->create_model(
+    table => $table1,
+    join => [
+     "left outer join $table2 on $table1.$key1 = $table2.$key1"
+    ],
+    primary_key => [$key1],
+  );
+  my $model2 = $dbi->create_model(
+    table => $table2,
+  );
+  $dbi->setup_model;
+  $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+  $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
+  $model = $dbi->model($table1);
+  $result = $model->select(
+    column => [
+      $model->mycolumn,
+      {$table2 => [$key1, $key3]}
+    ],
+    where => {"$table1.$key1" => 1}
+  );
+  is_deeply($result->one,
+          {$key1 => 1, $key2 => 2, "$table2.$key1" => 1, "$table2.$key3" => 3});
+  is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
 
-$dbi->separator('__');
-$model = $dbi->model($table1);
-$result = $model->select(
-  column => [
-    $model->mycolumn,
-    {$table2 => [$key1, $key3]}
-  ],
-  where => {"$table1.$key1" => 1}
-);
-is_deeply($result->one,
-        {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
-is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
+  $dbi->separator('__');
+  $model = $dbi->model($table1);
+  $result = $model->select(
+    column => [
+      $model->mycolumn,
+      {$table2 => [$key1, $key3]}
+    ],
+    where => {"$table1.$key1" => 1}
+  );
+  is_deeply($result->one,
+          {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
+  is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
 
-$dbi->separator('-');
-$model = $dbi->model($table1);
-$result = $model->select(
-  column => [
-    $model->mycolumn,
-    {$table2 => [$key1, $key3]}
-  ],
-  where => {"$table1.$key1" => 1}
-);
-is_deeply($result->one,
-  {$key1 => 1, $key2 => 2, hy"$table2-$key1" => 1, hy"$table2-$key3" => 3});
-is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
-
+  $dbi->separator('-');
+  $model = $dbi->model($table1);
+  $result = $model->select(
+    column => [
+      $model->mycolumn,
+      {$table2 => [$key1, $key3]}
+    ],
+    where => {"$table1.$key1" => 1}
+  );
+  is_deeply($result->one,
+    {$key1 => 1, $key2 => 2, hy"$table2-$key1" => 1, hy"$table2-$key3" => 3});
+  is_deeply($model2->select->one, {$key1 => 1, $key3 => 3});
+}
 
 test 'filter_off';
 $dbi = DBIx::Custom->connect;
@@ -2424,32 +2414,38 @@ $result = $dbi->execute(
 $rows = $result->all;
 is_deeply($rows, [{$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}]);
 
-test 'result';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
-
-$result = $dbi->select(table => $table1);
-@rows = ();
-while (my $row = $result->fetch) {
-  push @rows, [@$row];
+# result
+{
+  $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1);
+  $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+  $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
+  
+  {
+    my $result = $dbi->select(table => $table1);
+    my @rows = ();
+    while (my $row = $result->fetch) {
+      push @rows, [@$row];
+    }
+    is_deeply(\@rows, [[1, 2], [3, 4]]);
+  }
+  
+  {
+    my $result = $dbi->select(table => $table1);
+    my @rows = ();
+    while (my $row = $result->fetch_hash) {
+      push @rows, {%$row};
+    }
+    is_deeply(\@rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
+  }
+  
+  $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1);
+  $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+  $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
 }
-is_deeply(\@rows, [[1, 2], [3, 4]]);
-
-$result = $dbi->select(table => $table1);
-@rows = ();
-while (my $row = $result->fetch_hash) {
-  push @rows, {%$row};
-}
-is_deeply(\@rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
 
 test 'fetch_all';
 $result = $dbi->select(table => $table1);
@@ -2638,9 +2634,6 @@ $dbi->create_model(
   ],
   primary_key => [$key1]
 );
-$model2 = $dbi->create_model(
-  table => $table2
-);
 
 test 'model helper';
 $dbi = DBIx::Custom->connect;
@@ -2684,7 +2677,7 @@ EOS
 
   my $param = {$key2 => 11, $key3 => 33};
   my $assign_clause = $dbi->assign_clause($param);
-  $sql = <<"EOS";
+  my $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
 EOS
@@ -2711,7 +2704,7 @@ EOS
 
   my $param = {$key2 => 11};
   my $assign_clause = $dbi->assign_clause($param);
-  $sql = <<"EOS";
+  my $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
 EOS
@@ -2792,83 +2785,91 @@ $dbi->setup_model;
 is_deeply([sort @{$dbi->model($table1)->columns}], [$key1, $key2]);
 is_deeply([sort @{$dbi->model($table2)->columns}], [$key1, $key3]);
 
-test 'each_column';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table ${q}table$p") };
-eval { $dbi->execute("drop table $table1") };
-eval { $dbi->execute("drop table $table2") };
-eval { $dbi->execute("drop table $table3") };
-$dbi->execute($create_table1_type);
-$dbi->execute($create_table2);
+# each_column
+{
+  $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table ${q}table$p") };
+  eval { $dbi->execute("drop table $table1") };
+  eval { $dbi->execute("drop table $table2") };
+  eval { $dbi->execute("drop table $table3") };
+  $dbi->execute($create_table1_type);
+  $dbi->execute($create_table2);
 
-$infos = [];
-$dbi->each_column(sub {
-  my ($self, $table, $column, $cinfo) = @_;
-  
-  if ($table =~ /^table\d/i) {
-     my $info = [$table, $column, $cinfo->{COLUMN_NAME}];
-     push @$infos, $info;
-  }
-});
-$infos = [sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } @$infos];
-is_deeply($infos, 
-  [
-    [table_only($table1), $key1, $key1],
-    [table_only($table1), $key2, $key2],
-    [table_only($table2), $key1, $key1],
-    [table_only($table2), $key3, $key3]
-  ]
-  
-);
+  my $infos = [];
+  $dbi->each_column(sub {
+    my ($self, $table, $column, $cinfo) = @_;
+    
+    if ($table =~ /^table\d/i) {
+       my $info = [$table, $column, $cinfo->{COLUMN_NAME}];
+       push @$infos, $info;
+    }
+  });
+  $infos = [sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } @$infos];
+  is_deeply($infos, 
+    [
+      [table_only($table1), $key1, $key1],
+      [table_only($table1), $key2, $key2],
+      [table_only($table2), $key1, $key1],
+      [table_only($table2), $key3, $key3]
+    ]
+    
+  );
+}
 
 test 'each_table';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-eval { $dbi->execute("drop table $table2") };
-$dbi->execute($create_table2);
-$dbi->execute($create_table1_type);
-
-$infos = [];
-$dbi->each_table(sub {
-  my ($self, $table, $table_info) = @_;
+{
+  $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table $table1") };
+  eval { $dbi->execute("drop table $table2") };
+  $dbi->execute($create_table2);
+  $dbi->execute($create_table1_type);
   
-  if ($table =~ /^table\d/i) {
-    my $info = [$table, $table_info->{TABLE_NAME}];
-    push @$infos, $info;
+  {
+    my $infos = [];
+    $dbi->each_table(sub {
+      my ($self, $table, $table_info) = @_;
+      
+      if ($table =~ /^table\d/i) {
+        my $info = [$table, $table_info->{TABLE_NAME}];
+        push @$infos, $info;
+      }
+    });
+    $infos = [sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } @$infos];
+    is_deeply($infos, 
+      [
+        [table_only($table1), table_only($table1)],
+        [table_only($table2), table_only($table2)],
+      ]
+    );
+
+    $dbi = DBIx::Custom->connect;
+    eval { $dbi->execute("drop table $table1") };
+    eval { $dbi->execute("drop table $table2") };
+    $dbi->execute($create_table2);
+    $dbi->execute($create_table1_type);
   }
-});
-$infos = [sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } @$infos];
-is_deeply($infos, 
-  [
-    [table_only($table1), table_only($table1)],
-    [table_only($table2), table_only($table2)],
-  ]
-);
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-eval { $dbi->execute("drop table $table2") };
-$dbi->execute($create_table2);
-$dbi->execute($create_table1_type);
-
-$infos = [];
-$dbi->user_table_info($user_table_info);
-$dbi->each_table(sub {
-  my ($self, $table, $table_info) = @_;
   
-  if ($table =~ /^table\d/i) {
-     my $info = [$table, $table_info->{TABLE_NAME}];
-     push @$infos, $info;
+  {
+    my $infos = [];
+    $dbi->user_table_info($user_table_info);
+    $dbi->each_table(sub {
+      my ($self, $table, $table_info) = @_;
+      
+      if ($table =~ /^table\d/i) {
+         my $info = [$table, $table_info->{TABLE_NAME}];
+         push @$infos, $info;
+      }
+    });
+    $infos = [sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } @$infos];
+    is_deeply($infos, 
+      [
+        [table_only($table1), table_only($table1)],
+        [table_only($table2), table_only($table2)],
+        [table_only($table3), table_only($table3)],
+      ]
+    );
   }
-});
-$infos = [sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } @$infos];
-is_deeply($infos, 
-  [
-    [table_only($table1), table_only($table1)],
-    [table_only($table2), table_only($table2)],
-    [table_only($table3), table_only($table3)],
-  ]
-);
+}
 
 my $user_column_info = $dbi->get_column_info(exclude_table => $dbi->exclude_table);
 
