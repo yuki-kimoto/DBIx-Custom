@@ -103,20 +103,6 @@ my $infos;
 my $model;
 my $model2;
 my $where;
-my $join;
-my $binary;
-my $user_table_info;
-my $user_column_info;
-my $values_clause;
-my $assign_clause;
-my $reuse;
-my $affected;
-my $dbi1;
-my $dbi2;
-my $dbi3;
-my $dbi4;
-my $dbi5;
-my $pool;
 
 require MyDBI1;
 {
@@ -337,16 +323,18 @@ require MyDBI1;
 }
 
 test 'execute reuse option';
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$reuse = {};
-for my $i (1 .. 2) {
-$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, reuse => $reuse);
+{
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1);
+  my $reuse = {};
+  for my $i (1 .. 2) {
+  $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, reuse => $reuse);
+  }
+  $rows = $dbi->select(table => $table1)->all;
+  is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 1, $key2 => 2}]);
+  ok(keys %$reuse);
+  ok((keys %$reuse)[0] !~ /\?/);
 }
-$rows = $dbi->select(table => $table1)->all;
-is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 1, $key2 => 2}]);
-ok(keys %$reuse);
-ok((keys %$reuse)[0] !~ /\?/);
 
 # Get user table info
 $dbi = DBIx::Custom->connect;
@@ -356,7 +344,8 @@ eval { $dbi->execute("drop table $table3") };
 $dbi->execute($create_table1);
 $dbi->execute($create_table2);
 $dbi->execute($create_table3);
-$user_table_info = $dbi->get_table_info(exclude => $dbi->exclude_table);
+
+my $user_table_info = $dbi->get_table_info(exclude => $dbi->exclude_table);
 
 # Create table
 $dbi = DBIx::Custom->connect;
@@ -674,15 +663,18 @@ $dbi->update_or_insert(
 $row = $dbi->select(id => 1, table => $table1, primary_key => $key1)->one;
 is($row->{$key1}, 1);
 
-eval { 
-  $affected = $dbi->update_or_insert(
-    {},
-    table => $table1,
-    primary_key => $key1,
-    id => 1
-  );
-};
-is($affected, 0);
+{
+  my $affected;
+  eval { 
+    $affected = $dbi->update_or_insert(
+      {},
+      table => $table1,
+      primary_key => $key1,
+      id => 1
+    );
+  };
+  is($affected, 0);
+}
 
 test 'model update_or_insert';
 eval { $dbi->execute("drop table $table1") };
@@ -1590,17 +1582,19 @@ is_deeply($result->one,
 }
 
 test 'values_clause';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$param = {$key1 => 1, $key2 => 2};
-$values_clause = $dbi->values_clause($param);
-$sql = <<"EOS";
+{
+  my $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1_2);
+  my $param = {$key1 => 1, $key2 => 2};
+  my $values_clause = $dbi->values_clause($param);
+  my $sql = <<"EOS";
 insert into $table1 $values_clause
 EOS
-$dbi->execute($sql, $param, table => $table1);
-is($dbi->select(table => $table1)->one->{$key1}, 1);
-is($dbi->select(table => $table1)->one->{$key2}, 2);
+  $dbi->execute($sql, $param, table => $table1);
+  is($dbi->select(table => $table1)->one->{$key1}, 1);
+  is($dbi->select(table => $table1)->one->{$key2}, 2);
+}
 
 test 'mycolumn';
 $dbi = MyDBI8->connect;
@@ -2660,69 +2654,74 @@ $model->helper(foo => sub { shift->select(@_) });
 is_deeply($model->foo->one, {$key1 => 1, $key3 => 3});
 
 test 'assign_clause';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
-$dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
+{
+  my $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1_2);
+  $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
+  $dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
 
-$param = {$key2 => 11};
-$assign_clause = $dbi->assign_clause($param);
-$sql = <<"EOS";
+  my $param = {$key2 => 11};
+  my $assign_clause = $dbi->assign_clause($param);
+  my $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
 EOS
-$dbi->execute($sql, $param);
-$result = $dbi->execute("select * from $table1 order by $key1", table => $table1);
-$rows   = $result->all;
-is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
-  {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
-  "basic");
+  $dbi->execute($sql, $param);
+  my $result = $dbi->execute("select * from $table1 order by $key1", table => $table1);
+  my $rows   = $result->all;
+  is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
+    {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
+    "basic");
+}
 
+{
+  my $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1_2);
+  $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
+  $dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
 
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
-$dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
-
-$param = {$key2 => 11, $key3 => 33};
-$assign_clause = $dbi->assign_clause($param);
-$sql = <<"EOS";
+  my $param = {$key2 => 11, $key3 => 33};
+  my $assign_clause = $dbi->assign_clause($param);
+  $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
 EOS
-$dbi->execute($sql, $param);
-$result = $dbi->execute("select * from $table1 order by $key1", table => $table1);
-$rows   = $result->all;
-is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 33, $key4 => 4, $key5 => 5},
-  {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
-  "basic");
+  $dbi->execute($sql, $param);
+  my $result = $dbi->execute("select * from $table1 order by $key1", table => $table1);
+  my $rows   = $result->all;
+  is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 33, $key4 => 4, $key5 => 5},
+    {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
+    "basic");
+}
 
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
-$dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
+{
+  my $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1_2);
+  $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
+  $dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
 
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1_2);
-$dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
-$dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
+  $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1_2);
+  $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3, $key4 => 4, $key5 => 5}, table => $table1);
+  $dbi->insert({$key1 => 6, $key2 => 7, $key3 => 8, $key4 => 9, $key5 => 10}, table => $table1);
 
-$param = {$key2 => 11};
-$assign_clause = $dbi->assign_clause($param);
-$sql = <<"EOS";
+  my $param = {$key2 => 11};
+  my $assign_clause = $dbi->assign_clause($param);
+  $sql = <<"EOS";
 update $table1 set $assign_clause
 where $key1 = 1
 EOS
-$dbi->execute($sql, $param, table => $table1);
-$result = $dbi->execute("select * from $table1 order by $key1");
-$rows   = $result->all;
-is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
-  {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
-  "basic");
+  $dbi->execute($sql, $param, table => $table1);
+  my $result = $dbi->execute("select * from $table1 order by $key1");
+  my $rows   = $result->all;
+  is_deeply($rows, [{$key1 => 1, $key2 => 11, $key3 => 3, $key4 => 4, $key5 => 5},
+    {$key1 => 6, $key2 => 7,  $key3 => 8, $key4 => 9, $key5 => 10}],
+    "basic");
+}
 
 test 'Model class';
 $dbi = MyDBI1->connect;
@@ -2871,10 +2870,11 @@ is_deeply($infos,
   ]
 );
 
+my $user_column_info = $dbi->get_column_info(exclude_table => $dbi->exclude_table);
+
 test 'type_rule into';
 eval { $dbi->execute("drop table $table1") };
 $dbi->execute($create_table1_type);
-$user_column_info = $dbi->get_column_info(exclude_table => $dbi->exclude_table);
 
 
 $dbi = DBIx::Custom->connect;
@@ -3413,12 +3413,12 @@ $rows = $dbi->select(
 is_deeply($rows, [{u"${table1}_$key1" => 1, u"${table2}_$key1" => 1, $key2 => 2, $key3 => 5}],
   'quote');
 
-
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute("drop table $table1") };
-$dbi->execute($create_table1);
-$dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-$sql = <<"EOS";
+{
+  my $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1);
+  $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+  my $sql = <<"EOS";
 left outer join (
 select * from $table1 t1
   where t1.$key2 = (
@@ -3427,14 +3427,15 @@ select * from $table1 t1
   )
 ) $table3 on $table1.$key1 = $table3.$key1
 EOS
-$sql =~ s/\Q.table3/_table3/g;
-$join = [$sql];
-$rows = $dbi->select(
-  table => $table1,
-  column => u($table3) . ".$key1 as " . u2("${table3}__$key1"),
-  join  => $join
-)->all;
-is_deeply($rows, [{u2"${table3}__$key1" => 1}]);
+  $sql =~ s/\Q.table3/_table3/g;
+  my $join = [$sql];
+  my $rows = $dbi->select(
+    table => $table1,
+    column => u($table3) . ".$key1 as " . u2("${table3}__$key1"),
+    join  => $join
+  )->all;
+  is_deeply($rows, [{u2"${table3}__$key1" => 1}]);
+}
 
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table $table1") };
