@@ -7,11 +7,9 @@ use Scalar::Util 'isweak';
 
 $ENV{DBIX_CUSTOM_SUPPRESS_DEPRECATION} = '0.28';
 
-my $dbi;
-
 plan skip_all => $ENV{DBIX_CUSTOM_SKIP_MESSAGE} || 'common.t is always skipped'
   unless $ENV{DBIX_CUSTOM_TEST_RUN}
-    && eval { $dbi = DBIx::Custom->connect; 1 };
+    && eval { DBIx::Custom->connect; 1 };
 
 plan 'no_plan';
 
@@ -46,34 +44,67 @@ sub table_only {
   return $value;
 }
 
-# Constant
-my $table1 = $dbi->table1;
-my $table2 = $dbi->table2;
-my $table2_alias = $dbi->table2_alias;
-my $table3 = $dbi->table3;
-my $key1 = $dbi->key1;
-my $key2 = $dbi->key2;
-my $key3 = $dbi->key3;
-my $key4 = $dbi->key4;
-my $key5 = $dbi->key5;
-my $key6 = $dbi->key6;
-my $key7 = $dbi->key7;
-my $key8 = $dbi->key8;
-my $key9 = $dbi->key9;
-my $key10 = $dbi->key10;
-my $create_table1 = $dbi->create_table1;
-my $create_table1_2 = $dbi->create_table1_2;
-my $create_table1_type = $dbi->create_table1_type;
-my $create_table1_highperformance = $dbi->create_table1_highperformance;
-my $create_table2 = $dbi->create_table2;
-my $create_table2_2 = $dbi->create_table2_2;
-my $create_table3 = $dbi->create_table3;
-my $create_table_reserved = $dbi->create_table_reserved;
-my ($q, $p) = $dbi->_qp;
-my $date_typename = $dbi->date_typename;
-my $datetime_typename = $dbi->datetime_typename;
-my $date_datatype = $dbi->date_datatype;
-my $datetime_datatype = $dbi->datetime_datatype;
+# Global variable
+my $table1;
+my $table2;
+my $table2_alias;
+my $table3;
+my $key1;
+my $key2;
+my $key3;
+my $key4;
+my $key5;
+my $key6;
+my $key7;
+my $key8;
+my $key9;
+my $key10;
+my $create_table1;
+my $create_table1_2;
+my $create_table1_type;
+my $create_table1_highperformance;
+my $create_table2;
+my $create_table2_2;
+my $create_table3;
+my $create_table_reserved;
+my ($q, $p);
+my $date_typename;
+my $datetime_typename;
+my $date_datatype;
+my $datetime_datatype;
+
+# Global setting
+{
+  my $dbi = DBIx::Custom->connect;
+
+  $table1 = $dbi->table1;
+  $table2 = $dbi->table2;
+  $table2_alias = $dbi->table2_alias;
+  $table3 = $dbi->table3;
+  $key1 = $dbi->key1;
+  $key2 = $dbi->key2;
+  $key3 = $dbi->key3;
+  $key4 = $dbi->key4;
+  $key5 = $dbi->key5;
+  $key6 = $dbi->key6;
+  $key7 = $dbi->key7;
+  $key8 = $dbi->key8;
+  $key9 = $dbi->key9;
+  $key10 = $dbi->key10;
+  $create_table1 = $dbi->create_table1;
+  $create_table1_2 = $dbi->create_table1_2;
+  $create_table1_type = $dbi->create_table1_type;
+  $create_table1_highperformance = $dbi->create_table1_highperformance;
+  $create_table2 = $dbi->create_table2;
+  $create_table2_2 = $dbi->create_table2_2;
+  $create_table3 = $dbi->create_table3;
+  $create_table_reserved = $dbi->create_table_reserved;
+  ($q, $p) = $dbi->_qp;
+  $date_typename = $dbi->date_typename;
+  $datetime_typename = $dbi->datetime_typename;
+  $date_datatype = $dbi->date_datatype;
+  $datetime_datatype = $dbi->datetime_datatype;
+}
 
 # Variables
 my $result;
@@ -81,6 +112,7 @@ my $row;
 my $rows;
 my $model;
 my $where;
+my $dbi;
 
 require MyDBI1;
 {
@@ -302,6 +334,8 @@ require MyDBI1;
 
 # execute reuse option
 {
+  my $dbi = DBIx::Custom->connect;
+  
   eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1);
   my $reuse = {};
