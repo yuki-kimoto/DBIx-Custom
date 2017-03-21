@@ -359,17 +359,20 @@ require MyDBI1;
 # Create table
 {
   my $dbi = DBIx::Custom->connect;
-  eval { $dbi->execute("drop table $table1") };
-  $dbi->execute($create_table1);
-  $model = $dbi->create_model(table => $table1);
-  $model->insert({$key1 => 1, $key2 => 2});
-  is_deeply($model->select->all, [{$key1 => 1, $key2 => 2}]);
-
-  eval { $dbi->execute("drop table $table1") };
-  $dbi->execute($create_table1);
-  $model = $dbi->create_model(table => $table1);
-  $model->insert({$key1 => 1, $key2 => 2});
-  is_deeply($model->select($key1)->all, [{$key1 => 1}]);
+  {
+    eval { $dbi->execute("drop table $table1") };
+    $dbi->execute($create_table1);
+    my $model = $dbi->create_model(table => $table1);
+    $model->insert({$key1 => 1, $key2 => 2});
+    is_deeply($model->select->all, [{$key1 => 1, $key2 => 2}]);
+  }
+  {
+    eval { $dbi->execute("drop table $table1") };
+    $dbi->execute($create_table1);
+    my $model = $dbi->create_model(table => $table1);
+    $model->insert({$key1 => 1, $key2 => 2});
+    is_deeply($model->select($key1)->all, [{$key1 => 1}]);
+  }
 }
 
 # DBIx::Custom::Result test
@@ -411,9 +414,9 @@ require MyDBI1;
     my $rows = $result->fetch_hash_all;
     is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "all");
   }
-
+  
   is_deeply($dbi->select($key1, table => $table1)->values, [1, 3]);
-
+  
   is($dbi->select('count(*)', table => $table1)->value, 2);
   ok(!defined $dbi->select($key1, table => $table1, where => {$key1 => 10})->value);
 }
@@ -615,7 +618,7 @@ require MyDBI1;
   my $dbi = DBIx::Custom->connect;
   eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1_2);
-  $model = $dbi->create_model(table => $table1, ctime => $key2);
+  my $model = $dbi->create_model(table => $table1, ctime => $key2);
   my $param = {$key1 => 1};
   $model->insert($param);
   my $result = $dbi->select(table => $table1);
@@ -630,7 +633,7 @@ require MyDBI1;
   eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1_2);
   my $param = {$key1 => 1};
-  $model = $dbi->create_model(table => $table1, mtime => $key3);
+  my $model = $dbi->create_model(table => $table1, mtime => $key3);
   $model->insert($param);
   my $result = $dbi->select(table => $table1);
   is_deeply($param, {$key1 => 1});
@@ -644,7 +647,7 @@ require MyDBI1;
   eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1_2);
   my $param = {$key1 => 1};
-  $model = $dbi->create_model(table => $table1, ctime=> $key2, mtime => $key3);
+  my $model = $dbi->create_model(table => $table1, ctime=> $key2, mtime => $key3);
   $model->insert($param);
   my $result = $dbi->select(table => $table1);
   is_deeply($param, {$key1 => 1});
@@ -776,7 +779,7 @@ require MyDBI1;
 
   eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1);
-  $model = $dbi->create_model(
+  my $model = $dbi->create_model(
     table => $table1,
     primary_key => $key1
   );
@@ -1038,7 +1041,7 @@ require MyDBI1;
 
   eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1_2);
-  $model = $dbi->create_model(table => $table1, mtime => $key2);
+  my $model = $dbi->create_model(table => $table1, mtime => $key2);
   my $param = {$key3 => 4};
   $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
   $model->update($param, where => {$key1 => 1});
@@ -1835,7 +1838,7 @@ require MyDBI1;
   $dbi->setup_model;
   $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
   $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
-  $model = $dbi->model($table1);
+  my $model = $dbi->model($table1);
   
   {
     my $result = $model->select(
@@ -1922,7 +1925,7 @@ EOS
   $dbi->setup_model;
   $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
   $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
-  $model = $dbi->model($table1);
+  my $model = $dbi->model($table1);
   {
     my $result = $model->select(
       column => [
@@ -2423,7 +2426,7 @@ EOS
   $dbi->setup_model;
   $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
   $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
-  $model = $dbi->model($table1);
+  my $model = $dbi->model($table1);
   
   {
     my $result = $model->select(
@@ -2468,7 +2471,7 @@ EOS
     $dbi->setup_model;
     $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
     $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
-    $model = $dbi->model($table1);
+    my $model = $dbi->model($table1);
     my $result = $model->select(
       column => [
         $model->mycolumn,
@@ -2483,7 +2486,7 @@ EOS
   
   {
     $dbi->separator('__');
-    $model = $dbi->model($table1);
+    my $model = $dbi->model($table1);
     my $result = $model->select(
       column => [
         $model->mycolumn,
@@ -2498,7 +2501,7 @@ EOS
   
   {
     $dbi->separator('-');
-    $model = $dbi->model($table1);
+    my $model = $dbi->model($table1);
     my $result = $model->select(
       column => [
         $model->mycolumn,
@@ -3121,7 +3124,7 @@ EOS
   eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1);
   $dbi->setup_model;
-  $model = $dbi->model($table1);
+  my $model = $dbi->model($table1);
   eval{$model->execute("select * from $table1")};
   ok(!$@);
 }
@@ -3137,7 +3140,7 @@ EOS
   $dbi->setup_model;
   $dbi->execute("insert into $table1 ($key1, $key2) values (1, 2)");
   $dbi->execute("insert into $table2 ($key1, $key3) values (1, 4)");
-  $model = $dbi->model($table1);
+  my $model = $dbi->model($table1);
   
   {
     my $result = $model->select(
@@ -3197,7 +3200,7 @@ EOS
   eval { $dbi->execute("drop table $table2") };
   $dbi->execute($create_table2);
   $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
-  $model = $dbi->create_model(
+  my $model = $dbi->create_model(
     table => $table2
   );
   $model->helper(foo => sub { shift->select(@_) });
@@ -3278,51 +3281,63 @@ EOS
 {
   {
     my $dbi = MyDBI1->connect;
-    eval { $dbi->execute("drop table $table1") };
-    $dbi->execute($create_table1);
-    $model = $dbi->model($table1);
-    $model->insert({$key1 => 'a', $key2 => 'b'});
-    is_deeply($model->list->all, [{$key1 => 'a', $key2 => 'b'}], 'basic');
-    eval { $dbi->execute("drop table $table2") };
-    $dbi->execute($create_table2);
-    $model = $dbi->model($table2);
-    $model->insert({$key1 => 'a'});
-    is_deeply($model->list->all, [{$key1 => 'a', $key3 => undef}], 'basic');
-    is($dbi->models->{$table1}, $dbi->model($table1));
-    is($dbi->models->{$table2}, $dbi->model($table2));
+    {
+      eval { $dbi->execute("drop table $table1") };
+      $dbi->execute($create_table1);
+      my $model = $dbi->model($table1);
+      $model->insert({$key1 => 'a', $key2 => 'b'});
+      is_deeply($model->list->all, [{$key1 => 'a', $key2 => 'b'}], 'basic');
+    }
+    {
+      eval { $dbi->execute("drop table $table2") };
+      $dbi->execute($create_table2);
+      my $model = $dbi->model($table2);
+      $model->insert({$key1 => 'a'});
+      is_deeply($model->list->all, [{$key1 => 'a', $key3 => undef}], 'basic');
+      is($dbi->models->{$table1}, $dbi->model($table1));
+      is($dbi->models->{$table2}, $dbi->model($table2));
+    }
   }
   
   {
     my $dbi = MyDBI4->connect;
-    eval { $dbi->execute("drop table $table1") };
-    $dbi->execute($create_table1);
-    $model = $dbi->model($table1);
-    $model->insert({$key1 => 'a', $key2 => 'b'});
-    is_deeply($model->list->all, [{$key1 => 'a', $key2 => 'b'}], 'basic');
-    eval { $dbi->execute("drop table $table2") };
-    $dbi->execute($create_table2);
-    $model = $dbi->model($table2);
-    $model->insert({$key1 => 'a'});
-    is_deeply($model->list->all, [{$key1 => 'a', $key3 => undef}], 'basic');
+    {
+      eval { $dbi->execute("drop table $table1") };
+      $dbi->execute($create_table1);
+      my $model = $dbi->model($table1);
+      $model->insert({$key1 => 'a', $key2 => 'b'});
+      is_deeply($model->list->all, [{$key1 => 'a', $key2 => 'b'}], 'basic');
+    }
+    {
+      eval { $dbi->execute("drop table $table2") };
+      $dbi->execute($create_table2);
+      my $model = $dbi->model($table2);
+      $model->insert({$key1 => 'a'});
+      is_deeply($model->list->all, [{$key1 => 'a', $key3 => undef}], 'basic');
+    }
   }
   {
     my $dbi = MyDBI5->connect;
-    eval { $dbi->execute("drop table $table1") };
-    eval { $dbi->execute("drop table $table2") };
-    $dbi->execute($create_table1);
-    $dbi->execute($create_table2);
-    $model = $dbi->model($table2);
-    $model->insert({$key1 => 'a'});
-    is_deeply($model->list->all, [{$key1 => 'a', $key3 => undef}], 'include all model');
-    $dbi->insert({$key1 => 1}, table => $table1);
-    $model = $dbi->model($table1);
-    is_deeply($model->list->all, [{$key1 => 1, $key2 => undef}], 'include all model');
+    {
+      eval { $dbi->execute("drop table $table1") };
+      eval { $dbi->execute("drop table $table2") };
+      $dbi->execute($create_table1);
+      $dbi->execute($create_table2);
+      my $model = $dbi->model($table2);
+      $model->insert({$key1 => 'a'});
+      is_deeply($model->list->all, [{$key1 => 'a', $key3 => undef}], 'include all model');
+    }
+    {
+      $dbi->insert({$key1 => 1}, table => $table1);
+      my $model = $dbi->model($table1);
+      is_deeply($model->list->all, [{$key1 => 1, $key2 => undef}], 'include all model');
+    }
   }
 }
 # primary_key
 {
   my $dbi = MyDBI1->connect;
-  $model = $dbi->model($table1);
+  my $model = $dbi->model($table1);
   $model->primary_key([$key1, $key2]);
   is_deeply($model->primary_key, [$key1, $key2]);
 }
@@ -3330,7 +3345,7 @@ EOS
 # columns
 {
   my $dbi = MyDBI1->connect;
-  $model = $dbi->model($table1);
+  my $model = $dbi->model($table1);
   $model->columns([$key1, $key2]);
   is_deeply($model->columns, [$key1, $key2]);
 }
@@ -3338,7 +3353,7 @@ EOS
 # columns
 {
   my $dbi = MyDBI1->connect;
-  $model = $dbi->model($table1);
+  my $model = $dbi->model($table1);
   $model->columns([$key1, $key2]);
   is_deeply($model->columns, [$key1, $key2]);
 }
@@ -4212,7 +4227,7 @@ EOS
 # columns
 {
   my $dbi = MyDBI1->connect;
-  $model = $dbi->model($table1);
+  my $model = $dbi->model($table1);
 }
 
 # count
@@ -4224,20 +4239,26 @@ EOS
   $dbi->insert({$key1 => 1, $key2 => 3}, table => $table1);
   is($dbi->count(table => $table1), 2);
   is($dbi->count(table => $table1, where => {$key2 => 2}), 1);
-  $model = $dbi->create_model(table => $table1);
-  is($model->count, 2);
-
-  eval { $dbi->execute("drop table $table1") };
-  eval { $dbi->execute("drop table $table2") };
-  $dbi->execute($create_table1);
-  $dbi->execute($create_table2);
-  $model = $dbi->create_model(table => $table1, primary_key => $key1);
-  $model->insert({$key1 => 1, $key2 => 2});
-  $model = $dbi->create_model(table => $table2, primary_key => $key1,
-    join => ["left outer join $table1 on $table2.$key1 = $table1.$key1"]);
-  $model->insert({$key1 => 1, $key3 => 3});
-  is($model->count(id => 1), 1);
-  is($model->count(where => {"$table2.$key3" => 3}), 1);
+  {
+    my $model = $dbi->create_model(table => $table1);
+    is($model->count, 2);
+  }
+  
+  {
+    eval { $dbi->execute("drop table $table1") };
+    eval { $dbi->execute("drop table $table2") };
+    $dbi->execute($create_table1);
+    $dbi->execute($create_table2);
+    my $model = $dbi->create_model(table => $table1, primary_key => $key1);
+    $model->insert({$key1 => 1, $key2 => 2});
+  }
+  {
+    my $model = $dbi->create_model(table => $table2, primary_key => $key1,
+      join => ["left outer join $table1 on $table2.$key1 = $table1.$key1"]);
+    $model->insert({$key1 => 1, $key3 => 3});
+    is($model->count(id => 1), 1);
+    is($model->count(where => {"$table2.$key3" => 3}), 1);
+  }
 }
 
 # table_alias option

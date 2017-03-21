@@ -17,7 +17,6 @@ BEGIN {
 }
 
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
-sub test { print "# $_[0]\n" }
 
 use DBIx::Custom;
 {
@@ -44,23 +43,24 @@ $dbi = DBIx::Custom->connect;
 
 
 ### SQLite only test
-test 'dbi_option default';
+# dbi_option default
 $dbi = DBIx::Custom->new;
 is_deeply($dbi->option, {});
 
 
-test 'prefix';
-$dbi = DBIx::Custom->connect;
-eval { $dbi->execute('drop table table1') };
-$dbi->execute('create table table1 (key1 varchar, key2 varchar, primary key(key1));');
-$dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
-$dbi->insert({key1 => 1, key2 => 4}, table => 'table1', prefix => 'or replace');
-$result = $dbi->execute('select * from table1;');
-$rows   = $result->all;
-is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
+# prefix
+{
+  my $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute('drop table table1') };
+  $dbi->execute('create table table1 (key1 varchar, key2 varchar, primary key(key1));');
+  $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
+  $dbi->insert({key1 => 1, key2 => 4}, table => 'table1', prefix => 'or replace');
+  my $result = $dbi->execute('select * from table1;');
+  my $rows   = $result->all;
+  is_deeply($rows, [{key1 => 1, key2 => 4}], "basic");
+}
 
-
-test 'insert ctime and mtime scalar reference';
+# insert ctime and mtime scalar reference
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2, key3)');
@@ -82,7 +82,7 @@ $row = $result->one;
 is($row->{key1}, $row->{key2});
 is($row->{key1}, $row->{key3});
 
-test 'insert ctime and mtime scalar reference';
+# insert ctime and mtime scalar reference
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2, key3)');
@@ -93,7 +93,7 @@ $row   = $result->one;
 is($row->{key1}, $row->{key2});
 is($row->{key1}, $row->{key3});
 
-test 'update mtime scalar reference';
+# update mtime scalar reference
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2)');
@@ -103,7 +103,7 @@ $result = $dbi->select(table => 'table1');
 $row   = $result->one;
 is($row->{key1}, $row->{key2});
 
-test 'update_or_insert ctime and mtime';
+# update_or_insert ctime and mtime
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1 (key1, key2, key3, key4)');
 $dbi->now(\"datetime('now')");
@@ -125,7 +125,7 @@ $result = $dbi->select(table => 'table1');
 $row   = $result->one;
 is($row->{key1}, $row->{key2});
 
-test 'DBIX_CUSTOM_DEBUG ok';
+# DBIX_CUSTOM_DEBUG ok
 {
   local $ENV{DBIX_CUSTOM_DEBUG} = 1;
   $dbi = DBIx::Custom->connect;
@@ -138,7 +138,7 @@ test 'DBIX_CUSTOM_DEBUG ok';
   ok($error);
 }
 
-test 'quote';
+# quote
 $dbi = DBIx::Custom->connect;
 $dbi->quote('"');
 eval { $dbi->execute("drop table ${q}table$p") };
@@ -149,7 +149,7 @@ $result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
 is_deeply($rows, [], "reserved word");
 
-test 'finish statement handle';
+# finish statement handle
 $dbi = DBIx::Custom->connect;
 $dbi->execute($create_table1);
 $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
@@ -213,7 +213,7 @@ eval {$result->fetch_hash_multi};
 like($@, qr/Row count must be specified/, "Not specified row count");
 
 
-test 'type option'; # DEPRECATED!
+# type option # DEPRECATED!
 $dbi = DBIx::Custom->connect(
   dsn => 'dbi:SQLite:dbname=:memory:',
   option => {
@@ -231,7 +231,7 @@ $result = $dbi->execute('select length(key1) as key1_length from table1');
 $row = $result->one;
 is($row->{key1_length}, length $binary);
 
-test 'bind_type option'; # DEPRECATED!
+# bind_type option # DEPRECATED!
 $binary = pack("I3", 1, 2, 3);
 eval { $dbi->execute('drop table table1') };
 $dbi->execute('create table table1(key1, key2)');
@@ -243,7 +243,7 @@ $result = $dbi->execute('select length(key1) as key1_length from table1');
 $row = $result->one;
 is($row->{key1_length}, length $binary);
 
-test 'type_rule from';
+# type_rule from
 $dbi = DBIx::Custom->connect;
 $dbi->type_rule(
   from1 => {
@@ -258,7 +258,7 @@ is($result->fetch_one->[0], 'A');
 $result = $dbi->select(table => 'table1');
 is($result->one->{key1}, 'A');
 
-test 'select limit';
+# select limit
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
 $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
@@ -266,7 +266,7 @@ $dbi->insert({key1 => 3, key2 => 4}, table => 'table1');
 $rows = $dbi->select(table => 'table1', append => "order by key1 desc limit 1")->all;
 is_deeply($rows, [{key1 => 3, key2 => 4}], "append statement");
 
-test 'quote';
+# quote
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table ${q}table$p") };
 $dbi->quote('"');
@@ -277,7 +277,7 @@ $result = $dbi->execute("select * from ${q}table$p");
 $rows   = $result->all;
 is_deeply($rows, [{select => 1, update => 2}], "reserved word");
 
-test 'limit tag';
+# limit tag
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute('drop table table1') };
 $dbi->execute($create_table1);
@@ -285,7 +285,7 @@ $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
 $dbi->insert({key1 => 1, key2 => 4}, table => 'table1');
 $dbi->insert({key1 => 1, key2 => 6}, table => 'table1');
 
-test 'join function';
+# join function
 $dbi = DBIx::Custom->connect;
 eval { $dbi->execute("drop table table1") };
 eval { $dbi->execute("drop table table2") };
@@ -320,7 +320,7 @@ $result = $dbi->select(
 );
 is_deeply($result->all, [{"table2.key3" => 4}]);
 
-test 'select table nothing';
+# select table nothing
 eval { $dbi->execute('drop table table1') };
 eval { $dbi->select('key1') };
 ok($@);
