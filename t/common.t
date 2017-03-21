@@ -108,7 +108,6 @@ my $user_table_info;
 }
 
 # Variables
-my $result;
 my $model;
 
 require MyDBI1;
