@@ -2,6 +2,7 @@ package DBIx::Custom::Util;
 
 use strict;
 use warnings;
+use Carp 'cluck';
 
 use base 'Exporter';
 
@@ -34,7 +35,7 @@ sub _deprecate {
   
   my $suppress_version = $ENV{DBIX_CUSTOM_SUPPRESS_DEPRECATION} || 0;
   
-  warn "$message (Version: $deprecated_version) (" . (caller 1)[3] . ")\n"
+   cluck "$message (Version: $deprecated_version) (" . (caller 1)[3] . ")\n"
     if $suppress_version < $deprecated_version;
 }
 

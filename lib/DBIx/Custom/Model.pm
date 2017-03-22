@@ -14,10 +14,12 @@ our $AUTOLOAD;
 
 sub AUTOLOAD {
   my $self = shift;
-
+  
+  _deprecate('0.39', "DBIx::Custom::Model AUTOLOAD feature is DEPRECATED!");
+  
   # Method name
   my ($package, $mname) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
-
+  
   # Method
   $self->{_methods} ||= {};
   if (my $method = $self->{_methods}->{$mname}) {

@@ -1,4 +1,15 @@
-0.38
+0.39 2017-3-22
+  ---------------------------------------------------
+  NOTE: This release add many DEPRECATED warnings.
+  Maybe after these DEPRECATED, DBIx::Custom will be more stable.
+  I think, in future small and fast will be better than keeping complexity.
+  ---------------------------------------------------
+  - DBIx::Custom::helper method is DEPRECATED!
+  - DEPRECATE DBIx::Custom AUTOLOAD feature is DEPRECATED!
+  - DEPRECATE DBIx::Custom::Model AUTOLOAD feature is DEPRECATED!
+  - DBIx::Custom::update_or_insert method is DEPRECATED!
+  
+0.38 2017-3-18
   ---------------------------------------------------
   NOTE: This release remove many DEPRECATED features. 
   ---------------------------------------------------

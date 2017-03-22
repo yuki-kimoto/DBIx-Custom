@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.38';
+our $VERSION = '0.39';
 
 use Carp 'croak';
 use DBI;
@@ -84,7 +84,9 @@ sub available_typename {
 our $AUTOLOAD;
 sub AUTOLOAD {
   my $self = shift;
-
+  
+  _deprecate('0.39', "DBIx::Custom AUTOLOAD feature is DEPRECATED!");
+  
   # Method name
   my ($package, $mname) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
 
@@ -573,6 +575,8 @@ sub get_column_info {
 
 sub helper {
   my $self = shift;
+  
+  _deprecate('0.39', "DBIx::Custom::helper method is DEPRECATED!");
   
   # Register method
   my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
@@ -1148,6 +1152,9 @@ sub update {
 sub update_all { shift->update(@_, allow_update_all => 1) };
 
 sub update_or_insert {
+
+  _deprecate('0.39', "DBIx::Custom::update_or_insert method is DEPRECATED!");
+
   my ($self, $param, %opt) = @_;
   croak "update_or_insert method need primary_key and id option "
     unless defined $opt{id} && defined $opt{primary_key};
@@ -2385,21 +2392,6 @@ get table information except for one which match C<exclude> pattern.
 
 You can set this value to C<user_table_info>.
 
-=head2 helper
-
-  $dbi->helper(
-    find_or_create   => sub {
-      my $self = shift;
-      
-      # Process
-    },
-    ...
-  );
-
-Register helper. These helper is called directly from L<DBIx::Custom> object.
-
-  $dbi->find_or_create;
-
 =head2 insert
 
   $dbi->insert({title => 'Perl', author => 'Ken'}, table  => 'book');
@@ -3131,6 +3123,13 @@ Suppress deprecation warnings before specified version.
 
 =head1 DEPRECATED FUNCTIONALITY
 
+L<DBIx::Custom>
+
+  # Methods
+  DBIx::Custom::helper method # will be removed at 2022/5/1
+  DBIx::Custom AUTOLOAD feature # will be removed at 2022/5/1
+  DEPRECATE DBIx::Custom::Model AUTOLOAD feature # will be removed at 2022/5/1
+
 L<DBIx::Custom::Result>
   
   # Options
@@ -3146,7 +3145,7 @@ I extend one year each time he tell me it.
 DEPRECATION warnings can be suppressed by C<DBIX_CUSTOM_SUPPRESS_DEPRECATION>
 environment variable.
 
-EXPERIMENTAL features will be changed without warnings.
+EXPERIMENTAL features will be changed or deleted without warnings.
 
 =head1 BUGS
 
