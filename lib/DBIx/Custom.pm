@@ -1299,6 +1299,9 @@ sub _create_bind_values {
 sub _id_to_param {
   my ($self, $id, $primary_keys, $table) = @_;
   
+  _deprecate('0.39', "DBIx::Custom::select,update,delete method's id option is DEPRECATED!");
+  _deprecate('0.39', "DBIx::Custom::select,update,delete method's primary_key option is DEPRECATED!");
+  
   # Check primary key
   croak "primary_key option " .
         "must be specified when id option is used" . _subname
@@ -3155,13 +3158,21 @@ L<DBIx::Custom>
   # Methods
   DBIx::Custom::helper method # will be removed at 2022/5/1
   DBIx::Custom AUTOLOAD feature # will be removed at 2022/5/1
-  DBIx::Custom::Model AUTOLOAD feature # will be removed at 2022/5/1
+  DBIx::Custom::update_or_insert method is DEPRECATED! # will be removed at 2022/5/1
   DBIx::Custom::count method # will be removed at 2022/5/1
+  DBIx::Custom::select,update,delete method's id option is DEPRECATED! # will be removed at 2022/5/1
+  DBIx::Custom::select,update,delete method's primary_key option is DEPRECATED! # will be removed at 2022/5/1
 
 L<DBIx::Custom::Result>
   
   # Options
   kv method's multi option (from 0.28) # will be removed at 2018/3/1
+
+L<DBIx::Custom::Model>
+
+  DBIx::Custom::Model AUTOLOAD feature # will be removed at 2022/5/1
+  DBIx::Custom::Model::count method is DEPRECATED!
+  DBIx::Custom::Model::update_or_insert method is DEPRECATED!
 
 =head1 BACKWARDS COMPATIBILITY POLICY
 

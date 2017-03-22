@@ -5,10 +5,15 @@
   I think, in future small and fast will be better than keeping complexity.
   ---------------------------------------------------
   - DBIx::Custom::helper method is DEPRECATED!
-  - DEPRECATE DBIx::Custom AUTOLOAD feature is DEPRECATED!
-  - DEPRECATE DBIx::Custom::Model AUTOLOAD feature is DEPRECATED!
+  - DBIx::Custom AUTOLOAD feature is DEPRECATED!
   - DBIx::Custom::update_or_insert method is DEPRECATED!
   - DBIx::Custom::count method is DEPRECATED!
+  - DBIx::Custom::select,update,delete method's id option is DEPRECATED!
+  - DBIx::Custom::select,update,delete method's primary_key option is DEPRECATED!
+  - DBIx::Custom::Model AUTOLOAD feature is DEPRECATED!
+  - DBIx::Custom::Model::helper method is DEPRECATED!
+  - DBIx::Custom::Model::update_or_insert method is DEPRECATED!
+  - DBIx::Custom::Model::count is DEPRECATED!
 
 0.38 2017-3-18
   ---------------------------------------------------

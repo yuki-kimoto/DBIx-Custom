@@ -71,7 +71,9 @@ for my $method (@methods) {
 
 sub update_or_insert {
   my ($self, $param, %opt) = @_;
-  
+
+  _deprecate('0.39', "DBIx::Custom::Model::update_or_insert method is DEPRECATED!");
+
   croak "update_or_insert method need primary_key and id option "
     unless (defined $opt{id} || defined $self->{id})
         && (defined $opt{primary_key} || defined $self->{primary_key});
@@ -91,6 +93,8 @@ sub DESTROY { }
 
 sub helper {
   my $self = shift;
+  
+  _deprecate('0.39', "DBIx::Custom::Model::helper method is DEPRECATED!");
   
   # Merge
   my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
