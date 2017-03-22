@@ -1456,9 +1456,12 @@ sub _search_tables {
 
 sub _where_clause_and_param {
   my ($self, $where, $id, $primary_key, $table) = @_;
-
+  
+  if (defined $id) {
+    $where = $self->_id_to_param($id, $primary_key, $table) ;
+  }
+  
   $where ||= {};
-  $where = $self->_id_to_param($id, $primary_key, $table) if defined $id;
   my $w = {};
 
   if (ref $where eq 'HASH') {
