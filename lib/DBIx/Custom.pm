@@ -81,29 +81,6 @@ sub available_typename {
   return join "\n", @output;
 }
 
-our $AUTOLOAD;
-sub AUTOLOAD {
-  my $self = shift;
-  
-  _deprecate('0.39', "DBIx::Custom AUTOLOAD feature is DEPRECATED!");
-  
-  # Method name
-  my ($package, $mname) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
-
-  # Call method
-  $self->{_methods} ||= {};
-  if (my $method = $self->{_methods}->{$mname}) {
-    return $self->$method(@_)
-  }
-  elsif ($self->{dbh} && (my $dbh_method = $self->dbh->can($mname))) {
-    $self->dbh->$dbh_method(@_);
-  }
-  else {
-    croak qq{Can't locate object method "$mname" via "$package" }
-      . _subname;
-  }
-}
-
 sub assign_clause {
   my ($self, $param, $opts) = @_;
   
@@ -173,8 +150,6 @@ sub connect {
   return $self;
 }
 
-sub count { shift->select(column => 'count(*)', @_)->fetch_one->[0] }
-
 sub dbh {
   my $self = shift;
   
@@ -220,7 +195,7 @@ sub delete {
     if !$opt{where} && !defined $opt{id} && !$opt{allow_delete_all};
   
   # Where
-  my $w = $self->_where_clause_and_param($opt{where}, delete $opt{id}, $opt{primary_key}, $opt{table});
+  my $w = $self->_where_clause_and_param($opt{where}, $opt{id}, $opt{primary_key}, $opt{table});
   
   # Delete statement
   my $sql = "delete ";
@@ -233,8 +208,6 @@ sub delete {
 }
 
 sub delete_all { shift->delete(@_, allow_delete_all => 1) }
-
-sub DESTROY {}
 
 sub create_model {
   my $self = shift;
@@ -571,18 +544,6 @@ sub get_column_info {
   return [
     sort {$a->{table} cmp $b->{table} || $a->{column} cmp $b->{column} }
       @$column_info];
-}
-
-sub helper {
-  my $self = shift;
-  
-  _deprecate('0.39', "DBIx::Custom::helper method is DEPRECATED!");
-  
-  # Register method
-  my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-  $self->{_methods} = {%{$self->{_methods} || {}}, %$methods};
-  
-  return $self;
 }
 
 sub insert {
@@ -941,7 +902,7 @@ sub select {
   unshift @$tables, @{$self->_search_tables(join(' ', keys %{$opt{param}}) || '')};
   
   # Where
-  my $w = $self->_where_clause_and_param($opt{where}, delete $opt{id}, $opt{primary_key}, @$tables ? $tables->[-1] : undef);
+  my $w = $self->_where_clause_and_param($opt{where}, $opt{id}, $opt{primary_key}, @$tables ? $tables->[-1] : undef);
   $opt{param} = $self->merge_param($opt{param}, $w->{param});
   
   # Add table names in where clause
@@ -1134,7 +1095,7 @@ sub update {
   my $assign_clause = $self->assign_clause($param, {wrap => $opt{wrap}});
   
   # Where
-  my $w = $self->_where_clause_and_param($opt{where}, delete $opt{id}, $opt{primary_key}, $opt{table});
+  my $w = $self->_where_clause_and_param($opt{where}, $opt{id}, $opt{primary_key}, $opt{table});
   
   # Merge update parameter with where parameter
   $param = $self->merge_param($param, $w->{param});
@@ -1150,26 +1111,6 @@ sub update {
 }
 
 sub update_all { shift->update(@_, allow_update_all => 1) };
-
-sub update_or_insert {
-
-  _deprecate('0.39', "DBIx::Custom::update_or_insert method is DEPRECATED!");
-
-  my ($self, $param, %opt) = @_;
-  croak "update_or_insert method need primary_key and id option "
-    unless defined $opt{id} && defined $opt{primary_key};
-  my $statement_opt = $opt{option} || {};
-
-  my $rows = $self->select(%opt, %{$statement_opt->{select} || {}})->all;
-  if (@$rows == 0) {
-    return $self->insert($param, %opt, %{$statement_opt->{insert} || {}});
-  }
-  elsif (@$rows == 1) {
-    return 0 unless keys %$param;
-    return $self->update($param, %opt, %{$statement_opt->{update} || {}});
-  }
-  else { croak "selected row must be one " . _subname }
-}
 
 sub values_clause {
   my ($self, $param, $opts) = @_;
@@ -1573,6 +1514,71 @@ sub _where_clause_and_param {
   }
   
   return $w;
+}
+
+# DEPRECATED
+our $AUTOLOAD;
+sub AUTOLOAD {
+  my $self = shift;
+  
+  _deprecate('0.39', "DBIx::Custom AUTOLOAD feature is DEPRECATED!");
+  
+  # Method name
+  my ($package, $mname) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
+
+  # Call method
+  $self->{_methods} ||= {};
+  if (my $method = $self->{_methods}->{$mname}) {
+    return $self->$method(@_)
+  }
+  elsif ($self->{dbh} && (my $dbh_method = $self->dbh->can($mname))) {
+    $self->dbh->$dbh_method(@_);
+  }
+  else {
+    croak qq{Can't locate object method "$mname" via "$package" }
+      . _subname;
+  }
+}
+sub DESTROY {}
+
+# DEPRECATED
+sub helper {
+  my $self = shift;
+  
+  _deprecate('0.39', "DBIx::Custom::helper method is DEPRECATED!");
+  
+  # Register method
+  my $methods = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+  $self->{_methods} = {%{$self->{_methods} || {}}, %$methods};
+  
+  return $self;
+}
+
+# DEPRECATED
+sub update_or_insert {
+
+  _deprecate('0.39', "DBIx::Custom::update_or_insert method is DEPRECATED!");
+
+  my ($self, $param, %opt) = @_;
+  croak "update_or_insert method need primary_key and id option "
+    unless defined $opt{id} && defined $opt{primary_key};
+  my $statement_opt = $opt{option} || {};
+
+  my $rows = $self->select(%opt, %{$statement_opt->{select} || {}})->all;
+  if (@$rows == 0) {
+    return $self->insert($param, %opt, %{$statement_opt->{insert} || {}});
+  }
+  elsif (@$rows == 1) {
+    return 0 unless keys %$param;
+    return $self->update($param, %opt, %{$statement_opt->{update} || {}});
+  }
+  else { croak "selected row must be one " . _subname }
+}
+
+# DEPRECATED
+sub count {
+  _deprecate('0.39', "DBIx::Custom::count method is DEPRECATED!");
+  shift->select(column => 'count(*)', @_)->fetch_one->[0]
 }
 
 1;
@@ -3128,7 +3134,8 @@ L<DBIx::Custom>
   # Methods
   DBIx::Custom::helper method # will be removed at 2022/5/1
   DBIx::Custom AUTOLOAD feature # will be removed at 2022/5/1
-  DEPRECATE DBIx::Custom::Model AUTOLOAD feature # will be removed at 2022/5/1
+  DBIx::Custom::Model AUTOLOAD feature # will be removed at 2022/5/1
+  DBIx::Custom::count method # will be removed at 2022/5/1
 
 L<DBIx::Custom::Result>
   
