@@ -147,7 +147,14 @@ sub delete {
     if !$opt{where} && !defined $opt{id} && !$opt{allow_delete_all};
   
   # Where
-  my $w = $self->_where_clause_and_param($opt{where}, $opt{id}, $opt{primary_key}, $opt{table});
+  my $where;
+  if (defined $opt{id}) {
+    $where = $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table}) ;
+  }
+  else {
+    $where = $opt{where};
+  }
+  my $w = $self->_where_clause_and_param($where);
   
   # Delete statement
   my $sql = "delete ";
@@ -746,7 +753,14 @@ sub select {
   unshift @$tables, @{$self->_search_tables(join(' ', keys %{$opt{param}}) || '')};
   
   # Where
-  my $w = $self->_where_clause_and_param($opt{where}, $opt{id}, $opt{primary_key}, @$tables ? $tables->[-1] : undef);
+  my $where;
+  if (defined $opt{id}) {
+    $where = $self->_id_to_param($opt{id}, $opt{primary_key}, @$tables ? $tables->[-1] : undef) ;
+  }
+  else {
+    $where = $opt{where};
+  }
+  my $w = $self->_where_clause_and_param($where, $opt{id});
   $opt{param} = $self->merge_param($opt{param}, $w->{param});
   
   # Add table names in where clause
@@ -825,7 +839,15 @@ sub update {
   my $assign_clause = $self->assign_clause($param, {wrap => $opt{wrap}});
   
   # Where
-  my $w = $self->_where_clause_and_param($opt{where}, $opt{id}, $opt{primary_key}, $opt{table});
+  my $where;
+  if (defined $opt{id}) {
+    $where = $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table}) ;
+  }
+  else {
+    $where = $opt{where};
+  }
+  
+  my $w = $self->_where_clause_and_param($where);
   
   # Merge update parameter with where parameter
   $param = $self->merge_param($param, $w->{param});
@@ -1455,11 +1477,7 @@ sub _search_tables {
 }
 
 sub _where_clause_and_param {
-  my ($self, $where, $id, $primary_key, $table) = @_;
-  
-  if (defined $id) {
-    $where = $self->_id_to_param($id, $primary_key, $table) ;
-  }
+  my ($self, $where) = @_;
   
   $where ||= {};
   my $w = {};
