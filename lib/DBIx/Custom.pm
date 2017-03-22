@@ -702,12 +702,9 @@ sub select {
   $opt{column} = $column if defined $column;
 
   # Options
-  my $table_is_empty;
-  my $tables = ref $opt{table} eq 'ARRAY' ? $opt{table}
-    : defined $opt{table} ? [$opt{table}]
-    : [];
-  $opt{table} = $tables;
-  $table_is_empty = 1 unless @$tables;
+  my $tables = [];
+  push @$tables, $opt{table} if defined $opt{table};
+  my $table_is_empty = @$tables ? 0 : 1;
   $opt{param} ||= {};
   
   # Select statement
