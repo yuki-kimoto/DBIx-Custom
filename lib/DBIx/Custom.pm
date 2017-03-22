@@ -50,54 +50,6 @@ has separator => '.';
 
 has mytable_symbol => '__MY__';
 
-sub available_datatype {
-  my $self = shift;
-  
-  my $data_types = '';
-  for my $i (-1000 .. 1000) {
-     my $type_info = $self->dbh->type_info($i);
-     my $data_type = $type_info->{DATA_TYPE};
-     my $type_name = $type_info->{TYPE_NAME};
-     $data_types .= "$data_type ($type_name)\n"
-       if defined $data_type;
-  }
-  return "Data Type maybe equal to Type Name" unless $data_types;
-  $data_types = "Data Type (Type name)\n" . $data_types;
-  return $data_types;
-}
-
-sub available_typename {
-  my $self = shift;
-  
-  # Type Names
-  my $type_names = {};
-  $self->each_column(sub {
-    my ($self, $table, $column, $column_info) = @_;
-    $type_names->{$column_info->{TYPE_NAME}} = 1
-      if $column_info->{TYPE_NAME};
-  });
-  my @output = sort keys %$type_names;
-  unshift @output, "Type Name";
-  return join "\n", @output;
-}
-
-sub assign_clause {
-  my ($self, $param, $opts) = @_;
-  
-  my $wrap = $opts->{wrap} || {};
-  my ($q, $p) = $self->_qp;
-  
-  # Assign clause (performance is important)
-  join(
-    ', ',
-    map {
-      ref $param->{$_} eq 'SCALAR' ? "$q$_$p = " . ${$param->{$_}}
-      : $wrap->{$_} ? "$q$_$p = " . $wrap->{$_}->(":$_")
-      : "$q$_$p = :$_";
-    } sort keys %$param
-  );
-}
-
 sub column {
   my $self = shift;
   my $option = pop if ref $_[-1] eq 'HASH';
@@ -229,62 +181,6 @@ sub create_model {
   $self->model($model->table, $model);
   
   return $self->model($model->table);
-}
-
-sub each_column {
-  my ($self, $cb, %options) = @_;
-  
-  my $user_column_info = $self->user_column_info;
-  
-  if ($user_column_info) {
-    $self->$cb($_->{table}, $_->{column}, $_->{info}) for @$user_column_info;
-  }
-  else {
-    my $re = $self->exclude_table || $options{exclude_table};
-    # Tables
-    my $tables = {};
-    $self->each_table(sub {
-      my ($dbi, $table, $table_info) = @_;
-      my $schema = $table_info->{TABLE_SCHEM};
-      $tables->{$schema}{$table}++;
-    });
-
-    # Iterate all tables
-    for my $schema (sort keys %$tables) {
-      for my $table (sort keys %{$tables->{$schema}}) {
-        
-        # Iterate all columns
-        my $sth_columns;
-        eval {$sth_columns = $self->dbh->column_info(undef, $schema, $table, '%')};
-        next if $@;
-        while (my $column_info = $sth_columns->fetchrow_hashref) {
-          my $column = $column_info->{COLUMN_NAME};
-          $self->$cb($table, $column, $column_info);
-        }
-      }
-    }
-  }
-}
-
-sub each_table {
-  my ($self, $cb, %option) = @_;
-  
-  my $user_table_infos = $self->user_table_info;
-  
-  # Iterate tables
-  if ($user_table_infos) {
-      $self->$cb($_->{table}, $_->{info}) for @$user_table_infos;
-  }
-  else {
-    my $re = $self->exclude_table || $option{exclude};
-    my $sth_tables = $self->dbh->table_info;
-    while (my $table_info = $sth_tables->fetchrow_hashref) {
-      # Table
-      my $table = $table_info->{TABLE_NAME};
-      next if defined $re && $table =~ /$re/;
-      $self->$cb($table, $table_info);
-    }
-  }
 }
 
 sub execute {
@@ -512,38 +408,6 @@ sub execute {
     # Blocking
     else { return $result }
   }
-}
-
-sub get_table_info {
-  my ($self, %opt) = @_;
-  
-  my $exclude = delete $opt{exclude};
-  croak qq/"$_" is wrong option/ for keys %opt;
-  
-  my $table_info = [];
-  $self->each_table(
-    sub { push @$table_info, {table => $_[1], info => $_[2] } },
-    exclude => $exclude
-  );
-  
-  return [sort {$a->{table} cmp $b->{table} } @$table_info];
-}
-
-sub get_column_info {
-  my ($self, %opt) = @_;
-  
-  my $exclude_table = delete $opt{exclude_table};
-  croak qq/"$_" is wrong option/ for keys %opt;
-  
-  my $column_info = [];
-  $self->each_column(
-    sub { push @$column_info, {table => $_[1], column => $_[2], info => $_[3] } },
-    exclude_table => $exclude_table
-  );
-  
-  return [
-    sort {$a->{table} cmp $b->{table} || $a->{column} cmp $b->{column} }
-      @$column_info];
 }
 
 sub insert {
@@ -813,26 +677,6 @@ sub _tq {
   }
 }
 
-sub _qp {
-  my ($self, %opt) = @_;
-
-  my $quote = $self->{quote} || $self->quote || '';
-  
-  my $q = substr($quote, 0, 1) || '';
-  my $p;
-  if (defined $quote && length $quote > 1) {
-    $p = substr($quote, 1, 1);
-  }
-  else { $p = $q }
-  
-  if ($opt{quotemeta}) {
-    $q = quotemeta($q);
-    $p = quotemeta($p);
-  }
-  
-  return ($q, $p);
-}
-
 sub register_filter {
   my $self = shift;
   
@@ -957,47 +801,91 @@ sub setup_model {
   return $self;
 }
 
-sub show_datatype {
-  my ($self, $table) = @_;
-  croak "Table name must be specified" unless defined $table;
-  print "$table\n";
-  
-  my $result = $self->select(table => $table, where => "'0' <> '0'");
-  my $sth = $result->sth;
-
-  my $columns = $sth->{NAME};
-  my $data_types = $sth->{TYPE};
-  
-  for (my $i = 0; $i < @$columns; $i++) {
-    my $column = $columns->[$i];
-    my $data_type = lc $data_types->[$i];
-    print "$column: $data_type\n";
-  }
-}
-
-sub show_typename {
-  my ($self, $t) = @_;
-  croak "Table name must be specified" unless defined $t;
-  print "$t\n";
-  
-  $self->each_column(sub {
-    my ($self, $table, $column, $infos) = @_;
-    return unless $table eq $t;
-    my $typename = lc $infos->{TYPE_NAME};
-    print "$column: $typename\n";
-  });
-  
-  return $self;
-}
-
-sub show_tables {
+sub update {
   my $self = shift;
+
+  # Options
+  my $param = @_ % 2 ? shift : undef;
+  my %opt = @_;
+  $param ||= {};
   
-  my %tables;
-  $self->each_table(sub { $tables{$_[1]}++ });
-  print join("\n", sort keys %tables) . "\n";
-  return $self;
+  # Don't allow update all rows
+  croak qq{update method where option must be specified } . _subname
+    if !$opt{where} && !defined $opt{id} && !$opt{allow_update_all};
+  
+  # Created time and updated time
+  if (defined $opt{mtime}) {
+    $param = {%$param};
+    my $now = $self->now;
+    $now = $now->() if ref $now eq 'CODE';
+    $param->{$opt{mtime}} = $self->now->();
+  }
+
+  # Assign clause
+  my $assign_clause = $self->assign_clause($param, {wrap => $opt{wrap}});
+  
+  # Where
+  my $w = $self->_where_clause_and_param($opt{where}, $opt{id}, $opt{primary_key}, $opt{table});
+  
+  # Merge update parameter with where parameter
+  $param = $self->merge_param($param, $w->{param});
+  
+  # Update statement
+  my $sql = "update ";
+  $sql .= "$opt{prefix} " if defined $opt{prefix};
+  $sql .= $self->_tq($opt{table}) . " set $assign_clause $w->{clause} ";
+  
+  # Execute query
+  $opt{statement} = 'update';
+  $self->execute($sql, $param, %opt);
 }
+
+sub update_all { shift->update(@_, allow_update_all => 1) };
+
+sub values_clause {
+  my ($self, $param, $opts) = @_;
+  
+  my $wrap = $opts->{wrap} || {};
+  
+  # Create insert parameter tag
+  my ($q, $p) = $self->_qp;
+  
+  # values clause(performance is important)
+  '(' .
+  join(
+    ', ',
+    map { "$q$_$p" } sort keys %$param
+  ) .
+  ') values (' .
+  join(
+    ', ',
+    map {
+      ref $param->{$_} eq 'SCALAR' ? ${$param->{$_}} :
+      $wrap->{$_} ? $wrap->{$_}->(":$_") :
+      ":$_";
+    } sort keys %$param
+  ) .
+  ')'
+}
+
+sub assign_clause {
+  my ($self, $param, $opts) = @_;
+  
+  my $wrap = $opts->{wrap} || {};
+  my ($q, $p) = $self->_qp;
+  
+  # Assign clause (performance is important)
+  join(
+    ', ',
+    map {
+      ref $param->{$_} eq 'SCALAR' ? "$q$_$p = " . ${$param->{$_}}
+      : $wrap->{$_} ? "$q$_$p = " . $wrap->{$_}->(":$_")
+      : "$q$_$p = :$_";
+    } sort keys %$param
+  );
+}
+
+sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
 
 sub type_rule {
   my $self = shift;
@@ -1071,71 +959,185 @@ sub type_rule {
   return $self->{type_rule} || {};
 }
 
-sub update {
-  my $self = shift;
-
-  # Options
-  my $param = @_ % 2 ? shift : undef;
-  my %opt = @_;
-  $param ||= {};
+sub get_table_info {
+  my ($self, %opt) = @_;
   
-  # Don't allow update all rows
-  croak qq{update method where option must be specified } . _subname
-    if !$opt{where} && !defined $opt{id} && !$opt{allow_update_all};
+  my $exclude = delete $opt{exclude};
+  croak qq/"$_" is wrong option/ for keys %opt;
   
-  # Created time and updated time
-  if (defined $opt{mtime}) {
-    $param = {%$param};
-    my $now = $self->now;
-    $now = $now->() if ref $now eq 'CODE';
-    $param->{$opt{mtime}} = $self->now->();
-  }
-
-  # Assign clause
-  my $assign_clause = $self->assign_clause($param, {wrap => $opt{wrap}});
+  my $table_info = [];
+  $self->each_table(
+    sub { push @$table_info, {table => $_[1], info => $_[2] } },
+    exclude => $exclude
+  );
   
-  # Where
-  my $w = $self->_where_clause_and_param($opt{where}, $opt{id}, $opt{primary_key}, $opt{table});
-  
-  # Merge update parameter with where parameter
-  $param = $self->merge_param($param, $w->{param});
-  
-  # Update statement
-  my $sql = "update ";
-  $sql .= "$opt{prefix} " if defined $opt{prefix};
-  $sql .= $self->_tq($opt{table}) . " set $assign_clause $w->{clause} ";
-  
-  # Execute query
-  $opt{statement} = 'update';
-  $self->execute($sql, $param, %opt);
+  return [sort {$a->{table} cmp $b->{table} } @$table_info];
 }
 
-sub update_all { shift->update(@_, allow_update_all => 1) };
+sub get_column_info {
+  my ($self, %opt) = @_;
+  
+  my $exclude_table = delete $opt{exclude_table};
+  croak qq/"$_" is wrong option/ for keys %opt;
+  
+  my $column_info = [];
+  $self->each_column(
+    sub { push @$column_info, {table => $_[1], column => $_[2], info => $_[3] } },
+    exclude_table => $exclude_table
+  );
+  
+  return [
+    sort {$a->{table} cmp $b->{table} || $a->{column} cmp $b->{column} }
+      @$column_info];
+}
 
-sub values_clause {
-  my ($self, $param, $opts) = @_;
+sub each_column {
+  my ($self, $cb, %options) = @_;
   
-  my $wrap = $opts->{wrap} || {};
+  my $user_column_info = $self->user_column_info;
   
-  # Create insert parameter tag
-  my ($q, $p) = $self->_qp;
+  if ($user_column_info) {
+    $self->$cb($_->{table}, $_->{column}, $_->{info}) for @$user_column_info;
+  }
+  else {
+    my $re = $self->exclude_table || $options{exclude_table};
+    # Tables
+    my $tables = {};
+    $self->each_table(sub {
+      my ($dbi, $table, $table_info) = @_;
+      my $schema = $table_info->{TABLE_SCHEM};
+      $tables->{$schema}{$table}++;
+    });
+
+    # Iterate all tables
+    for my $schema (sort keys %$tables) {
+      for my $table (sort keys %{$tables->{$schema}}) {
+        
+        # Iterate all columns
+        my $sth_columns;
+        eval {$sth_columns = $self->dbh->column_info(undef, $schema, $table, '%')};
+        next if $@;
+        while (my $column_info = $sth_columns->fetchrow_hashref) {
+          my $column = $column_info->{COLUMN_NAME};
+          $self->$cb($table, $column, $column_info);
+        }
+      }
+    }
+  }
+}
+
+sub each_table {
+  my ($self, $cb, %option) = @_;
   
-  # values clause(performance is important)
-  '(' .
-  join(
-    ', ',
-    map { "$q$_$p" } sort keys %$param
-  ) .
-  ') values (' .
-  join(
-    ', ',
-    map {
-      ref $param->{$_} eq 'SCALAR' ? ${$param->{$_}} :
-      $wrap->{$_} ? $wrap->{$_}->(":$_") :
-      ":$_";
-    } sort keys %$param
-  ) .
-  ')'
+  my $user_table_infos = $self->user_table_info;
+  
+  # Iterate tables
+  if ($user_table_infos) {
+      $self->$cb($_->{table}, $_->{info}) for @$user_table_infos;
+  }
+  else {
+    my $re = $self->exclude_table || $option{exclude};
+    my $sth_tables = $self->dbh->table_info;
+    while (my $table_info = $sth_tables->fetchrow_hashref) {
+      # Table
+      my $table = $table_info->{TABLE_NAME};
+      next if defined $re && $table =~ /$re/;
+      $self->$cb($table, $table_info);
+    }
+  }
+}
+
+sub available_datatype {
+  my $self = shift;
+  
+  my $data_types = '';
+  for my $i (-1000 .. 1000) {
+     my $type_info = $self->dbh->type_info($i);
+     my $data_type = $type_info->{DATA_TYPE};
+     my $type_name = $type_info->{TYPE_NAME};
+     $data_types .= "$data_type ($type_name)\n"
+       if defined $data_type;
+  }
+  return "Data Type maybe equal to Type Name" unless $data_types;
+  $data_types = "Data Type (Type name)\n" . $data_types;
+  return $data_types;
+}
+
+sub available_typename {
+  my $self = shift;
+  
+  # Type Names
+  my $type_names = {};
+  $self->each_column(sub {
+    my ($self, $table, $column, $column_info) = @_;
+    $type_names->{$column_info->{TYPE_NAME}} = 1
+      if $column_info->{TYPE_NAME};
+  });
+  my @output = sort keys %$type_names;
+  unshift @output, "Type Name";
+  return join "\n", @output;
+}
+
+sub show_datatype {
+  my ($self, $table) = @_;
+  croak "Table name must be specified" unless defined $table;
+  print "$table\n";
+  
+  my $result = $self->select(table => $table, where => "'0' <> '0'");
+  my $sth = $result->sth;
+
+  my $columns = $sth->{NAME};
+  my $data_types = $sth->{TYPE};
+  
+  for (my $i = 0; $i < @$columns; $i++) {
+    my $column = $columns->[$i];
+    my $data_type = lc $data_types->[$i];
+    print "$column: $data_type\n";
+  }
+}
+
+sub show_typename {
+  my ($self, $t) = @_;
+  croak "Table name must be specified" unless defined $t;
+  print "$t\n";
+  
+  $self->each_column(sub {
+    my ($self, $table, $column, $infos) = @_;
+    return unless $table eq $t;
+    my $typename = lc $infos->{TYPE_NAME};
+    print "$column: $typename\n";
+  });
+  
+  return $self;
+}
+
+sub show_tables {
+  my $self = shift;
+  
+  my %tables;
+  $self->each_table(sub { $tables{$_[1]}++ });
+  print join("\n", sort keys %tables) . "\n";
+  return $self;
+}
+
+sub _qp {
+  my ($self, %opt) = @_;
+
+  my $quote = $self->{quote} || $self->quote || '';
+  
+  my $q = substr($quote, 0, 1) || '';
+  my $p;
+  if (defined $quote && length $quote > 1) {
+    $p = substr($quote, 1, 1);
+  }
+  else { $p = $q }
+  
+  if ($opt{quotemeta}) {
+    $q = quotemeta($q);
+    $p = quotemeta($p);
+  }
+  
+  return ($q, $p);
 }
 
 sub _multi_values_clause {
@@ -1161,8 +1163,6 @@ sub _multi_values_clause {
   $clause =~ s/, $//;
   return $clause;
 }
-
-sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
 
 sub _create_query {
   
