@@ -30,23 +30,12 @@ my $create_table_reserved = 'create table "table" ("select" varchar, "update" va
 my $q = '"';
 my $p = '"';
 
-# Variables
-my $dbi;
-my $result;
-my $row;
-my $rows;
-my $binary;
-my $model;
-
-# Prepare table
-$dbi = DBIx::Custom->connect;
-
-
 ### SQLite only test
 # dbi_option default
-$dbi = DBIx::Custom->new;
-is_deeply($dbi->option, {});
-
+{
+  my $dbi = DBIx::Custom->new;
+  is_deeply($dbi->option, {});
+}
 
 # prefix
 {
@@ -112,6 +101,7 @@ is_deeply($dbi->option, {});
 
 # update_or_insert ctime and mtime
 {
+  my $dbi = DBIx::Custom->connect;
   eval { $dbi->execute('drop table table1') };
   $dbi->execute('create table table1 (key1, key2, key3, key4)');
   $dbi->now(\"datetime('now')");
@@ -138,7 +128,7 @@ is_deeply($dbi->option, {});
 # DBIX_CUSTOM_DEBUG ok
 {
   local $ENV{DBIX_CUSTOM_DEBUG} = 1;
-  $dbi = DBIx::Custom->connect;
+  my $dbi = DBIx::Custom->connect;
   eval { $dbi->execute('drop table table1') };
   my $error;
   local $SIG{__WARN__} = sub {
@@ -270,7 +260,7 @@ is_deeply($dbi->option, {});
       $DBD::SQLite::VERSION > 1.26 ? (sqlite_unicode => 1) : (unicode => 1)
     }
   );
-  $binary = pack("I3", 1, 2, 3);
+  my $binary = pack("I3", 1, 2, 3);
   eval { $dbi->execute('drop table table1') };
   $dbi->execute('create table table1(key1, key2)');
   $dbi->insert({key1 => $binary, key2 => 'あ'}, table => 'table1', bind_type => [key1 => DBI::SQL_BLOB]);
@@ -308,6 +298,7 @@ is_deeply($dbi->option, {});
 
 # select limit
 {
+  my $dbi = DBIx::Custom->connect;
   eval { $dbi->execute('drop table table1') };
   $dbi->execute($create_table1);
   $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
@@ -380,6 +371,7 @@ is_deeply($dbi->option, {});
 
 # select table nothing
 {
+  my $dbi = DBIx::Custom->connect;
   eval { $dbi->execute('drop table table1') };
   eval { $dbi->select('key1') };
   ok($@);
