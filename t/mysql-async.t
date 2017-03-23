@@ -45,7 +45,7 @@ $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
       password => $password
     );
   my $result = $dbi->execute('SELECT SLEEP(1), 3', undef,
-    prepare_attr => {async => 1}, statement => 'select');
+    prepare_attr => {async => 1}, select => 1);
 
   my $dbi2 = DBIx::Custom->connect(
     dsn => "dbi:mysql:database=$database;host=localhost;port=10000",

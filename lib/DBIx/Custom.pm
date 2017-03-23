@@ -162,7 +162,6 @@ sub delete {
   $sql .= "from " . $self->_tq($opt{table}) . " $w->{clause} ";
   
   # Execute query
-  $opt{statement} = 'delete';
   $self->execute($sql, $w->{param}, %opt);
 }
 
@@ -227,8 +226,6 @@ sub execute {
     _array_to_hash($opt{filter}) : $opt{filter};
   
   # Merge second parameter
-  $opt{statement} ||= '';
-  $opt{statement} = 'select' if $opt{select};
   $params = [$params] unless ref $params eq 'ARRAY';
   
   # Append
@@ -248,7 +245,6 @@ sub execute {
     }
     $query = $self->_create_query($sql, $opt{after_build_sql}, $opt{prepare_attr});
   }
-  $query->{statement} = $opt{statement} || '';
   $opt{reuse}->{$sql} = $query if $opt{reuse};
       
   # Save query
@@ -353,7 +349,7 @@ sub execute {
     . qq{$query->{sql}\n} . _subname) if $@;
   
   # Affected of insert, update, or delete
-  if (!$sth->{NUM_OF_FIELDS} && $opt{statement} ne 'select') {
+  if (!$sth->{NUM_OF_FIELDS} && !$opt{select}) {
     # Non-Blocking
     if (my $cb = $opt{async}) {
       require AnyEvent;
@@ -445,7 +441,6 @@ sub insert {
   }
   
   # Merge id to parameter
-  my $id_param = {};
   if (defined $opt{id} && !$multi) {
     for my $param (@$params) {
       $param = {%$param};
@@ -480,7 +475,6 @@ sub insert {
   }
   
   # Execute query
-  $opt{statement} = 'insert';
   $self->execute($sql, $params, %opt);
 }
 
@@ -698,7 +692,7 @@ sub select {
   my $self = shift;
   my $column = shift if @_ % 2;
   my %opt = @_;
-  $opt{statement} = 'select';
+  $opt{select} = 1;
   $opt{column} = $column if defined $column;
 
   # Table
@@ -857,7 +851,6 @@ sub update {
   $sql .= $self->_tq($opt{table}) . " set $assign_clause $w->{clause} ";
   
   # Execute query
-  $opt{statement} = 'update';
   $self->execute($sql, $param, %opt);
 }
 
