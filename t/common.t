@@ -378,6 +378,8 @@ require MyDBI1;
 # DBIx::Custom::Result test
 {
   my $dbi = DBIx::Custom->connect;
+
+  eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1);
   
   $dbi->delete_all(table => $table1);
@@ -516,6 +518,7 @@ require MyDBI1;
 {
   my $dbi = DBIx::Custom->connect;
 
+  eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1);
   $dbi->register_filter(
     three_times => sub { $_[0] * 3 }
@@ -801,7 +804,9 @@ require MyDBI1;
 {
   my $dbi = DBIx::Custom->connect;
 
+  eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1);
+
   $dbi->register_filter(
     three_times => sub { $_[0] * 3 }
   );
