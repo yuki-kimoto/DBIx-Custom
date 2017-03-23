@@ -5,7 +5,7 @@ use Encode qw/encode_utf8/;
 use FindBin;
 use Scalar::Util 'isweak';
 
-$ENV{DBIX_CUSTOM_SUPPRESS_DEPRECATION} = '0.28';
+$ENV{DBIX_CUSTOM_SUPPRESS_DEPRECATION} = '0.39';
 
 plan skip_all => $ENV{DBIX_CUSTOM_SKIP_MESSAGE} || 'common.t is always skipped'
   unless $ENV{DBIX_CUSTOM_TEST_RUN}

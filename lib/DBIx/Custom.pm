@@ -701,10 +701,13 @@ sub select {
   $opt{statement} = 'select';
   $opt{column} = $column if defined $column;
 
-  # Options
-  my $tables = [];
-  push @$tables, $opt{table} if defined $opt{table};
-  my $table_is_empty = @$tables ? 0 : 1;
+  # Table
+  my $table = $opt{table};
+  
+  # Found tables;
+  my $found_tables = [];
+  push @$found_tables, $table if defined $table;
+  
   $opt{param} ||= {};
   
   # Select statement
@@ -724,14 +727,13 @@ sub select {
         my $columns = $column->{$table};
         
         if ($table eq $mytable_symbol) {
-          $column = $self->mycolumn($tables->[0] => $columns);
+          $column = $self->mycolumn($found_tables->[0] => $columns);
         }
         else {
           $column = $self->column($table => $columns);
         }
       }
-      unshift @$tables, @{$self->_search_tables($column)}
-        unless $table_is_empty;
+      unshift @$found_tables, @{$self->_search_tables($column)} if $table;
       $sql .= "$column, ";
     }
     $sql =~ s/, $/ /;
@@ -739,20 +741,20 @@ sub select {
   else { $sql .= '* ' }
 
   # Execute query without table
-  return $self->execute($sql, {}, %opt) if $table_is_empty;
+  return $self->execute($sql, {}, %opt) unless $table;
 
   # Table
   $sql .= 'from ';
-  $sql .= $self->_tq($tables->[-1] || '') . ' ';
+  $sql .= $self->_tq($found_tables->[-1] || '') . ' ';
   $sql =~ s/, $/ /;
 
   # Add tables in parameter
-  unshift @$tables, @{$self->_search_tables(join(' ', keys %{$opt{param}}) || '')};
+  unshift @$found_tables, @{$self->_search_tables(join(' ', keys %{$opt{param}}) || '')};
   
   # Where
   my $where;
   if (defined $opt{id}) {
-    $where = $self->_id_to_param($opt{id}, $opt{primary_key}, @$tables ? $tables->[-1] : undef) ;
+    $where = $self->_id_to_param($opt{id}, $opt{primary_key}, @$found_tables ? $found_tables->[-1] : undef) ;
   }
   else {
     $where = $opt{where};
@@ -760,8 +762,8 @@ sub select {
   my $w = $self->_where_clause_and_param($where, $opt{id});
   $opt{param} = $self->merge_param($opt{param}, $w->{param});
   
-  # Add table names in where clause
-  unshift @$tables, @{$self->_search_tables($w->{clause})};
+  # Search table names in where clause
+  unshift @$found_tables, @{$self->_search_tables($w->{clause})};
   
   # Join statement
   my $join = [];
@@ -779,7 +781,7 @@ sub select {
     }
     else { push @$join, $where_join }
   }
-  $self->_push_join(\$sql, $join, $tables) if @$join;
+  $self->_push_join(\$sql, $join, $found_tables) if @$join;
   
   # Add where clause
   $sql .= "$w->{clause} ";
