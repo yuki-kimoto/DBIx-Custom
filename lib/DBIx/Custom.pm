@@ -434,7 +434,10 @@ sub execute {
       }
       else {
         for my $param (@$params) {
-          $affected = $sth->execute(map { $param->{$_} } @{$query->{columns}});
+          $affected = $sth->execute(map { ref $param->{$_} eq 'ARRAY' ?
+              grep {ref $_ ne 'DBIx::Custom::NotExists'} @{$param->{$_}} :
+              $param->{$_}
+          } @{$query->{columns}});
         }
       }
     };
