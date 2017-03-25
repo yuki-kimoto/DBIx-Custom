@@ -309,7 +309,7 @@ sub execute {
   
   my $query = DBIx::Custom::Query->new;
   $query->param($param);
-  $query->sql($sql);
+  $query->sql($parsed_sql);
   $query->columns($columns);
   $query->bind_type($opt{bind_type});
   $query->{_filter} = $filter;
