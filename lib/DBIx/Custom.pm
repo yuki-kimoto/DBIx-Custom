@@ -229,16 +229,16 @@ sub execute {
     _array_to_hash($opt{filter}) : $opt{filter};
   
   # Query
-  my $query;
-  $query = $opt{reuse}->{$sql} if $opt{reuse};
+  my $reuse_info;
+  $reuse_info = $opt{reuse}->{$sql} if $opt{reuse};
   my $sth;
   my $duplicate;
   my $parsed_sql;
   my $columns;
-  if ($query) {
-    $sth = $query->{sth};
-    $duplicate = $query->{duplicate};
-    $parsed_sql = $query->{sql};
+  if ($reuse_info) {
+    $sth = $reuse_info->{sth};
+    $duplicate = $reuse_info->{duplicate};
+    $parsed_sql = $reuse_info->{sql};
   }
   else {
     my $c = $self->{safety_character};
@@ -287,10 +287,10 @@ sub execute {
       }
 
       # Create query
-      $query = {sth => $sth, parsed_sql => $parsed_sql, columns => $columns, duplicate => $duplicate};
+      $reuse_info = {sth => $sth, parsed_sql => $parsed_sql, columns => $columns, duplicate => $duplicate};
     }
   }
-  $opt{reuse}->{$sql} = $query if $opt{reuse};
+  $opt{reuse}->{$sql} = $reuse_info if $opt{reuse};
   
   # Save query
   $self->{last_sql} = $parsed_sql;
