@@ -257,9 +257,11 @@ sub execute_with_filter {
   $query = $opt{reuse}->{$sql} if $opt{reuse};
   my $sth;
   my $duplicate;
+  my $parsed_sql;
   if ($query) {
     $sth = $query->{sth};
     $duplicate = $query->{duplicate};
+    $parsed_sql = $query->{sql};
   }
   else {
     my $c = $self->{safety_character};
@@ -279,40 +281,41 @@ sub execute_with_filter {
       $prepare_attr ||= {};
       
       # Create query
-      my $sql = " " . $source || '';
       my @columns;
       my $c = $self->{safety_character};
       my $re = $c eq 'a-zA-Z0-9_'
         ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
         : qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
       my %duplicate;
+      
       # Parameter regex
+      my $sql = " " . $source || '';
       $sql =~ s/([0-9]):/$1\\:/g;
-      my $new_sql = '';
+      $parsed_sql = '';
       while ($sql =~ /$re/) {
         push @columns, $2;
         $duplicate = 1 if ++$duplicate{$columns[-1]} > 1;
-        ($new_sql, $sql) = defined $3 ?
-          ($new_sql . "$1$2 $3 ?", " $4") : ($new_sql . "$1?", " $4");
+        ($parsed_sql, $sql) = defined $3 ?
+          ($parsed_sql . "$1$2 $3 ?", " $4") : ($parsed_sql . "$1?", " $4");
       }
-      $new_sql .= $sql;
-      $new_sql =~ s/\\:/:/g if index($new_sql, "\\:") != -1;
+      $parsed_sql .= $sql;
+      $parsed_sql =~ s/\\:/:/g if index($parsed_sql, "\\:") != -1;
+      
+      # Filter SQL
+      $parsed_sql = $after_build_sql->($parsed_sql) if $after_build_sql;
       
       # Create query
-      $query = {sql => $new_sql, columns => \@columns, duplicate => $duplicate};
-
-      # Filter SQL
-      $query->{sql} = $after_build_sql->($query->{sql}) if $after_build_sql;
+      $query = {parsed_sql => $parsed_sql, columns => \@columns, duplicate => $duplicate};
       
       # Save sql
-      $self->{last_sql} = $query->{sql};
+      $self->{last_sql} = $parsed_sql;
       
       # Prepare statement handle
-      eval { $sth = $self->dbh->prepare($query->{sql}, $prepare_attr) };
+      eval { $sth = $self->dbh->prepare($parsed_sql, $prepare_attr) };
       
       if ($@) {
         $self->_croak($@, qq{. Following SQL is executed.\n}
-                        . qq{$query->{sql}\n} . _subname);
+                        . qq{$parsed_sql\n} . _subname);
       }
       
       # Set statement handle
@@ -322,7 +325,7 @@ sub execute_with_filter {
   $opt{reuse}->{$sql} = $query if $opt{reuse};
   
   # Save query
-  $self->{last_sql} = $query->{sql};
+  $self->{last_sql} = $parsed_sql;
   
   # Tables
   unshift @$tables, @{$query->{tables} || []};
@@ -404,7 +407,7 @@ sub execute_with_filter {
 
         # DEBUG message
         if ($ENV{DBIX_CUSTOM_DEBUG}) {
-          warn "SQL:\n" . $query->{sql} . "\n";
+          warn "SQL:\n" . $parsed_sql . "\n";
           my @output;
           for my $value (@$bind) {
             $value = 'undef' unless defined $value;
@@ -419,7 +422,7 @@ sub execute_with_filter {
   }
   
   $self->_croak($@, qq{. Following SQL is executed.\n}
-    . qq{$query->{sql}\n} . _subname) if $@;
+    . qq{$parsed_sql\n} . _subname) if $@;
   
   # Affected of insert, update, or delete
   if (!$sth->{NUM_OF_FIELDS} && !$opt{select}) {
