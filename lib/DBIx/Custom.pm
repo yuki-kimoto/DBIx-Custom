@@ -304,11 +304,6 @@ sub execute_with_filter {
       # Filter SQL
       $parsed_sql = $after_build_sql->($parsed_sql) if $after_build_sql;
       
-      # Create query
-      $query = {parsed_sql => $parsed_sql, columns => \@columns, duplicate => $duplicate};
-      
-      # Save sql
-      $self->{last_sql} = $parsed_sql;
       
       # Prepare statement handle
       eval { $sth = $self->dbh->prepare($parsed_sql, $prepare_attr) };
@@ -317,9 +312,9 @@ sub execute_with_filter {
         $self->_croak($@, qq{. Following SQL is executed.\n}
                         . qq{$parsed_sql\n} . _subname);
       }
-      
-      # Set statement handle
-      $query->{sth} = $sth;
+
+      # Create query
+      $query = {sth => $sth, parsed_sql => $parsed_sql, columns => \@columns, duplicate => $duplicate};
     }
   }
   $opt{reuse}->{$sql} = $query if $opt{reuse};
@@ -328,7 +323,6 @@ sub execute_with_filter {
   $self->{last_sql} = $parsed_sql;
   
   # Tables
-  unshift @$tables, @{$query->{tables} || []};
   my $main_table = @{$tables}[-1];
   
   # Type rule
