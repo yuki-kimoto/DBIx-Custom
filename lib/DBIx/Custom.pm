@@ -201,6 +201,9 @@ sub execute {
   $params ||= {};
   my %opt = @_;
 
+  # Append
+  $sql .= $opt{append} if defined $opt{append};
+
   my $call_excute_with_filter
     = defined $opt{async}
     || defined $opt{table}
@@ -249,9 +252,6 @@ sub execute_with_filter {
   # Merge second parameter
   $params = [$params] unless ref $params eq 'ARRAY';
   
-  # Append
-  $sql .= $opt{append} if defined $opt{append};
-  
   # Query
   my $query;
   $query = $opt{reuse}->{$sql} if $opt{reuse};
@@ -264,10 +264,62 @@ sub execute_with_filter {
           unless $column =~ /^[$c\.]+$/;
       }
     }
-    $query = $self->_create_query($sql, $opt{after_build_sql}, $opt{prepare_attr});
+    
+    {
+      my $source = $sql;
+      my $after_build_sql = $opt{after_build_sql};
+      my $prepare_attr = $opt{prepare_attr};
+      
+      $prepare_attr ||= {};
+      
+      # Create query
+      my $sql = " " . $source || '';
+      my @columns;
+      my $c = $self->{safety_character};
+      my $re = $c eq 'a-zA-Z0-9_'
+        ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
+        : qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
+      my %duplicate;
+      my $duplicate;
+      # Parameter regex
+      $sql =~ s/([0-9]):/$1\\:/g;
+      my $new_sql = '';
+      while ($sql =~ /$re/) {
+        push @columns, $2;
+        $duplicate = 1 if ++$duplicate{$columns[-1]} > 1;
+        ($new_sql, $sql) = defined $3 ?
+          ($new_sql . "$1$2 $3 ?", " $4") : ($new_sql . "$1?", " $4");
+      }
+      $new_sql .= $sql;
+      $new_sql =~ s/\\:/:/g if index($new_sql, "\\:") != -1;
+      
+      # Create query
+      $query = {sql => $new_sql, columns => \@columns, duplicate => $duplicate};
+
+      # Filter SQL
+      $query->{sql} = $after_build_sql->($query->{sql}) if $after_build_sql;
+      
+      # Save sql
+      $self->{last_sql} = $query->{sql};
+      
+      # Prepare statement handle
+      my $sth;
+      eval { $sth = $self->dbh->prepare($query->{sql}, $prepare_attr) };
+      
+      if ($@) {
+        $self->_croak($@, qq{. Following SQL is executed.\n}
+                        . qq{$query->{sql}\n} . _subname);
+      }
+      
+      # Set statement handle
+      $query->{sth} = $sth;
+      
+      # Set filters
+      $query->{filters} = $self->{filters} || $self->filters;
+    }
   }
   $opt{reuse}->{$sql} = $query if $opt{reuse};
-      
+  
   # Save query
   $self->{last_sql} = $query->{sql};
   
@@ -1200,60 +1252,6 @@ sub _multi_values_clause {
   }
   $clause =~ s/, $//;
   return $clause;
-}
-
-sub _create_query {
-  
-  my ($self, $source, $after_build_sql, $prepare_attr) = @_;
-  
-  $prepare_attr ||= {};
-  
-  # Create query
-  my $sql = " " . $source || '';
-  my @columns;
-  my $c = $self->{safety_character};
-  my $re = $c eq 'a-zA-Z0-9_'
-    ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
-    : qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
-  my %duplicate;
-  my $duplicate;
-  # Parameter regex
-  $sql =~ s/([0-9]):/$1\\:/g;
-  my $new_sql = '';
-  while ($sql =~ /$re/) {
-    push @columns, $2;
-    $duplicate = 1 if ++$duplicate{$columns[-1]} > 1;
-    ($new_sql, $sql) = defined $3 ?
-      ($new_sql . "$1$2 $3 ?", " $4") : ($new_sql . "$1?", " $4");
-  }
-  $new_sql .= $sql;
-  $new_sql =~ s/\\:/:/g if index($new_sql, "\\:") != -1;
-  
-  # Create query
-  my $query = {sql => $new_sql, columns => \@columns, duplicate => $duplicate};
-
-  # Filter SQL
-  $query->{sql} = $after_build_sql->($query->{sql}) if $after_build_sql;
-  
-  # Save sql
-  $self->{last_sql} = $query->{sql};
-  
-  # Prepare statement handle
-  my $sth;
-  eval { $sth = $self->dbh->prepare($query->{sql}, $prepare_attr) };
-  
-  if ($@) {
-    $self->_croak($@, qq{. Following SQL is executed.\n}
-                    . qq{$query->{sql}\n} . _subname);
-  }
-  
-  # Set statement handle
-  $query->{sth} = $sth;
-  
-  # Set filters
-  $query->{filters} = $self->{filters} || $self->filters;
-  
-  return $query;
 }
 
 sub _create_bind_values {
