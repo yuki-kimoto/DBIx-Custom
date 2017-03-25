@@ -200,10 +200,10 @@ sub execute {
   $param = shift if @_ % 2;
   $param ||= {};
   my %opt = @_;
-
+  
   # Append
   $sql .= $opt{append} if defined $opt{append};
-
+  
   # Async query
   $opt{prepare_attr} = $self->async_conf->{prepare_attr} if $opt{async};
   if ($opt{async} && !$self->{_new_connection}) {
@@ -243,39 +243,37 @@ sub execute {
     }
   }
   
-  {
-    my $after_build_sql = $opt{after_build_sql};
-    my $prepare_attr = $opt{prepare_attr} || {};
-    
-    # Create query
-    my $re = $c eq 'a-zA-Z0-9_'
-      ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
-      : qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
-    my %duplicate;
-    
-    # Parameter regex
-    my $source_sql = $sql;
-    $source_sql =~ s/([0-9]):/$1\\:/g;
-    $parsed_sql = '';
-    while ($source_sql =~ /$re/) {
-      push @$columns, $2;
-      ($parsed_sql, $source_sql) = defined $3 ?
-        ($parsed_sql . "$1$2 $3 ?", " $4") : ($parsed_sql . "$1?", " $4");
-    }
-    $parsed_sql .= $source_sql;
-    $parsed_sql =~ s/\\:/:/g if index($parsed_sql, "\\:") != -1;
-    
-    # Filter SQL
-    $parsed_sql = $after_build_sql->($parsed_sql) if $after_build_sql;
-    
-    
-    # Prepare statement handle
-    eval { $sth = $self->dbh->prepare($parsed_sql, $prepare_attr) };
-    
-    if ($@) {
-      $self->_croak($@, qq{. Following SQL is executed.\n}
-                      . qq{$parsed_sql\n} . _subname);
-    }
+  my $after_build_sql = $opt{after_build_sql};
+  my $prepare_attr = $opt{prepare_attr} || {};
+  
+  # Parser named place holder
+  my $place_holder_re = $c eq 'a-zA-Z0-9_'
+    ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
+    : qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
+  my %duplicate;
+  
+  # Parameter regex
+  my $source_sql = $sql;
+  $source_sql =~ s/([0-9]):/$1\\:/g;
+  $parsed_sql = '';
+  while ($source_sql =~ /$place_holder_re/) {
+    push @$columns, $2;
+    ($parsed_sql, $source_sql) = defined $3 ?
+      ($parsed_sql . "$1$2 $3 ?", " $4") : ($parsed_sql . "$1?", " $4");
+  }
+  $parsed_sql .= $source_sql;
+  $parsed_sql =~ s/\\:/:/g if index($parsed_sql, "\\:") != -1;
+  
+  # Filter SQL
+  $parsed_sql = $after_build_sql->($parsed_sql) if $after_build_sql;
+  
+  
+  # Prepare statement handle
+  eval { $sth = $self->dbh->prepare($parsed_sql, $prepare_attr) };
+  
+  if ($@) {
+    $self->_croak($@, qq{. Following SQL is executed.\n}
+                    . qq{$parsed_sql\n} . _subname);
   }
   
   # Save query
