@@ -2262,7 +2262,8 @@ this is L<DBI>'s C<prepare> method second argument.
 =item C<bind_type>
 
 Specify database bind data type.
-
+  
+  bind_type => {image => DBI::SQL_BLOB}
   bind_type => [image => DBI::SQL_BLOB]
   bind_type => [[qw/image audio/] => DBI::SQL_BLOB]
 

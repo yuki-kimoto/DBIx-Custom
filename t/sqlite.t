@@ -252,28 +252,53 @@ my $p = '"';
   }
 }
 
-# type option # DEPRECATED!
+# bind_type option
 {
-  my $dbi = DBIx::Custom->connect(
-    dsn => 'dbi:SQLite:dbname=:memory:',
-    option => {
-      $DBD::SQLite::VERSION > 1.26 ? (sqlite_unicode => 1) : (unicode => 1)
+  {
+    my $dbi = DBIx::Custom->connect(
+      dsn => 'dbi:SQLite:dbname=:memory:',
+      option => {
+        $DBD::SQLite::VERSION > 1.26 ? (sqlite_unicode => 1) : (unicode => 1)
+      }
+    );
+    my $binary = pack("I3", 1, 2, 3);
+    eval { $dbi->execute('drop table table1') };
+    $dbi->execute('create table table1(key1, key2)');
+    $dbi->insert({key1 => $binary, key2 => 'あ'}, table => 'table1', bind_type => [key1 => DBI::SQL_BLOB]);
+    {
+      my $result = $dbi->select(table => 'table1');
+      my $row = $result->one;
+      is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
     }
-  );
-  my $binary = pack("I3", 1, 2, 3);
-  eval { $dbi->execute('drop table table1') };
-  $dbi->execute('create table table1(key1, key2)');
-  $dbi->insert({key1 => $binary, key2 => 'あ'}, table => 'table1', bind_type => [key1 => DBI::SQL_BLOB]);
-  {
-    my $result = $dbi->select(table => 'table1');
-    my $row = $result->one;
-    is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
+    {
+      my $result = $dbi->execute('select length(key1) as key1_length from table1');
+      my $row = $result->one;
+      is($row->{key1_length}, length $binary);
+    }
   }
   {
-    my $result = $dbi->execute('select length(key1) as key1_length from table1');
-    my $row = $result->one;
-    is($row->{key1_length}, length $binary);
+    my $dbi = DBIx::Custom->connect(
+      dsn => 'dbi:SQLite:dbname=:memory:',
+      option => {
+        $DBD::SQLite::VERSION > 1.26 ? (sqlite_unicode => 1) : (unicode => 1)
+      }
+    );
+    my $binary = pack("I3", 1, 2, 3);
+    eval { $dbi->execute('drop table table1') };
+    $dbi->execute('create table table1(key1, key2)');
+    $dbi->insert({key1 => $binary, key2 => 'あ'}, table => 'table1', bind_type => {key1 => DBI::SQL_BLOB});
+    {
+      my $result = $dbi->select(table => 'table1');
+      my $row = $result->one;
+      is_deeply($row, {key1 => $binary, key2 => 'あ'}, "basic");
+    }
+    {
+      my $result = $dbi->execute('select length(key1) as key1_length from table1');
+      my $row = $result->one;
+      is($row->{key1_length}, length $binary);
+    }
   }
+
 }
 
 # type_rule from
