@@ -255,7 +255,11 @@ sub execute_with_filter {
   # Query
   my $query;
   $query = $opt{reuse}->{$sql} if $opt{reuse};
-  unless ($query) {
+  my $sth;
+  if ($query) {
+    $sth = $query->{sth};
+  }
+  else {
     my $c = $self->{safety_character};
     # Check unsafety keys
     unless ((join('', keys %{$params->[0]}) || '') =~ /^[$c\.]+$/) {
@@ -303,7 +307,6 @@ sub execute_with_filter {
       $self->{last_sql} = $query->{sql};
       
       # Prepare statement handle
-      my $sth;
       eval { $sth = $self->dbh->prepare($query->{sql}, $prepare_attr) };
       
       if ($@) {
@@ -366,7 +369,6 @@ sub execute_with_filter {
   }
 
   # Execute
-  my $sth = $query->{sth};
   my $affected;
   if ((!$query->{duplicate} || $opt{bulk_insert}) && $type_rule_off
     && !keys %$filter
