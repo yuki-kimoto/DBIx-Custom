@@ -336,51 +336,34 @@ sub execute {
     }
   }
 
+  # Create bind values
+  my ($bind_values, $bind_types) = $self->_create_bind_values($param, $columns,
+    $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
+
   # Execute
   my $affected;
-  if ((!$duplicate || $opt{bulk_insert}) && $type_rule_off
-    && !keys %$filter
-    && !$opt{bind_type} && !$opt{type} && !$ENV{DBIX_CUSTOM_DEBUG})
-  {
-    eval {
-      if ($opt{bulk_insert}) {
-        my %count;
-        $affected = $sth->execute(map { $param->{$_}->[++$count{$_} - 1] } @$columns);
-      }
-      else {
-        $affected = $sth->execute(map { $param->{$_} } @$columns);
-      }
-    };
-  }
-  else {
-    # Create bind values
-    my ($bind, $bind_types) = $self->_create_bind_values($param, $columns,
-      $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
+  eval {
+    if ($opt{bind_type}) {
+      $sth->bind_param($_ + 1, $bind_values->[$_],
+          $bind_types->[$_] ? $bind_types->[$_] : ())
+        for (0 .. @$bind_values - 1);
+      $affected = $sth->execute;
+    }
+    else { $affected = $sth->execute(@$bind_values) }
 
-    # Execute
-    eval {
-      if ($opt{bind_type} || $opt{type}) {
-        $sth->bind_param($_ + 1, $bind->[$_],
-            $bind_types->[$_] ? $bind_types->[$_] : ())
-          for (0 .. @$bind - 1);
-        $affected = $sth->execute;
+    # DEBUG message
+    if ($ENV{DBIX_CUSTOM_DEBUG}) {
+      warn "SQL:\n" . $parsed_sql . "\n";
+      my @output;
+      for my $value (@$bind_values) {
+        $value = 'undef' unless defined $value;
+        $value = encode($ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8', $value)
+          if utf8::is_utf8($value);
+        push @output, $value;
       }
-      else { $affected = $sth->execute(@$bind) }
-
-      # DEBUG message
-      if ($ENV{DBIX_CUSTOM_DEBUG}) {
-        warn "SQL:\n" . $parsed_sql . "\n";
-        my @output;
-        for my $value (@$bind) {
-          $value = 'undef' unless defined $value;
-          $value = encode($ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8', $value)
-            if utf8::is_utf8($value);
-          push @output, $value;
-        }
-        warn "Bind values: " . join(', ', @output) . "\n\n";
-      }
-    };
-  }
+      warn "Bind values: " . join(', ', @output) . "\n\n";
+    }
+  };
   
   $self->_croak($@, qq{. Following SQL is executed.\n}
     . qq{$parsed_sql\n} . _subname) if $@;
