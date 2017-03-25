@@ -54,7 +54,7 @@ has mytable_symbol => '__MY__';
 sub create_result {
   my ($self, $sth) = @_;
   
-  return $self->result_class->new(sth => $sth);
+  return $self->result_class->new(sth => $sth, dbi => $self);
 }
 
 sub column {
