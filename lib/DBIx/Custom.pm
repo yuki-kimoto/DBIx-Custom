@@ -248,7 +248,6 @@ sub execute {
     my $prepare_attr = $opt{prepare_attr} || {};
     
     # Create query
-    my $c = $self->{safety_character};
     my $re = $c eq 'a-zA-Z0-9_'
       ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
       : qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
