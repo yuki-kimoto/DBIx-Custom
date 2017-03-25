@@ -190,6 +190,10 @@ sub create_model {
 }
 
 sub execute {
+  return shift->execute_with_filter(@_);
+}
+
+sub execute_with_filter {
   my $self = shift;
   my $sql = shift;
 
