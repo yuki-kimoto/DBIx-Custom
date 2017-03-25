@@ -231,7 +231,6 @@ sub execute {
     _array_to_hash($opt{filter}) : $opt{filter};
   
   # Query
-  my $sth;
   my $parsed_sql;
   my $columns;
   my $c = $self->{safety_character};
@@ -266,18 +265,6 @@ sub execute {
   
   # Filter SQL
   $parsed_sql = $after_build_sql->($parsed_sql) if $after_build_sql;
-  
-  
-  # Prepare statement handle
-  eval { $sth = $self->dbh->prepare($parsed_sql, $prepare_attr) };
-  
-  if ($@) {
-    $self->_croak($@, qq{. Following SQL is executed.\n}
-                    . qq{$parsed_sql\n} . _subname);
-  }
-  
-  # Save query
-  $self->{last_sql} = $parsed_sql;
   
   # Tables
   my $main_table = @{$tables}[-1];
@@ -333,9 +320,15 @@ sub execute {
   
   # Build bind values
   $query->build;
-  
   my $bind_values = $query->bind_values;
-  
+
+  # Prepare statement handle
+  my $sth;
+  eval { $sth = $self->dbh->prepare($parsed_sql, $prepare_attr) };
+  if ($@) {
+    $self->_croak($@, qq{. Following SQL is executed.\n}
+                    . qq{$parsed_sql\n} . _subname);
+  }
   
   # Execute
   my $affected;
@@ -348,7 +341,10 @@ sub execute {
       $affected = $sth->execute;
     }
     else { $affected = $sth->execute(@$bind_values) }
-
+    
+    # Save sql
+    $self->{last_sql} = $parsed_sql;
+    
     # DEBUG message
     if ($ENV{DBIX_CUSTOM_DEBUG}) {
       warn "SQL:\n" . $parsed_sql . "\n";
