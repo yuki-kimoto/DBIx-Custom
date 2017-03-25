@@ -316,9 +316,6 @@ sub execute_with_filter {
       
       # Set statement handle
       $query->{sth} = $sth;
-      
-      # Set filters
-      $query->{filters} = $self->{filters} || $self->filters;
     }
   }
   $opt{reuse}->{$sql} = $query if $opt{reuse};
