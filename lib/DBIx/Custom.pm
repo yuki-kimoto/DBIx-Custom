@@ -208,38 +208,16 @@ sub execute {
   
   # Append
   $sql .= $opt{append} if defined $opt{append};
-  
-  # Options
-  my $tables = $opt{table} || [];
-  $tables = [$tables] unless ref $tables eq 'ARRAY';
-  my $filter = ref $opt{filter} eq 'ARRAY' ?
-    _array_to_hash($opt{filter}) : $opt{filter};
-  
-  # Query
-  my $parsed_sql;
-  my $columns;
-  my $c = $self->{safety_character};
-  # Check unsafety keys
-  unless ((join('', keys %$param) || '') =~ /^[$c\.]+$/) {
-    for my $column (keys %$param) {
-      croak qq{"$column" is not safety column name } . _subname
-        unless $column =~ /^[$c\.]+$/;
-    }
-  }
-  
-  my $after_build_sql = $opt{after_build_sql};
-  my $prepare_attr = $opt{prepare_attr} || {};
-  
-  # Parser named place holder
-  my $place_holder_re = $c eq 'a-zA-Z0-9_'
-    ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
-    : qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
-  my %duplicate;
-  
-  # Parameter regex
+
+  # Parse named place holder
+  my $safe_char = $self->{safety_character};
+  my $place_holder_re = $safe_char eq 'a-zA-Z0-9_'
+    ? qr/(.*?[^\\]):([$safe_char\.]+)(?:\{(.*?)\})?(.*)/so
+    : qr/(.*?[^\\]):([$safe_char\.]+)(?:\{(.*?)\})?(.*)/s;
   my $source_sql = $sql;
   $source_sql =~ s/([0-9]):/$1\\:/g;
-  $parsed_sql = '';
+  my $parsed_sql = '';
+  my $columns;
   while ($source_sql =~ /$place_holder_re/) {
     push @$columns, $2;
     ($parsed_sql, $source_sql) = defined $3 ?
@@ -248,16 +226,20 @@ sub execute {
   $parsed_sql .= $source_sql;
   $parsed_sql =~ s/\\:/:/g if index($parsed_sql, "\\:") != -1;
   
-  # Filter SQL
+  # Edit SQL after building
+  my $after_build_sql = $opt{after_build_sql};
   $parsed_sql = $after_build_sql->($parsed_sql) if $after_build_sql;
-  
-  # Tables
-  my $main_table = @{$tables}[-1];
   
   # Type rule
   my $type_filters = {};
   my $type_rule_off = !$self->{_type_rule_is_called} || $opt{type_rule_off};
   unless ($type_rule_off) {
+    my $tables = $opt{table} || [];
+    $tables = [$tables] unless ref $tables eq 'ARRAY';
+
+    # Tables
+    my $main_table = @{$tables}[-1];
+    
     my $type_rule_off_parts = {
       1 => $opt{type_rule1_off},
       2 => $opt{type_rule2_off}
@@ -280,6 +262,8 @@ sub execute {
   }
   
   # Replace filter name to code
+  my $filter = ref $opt{filter} eq 'ARRAY' ?
+    _array_to_hash($opt{filter}) : $opt{filter};
   for my $column (keys %$filter) {
     my $name = $filter->{$column};
     if (!defined $name) {
@@ -291,7 +275,16 @@ sub execute {
       $filter->{$column} = $self->filters->{$name};
     }
   }
+
+  # Check unsafe param names
+  unless ((join('', keys %$param) || '') =~ /^[$safe_char\.]+$/) {
+    for my $column (keys %$param) {
+      croak qq{"$column" is not safety column name } . _subname
+        unless $column =~ /^[$safe_char\.]+$/;
+    }
+  }
   
+  # Create query
   my $query = DBIx::Custom::Query->new;
   $query->param($param);
   $query->sql($parsed_sql);
@@ -309,10 +302,9 @@ sub execute {
   # Return query
   return $query if $opt{query};
   
-  my $bind_values = $query->bind_values;
-
   # Prepare statement handle
   my $sth;
+  my $prepare_attr = $opt{prepare_attr} || {};
   eval { $sth = $self->dbh->prepare($parsed_sql, $prepare_attr) };
   if ($@) {
     $self->_croak($@, qq{. Following SQL is executed.\n}
@@ -322,6 +314,7 @@ sub execute {
   # Execute
   my $affected;
   eval {
+    my $bind_values = $query->bind_values;
     if ($opt{bind_type}) {
       my $bind_value_types = $query->bind_value_types;
       $sth->bind_param($_ + 1, $bind_values->[$_],
