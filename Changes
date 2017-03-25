@@ -8,8 +8,8 @@
   - DBIx::Custom AUTOLOAD feature is DEPRECATED!
   - DBIx::Custom::update_or_insert method is DEPRECATED!
   - DBIx::Custom::count method is DEPRECATED!
-  - DBIx::Custom::select,update,delete method's id option is DEPRECATED!
-  - DBIx::Custom::select,update,delete method's primary_key option is DEPRECATED!
+  - DBIx::Custom::insert, select,update,delete method's id option is DEPRECATED!
+  - DBIx::Custom::insert, select,update,delete method's primary_key option is DEPRECATED!
   - DBIx::Custom::Model AUTOLOAD feature is DEPRECATED!
   - DBIx::Custom::Model::helper method is DEPRECATED!
   - DBIx::Custom::Model::update_or_insert method is DEPRECATED!

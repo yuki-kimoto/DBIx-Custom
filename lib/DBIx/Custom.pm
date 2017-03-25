@@ -413,71 +413,6 @@ sub execute {
   }
 }
 
-sub insert {
-  my $self = shift;
-  
-  # Options
-  my $params = @_ % 2 ? shift : undef;
-  my %opt = @_;
-  $params ||= {};
-  
-  my $multi;
-  if (ref $params eq 'ARRAY') { $multi = 1 }
-  else { $params = [$params] }
-  
-  # Created time and updated time
-  if (defined $opt{ctime} || defined $opt{mtime}) {
-    for my $param (@$params) {
-      $param = {%$param};
-    }
-    my $now = $self->now;
-    $now = $now->() if ref $now eq 'CODE';
-    if (defined $opt{ctime}) {
-      $_->{$opt{ctime}} = $now for @$params;
-    }
-    if (defined $opt{mtime}) {
-      $_->{$opt{mtime}} = $now for @$params;
-    }
-  }
-  
-  # Merge id to parameter
-  if (defined $opt{id} && !$multi) {
-    for my $param (@$params) {
-      $param = {%$param};
-    }
-    
-    croak "insert id option must be specified with primary_key option"
-      unless $opt{primary_key};
-    $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key} eq 'ARRAY';
-    $opt{id} = [$opt{id}] unless ref $opt{id} eq 'ARRAY';
-    for (my $i = 0; $i < @{$opt{primary_key}}; $i++) {
-      my $key = $opt{primary_key}->[$i];
-      next if exists $params->[0]->{$key};
-      $params->[0]->{$key} = $opt{id}->[$i];
-    }
-  }
-  
-  # Insert statement
-  my $sql = "insert ";
-  $sql .= "$opt{prefix} " if defined $opt{prefix};
-  $sql .= "into " . $self->_tq($opt{table}) . " ";
-  if ($opt{bulk_insert}) {
-    $sql .= $self->_multi_values_clause($params, {wrap => $opt{wrap}}) . " ";
-    my $new_param = {};
-    $new_param->{$_} = [] for keys %{$params->[0]};
-    for my $param (@$params) {
-      push @{$new_param->{$_}}, $param->{$_} for keys %$param;
-    }
-    $params = [$new_param];
-  }
-  else {
-    $sql .= $self->values_clause($params->[0], {wrap => $opt{wrap}}) . " ";
-  }
-  
-  # Execute query
-  $self->execute($sql, $params, %opt);
-}
-
 sub include_model {
   my ($self, $name_space, $model_infos) = @_;
   
@@ -806,6 +741,74 @@ sub setup_model {
     }
   );
   return $self;
+}
+
+sub insert {
+  my $self = shift;
+  
+  # Options
+  my $params = @_ % 2 ? shift : undef;
+  my %opt = @_;
+  $params ||= {};
+
+  # Insert statement
+  my $sql = "insert ";
+  $sql .= "$opt{prefix} " if defined $opt{prefix};
+  $sql .= "into " . $self->_tq($opt{table}) . " ";
+
+  my $multi;
+  if (ref $params eq 'ARRAY') { $multi = 1 }
+  else { $params = [$params] }
+  
+  # Created time and updated time
+  if (defined $opt{ctime} || defined $opt{mtime}) {
+    for my $param (@$params) {
+      $param = {%$param};
+    }
+    my $now = $self->now;
+    $now = $now->() if ref $now eq 'CODE';
+    if (defined $opt{ctime}) {
+      $_->{$opt{ctime}} = $now for @$params;
+    }
+    if (defined $opt{mtime}) {
+      $_->{$opt{mtime}} = $now for @$params;
+    }
+  }
+  
+  # Merge id to parameter
+  if (defined $opt{id} && !$multi) {
+    _deprecate('0.39', "DBIx::Custom::insert method's id option is DEPRECATED!");
+    
+    for my $param (@$params) {
+      $param = {%$param};
+    }
+    
+    croak "insert id option must be specified with primary_key option"
+      unless $opt{primary_key};
+    $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key} eq 'ARRAY';
+    $opt{id} = [$opt{id}] unless ref $opt{id} eq 'ARRAY';
+    for (my $i = 0; $i < @{$opt{primary_key}}; $i++) {
+      my $key = $opt{primary_key}->[$i];
+      next if exists $params->[0]->{$key};
+      $params->[0]->{$key} = $opt{id}->[$i];
+    }
+  }
+  
+  if ($opt{bulk_insert}) {
+    $sql .= $self->_multi_values_clause($params, {wrap => $opt{wrap}}) . " ";
+    my $new_param = {};
+    $new_param->{$_} = [] for keys %{$params->[0]};
+    for my $param (@$params) {
+      push @{$new_param->{$_}}, $param->{$_} for keys %$param;
+    }
+    $params = [$new_param];
+  }
+  else {
+    $sql .= $self->values_clause($params->[0], {wrap => $opt{wrap}}) . " ";
+  }
+  
+  # Execute query
+  $self->execute($sql, $params, %opt);
 }
 
 sub update {
