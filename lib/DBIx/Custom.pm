@@ -318,6 +318,9 @@ sub execute {
   $query->{_into1} = $self->{_into1};
   $query->{_into2} = $self->{_into2};
   
+  # Return query
+  return $query if $opt{query};
+  
   # Build bind values
   $query->build;
   my $bind_values = $query->bind_values;
@@ -1687,23 +1690,6 @@ L<DBIx::Custom API reference|http://search.cpan.org/~kimoto/DBIx-Custom/>
 
 =head1 ATTRIBUTES
 
-=head2 async_conf EXPERIMENTAL
-
-  my $async_conf = $dbi->async_conf;
-  $dbi = $dbi->async_conf($conf);
-
-Setting when C<async> option is used.
-
-  # MySQL
-  $dbi->async_conf({
-    prepare_attr => {async => 1},
-    fh => sub { shift->dbh->mysql_fd }
-    my $dbi = shift;
-  });
-
-C<prepare_attr> is DBI's C<prepare> method second argument,
-C<fh> is callback that return file handle to watch.
-
 =head2 connector
 
   my $connector = $dbi->connector;
@@ -1733,16 +1719,6 @@ L<DBIx::Connector> is automatically set to C<connector>
   my $connector = $dbi->connector; # DBIx::Connector
 
 Note that L<DBIx::Connector> must be installed.
-
-=head2 default_schema EXPERIMETNAL
-
-  my $default_schema = $self->default_schema;
-  $dbi = $self->default_schema('public');
-
-schema name. if database has multiple schema,
-type_rule->{into} filter don't work well.
-
-If you set C<default_schema>, type_rule->{into} filter work well.
 
 =head2 dsn
 
@@ -1922,6 +1898,23 @@ Usually, you can set return value of C<get_table_info>.
 If C<user_table_info> is set, C<each_table> use C<user_table_info>
 to find table info.
 
+=head2 async_conf EXPERIMENTAL
+
+  my $async_conf = $dbi->async_conf;
+  $dbi = $dbi->async_conf($conf);
+
+Setting when C<async> option is used.
+
+  # MySQL
+  $dbi->async_conf({
+    prepare_attr => {async => 1},
+    fh => sub { shift->dbh->mysql_fd }
+    my $dbi = shift;
+  });
+
+C<prepare_attr> is DBI's C<prepare> method second argument,
+C<fh> is callback that return file handle to watch.
+
 =head1 METHODS
 
 L<DBIx::Custom> inherits all methods from L<Object::Simple>
@@ -1953,56 +1946,6 @@ Create assign clause
 This is used to create update clause.
 
   "update book set " . $dbi->assign_clause({title => 'a', age => 2});
-
-=head2 async EXPERIMENTAL (Currently, Only work in MySQL)
-
-  async => sub {
-    my ($dbi, $result) = @_;
-    ...
-  };
-
-Database async access. L<AnyEvent> is required.
-
-This is C<mysql> async access example.
-
-  use AnyEvent;
-
-  my $cond = AnyEvent->condvar;
-
-  my $timer = AnyEvent->timer(
-    interval => 1,
-    cb => sub { 1 }
-  );
-
-  my $count = 0;
-
-  $dbi->execute('SELECT SLEEP(1), 3', undef,
-    prepare_attr => {async => 1}, statement => 'select',
-    async => sub {
-      my ($dbi, $result) = @_;
-      my $row = $result->fetch_one;
-      is($row->[1], 3, 'before');
-      $cond->send if ++$count == 2;
-    }
-  );
-
-  $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
-    async => sub {
-      my ($dbi, $result) = @_;
-      my $row = $result->fetch_one;
-      is($row->[0], 1, 'after1');
-      $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
-        async => sub {
-          my ($dbi, $result) = @_;
-          my $row = $result->fetch_one;
-          is($row->[0], 1, 'after2');
-          $cond->send if ++$count == 2;
-        }
-      )
-    }
-  );
-
-  $cond->recv;
 
 =head2 column
 
@@ -2249,13 +2192,6 @@ The following SQL is executed.
 
 Append some statement after SQL.
 
-=item C<prepare_attr> EXPERIMENTAL
-
-  prepare_attr => {async => 1}
-
-Statemend handle attributes,
-this is L<DBI>'s C<prepare> method second argument.
-
 =item C<bind_type>
 
 Specify database bind data type.
@@ -2309,13 +2245,6 @@ because generally creating query object is slow.
   primary_key => ['id1', 'id2']
 
 Priamry key. This is used for C<id> option.
-
-=item C<select> EXPERIMETAL
-
-  select => 1
-
-If you set C<select> to 1, this statement become select statement
-and return value is always L<DBIx::Custom::Result> object.
 
 =item C<table>
   
@@ -3096,6 +3025,80 @@ You can use this in insert statement.
 
 Create a new L<DBIx::Custom::Where> object.
 See L<DBIx::Custom::Where> to know how to create where clause.
+
+=head2 default_schema EXPERIMETNAL
+
+  my $default_schema = $self->default_schema;
+  $dbi = $self->default_schema('public');
+
+schema name. if database has multiple schema,
+type_rule->{into} filter don't work well.
+
+If you set C<default_schema>, type_rule->{into} filter work well.
+
+=head2 async EXPERIMENTAL (Currently, Only work in MySQL)
+
+  async => sub {
+    my ($dbi, $result) = @_;
+    ...
+  };
+
+Database async access. L<AnyEvent> is required.
+
+This is C<mysql> async access example.
+
+  use AnyEvent;
+
+  my $cond = AnyEvent->condvar;
+
+  my $timer = AnyEvent->timer(
+    interval => 1,
+    cb => sub { 1 }
+  );
+
+  my $count = 0;
+
+  $dbi->execute('SELECT SLEEP(1), 3', undef,
+    prepare_attr => {async => 1}, statement => 'select',
+    async => sub {
+      my ($dbi, $result) = @_;
+      my $row = $result->fetch_one;
+      is($row->[1], 3, 'before');
+      $cond->send if ++$count == 2;
+    }
+  );
+
+  $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
+    async => sub {
+      my ($dbi, $result) = @_;
+      my $row = $result->fetch_one;
+      is($row->[0], 1, 'after1');
+      $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
+        async => sub {
+          my ($dbi, $result) = @_;
+          my $row = $result->fetch_one;
+          is($row->[0], 1, 'after2');
+          $cond->send if ++$count == 2;
+        }
+      )
+    }
+  );
+
+  $cond->recv;
+
+=item C<prepare_attr> EXPERIMENTAL
+
+  prepare_attr => {async => 1}
+
+Statemend handle attributes,
+this is L<DBI>'s C<prepare> method second argument.
+
+=item C<select> EXPERIMETAL
+
+  select => 1
+
+If you set C<select> to 1, this statement become select statement
+and return value is always L<DBIx::Custom::Result> object.
 
 =head1 ENVIRONMENTAL VARIABLES
 
