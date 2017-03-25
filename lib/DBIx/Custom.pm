@@ -334,17 +334,31 @@ sub execute {
       $filter->{$column} = $self->filters->{$name};
     }
   }
-
-  # Create bind values
-  my ($bind_values, $bind_types) = $self->_create_bind_values($param, $columns,
-    $filter, $type_filters, $opt{bind_type} || {});
-
+  
+  my $query = DBIx::Custom::Query->new;
+  $query->param($param);
+  $query->sql($sql);
+  $query->columns($columns);
+  $query->bind_type($opt{bind_type});
+  $query->{_filter} = $filter;
+  $query->{_type_filters} = $type_filters;
+  $query->{_type_rule_is_called} = $self->{_type_rule_is_called};
+  $query->{_into1} = $self->{_into1};
+  $query->{_into2} = $self->{_into2};
+  
+  # Build bind values
+  $query->build;
+  
+  my $bind_values = $query->bind_values;
+  
+  
   # Execute
   my $affected;
   eval {
     if ($opt{bind_type}) {
+      my $bind_value_types = $query->bind_value_types;
       $sth->bind_param($_ + 1, $bind_values->[$_],
-          $bind_types->[$_] ? $bind_types->[$_] : ())
+          $bind_value_types->[$_] ? $bind_value_types->[$_] : ())
         for (0 .. @$bind_values - 1);
       $affected = $sth->execute;
     }
