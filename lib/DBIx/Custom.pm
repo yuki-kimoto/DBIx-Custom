@@ -13,6 +13,8 @@ use DBIx::Custom::Order;
 use DBIx::Custom::Util qw/_array_to_hash _subname _deprecate/;
 use DBIx::Custom::Mapper;
 use DBIx::Custom::NotExists;
+use DBIx::Custom::Query;
+
 use Encode qw/encode encode_utf8 decode_utf8/;
 use Scalar::Util qw/weaken/;
 
