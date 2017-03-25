@@ -258,6 +258,7 @@ sub execute_with_filter {
   my $sth;
   my $duplicate;
   my $parsed_sql;
+  my $columns;
   if ($query) {
     $sth = $query->{sth};
     $duplicate = $query->{duplicate};
@@ -278,7 +279,6 @@ sub execute_with_filter {
       my $prepare_attr = $opt{prepare_attr} || {};
       
       # Create query
-      my @columns;
       my $c = $self->{safety_character};
       my $re = $c eq 'a-zA-Z0-9_'
         ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
@@ -290,8 +290,8 @@ sub execute_with_filter {
       $source_sql =~ s/([0-9]):/$1\\:/g;
       $parsed_sql = '';
       while ($source_sql =~ /$re/) {
-        push @columns, $2;
-        $duplicate = 1 if ++$duplicate{$columns[-1]} > 1;
+        push @$columns, $2;
+        $duplicate = 1 if ++$duplicate{$columns->[-1]} > 1;
         ($parsed_sql, $source_sql) = defined $3 ?
           ($parsed_sql . "$1$2 $3 ?", " $4") : ($parsed_sql . "$1?", " $4");
       }
@@ -311,7 +311,7 @@ sub execute_with_filter {
       }
 
       # Create query
-      $query = {sth => $sth, parsed_sql => $parsed_sql, columns => \@columns, duplicate => $duplicate};
+      $query = {sth => $sth, parsed_sql => $parsed_sql, columns => $columns, duplicate => $duplicate};
     }
   }
   $opt{reuse}->{$sql} = $query if $opt{reuse};
@@ -370,12 +370,11 @@ sub execute_with_filter {
       if ($opt{bulk_insert}) {
         my %count;
         my $param = $params->[0];
-        $affected = $sth->execute(map { $param->{$_}->[++$count{$_} - 1] }
-          @{$query->{columns}});
+        $affected = $sth->execute(map { $param->{$_}->[++$count{$_} - 1] } @$columns);
       }
       else {
         for my $param (@$params) {
-          $affected = $sth->execute(map { $param->{$_} } @{$query->{columns}});
+          $affected = $sth->execute(map { $param->{$_} } @$columns);
         }
       }
     };
@@ -383,7 +382,7 @@ sub execute_with_filter {
   else {
     for my $param (@$params) {
       # Create bind values
-      my ($bind, $bind_types) = $self->_create_bind_values($param, $query->{columns},
+      my ($bind, $bind_types) = $self->_create_bind_values($param, $columns,
         $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
 
       # Execute
@@ -875,7 +874,14 @@ sub insert {
   }
   
   # Execute query
-  $self->execute($sql, $params, %opt);
+  if (@$params > 1) {
+    for my $param (@$params) {
+      $self->execute($sql, $param, %opt);
+    }
+  }
+  else {
+    $self->execute($sql, $params->[0], %opt);
+  }
 }
 
 sub update {
