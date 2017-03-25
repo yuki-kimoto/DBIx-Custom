@@ -274,11 +274,8 @@ sub execute_with_filter {
     }
     
     {
-      my $source = $sql;
       my $after_build_sql = $opt{after_build_sql};
-      my $prepare_attr = $opt{prepare_attr};
-      
-      $prepare_attr ||= {};
+      my $prepare_attr = $opt{prepare_attr} || {};
       
       # Create query
       my @columns;
@@ -289,16 +286,16 @@ sub execute_with_filter {
       my %duplicate;
       
       # Parameter regex
-      my $sql = " " . $source || '';
-      $sql =~ s/([0-9]):/$1\\:/g;
+      my $source_sql = $sql;
+      $source_sql =~ s/([0-9]):/$1\\:/g;
       $parsed_sql = '';
-      while ($sql =~ /$re/) {
+      while ($source_sql =~ /$re/) {
         push @columns, $2;
         $duplicate = 1 if ++$duplicate{$columns[-1]} > 1;
-        ($parsed_sql, $sql) = defined $3 ?
+        ($parsed_sql, $source_sql) = defined $3 ?
           ($parsed_sql . "$1$2 $3 ?", " $4") : ($parsed_sql . "$1?", " $4");
       }
-      $parsed_sql .= $sql;
+      $parsed_sql .= $source_sql;
       $parsed_sql =~ s/\\:/:/g if index($parsed_sql, "\\:") != -1;
       
       # Filter SQL
