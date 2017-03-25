@@ -52,6 +52,12 @@ has separator => '.';
 
 has mytable_symbol => '__MY__';
 
+sub create_result {
+  my ($self, $sth) = @_;
+  
+  return $self->result_class->new(sth => $sth);
+}
+
 sub column {
   my $self = shift;
   my $option = pop if ref $_[-1] eq 'HASH';
@@ -2303,6 +2309,56 @@ this is L<DBI>'s C<prepare> method second argument.
 If you set C<select> to 1, this statement become select statement
 and return value is always L<DBIx::Custom::Result> object.
 
+=item async EXPERIMENTAL (Currently, Only work in MySQL)
+
+  async => sub {
+    my ($dbi, $result) = @_;
+    ...
+  };
+
+Database async access. L<AnyEvent> is required.
+
+This is C<mysql> async access example.
+
+  use AnyEvent;
+
+  my $cond = AnyEvent->condvar;
+
+  my $timer = AnyEvent->timer(
+    interval => 1,
+    cb => sub { 1 }
+  );
+
+  my $count = 0;
+
+  $dbi->execute('SELECT SLEEP(1), 3', undef,
+    prepare_attr => {async => 1}, statement => 'select',
+    async => sub {
+      my ($dbi, $result) = @_;
+      my $row = $result->fetch_one;
+      is($row->[1], 3, 'before');
+      $cond->send if ++$count == 2;
+    }
+  );
+
+  $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
+    async => sub {
+      my ($dbi, $result) = @_;
+      my $row = $result->fetch_one;
+      is($row->[0], 1, 'after1');
+      $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
+        async => sub {
+          my ($dbi, $result) = @_;
+          my $row = $result->fetch_one;
+          is($row->[0], 1, 'after2');
+          $cond->send if ++$count == 2;
+        }
+      )
+    }
+  );
+
+  $cond->recv;
+
 =item C<query> EXPERIMENTAL
 
   query => 1
@@ -3086,55 +3142,12 @@ type_rule->{into} filter don't work well.
 
 If you set C<default_schema>, type_rule->{into} filter work well.
 
-=head2 async EXPERIMENTAL (Currently, Only work in MySQL)
+=head2 create_result EXPERIMENTAL
 
-  async => sub {
-    my ($dbi, $result) = @_;
-    ...
-  };
+  my $result = $dbi->create_result($sth);
 
-Database async access. L<AnyEvent> is required.
+Create L<DBIx::Custom::Result> object.
 
-This is C<mysql> async access example.
-
-  use AnyEvent;
-
-  my $cond = AnyEvent->condvar;
-
-  my $timer = AnyEvent->timer(
-    interval => 1,
-    cb => sub { 1 }
-  );
-
-  my $count = 0;
-
-  $dbi->execute('SELECT SLEEP(1), 3', undef,
-    prepare_attr => {async => 1}, statement => 'select',
-    async => sub {
-      my ($dbi, $result) = @_;
-      my $row = $result->fetch_one;
-      is($row->[1], 3, 'before');
-      $cond->send if ++$count == 2;
-    }
-  );
-
-  $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
-    async => sub {
-      my ($dbi, $result) = @_;
-      my $row = $result->fetch_one;
-      is($row->[0], 1, 'after1');
-      $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
-        async => sub {
-          my ($dbi, $result) = @_;
-          my $row = $result->fetch_one;
-          is($row->[0], 1, 'after2');
-          $cond->send if ++$count == 2;
-        }
-      )
-    }
-  );
-
-  $cond->recv;
 
 =head1 ENVIRONMENTAL VARIABLES
 

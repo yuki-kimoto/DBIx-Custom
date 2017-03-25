@@ -19,7 +19,8 @@
   - DBIx::Custom::execute method's reuse option become no more meaning. (Performance down 2)
   - add EXPERIMENTAL DBIx::Custom::execute query option again. This method return DBIx::Custom::Query object.
     If you use this option, you can resolve "Performance down 1" and "Performance down 2".
-    
+  - add EXPERIMENTAL DBIx::Custom::create_result method to create result class from statement handle
+  
 0.38 2017-3-18
   ---------------------------------------------------
   NOTE: This release remove many DEPRECATED features. 

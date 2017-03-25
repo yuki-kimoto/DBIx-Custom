@@ -39,20 +39,26 @@ $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 {
   require AnyEvent;
   my $cond = AnyEvent->condvar;
-  my $dbi = DBIx::Custom->connect(
+  my $dbi1 = DBIx::Custom->connect(
       dsn => "dbi:mysql:database=$database;",
       user => $user,
       password => $password
     );
-  my $result = $dbi->execute('SELECT SLEEP(1), 3', undef,
-    prepare_attr => {async => 1}, select => 1);
+  
+  my $query1 = $dbi1->execute('SELECT SLEEP(1), 3', undef, query => 1);
+  my $sth1 = $dbi1->dbh->prepare($query1->sql, {async => 1});
+  $sth1->execute;
+  my $result1 = $dbi1->create_result($sth1);
 
   my $dbi2 = DBIx::Custom->connect(
     dsn => "dbi:mysql:database=$database;host=localhost;port=10000",
     user => $user,
     password => $password
   );
-  my $result2 = $dbi2->select('key1', table => 'table1', prepare_attr => {async => 1});
+  my $query2 = $dbi2->select('key1', table => 'table1', query => 1);
+  my $sth2 = $dbi2->dbh->prepare($query2->sql, {async => 1});
+  $sth2->execute(@{$query2->bind_values});
+  my $result2 = $dbi2->create_result($sth2);
 
   my $timer = AnyEvent->timer(
     interval => 1,
@@ -65,13 +71,13 @@ $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 
   my $mysql_watcher;
   $mysql_watcher = AnyEvent->io(
-    fh   => $dbi->dbh->mysql_fd,
+    fh   => $dbi1->dbh->mysql_fd,
     poll => 'r',
     cb   => sub {
-      my $row = $result->fetch_one;
+      my $row = $result1->fetch_one;
       is($row->[1], 3, 'before');
       $cond->send if ++$count == 2;
-      undef $result;
+      undef $result1;
       undef $mysql_watcher;
     }
   );
