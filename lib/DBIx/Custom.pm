@@ -191,10 +191,8 @@ sub create_model {
 
 sub execute {
   my $self = shift;
-  
-  # SQL
   my $sql = shift;
-  
+
   # Options
   my $params;
   $params = shift if @_ % 2;
@@ -204,25 +202,6 @@ sub execute {
   # Append
   $sql .= $opt{append} if defined $opt{append};
 
-  my $call_excute_with_filter
-    = defined $opt{async}
-    || defined $opt{table}
-    || defined $opt{filter}
-  ;
-  
-  return $self->execute_with_filter($sql, $params, %opt);
-}
-
-sub execute_with_filter {
-  my $self = shift;
-  my $sql = shift;
-
-  # Options
-  my $params;
-  $params = shift if @_ % 2;
-  $params ||= {};
-  my %opt = @_;
-  
   # Async query
   $opt{prepare_attr} = $self->async_conf->{prepare_attr} if $opt{async};
   if ($opt{async} && !$self->{_new_connection}) {
