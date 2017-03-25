@@ -194,9 +194,9 @@ sub execute {
   my $sql = shift;
 
   # Options
-  my $params;
-  $params = shift if @_ % 2;
-  $params ||= {};
+  my $param;
+  $param = shift if @_ % 2;
+  $param ||= {};
   my %opt = @_;
 
   # Append
@@ -219,7 +219,7 @@ sub execute {
       {%{$new_dbi->default_option}, %$option, PrintError => 0, RaiseError => 0});
     
     $new_dbi->{_new_connection} = 1;
-    return $new_dbi->execute($sql, defined $params ? ($params) : (), %opt);
+    return $new_dbi->execute($sql, defined $param ? ($param) : (), %opt);
   }
   
   # Options
@@ -227,9 +227,6 @@ sub execute {
   $tables = [$tables] unless ref $tables eq 'ARRAY';
   my $filter = ref $opt{filter} eq 'ARRAY' ?
     _array_to_hash($opt{filter}) : $opt{filter};
-  
-  # Merge second parameter
-  $params = [$params] unless ref $params eq 'ARRAY';
   
   # Query
   my $query;
@@ -246,8 +243,8 @@ sub execute {
   else {
     my $c = $self->{safety_character};
     # Check unsafety keys
-    unless ((join('', keys %{$params->[0]}) || '') =~ /^[$c\.]+$/) {
-      for my $column (keys %{$params->[0]}) {
+    unless ((join('', keys %$param) || '') =~ /^[$c\.]+$/) {
+      for my $column (keys %$param) {
         croak qq{"$column" is not safety column name } . _subname
           unless $column =~ /^[$c\.]+$/;
       }
@@ -348,46 +345,41 @@ sub execute {
     eval {
       if ($opt{bulk_insert}) {
         my %count;
-        my $param = $params->[0];
         $affected = $sth->execute(map { $param->{$_}->[++$count{$_} - 1] } @$columns);
       }
       else {
-        for my $param (@$params) {
-          $affected = $sth->execute(map { $param->{$_} } @$columns);
-        }
+        $affected = $sth->execute(map { $param->{$_} } @$columns);
       }
     };
   }
   else {
-    for my $param (@$params) {
-      # Create bind values
-      my ($bind, $bind_types) = $self->_create_bind_values($param, $columns,
-        $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
+    # Create bind values
+    my ($bind, $bind_types) = $self->_create_bind_values($param, $columns,
+      $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
 
-      # Execute
-      eval {
-        if ($opt{bind_type} || $opt{type}) {
-          $sth->bind_param($_ + 1, $bind->[$_],
-              $bind_types->[$_] ? $bind_types->[$_] : ())
-            for (0 .. @$bind - 1);
-          $affected = $sth->execute;
-        }
-        else { $affected = $sth->execute(@$bind) }
+    # Execute
+    eval {
+      if ($opt{bind_type} || $opt{type}) {
+        $sth->bind_param($_ + 1, $bind->[$_],
+            $bind_types->[$_] ? $bind_types->[$_] : ())
+          for (0 .. @$bind - 1);
+        $affected = $sth->execute;
+      }
+      else { $affected = $sth->execute(@$bind) }
 
-        # DEBUG message
-        if ($ENV{DBIX_CUSTOM_DEBUG}) {
-          warn "SQL:\n" . $parsed_sql . "\n";
-          my @output;
-          for my $value (@$bind) {
-            $value = 'undef' unless defined $value;
-            $value = encode($ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8', $value)
-              if utf8::is_utf8($value);
-            push @output, $value;
-          }
-          warn "Bind values: " . join(', ', @output) . "\n\n";
+      # DEBUG message
+      if ($ENV{DBIX_CUSTOM_DEBUG}) {
+        warn "SQL:\n" . $parsed_sql . "\n";
+        my @output;
+        for my $value (@$bind) {
+          $value = 'undef' unless defined $value;
+          $value = encode($ENV{DBIX_CUSTOM_DEBUG_ENCODING} || 'UTF-8', $value)
+            if utf8::is_utf8($value);
+          push @output, $value;
         }
-      };
-    }
+        warn "Bind values: " . join(', ', @output) . "\n\n";
+      }
+    };
   }
   
   $self->_croak($@, qq{. Following SQL is executed.\n}
