@@ -7,14 +7,12 @@ use FindBin;
 use DBIx::Custom;
 
 my $dbi;
-my $dsn;
-my $args;
 my $user = 'dbix_custom';
 my $password = 'dbix_custom';
 my $database = 'dbix_custom';
 
-$dsn = "dbi:mysql:database=$database";
-$args = {dsn => $dsn, user => $user, password => $password,};
+my $dsn = "dbi:mysql:database=$database";
+my $args = {dsn => $dsn, user => $user, password => $password,};
 
 plan skip_all => 'mysql private test' unless -f "$FindBin::Bin/run/mysql-async-opt.run"
   && eval { $dbi = DBIx::Custom->connect($args); 1 };
@@ -22,23 +20,7 @@ plan 'no_plan';
 
 $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 
-# Function for test name
-sub test { print "# $_[0]\n" }
-
-# Varialbes for tests
-my $dbname;
-my $row;
-my $rows;
-my $result;
-my $result2;
-my $model;
-my $dbi1;
-my $dbi2;
-my $dbi3;
-my @dbis;
-my @results;
-
-test 'connect';
+# connect
 eval {
   $dbi = DBIx::Custom->connect(
     dsn => "dbi:mysql:database=$database;",
@@ -52,7 +34,7 @@ eval { $dbi->do('drop table table1') };
 $dbi->do('create table table1 (key1 varchar(255), key2 varchar(255)) engine=InnoDB');
 $dbi->insert({key1 => 1, key2 => 2}, table => 'table1');
 
-test 'async test';
+# async test
 
 require AnyEvent;
 
