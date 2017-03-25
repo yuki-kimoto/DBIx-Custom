@@ -558,7 +558,7 @@ require MyDBI1;
   }
 }
 
-# execute reuse option
+# execute reuse option (this option become no more meaning)
 {
   my $dbi = DBIx::Custom->connect;
   
@@ -570,8 +570,6 @@ require MyDBI1;
   }
   my $rows = $dbi->select(table => $table1)->all;
   is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 1, $key2 => 2}]);
-  ok(keys %$reuse);
-  ok((keys %$reuse)[0] !~ /\?/);
 }
 
 # Get user table info

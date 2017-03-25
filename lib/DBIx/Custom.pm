@@ -231,65 +231,53 @@ sub execute {
     _array_to_hash($opt{filter}) : $opt{filter};
   
   # Query
-  my $reuse_info;
-  $reuse_info = $opt{reuse}->{$sql} if $opt{reuse};
   my $sth;
   my $parsed_sql;
   my $columns;
-  if ($reuse_info) {
-    $sth = $reuse_info->{sth};
-    $parsed_sql = $reuse_info->{sql};
-  }
-  else {
-    my $c = $self->{safety_character};
-    # Check unsafety keys
-    unless ((join('', keys %$param) || '') =~ /^[$c\.]+$/) {
-      for my $column (keys %$param) {
-        croak qq{"$column" is not safety column name } . _subname
-          unless $column =~ /^[$c\.]+$/;
-      }
+  my $c = $self->{safety_character};
+  # Check unsafety keys
+  unless ((join('', keys %$param) || '') =~ /^[$c\.]+$/) {
+    for my $column (keys %$param) {
+      croak qq{"$column" is not safety column name } . _subname
+        unless $column =~ /^[$c\.]+$/;
     }
+  }
+  
+  {
+    my $after_build_sql = $opt{after_build_sql};
+    my $prepare_attr = $opt{prepare_attr} || {};
     
-    {
-      my $after_build_sql = $opt{after_build_sql};
-      my $prepare_attr = $opt{prepare_attr} || {};
-      
-      # Create query
-      my $c = $self->{safety_character};
-      my $re = $c eq 'a-zA-Z0-9_'
-        ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
-        : qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
-      my %duplicate;
-      
-      # Parameter regex
-      my $source_sql = $sql;
-      $source_sql =~ s/([0-9]):/$1\\:/g;
-      $parsed_sql = '';
-      while ($source_sql =~ /$re/) {
-        push @$columns, $2;
-        ($parsed_sql, $source_sql) = defined $3 ?
-          ($parsed_sql . "$1$2 $3 ?", " $4") : ($parsed_sql . "$1?", " $4");
-      }
-      $parsed_sql .= $source_sql;
-      $parsed_sql =~ s/\\:/:/g if index($parsed_sql, "\\:") != -1;
-      
-      # Filter SQL
-      $parsed_sql = $after_build_sql->($parsed_sql) if $after_build_sql;
-      
-      
-      # Prepare statement handle
-      eval { $sth = $self->dbh->prepare($parsed_sql, $prepare_attr) };
-      
-      if ($@) {
-        $self->_croak($@, qq{. Following SQL is executed.\n}
-                        . qq{$parsed_sql\n} . _subname);
-      }
-
-      # Create query
-      $reuse_info = {sth => $sth, parsed_sql => $parsed_sql, columns => $columns};
+    # Create query
+    my $c = $self->{safety_character};
+    my $re = $c eq 'a-zA-Z0-9_'
+      ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
+      : qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
+    my %duplicate;
+    
+    # Parameter regex
+    my $source_sql = $sql;
+    $source_sql =~ s/([0-9]):/$1\\:/g;
+    $parsed_sql = '';
+    while ($source_sql =~ /$re/) {
+      push @$columns, $2;
+      ($parsed_sql, $source_sql) = defined $3 ?
+        ($parsed_sql . "$1$2 $3 ?", " $4") : ($parsed_sql . "$1?", " $4");
+    }
+    $parsed_sql .= $source_sql;
+    $parsed_sql =~ s/\\:/:/g if index($parsed_sql, "\\:") != -1;
+    
+    # Filter SQL
+    $parsed_sql = $after_build_sql->($parsed_sql) if $after_build_sql;
+    
+    
+    # Prepare statement handle
+    eval { $sth = $self->dbh->prepare($parsed_sql, $prepare_attr) };
+    
+    if ($@) {
+      $self->_croak($@, qq{. Following SQL is executed.\n}
+                      . qq{$parsed_sql\n} . _subname);
     }
   }
-  $opt{reuse}->{$sql} = $reuse_info if $opt{reuse};
   
   # Save query
   $self->{last_sql} = $parsed_sql;

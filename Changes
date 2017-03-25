@@ -16,6 +16,8 @@
   - DBIx::Custom::Model::count is DEPRECATED!
   - DBIx::Custom::insert method which have array argument(For example, [{foo => 1, bar => 2}, {foo => 3, bar => 4}])
     become slow.
+  - DBIx::Custom::execute method's reuse option become no more meaning.
+  
   
 0.38 2017-3-18
   ---------------------------------------------------
