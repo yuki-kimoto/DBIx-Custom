@@ -198,6 +198,7 @@ sub execute {
   # Options
   my $params;
   $params = shift if @_ % 2;
+  $params ||= {};
   my %opt = @_;
 
   my $call_excute_with_filter
@@ -216,6 +217,7 @@ sub execute_with_filter {
   # Options
   my $params;
   $params = shift if @_ % 2;
+  $params ||= {};
   my %opt = @_;
   
   # Async query
@@ -239,7 +241,6 @@ sub execute_with_filter {
   }
   
   # Options
-  $params ||= {};
   my $tables = $opt{table} || [];
   $tables = [$tables] unless ref $tables eq 'ARRAY';
   my $filter = ref $opt{filter} eq 'ARRAY' ?
