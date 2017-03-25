@@ -1138,62 +1138,6 @@ sub _multi_values_clause {
   return $clause;
 }
 
-sub _create_bind_values {
-  my ($self, $params, $columns, $filter, $type_filters, $bind_type) = @_;
-  
-  $bind_type = _array_to_hash($bind_type) if ref $bind_type eq 'ARRAY';
-  
-  # Create bind values
-  my @bind;
-  my @types;
-  my %count;
-  my %not_exists;
-  for my $column (@$columns) {
-    
-    # Bind value
-    if(ref $params->{$column} eq 'ARRAY') {
-      my $i = $count{$column} || 0;
-      $i += $not_exists{$column} || 0;
-      my $found;
-      for (my $k = $i; $i < @{$params->{$column}}; $k++) {
-        if (ref $params->{$column}->[$k] eq 'DBIx::Custom::NotExists') {
-            $not_exists{$column}++;
-        }
-        else  {
-          push @bind, $params->{$column}->[$k];
-          $found = 1;
-          last
-        }
-      }
-      next unless $found;
-    }
-    else { push @bind, $params->{$column} }
-    
-    # Filter
-    if (my $f = $filter->{$column} || '') {
-      $bind[-1] = $f->($bind[-1]);
-    }
-    
-    # Type rule
-    if ($self->{_type_rule_is_called}) {
-      my $tf1 = $self->{"_into1"}->{dot}->{$column}
-        || $type_filters->{1}->{$column};
-      $bind[-1] = $tf1->($bind[-1]) if $tf1;
-      my $tf2 = $self->{"_into2"}->{dot}->{$column}
-        || $type_filters->{2}->{$column};
-      $bind[-1] = $tf2->($bind[-1]) if $tf2;
-    }
-   
-    # Bind types
-    push @types, $bind_type->{$column};
-    
-    # Count up 
-    $count{$column}++;
-  }
-  
-  return (\@bind, \@types);
-}
-
 sub _id_to_param {
   my ($self, $id, $primary_keys, $table) = @_;
   

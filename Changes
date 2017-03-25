@@ -1,8 +1,12 @@
 0.39 2017-3-22
   ---------------------------------------------------
   NOTE: This release add many DEPRECATED warnings.
-  Maybe after these DEPRECATED, DBIx::Custom will be more stable.
-  I think, in future small and fast will be better than keeping complexity.
+  Maybe after these DEPRECATED period, DBIx::Custom will be more stable.
+  I will delete type_rule and filter system after DEPRECATED period.
+  I think, in future small, fast and support of async SQL will be better than keeping complex filtering system.
+  After I think for long time, I realize creating SQL and filtering system can't be used together.
+  I decide to remove type_rule and filtering system(type_rule, filter, ctime, mtime, id)
+  But I remain old implementation by creating DBIx::Custom::V0 for the people using DBIx::Custom
   ---------------------------------------------------
   - DBIx::Custom::helper method is DEPRECATED!
   - DBIx::Custom AUTOLOAD feature is DEPRECATED!
