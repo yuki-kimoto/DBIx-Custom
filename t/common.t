@@ -328,6 +328,28 @@ require MyDBI1;
   }
 }
 
+# query option
+{
+  my $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1);
+  
+  my $param = {$key1 => 1, $key2 => 2};
+  my $query = $dbi->insert($param, table => $table1, query => 1);
+  
+  my $sth = $dbi->dbh->prepare($query->sql);
+  $sth->execute(@{$query->bind_values});
+  
+  $param = {$key1 => 3, $key2 => 4};
+  $query->param($param);
+  $query->build;
+  $sth->execute(@{$query->bind_values});
+  
+  my $result = $dbi->select(table => $table1);
+  my $rows = $result->all;
+  is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
+}
+
 # insert
 {
   my $dbi = DBIx::Custom->connect;
@@ -337,7 +359,7 @@ require MyDBI1;
   $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
   my $result = $dbi->execute("select * from $table1");
   my $rows = $result->all;
-  is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "basic");
+  is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
 }
 
 {
@@ -348,7 +370,7 @@ require MyDBI1;
   $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
   my $result = $dbi->execute("select * from $table1");
   my $rows = $result->all;
-  is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}], "basic");
+  is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
 }
 
 {
@@ -362,7 +384,7 @@ require MyDBI1;
   $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, filter => {$key1 => 'three_times'});
   my $result = $dbi->execute("select * from $table1");
   my $rows = $result->all;
-  is_deeply($rows, [{$key1 => 3, $key2 => 2}], "filter");
+  is_deeply($rows, [{$key1 => 3, $key2 => 2}]);
   $dbi->delete_all(table => $table1);
 }
 

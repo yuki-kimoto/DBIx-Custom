@@ -318,11 +318,12 @@ sub execute {
   $query->{_into1} = $self->{_into1};
   $query->{_into2} = $self->{_into2};
   
+  # Build bind values
+  $query->build;
+
   # Return query
   return $query if $opt{query};
   
-  # Build bind values
-  $query->build;
   my $bind_values = $query->bind_values;
 
   # Prepare statement handle
@@ -2288,6 +2289,55 @@ Turn C<into1> type rule off.
 
 Turn C<into2> type rule off.
 
+=item C<prepare_attr> EXPERIMENTAL
+
+  prepare_attr => {async => 1}
+
+Statemend handle attributes,
+this is L<DBI>'s C<prepare> method second argument.
+
+=item C<select> EXPERIMETAL
+
+  select => 1
+
+If you set C<select> to 1, this statement become select statement
+and return value is always L<DBIx::Custom::Result> object.
+
+=item C<query> EXPERIMENTAL
+
+  query => 1
+
+If you want to get SQL information only except execution,
+You can get L<DBIx::Custom::Query> object by this option.
+
+  my $query = $dbi->execute(
+    "insert into book (id, name) values (:id, :name)",
+    {id => 1, name => 'Perl'},
+    query => 1
+  );
+
+L<DBIx::Custom::Query> have the following information
+
+  my $sql = $query->sql;
+  my $param = $query->param;
+  my $columns $query->columns;
+
+You can get bind values and the types by the following way.
+  
+  # Build bind values and types
+  $query->build;
+  
+  # Get bind values
+  my $bind_values = $query->bind_values;
+  
+  # Get bind types
+  my $bind_value_types = $query->bind_value_types;
+
+You can prepare sql and execute SQL by L<DBI> directry.
+  
+  my $sth = $dbi->dbh->prepare($sql);
+  $sth->execute($sql, @$bind_values);
+
 =back
 
 =head2 get_column_info
@@ -3085,20 +3135,6 @@ This is C<mysql> async access example.
   );
 
   $cond->recv;
-
-=item C<prepare_attr> EXPERIMENTAL
-
-  prepare_attr => {async => 1}
-
-Statemend handle attributes,
-this is L<DBI>'s C<prepare> method second argument.
-
-=item C<select> EXPERIMETAL
-
-  select => 1
-
-If you set C<select> to 1, this statement become select statement
-and return value is always L<DBIx::Custom::Result> object.
 
 =head1 ENVIRONMENTAL VARIABLES
 
