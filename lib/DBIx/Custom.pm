@@ -338,7 +338,7 @@ sub execute {
 
   # Create bind values
   my ($bind_values, $bind_types) = $self->_create_bind_values($param, $columns,
-    $filter, $type_filters, $opt{bind_type} || $opt{type} || {});
+    $filter, $type_filters, $opt{bind_type} || {});
 
   # Execute
   my $affected;
