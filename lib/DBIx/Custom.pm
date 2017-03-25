@@ -232,12 +232,10 @@ sub execute {
   my $reuse_info;
   $reuse_info = $opt{reuse}->{$sql} if $opt{reuse};
   my $sth;
-  my $duplicate;
   my $parsed_sql;
   my $columns;
   if ($reuse_info) {
     $sth = $reuse_info->{sth};
-    $duplicate = $reuse_info->{duplicate};
     $parsed_sql = $reuse_info->{sql};
   }
   else {
@@ -267,7 +265,6 @@ sub execute {
       $parsed_sql = '';
       while ($source_sql =~ /$re/) {
         push @$columns, $2;
-        $duplicate = 1 if ++$duplicate{$columns->[-1]} > 1;
         ($parsed_sql, $source_sql) = defined $3 ?
           ($parsed_sql . "$1$2 $3 ?", " $4") : ($parsed_sql . "$1?", " $4");
       }
@@ -287,7 +284,7 @@ sub execute {
       }
 
       # Create query
-      $reuse_info = {sth => $sth, parsed_sql => $parsed_sql, columns => $columns, duplicate => $duplicate};
+      $reuse_info = {sth => $sth, parsed_sql => $parsed_sql, columns => $columns};
     }
   }
   $opt{reuse}->{$sql} = $reuse_info if $opt{reuse};
