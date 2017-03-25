@@ -20,7 +20,6 @@ use Scalar::Util qw/weaken/;
 
 has [qw/connector dsn default_schema password quote user exclude_table user_table_info
      user_column_info safety_character/];
-has async_conf => sub { {} };
 has option => sub { {} };
 has default_option => sub {
   {
@@ -210,26 +209,6 @@ sub execute {
   # Append
   $sql .= $opt{append} if defined $opt{append};
   
-  # Async query
-  $opt{prepare_attr} = $self->async_conf->{prepare_attr} if $opt{async};
-  if ($opt{async} && !$self->{_new_connection}) {
-    my $dsn = $self->dsn;
-    croak qq/Data source must be specified when "async" option is used/
-      unless defined $dsn;
-    
-    my $user = $self->user;
-    my $password = $self->password;
-    my $option = $self->option;
-    
-    my $new_dbi = bless {%$self}, ref $self;
-    $new_dbi->connector(undef);
-    $new_dbi->{dbh} = DBI->connect($dsn, $user, $password,
-      {%{$new_dbi->default_option}, %$option, PrintError => 0, RaiseError => 0});
-    
-    $new_dbi->{_new_connection} = 1;
-    return $new_dbi->execute($sql, defined $param ? ($param) : (), %opt);
-  }
-  
   # Options
   my $tables = $opt{table} || [];
   $tables = [$tables] unless ref $tables eq 'ARRAY';
@@ -372,34 +351,8 @@ sub execute {
   $self->_croak($@, qq{. Following SQL is executed.\n}
     . qq{$parsed_sql\n} . _subname) if $@;
   
-  # Affected of insert, update, or delete
-  if (!$sth->{NUM_OF_FIELDS} && !$opt{select}) {
-    # Non-Blocking
-    if (my $cb = $opt{async}) {
-      require AnyEvent;
-      my $watcher;
-      $watcher = AnyEvent->io(
-        fh => $self->async_conf->{fh}->($self),
-        poll => 'w',
-        cb => sub {
-          my $affected;
-          my $driver = $self->_driver;
-          if ($driver eq 'mysql') {
-            $affected = $sth->mysql_async_result;
-          }
-          $cb->($self, $affected);
-          undef $watcher;
-          undef $cb;
-          undef $self;
-        }
-      );
-    }
-    # Blocking
-    else { return $affected }
-  }
   # Reulst of select statement
-  else {
-    
+  if ($sth->{NUM_OF_FIELDS}) {
     # Result
     my $result = $self->result_class->new(
       sth => $sth,
@@ -410,30 +363,11 @@ sub execute {
       },
     );
     
-    # Non-Blocking
-    if (my $cb = $opt{async}) {
-      require AnyEvent;
-      my $watcher;
-      $watcher = AnyEvent->io(
-        fh => $self->async_conf->{fh}->($self),
-        poll => 'r',
-        cb   => sub {
-          my $error;
-          my $driver = $self->_driver;
-          if ($driver eq 'mysql') {
-            $sth->mysql_async_result;
-          }
-          
-          $cb->($self, $result);
-          undef $watcher;
-          undef $result;
-          undef $cb;
-          undef $self;
-        },
-      );
-    }
-    # Blocking
-    else { return $result }
+    return $result;
+  }
+  # Affected of insert, update, or delete
+  else {
+    return $affected
   }
 }
 
@@ -651,7 +585,6 @@ sub select {
   my $self = shift;
   my $column = shift if @_ % 2;
   my %opt = @_;
-  $opt{select} = 1;
   $opt{column} = $column if defined $column;
 
   # Table
@@ -1905,23 +1838,6 @@ Usually, you can set return value of C<get_table_info>.
 If C<user_table_info> is set, C<each_table> use C<user_table_info>
 to find table info.
 
-=head2 async_conf EXPERIMENTAL
-
-  my $async_conf = $dbi->async_conf;
-  $dbi = $dbi->async_conf($conf);
-
-Setting when C<async> option is used.
-
-  # MySQL
-  $dbi->async_conf({
-    prepare_attr => {async => 1},
-    fh => sub { shift->dbh->mysql_fd }
-    my $dbi = shift;
-  });
-
-C<prepare_attr> is DBI's C<prepare> method second argument,
-C<fh> is callback that return file handle to watch.
-
 =head1 METHODS
 
 L<DBIx::Custom> inherits all methods from L<Object::Simple>
@@ -2031,7 +1947,7 @@ and use the following new ones.
 
 =over 4
 
-=item C<id>
+=item id
 
   id => 4
   id => [4, 5]
@@ -2049,7 +1965,7 @@ The above is same as the following one.
 
   $dbi->delete(where => {id1 => 4, id2 => 5}, table => 'book');
 
-=item C<prefix>
+=item prefix
 
   prefix => 'some'
 
@@ -2057,13 +1973,13 @@ prefix before table name section.
 
   delete some from book
 
-=item C<table>
+=item table
 
   table => 'book'
 
 Table name.
 
-=item C<where>
+=item where
 
 Same as C<select> method's C<where> option.
 
@@ -2173,7 +2089,7 @@ The following options are available.
 
 =over 4
 
-=item C<after_build_sql> 
+=item after_build_sql 
 
 You can filter sql after the sql is build.
 
@@ -2193,13 +2109,13 @@ The following SQL is executed.
 
   select count(*) from (select distinct(name) from book) as t1;
 
-=item C<append>
+=item append
 
   append => 'order by name'
 
 Append some statement after SQL.
 
-=item C<bind_type>
+=item bind_type
 
 Specify database bind data type.
   
@@ -2211,7 +2127,7 @@ This is used to bind parameter by C<bind_param> of statement handle.
 
   $sth->bind_param($pos, $value, DBI::SQL_BLOB);
 
-=item C<filter>
+=item filter
   
   filter => {
     title  => sub { uc $_[0] }
@@ -2234,7 +2150,7 @@ registered by C<register_filter>.
 This filter is executed before data is saved into database.
 and before type rule filter is executed.
 
-=item C<reuse>
+=item reuse
   
   reuse => $hash_ref
 
@@ -2246,14 +2162,14 @@ Reuse query object if the hash reference variable is set.
 This will improved performance when you want to execute same query repeatedly
 because generally creating query object is slow.
 
-=item C<primary_key>
+=item primary_key
 
   primary_key => 'id'
   primary_key => ['id1', 'id2']
 
 Priamry key. This is used for C<id> option.
 
-=item C<table>
+=item table
   
   table => 'author'
 
@@ -2269,7 +2185,7 @@ You must set C<table> option.
     "select * from book where title = :book.title and author = :book.author",
     {title => 'Perl', author => 'Ken');
 
-=item C<table_alias>
+=item table_alias
 
   table_alias => {worker => 'user'} # {ALIAS => TABLE}
 
@@ -2277,89 +2193,32 @@ Table alias. Key is alias table name, value is real table name, .
 If you set C<table_alias>, you can enable C<into1> and C<into2> type rule
 on alias table name.
 
-=item C<type_rule_off>
+=item type_rule_off
 
   type_rule_off => 1
 
 Turn C<into1> and C<into2> type rule off.
 
-=item C<type_rule1_off>
+=item type_rule1_off
 
   type_rule1_off => 1
 
 Turn C<into1> type rule off.
 
-=item C<type_rule2_off>
+=item type_rule2_off
 
   type_rule2_off => 1
 
 Turn C<into2> type rule off.
 
-=item C<prepare_attr> EXPERIMENTAL
+=item prepare_attr EXPERIMENTAL
 
-  prepare_attr => {async => 1}
+  prepare_attr => {mysql_use_result => 1}
 
 Statemend handle attributes,
 this is L<DBI>'s C<prepare> method second argument.
 
-=item C<select> EXPERIMETAL
-
-  select => 1
-
-If you set C<select> to 1, this statement become select statement
-and return value is always L<DBIx::Custom::Result> object.
-
-=item async EXPERIMENTAL (Currently, Only work in MySQL)
-
-  async => sub {
-    my ($dbi, $result) = @_;
-    ...
-  };
-
-Database async access. L<AnyEvent> is required.
-
-This is C<mysql> async access example.
-
-  use AnyEvent;
-
-  my $cond = AnyEvent->condvar;
-
-  my $timer = AnyEvent->timer(
-    interval => 1,
-    cb => sub { 1 }
-  );
-
-  my $count = 0;
-
-  $dbi->execute('SELECT SLEEP(1), 3', undef,
-    prepare_attr => {async => 1}, statement => 'select',
-    async => sub {
-      my ($dbi, $result) = @_;
-      my $row = $result->fetch_one;
-      is($row->[1], 3, 'before');
-      $cond->send if ++$count == 2;
-    }
-  );
-
-  $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
-    async => sub {
-      my ($dbi, $result) = @_;
-      my $row = $result->fetch_one;
-      is($row->[0], 1, 'after1');
-      $dbi->select('key1', table => 'table1', prepare_attr => {async => 1},
-        async => sub {
-          my ($dbi, $result) = @_;
-          my $row = $result->fetch_one;
-          is($row->[0], 1, 'after2');
-          $cond->send if ++$count == 2;
-        }
-      )
-    }
-  );
-
-  $cond->recv;
-
-=item C<query> EXPERIMENTAL
+=item query EXPERIMENTAL
 
   query => 1
 
@@ -2452,7 +2311,7 @@ and use the following new ones.
 
 =over 4
 
-=item C<bulk_insert>
+=item bulk_insert
 
   bulk_insert => 1
 
@@ -2462,7 +2321,7 @@ The SQL like the following one is executed.
 
   insert into book (id, title) values (?, ?), (?, ?);
 
-=item C<ctime>
+=item ctime
 
   ctime => 'created_time'
 
@@ -2470,7 +2329,7 @@ Created time column name. time when row is created is set to the column.
 default time format is "YYYY-mm-dd HH:MM:SS", which can be changed by
 C<now> attribute.
 
-=item C<id>
+=item id
 
   id => 4
   id => [4, 5]
@@ -2492,7 +2351,7 @@ The above is same as the following one.
     table => 'book'
   );
 
-=item C<prefix>
+=item prefix
 
   prefix => 'or replace'
 
@@ -2500,17 +2359,17 @@ prefix before table name section
 
   insert or replace into book
 
-=item C<table>
+=item table
 
   table => 'book'
 
 Table name.
 
-=item C<mtime>
+=item mtime
 
 This option is same as C<update> method C<mtime> option.
 
-=item C<wrap>
+=item wrap
 
   wrap => {price => sub { "max($_[0])" }}
 
@@ -2690,7 +2549,7 @@ and use the following new ones.
 
 =over 4
 
-=item C<column>
+=item column
   
   column => 'author'
   column => ['author', 'title']
@@ -2728,7 +2587,7 @@ This is expanded to the following one by using C<mycolomn> method.
 
 C<__MY__> can be changed by C<mytable_symbol> attribute.
 
-=item C<id>
+=item id
 
   id => 4
   id => [4, 5]
@@ -2749,7 +2608,7 @@ The above is same as the following one.
     table => 'book'
   );
   
-=item C<param>
+=item param
 
   param => {'table2.key3' => 5}
 
@@ -2761,7 +2620,7 @@ you can pass parameter by C<param> option.
   join  => ['inner join (select * from table2 where table2.key3 = :table2.key3)' . 
             ' as table2 on table1.key1 = table2.key1']
 
-=item C<prefix>
+=item prefix
 
   prefix => 'SQL_CALC_FOUND_ROWS'
 
@@ -2769,7 +2628,7 @@ Prefix of column clause
 
   select SQL_CALC_FOUND_ROWS title, author from book;
 
-=item C<join>
+=item join
 
   join => [
     'left outer join company on book.company_id = company_id',
@@ -2812,13 +2671,13 @@ the join clause correctly.
     ]
   );
 
-=item C<table>
+=item table
 
   table => 'book'
 
 Table name.
 
-=item C<where>
+=item where
   
   # (1) Hash reference
   where => {author => 'Ken', 'title' => ['Perl', 'Ruby']}
@@ -2953,7 +2812,7 @@ and use the following new ones.
 
 =over 4
 
-=item C<id>
+=item id
 
   id => 4
   id => [4, 5]
@@ -2976,7 +2835,7 @@ The above is same as the following one.
     table => 'book'
   );
 
-=item C<prefix>
+=item prefix
 
   prefix => 'or replace'
 
@@ -2984,17 +2843,17 @@ prefix before table name section
 
   update or replace book
 
-=item C<table>
+=item table
 
   table => 'book'
 
 Table name.
 
-=item C<where>
+=item where
 
 Same as C<select> method's C<where> option.
 
-=item C<wrap>
+=item wrap
 
   wrap => {price => sub { "max($_[0])" }}
 
@@ -3009,7 +2868,7 @@ is executed, the following SQL is executed.
 
   update book set price =  ? + 5;
 
-=item C<mtime>
+=item mtime
 
   mtime => 'modified_time'
 
@@ -3054,7 +2913,7 @@ in C<select>, C<update>, C<delete>, and has the following new ones.
 
 =over 4
 
-=item C<option>
+=item option
 
   option => {
     select => {
@@ -3073,7 +2932,7 @@ you can use C<option> option.
 
 =over 4
 
-=item C<select_option>
+=item select_option
 
   select_option => {append => 'for update'}
 

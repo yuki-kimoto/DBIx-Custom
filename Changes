@@ -20,6 +20,12 @@
   - add EXPERIMENTAL DBIx::Custom::execute query option again. This method return DBIx::Custom::Query object.
     If you use this option, you can resolve "Performance down 1" and "Performance down 2".
   - add EXPERIMENTAL DBIx::Custom::create_result method to create result class from statement handle
+  - remove EXPERIMENTAL execute method's async option
+  - remove EXPERIMENTAL async_conf attribute
+    From this release, DBIx::Custom support only syncronous query,
+    but from this release, you can create sql and bind values by excute method's query option
+    you can pass sql and bind values to any asyncronous support database module,
+    (for example, AnyEvent::DBI or Mojo::Pg)
   
 0.38 2017-3-18
   ---------------------------------------------------
