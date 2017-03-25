@@ -239,7 +239,7 @@ sub execute_with_filter {
   }
   
   # Options
-  $params ||= $opt{param} || {};
+  $params ||= {};
   my $tables = $opt{table} || [];
   $tables = [$tables] unless ref $tables eq 'ARRAY';
   my $filter = ref $opt{filter} eq 'ARRAY' ?
@@ -736,7 +736,7 @@ sub select {
   $sql .= "$w->{clause} ";
   
   # Execute query
-  return $self->execute($sql, %opt);
+  return $self->execute($sql, delete $opt{param}, %opt);
 }
 
 sub setup_model {
