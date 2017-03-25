@@ -256,8 +256,10 @@ sub execute_with_filter {
   my $query;
   $query = $opt{reuse}->{$sql} if $opt{reuse};
   my $sth;
+  my $duplicate;
   if ($query) {
     $sth = $query->{sth};
+    $duplicate = $query->{duplicate};
   }
   else {
     my $c = $self->{safety_character};
@@ -284,7 +286,6 @@ sub execute_with_filter {
         ? qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/so
         : qr/(.*?[^\\]):([$c\.]+)(?:\{(.*?)\})?(.*)/s;
       my %duplicate;
-      my $duplicate;
       # Parameter regex
       $sql =~ s/([0-9]):/$1\\:/g;
       my $new_sql = '';
@@ -367,7 +368,7 @@ sub execute_with_filter {
 
   # Execute
   my $affected;
-  if ((!$query->{duplicate} || $opt{bulk_insert}) && $type_rule_off
+  if ((!$duplicate || $opt{bulk_insert}) && $type_rule_off
     && !keys %$filter
     && !$opt{bind_type} && !$opt{type} && !$ENV{DBIX_CUSTOM_DEBUG})
   {
