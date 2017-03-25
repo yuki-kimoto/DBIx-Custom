@@ -190,7 +190,23 @@ sub create_model {
 }
 
 sub execute {
-  return shift->execute_with_filter(@_);
+  my $self = shift;
+  
+  # SQL
+  my $sql = shift;
+  
+  # Options
+  my $params;
+  $params = shift if @_ % 2;
+  my %opt = @_;
+
+  my $call_excute_with_filter
+    = defined $opt{async}
+    || defined $opt{table}
+    || defined $opt{filter}
+  ;
+  
+  return $self->execute_with_filter($sql, $params, %opt);
 }
 
 sub execute_with_filter {
