@@ -328,6 +328,17 @@ require MyDBI1;
   }
 }
 
+# get_columns_from_db
+{
+  my $dbi = DBIx::Custom->connect;
+  
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1_2);
+  
+  my $columns = $dbi->get_columns_from_db($table1);
+  is_deeply($columns, [$key1, $key2, $key3, $key4, $key5]);
+}
+
 # query option
 {
   my $dbi = DBIx::Custom->connect;

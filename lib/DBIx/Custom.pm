@@ -1025,8 +1025,9 @@ sub get_columns_from_db {
   
   my $sth_columns = $self->dbh->column_info(undef, $schema, $table, "%");
   
-  my $columns = [];
+  my $columns;
   while (my $column_info = $sth_columns->fetchrow_hashref) {
+    $columns ||= [];
     my $column = $column_info->{COLUMN_NAME};
     push @$columns, $column;
   }
