@@ -1009,6 +1009,31 @@ sub each_column {
   }
 }
 
+sub get_columns_from_db {
+  my ($self, $schema_table) = @_;
+  
+  my $schema;
+  my $table;
+  if ($schema_table =~ /^(.+)\.(.*)$/) {
+    $schema = $1;
+    $table = $2;
+  }
+  else {
+    $schema = undef;
+    $table = $schema_table;
+  }
+  
+  my $sth_columns = $self->dbh->column_info(undef, $schema, $table, "%");
+  
+  my $columns = [];
+  while (my $column_info = $sth_columns->fetchrow_hashref) {
+    my $column = $column_info->{COLUMN_NAME};
+    push @$columns, $column;
+  }
+  
+  return $columns;
+}
+
 sub each_table {
   my ($self, $cb, %option) = @_;
   
