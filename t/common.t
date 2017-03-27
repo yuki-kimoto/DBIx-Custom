@@ -1810,7 +1810,7 @@ require MyDBI1;
     ok($@);
     
     eval{DBIx::Custom->connect(dsn => undef)};
-    like($@, qr/_connect/);
+    ok($@);
   }
   
   {
@@ -2440,7 +2440,6 @@ EOS
     is($row->{$key3}, 3);
   }
 }
-
 # column separator is default
 {
   my $dbi = MyDBI7->connect;
@@ -2897,6 +2896,7 @@ EOS
   $dbi->execute($create_table1);
   my $result = $dbi->execute("select $key1 as h1, $key2 as h2 from $table1");
   is_deeply([map { lc } @{$result->header}], [qw/h1 h2/]);
+  $result->sth->finish;
 }
 
 # Named placeholder :name(operater) syntax

@@ -15,6 +15,7 @@ WriteMakefile(
         'Test::More' => 0,
         'Object::Simple' => 3.10,
         'DBD::SQLite' => '1.25',
+        'DBIx::Connector' => '0.56',
         'DBI' => '1.605'
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },

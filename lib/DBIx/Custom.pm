@@ -14,12 +14,14 @@ use DBIx::Custom::Util qw/_array_to_hash _subname _deprecate/;
 use DBIx::Custom::Mapper;
 use DBIx::Custom::NotExists;
 use DBIx::Custom::Query;
+use DBIx::Connector;
 
 use Encode qw/encode encode_utf8 decode_utf8/;
 use Scalar::Util qw/weaken/;
 
-has [qw/connector dsn default_schema password quote user exclude_table user_table_info
+has [qw/dsn default_schema password quote user exclude_table user_table_info
      user_column_info safety_character/];
+has connector => 1;
 has option => sub { {} };
 has default_option => sub {
   {
@@ -92,8 +94,6 @@ sub connect {
   my $connector = $self->connector;
   
   if (!ref $connector && $connector) {
-    require DBIx::Connector;
-    
     my $dsn = $self->dsn;
     my $user = $self->user;
     my $password = $self->password;

@@ -26,6 +26,7 @@
     but from this release, you can create sql and bind values by excute method's query option
     you can pass sql and bind values to any asyncronous support database module,
     (for example, AnyEvent::DBI or Mojo::Pg)
+  - DBIx::Connector become enable by default
   
 0.38 2017-3-18
   ---------------------------------------------------
