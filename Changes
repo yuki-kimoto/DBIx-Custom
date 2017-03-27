@@ -12,6 +12,7 @@
   - DBIx::Custom::Model AUTOLOAD feature is DEPRECATED!
   - DBIx::Custom::Model::helper method is DEPRECATED!
   - DBIx::Custom::Model::update_or_insert method is DEPRECATED!
+  - DBIx::Custom::Model::count method is DEPRECATED!
   - DBIx::Custom::Model::primary_key attribute is DEPRECATED!
   - DBIx::Custom::insert method which have array argument(For example, [{foo => 1, bar => 2}, {foo => 3, bar => 4}])
     become slow. (Performance down 1)

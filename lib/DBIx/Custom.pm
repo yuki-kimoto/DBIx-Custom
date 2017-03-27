@@ -1452,6 +1452,7 @@ sub update_or_insert {
 
 # DEPRECATED
 sub count {
+  _deprecate('0.39', "DBIx::Custom::count method is DEPRECATED!");
   shift->select(column => 'count(*)', @_)->fetch_one->[0]
 }
 
@@ -2835,32 +2836,6 @@ C<now> attribute.
 Execute update statement for all rows.
 Options is same as C<update> method.
 
-=head2 update_or_insert
-
-  # ID
-  $dbi->update_or_insert(
-    {title => 'Perl'},
-    table => 'book',
-    id => 1,
-    primary_key => 'id',
-    option => {
-      select => {
-         append => 'for update'
-      }
-    }
-  );
-
-Update or insert.
-
-C<update_or_insert> method execute C<select> method first to find row.
-If the row is exists, C<update> is executed.
-If not, C<insert> is executed.
-
-C<OPTIONS>
-
-C<update_or_insert> method use all common option
-in C<select>, C<update>, C<delete>, and has the following new ones.
-
 =over 4
 
 =item option
@@ -2998,6 +2973,7 @@ L<DBIx::Custom::Model>
   DBIx::Custom::Model::update_or_insert method is DEPRECATED!
   DBIx::Custom::Model::primary_key attribute is DEPRECATED!
   DBIx::Custom::Model::helper method is DEPRECATED!
+  DBIx::Custom::count method # will be removed at 2022/5/1
 
 =head1 BACKWARDS COMPATIBILITY POLICY
 
