@@ -2955,12 +2955,12 @@ Suppress deprecation warnings before specified version.
 L<DBIx::Custom>
 
   # Methods
-  DBIx::Custom::helper method # will be removed at 2022/5/1
   DBIx::Custom AUTOLOAD feature # will be removed at 2022/5/1
+  DBIx::Custom::helper method # will be removed at 2022/5/1
   DBIx::Custom::update_or_insert method is DEPRECATED! # will be removed at 2022/5/1
   DBIx::Custom::count method # will be removed at 2022/5/1
-  DBIx::Custom::select,update,delete method's id option is DEPRECATED! # will be removed at 2022/5/1
   DBIx::Custom::select,update,delete method's primary_key option is DEPRECATED! # will be removed at 2022/5/1
+  DBIx::Custom::select,update,delete method's id option is DEPRECATED! # will be removed at 2022/5/1
 
 L<DBIx::Custom::Result>
   
@@ -2970,10 +2970,10 @@ L<DBIx::Custom::Result>
 L<DBIx::Custom::Model>
 
   DBIx::Custom::Model AUTOLOAD feature # will be removed at 2022/5/1
-  DBIx::Custom::Model::update_or_insert method is DEPRECATED!
-  DBIx::Custom::Model::primary_key attribute is DEPRECATED!
-  DBIx::Custom::Model::helper method is DEPRECATED!
-  DBIx::Custom::count method # will be removed at 2022/5/1
+  DBIx::Custom::Model::helper method is DEPRECATED! # will be removed at 2022/5/1
+  DBIx::Custom::Model::update_or_insert method is DEPRECATED! # will be removed at 2022/5/1
+  DBIx::Custom::Model::count method # will be removed at 2022/5/1
+  DBIx::Custom::Model::primary_key attribute is DEPRECATED! # will be removed at 2022/5/1
 
 =head1 BACKWARDS COMPATIBILITY POLICY
 
