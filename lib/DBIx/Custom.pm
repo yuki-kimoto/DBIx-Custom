@@ -2995,8 +2995,9 @@ L<DBIx::Custom::Result>
 L<DBIx::Custom::Model>
 
   DBIx::Custom::Model AUTOLOAD feature # will be removed at 2022/5/1
-  DBIx::Custom::Model::count method is DEPRECATED!
   DBIx::Custom::Model::update_or_insert method is DEPRECATED!
+  DBIx::Custom::Model::primary_key attribute is DEPRECATED!
+  DBIx::Custom::Model::helper method is DEPRECATED!
 
 =head1 BACKWARDS COMPATIBILITY POLICY
 
