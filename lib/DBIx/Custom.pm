@@ -156,7 +156,6 @@ sub delete {
   # Where
   my $where;
   if (defined $opt{id}) {
-    $opt{side_effect} = 1;
     $where = $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table}) ;
   }
   else {
@@ -303,9 +302,6 @@ sub execute {
 
   # Return query
   if ($opt{query}) {
-    if ($opt{side_effect}) {
-      croak "Can't use query option because options which have side effect(id, mtime, ctime) are used";
-    }
     return $query;
   }
   
@@ -644,7 +640,6 @@ sub select {
   # Where
   my $where;
   if (defined $opt{id}) {
-    $opt{side_effect} = 1;
     $where = $self->_id_to_param($opt{id}, $opt{primary_key}, @$found_tables ? $found_tables->[-1] : undef) ;
   }
   else {
@@ -724,7 +719,6 @@ sub insert {
   
   # Created time and updated time
   if (defined $opt{ctime} || defined $opt{mtime}) {
-    $opt{side_effect} = 1;
     
     for my $param (@$params) {
       $param = {%$param};
@@ -741,7 +735,6 @@ sub insert {
   
   # Merge id to parameter
   if (defined $opt{id} && !$multi) {
-    $opt{side_effect} = 1;
     
     _deprecate('0.39', "DBIx::Custom::insert method's id option is DEPRECATED!");
     
@@ -798,7 +791,6 @@ sub update {
   
   # Created time and updated time
   if (defined $opt{mtime}) {
-    $opt{side_effect} = 1;
     $param = {%$param};
     my $now = $self->now;
     $now = $now->() if ref $now eq 'CODE';
@@ -811,7 +803,6 @@ sub update {
   # Where
   my $where;
   if (defined $opt{id}) {
-    $opt{side_effect} = 1;
     $where = $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table}) ;
   }
   else {
