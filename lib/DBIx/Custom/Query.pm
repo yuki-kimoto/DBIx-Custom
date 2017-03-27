@@ -25,7 +25,7 @@ sub build {
   
   # Create bind values
   my @bind;
-  my @types;
+  my @bind_value_types;
   my %count;
   my %not_exists;
   for my $column (@$columns) {
@@ -64,15 +64,15 @@ sub build {
       $bind[-1] = $tf2->($bind[-1]) if $tf2;
     }
    
-    # Bind types
-    push @types, $bind_type->{$column};
+    # Bind value types
+    push @bind_value_types, $bind_type->{$column};
     
     # Count up 
     $count{$column}++;
   }
   
   $self->bind_values(\@bind);
-  $self->bind_value_types(\@types);
+  $self->bind_value_types(\@bind_value_types);
 }
 
 1;

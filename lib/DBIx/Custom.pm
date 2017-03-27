@@ -291,6 +291,7 @@ sub execute {
   $query->sql($parsed_sql);
   $query->columns($columns);
   $query->bind_type($opt{bind_type});
+  
   $query->{_filter} = $filter;
   $query->{_type_filters} = $type_filters;
   $query->{_type_rule_is_called} = $self->{_type_rule_is_called};
@@ -301,7 +302,12 @@ sub execute {
   $query->build;
 
   # Return query
-  return $query if $opt{query};
+  if ($opt{query}) {
+    if ($opt{side_effect}) {
+      croak "Can't use query option because options which have side effect(id, mtime, ctime) are used";
+    }
+    return $query;
+  }
   
   # Prepare statement handle
   my $sth;
@@ -2197,6 +2203,11 @@ You can prepare sql and execute SQL by L<DBI> directry.
   
   my $sth = $dbi->dbh->prepare($sql);
   $sth->execute($sql, @$bind_values);
+
+If you know parameters have no duplicate column name, have no filter,
+you get bind values in the following fastest way.
+
+my $bind_values = [map { $param->{$_} } @columns]
 
 =back
 
