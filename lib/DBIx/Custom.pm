@@ -156,6 +156,7 @@ sub delete {
   # Where
   my $where;
   if (defined $opt{id}) {
+    $opt{side_effect} = 1;
     $where = $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table}) ;
   }
   else {
@@ -587,7 +588,7 @@ sub select {
   my $found_tables = [];
   push @$found_tables, $table if defined $table;
   
-  $opt{param} ||= {};
+  my $param = delete $opt{param} || {};
   
   # Select statement
   my $sql = 'select ';
@@ -628,18 +629,19 @@ sub select {
   $sql =~ s/, $/ /;
 
   # Add tables in parameter
-  unshift @$found_tables, @{$self->_search_tables(join(' ', keys %{$opt{param}}) || '')};
+  unshift @$found_tables, @{$self->_search_tables(join(' ', keys %$param) || '')};
   
   # Where
   my $where;
   if (defined $opt{id}) {
+    $opt{side_effect} = 1;
     $where = $self->_id_to_param($opt{id}, $opt{primary_key}, @$found_tables ? $found_tables->[-1] : undef) ;
   }
   else {
     $where = $opt{where};
   }
   my $w = $self->_where_clause_and_param($where, $opt{id});
-  $opt{param} = $self->merge_param($opt{param}, $w->{param});
+  $param = $self->merge_param($param, $w->{param});
   
   # Search table names in where clause
   unshift @$found_tables, @{$self->_search_tables($w->{clause})};
@@ -666,7 +668,7 @@ sub select {
   $sql .= "$w->{clause} ";
   
   # Execute query
-  return $self->execute($sql, delete $opt{param}, %opt);
+  return $self->execute($sql, $param, %opt);
 }
 
 sub setup_model {
@@ -712,6 +714,8 @@ sub insert {
   
   # Created time and updated time
   if (defined $opt{ctime} || defined $opt{mtime}) {
+    $opt{side_effect} = 1;
+    
     for my $param (@$params) {
       $param = {%$param};
     }
@@ -727,6 +731,8 @@ sub insert {
   
   # Merge id to parameter
   if (defined $opt{id} && !$multi) {
+    $opt{side_effect} = 1;
+    
     _deprecate('0.39', "DBIx::Custom::insert method's id option is DEPRECATED!");
     
     for my $param (@$params) {
@@ -782,6 +788,7 @@ sub update {
   
   # Created time and updated time
   if (defined $opt{mtime}) {
+    $opt{side_effect} = 1;
     $param = {%$param};
     my $now = $self->now;
     $now = $now->() if ref $now eq 'CODE';
@@ -794,6 +801,7 @@ sub update {
   # Where
   my $where;
   if (defined $opt{id}) {
+    $opt{side_effect} = 1;
     $where = $self->_id_to_param($opt{id}, $opt{primary_key}, $opt{table}) ;
   }
   else {
