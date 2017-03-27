@@ -44,11 +44,13 @@ $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
       user => $user,
       password => $password
     );
-  
   my $query1 = $dbi1->execute('SELECT SLEEP(1), 3', undef, query => 1);
   my $sth1 = $dbi1->dbh->prepare($query1->sql, {async => 1});
+  my $mysql_fd1 = $dbi1->dbh->mysql_fd;
   $sth1->execute;
+  
   my $result1 = $dbi1->create_result($sth1);
+
 
   my $dbi2 = DBIx::Custom->connect(
     dsn => "dbi:mysql:database=$database;host=localhost;port=10000",
@@ -57,6 +59,7 @@ $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
   );
   my $query2 = $dbi2->select('key1', table => 'table1', query => 1);
   my $sth2 = $dbi2->dbh->prepare($query2->sql, {async => 1});
+  my $mysql_fd2 = $dbi2->dbh->mysql_fd;
   $sth2->execute(@{$query2->bind_values});
   my $result2 = $dbi2->create_result($sth2);
 
@@ -71,7 +74,7 @@ $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 
   my $mysql_watcher;
   $mysql_watcher = AnyEvent->io(
-    fh   => $dbi1->dbh->mysql_fd,
+    fh   => $mysql_fd1,
     poll => 'r',
     cb   => sub {
       my $row = $result1->fetch_one;
@@ -83,7 +86,7 @@ $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
   );
 
   my $mysql_watcher2= AnyEvent->io(
-    fh   => $dbi2->dbh->mysql_fd,
+    fh   => $mysql_fd2,
     poll => 'r',
     cb   => sub {
       my $row = $result2->fetch_one;
