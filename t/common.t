@@ -331,6 +331,7 @@ require MyDBI1;
 # query option
 {
   my $dbi = DBIx::Custom->connect;
+  
   eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1);
   

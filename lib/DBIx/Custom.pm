@@ -1452,7 +1452,6 @@ sub update_or_insert {
 
 # DEPRECATED
 sub count {
-  _deprecate('0.39', "DBIx::Custom::count method is DEPRECATED!");
   shift->select(column => 'count(*)', @_)->fetch_one->[0]
 }
 

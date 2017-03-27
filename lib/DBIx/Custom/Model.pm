@@ -7,35 +7,10 @@ use DBIx::Custom::Util qw/_subname _deprecate/;
 # Carp trust relationship
 push @DBIx::Custom::CARP_NOT, __PACKAGE__;
 
-has [qw/dbi table ctime mtime bind_type join primary_key/];
+has [qw/dbi table ctime mtime bind_type join/];
 has columns => sub { [] };
 
 our $AUTOLOAD;
-
-sub AUTOLOAD {
-  my $self = shift;
-  
-  _deprecate('0.39', "DBIx::Custom::Model AUTOLOAD feature is DEPRECATED!");
-  
-  # Method name
-  my ($package, $mname) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
-  
-  # Method
-  $self->{_methods} ||= {};
-  if (my $method = $self->{_methods}->{$mname}) {
-    return $self->$method(@_)
-  }
-  elsif (my $dbi_method = $self->dbi->can($mname)) {
-    $self->dbi->$dbi_method(@_);
-  }
-  elsif ($self->{dbh} && (my $dbh_method = $self->dbh->can($mname))) {
-    $self->dbi->dbh->$dbh_method(@_);
-  }
-  else {
-    croak qq{Can't locate object method "$mname" via "$package" }
-      . _subname;
-  }
-}
 
 my @methods = qw(insert update update_all delete delete_all select count);
 for my $method (@methods) {
@@ -69,6 +44,17 @@ for my $method (@methods) {
   croak $code if $@;
 }
 
+sub primary_key {
+  _deprecate('0.39', "DBIx::Custom::Model::primary_key attribute is DEPRECATED!");
+
+  if (@_ == 1) {
+    return $_[0]{'primary_key'};
+  }
+  $_[0]{'primary_key'} = $_[1];
+  $_[0];
+};
+
+# DEPRECATED
 sub update_or_insert {
   my ($self, $param, %opt) = @_;
 
@@ -89,8 +75,34 @@ sub update_or_insert {
   else { croak "selected row must be one " . _subname }
 }
 
+# DEPRECATED
+sub AUTOLOAD {
+  my $self = shift;
+  
+  _deprecate('0.39', "DBIx::Custom::Model AUTOLOAD feature is DEPRECATED!");
+  
+  # Method name
+  my ($package, $mname) = $AUTOLOAD =~ /^([\w\:]+)\:\:(\w+)$/;
+  
+  # Method
+  $self->{_methods} ||= {};
+  if (my $method = $self->{_methods}->{$mname}) {
+    return $self->$method(@_)
+  }
+  elsif (my $dbi_method = $self->dbi->can($mname)) {
+    $self->dbi->$dbi_method(@_);
+  }
+  elsif ($self->{dbh} && (my $dbh_method = $self->dbh->can($mname))) {
+    $self->dbi->dbh->$dbh_method(@_);
+  }
+  else {
+    croak qq{Can't locate object method "$mname" via "$package" }
+      . _subname;
+  }
+}
 sub DESTROY { }
 
+# DEPRECATED
 sub helper {
   my $self = shift;
   
@@ -149,19 +161,12 @@ my $model = DBIx::Custom::Model->new(table => 'books');
 
 =head1 ATTRIBUTES
 
-=head2 dbi
+=head2 table
 
-  my $dbi = $model->dbi;
-  $model = $model->dbi($dbi);
+  my $model = $model->table;
+  $model = $model->table('book');
 
-L<DBIx::Custom> object.
-
-=head2 ctime
-
-  my $ctime = $model->ctime;
-  $model = $model->ctime('created_time');
-
-Create timestamp column, this is passed to C<insert> or C<update> method.
+Table name, this is passed to C<select> method.
 
 =head2 join
 
@@ -172,20 +177,12 @@ Create timestamp column, this is passed to C<insert> or C<update> method.
   
 Join clause, this value is passed to C<select> method.
 
-=head2 primary_key
+=head2 dbi
 
-  my $primary_key = $model->primary_key;
-  $model = $model->primary_key(['id', 'number']);
+  my $dbi = $model->dbi;
+  $model = $model->dbi($dbi);
 
-Primary key,this is passed to C<insert>, C<update>,
-C<delete>, and C<select> method.
-
-=head2 table
-
-  my $model = $model->table;
-  $model = $model->table('book');
-
-Table name, this is passed to C<select> method.
+L<DBIx::Custom> object.
 
 =head2 bind_type
 
@@ -203,6 +200,21 @@ and C<select> method
 
 Updated timestamp column, this is passed to C<update> method.
 
+=head2 ctime
+
+  my $ctime = $model->ctime;
+  $model = $model->ctime('created_time');
+
+Create timestamp column, this is passed to C<insert> or C<update> method.
+
+=head2 primary_key
+
+  my $primary_key = $model->primary_key;
+  $model = $model->primary_key(['id', 'number']);
+
+Primary key,this is passed to C<insert>, C<update>,
+C<delete>, and C<select> method.
+
 =head1 METHODS
 
 L<DBIx::Custom::Model> inherits all methods from L<Object::Simple>,
@@ -211,7 +223,7 @@ and implements the following new ones.
 
 =head2 count
 
-  my $count = $model->count;
+  my $count = $model->count(...);
 
 Get rows count.
 
@@ -237,26 +249,6 @@ you don't have to specify options if you set attribute in model.
   
 Same as C<insert> of L<DBIx::Custom> except that
 you don't have to specify options if you set attribute in model.
-
-=head2 helper
-
-  $model->helper(
-    update_or_insert => sub {
-      my $self = shift;
-      
-      # ...
-    },
-    find_or_create   => sub {
-      my $self = shift;
-      
-      # ...
-    }
-  );
-
-Register helper. These helper is called directly from L<DBIx::Custom::Model> object.
-
-  $model->update_or_insert;
-  $model->find_or_create;
 
 =head2 mycolumn
 
@@ -297,13 +289,6 @@ you don't have to specify options if you set attribute in model.
   $model->update_all(\%param);
   
 Same as C<update_all> of L<DBIx::Custom> except that
-you don't have to specify options if you set attribute in model.
-
-=head2 update_or_insert
-
-  $model->update_or_insert(...);
-  
-Same as C<update> of L<DBIx::Custom> except that
 you don't have to specify options if you set attribute in model.
 
 =cut
