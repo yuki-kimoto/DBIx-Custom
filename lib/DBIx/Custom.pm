@@ -357,11 +357,15 @@ sub execute {
     my $result = $self->result_class->new(
       sth => $sth,
       dbi => $self,
-      type_rule => {
+    );
+    
+    if ($self->{_type_rule_is_called}) {
+      $result->type_rule({
         from1 => $self->type_rule->{from1},
         from2 => $self->type_rule->{from2}
-      },
-    );
+      });
+      $result->{_has_filter} = 1;
+    }
     
     return $result;
   }
