@@ -1494,23 +1494,20 @@ DBIx::Custom - DBI extension to execute insert, update, delete, and select easil
     option => {mysql_enable_utf8 => 1}
   );
   
+  # Create model
+  $dbi->create_model({table => 'book'});
+  
   # Insert 
-  $dbi->insert({title => 'Perl', author => 'Ken'}, table  => 'book');
+  $dbi->model('book')->insert({title => 'Perl', author => 'Ken'});
   
   # Update 
-  $dbi->update({title => 'Perl', author => 'Ken'}, table  => 'book',
-    where  => {id => 5});
+  $dbi->model('book')->update({title => 'Perl', author => 'Ken'}, where  => {id => 5});
   
   # Delete
-  $dbi->delete(table  => 'book', where => {author => 'Ken'});
+  $dbi->model('book')->delete(where => {author => 'Ken'});
   
   # Select
-  #   select title, author from book where author = ?
-  my $result = $dbi->select(
-    ['title', 'author'],
-    table  => 'book',
-    where  => {author => 'Ken'}
-  );
+  my $result = $dbi->model('book')->select(['title', 'author'], where  => {author => 'Ken'});
   
   # Select, more complex
   #   select book.title as book.title,
@@ -1520,12 +1517,11 @@ DBIx::Custom - DBI extension to execute insert, update, delete, and select easil
   #     left outer join company on book.company_id = company.id
   #   where book.author = ?
   #   order by id limit 0, 5
-  my $result = $dbi->select(
+  my $result = $dbi->model('book')->select(
     [
       {book => [qw/title author/]},
       {company => ['name']}
     ],
-    table  => 'book',
     where  => {'book.author' => 'Ken'},
     join => ['left outer join company on book.company_id = company.id'],
     append => 'order by id limit 0, 5'
@@ -1535,7 +1531,7 @@ DBIx::Custom - DBI extension to execute insert, update, delete, and select easil
   my $rows = $result->all;
   my $row = $result->one;
   
-  # Execute SQL.
+  # Execute SQL with named place holder
   my $result = $dbi->execute(
     "select id from book where author = :author and title like :title",
     {author => 'ken', title => '%Perl%'}

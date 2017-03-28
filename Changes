@@ -1,4 +1,4 @@
-0.39 2017-3-22
+0.39 2017-3-28
   ---------------------------------------------------
   NOTE: This release add many DEPRECATED warnings.
   Maybe after these DEPRECATED period, DBIx::Custom will be more stable.
@@ -30,6 +30,7 @@
     you can pass sql and bind values to any asyncronous support database module,
     (for example, AnyEvent::DBI or Mojo::Pg)
   - DBIx::Connector become enable by default
+  - Model columns is automatically set when DBIx::Custome::create_model and DBIx::Custome::include_model called
   
 0.38 2017-3-18
   ---------------------------------------------------
