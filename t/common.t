@@ -240,6 +240,83 @@ my $model;
   sub list { shift->select; }
 }
 
+# mycolumn and column
+{
+  my $dbi = DBIx::Custom->connect;
+  $dbi->user_table_info($user_table_info);
+  eval { $dbi->execute("drop table $table1") };
+  eval { $dbi->execute("drop table $table2") };
+  $dbi->execute($create_table1);
+  $dbi->execute($create_table2);
+
+  $dbi->include_model('MyModel6');
+
+  $dbi->separator('__');
+  $dbi->setup_model;
+  $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+  $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
+  my $model = $dbi->model($table1);
+  
+  {
+    my $result = $model->select(
+      column => [$model->mycolumn, $model->column($table2)],
+      where => {"$table1.$key1" => 1}
+    );
+    is_deeply($result->one,
+            {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
+  }
+  
+  {
+    my $result = $model->select(
+      column => [$model->mycolumn, $model->column($table2 => '*')],
+      where => {"$table1.$key1" => 1}
+    );
+    is_deeply($result->one,
+            {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
+  }
+  
+  {
+    my $result = $model->select(
+      column => [
+        {__MY__ => '*'},
+        {$table2 => '*'}
+      ],
+      where => {"$table1.$key1" => 1}
+    );
+    is_deeply($result->one,
+            {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
+  }
+  
+  {
+    my $result = $model->select(
+      column => [
+        {__MY2__ => '*'},
+        {$table2 => '*'}
+      ],
+      where => {"$table1.$key1" => 1},
+      mytable_symbol => '__MY2__'
+    );
+    is_deeply($result->one,
+            {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
+  }
+  
+  {
+    my $original = $model->dbi->mytable_symbol;
+    $model->dbi->mytable_symbol('__MY2__');
+    my $result = $model->select(
+      column => [
+        {__MY2__ => '*'},
+        {$table2 => '*'}
+      ],
+      where => {"$table1.$key1" => 1},
+    );
+    is_deeply($result->one,
+            {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
+    $model->dbi->mytable_symbol($original);
+  }
+}
+
+
 # get_columns_from_db
 {
   my $dbi = DBIx::Custom->connect;
@@ -1773,82 +1850,6 @@ my $model;
   is_deeply($result->stash, {}, 'default');
   $result->stash->{foo} = 1;
   is($result->stash->{foo}, 1, 'get and set');
-}
-
-# mycolumn and column
-{
-  my $dbi = DBIx::Custom->connect;
-  $dbi->user_table_info($user_table_info);
-  eval { $dbi->execute("drop table $table1") };
-  eval { $dbi->execute("drop table $table2") };
-  $dbi->execute($create_table1);
-  $dbi->execute($create_table2);
-
-  $dbi->include_model('MyModel6');
-
-  $dbi->separator('__');
-  $dbi->setup_model;
-  $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
-  $dbi->insert({$key1 => 1, $key3 => 3}, table => $table2);
-  my $model = $dbi->model($table1);
-  
-  {
-    my $result = $model->select(
-      column => [$model->mycolumn, $model->column($table2)],
-      where => {"$table1.$key1" => 1}
-    );
-    is_deeply($result->one,
-            {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
-  }
-  
-  {
-    my $result = $model->select(
-      column => [$model->mycolumn, $model->column($table2 => '*')],
-      where => {"$table1.$key1" => 1}
-    );
-    is_deeply($result->one,
-            {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
-  }
-  
-  {
-    my $result = $model->select(
-      column => [
-        {__MY__ => '*'},
-        {$table2 => '*'}
-      ],
-      where => {"$table1.$key1" => 1}
-    );
-    is_deeply($result->one,
-            {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
-  }
-  
-  {
-    my $result = $model->select(
-      column => [
-        {__MY2__ => '*'},
-        {$table2 => '*'}
-      ],
-      where => {"$table1.$key1" => 1},
-      mytable_symbol => '__MY2__'
-    );
-    is_deeply($result->one,
-            {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
-  }
-  
-  {
-    my $original = $model->dbi->mytable_symbol;
-    $model->dbi->mytable_symbol('__MY2__');
-    my $result = $model->select(
-      column => [
-        {__MY2__ => '*'},
-        {$table2 => '*'}
-      ],
-      where => {"$table1.$key1" => 1},
-    );
-    is_deeply($result->one,
-            {$key1 => 1, $key2 => 2, u2"${table2}__$key1" => 1, u2"${table2}__$key3" => 3});
-    $model->dbi->mytable_symbol($original);
-  }
 }
 
 # values_clause

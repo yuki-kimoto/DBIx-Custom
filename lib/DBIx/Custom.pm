@@ -189,6 +189,10 @@ sub create_model {
   my $model = $model_class->new($opt);
   weaken $model->{dbi};
   $model->table($model_table) unless $model->table;
+
+  if (!$model->columns || !@{$model->columns}) {
+    $model->columns($self->get_columns_from_db($model->table));
+  }
   
   # Set model
   $self->model($model->table, $model);
@@ -453,7 +457,9 @@ sub include_model {
     $opt->{model_class} = $mclass if $mclass;
     $opt->{name}        = $model_name if $model_name;
     $opt->{table}       = $model_table if $model_table;
+    
     $self->create_model($opt);
+    1;
   }
   
   return $self;
@@ -679,24 +685,8 @@ sub select {
 sub setup_model {
   my ($self, %opt) = @_;
   
-  # Setup model
-  $self->each_column(
-    sub {
-      my ($self, $table, $column, $column_info) = @_;
-      my $schema = $column_info->{TABLE_SCHEM};
-      
-      my $default_schema = $self->default_schema;
-      
-      if (my $model = $self->models->{$table}) {
-        if (!defined $default_schema || $default_schema eq $schema) {
-          push @{$model->columns}, $column;
-        }
-      }
-      if (my $fullqualified_model = $self->models->{"$schema.$table"}) {
-        push @{$fullqualified_model->columns}, $column;
-      }
-    }
-  );
+  _deprecate('0.39', "DBIx::Custom::setup method is DEPRECATED! columns is automatically set when create_model or include_model is called");
+  
   return $self;
 }
 
@@ -1023,7 +1013,11 @@ sub get_columns_from_db {
     $table = $schema_table;
   }
   
-  my $sth_columns = $self->dbh->column_info(undef, $schema, $table, "%");
+  my $sth_columns;
+  eval {$sth_columns = $self->dbh->column_info(undef, $schema, $table, "%") };
+  if ($@) {
+    return;
+  }
   
   my $columns;
   while (my $column_info = $sth_columns->fetchrow_hashref) {
@@ -1499,7 +1493,7 @@ DBIx::Custom - DBI extension to execute insert, update, delete, and select easil
     password => '!LFKD%$&',
     option => {mysql_enable_utf8 => 1}
   );
-
+  
   # Insert 
   $dbi->insert({title => 'Perl', author => 'Ken'}, table  => 'book');
   
@@ -1509,7 +1503,7 @@ DBIx::Custom - DBI extension to execute insert, update, delete, and select easil
   
   # Delete
   $dbi->delete(table  => 'book', where => {author => 'Ken'});
-
+  
   # Select
   #   select title, author from book where author = ?
   my $result = $dbi->select(
@@ -1517,7 +1511,7 @@ DBIx::Custom - DBI extension to execute insert, update, delete, and select easil
     table  => 'book',
     where  => {author => 'Ken'}
   );
-
+  
   # Select, more complex
   #   select book.title as book.title,
   #     book.author as book.author,
@@ -1659,8 +1653,7 @@ default to the following values.
   $dbi = $dbi->exclude_table(qr/pg_/);
 
 Excluded table regex.
-C<each_column>, C<each_table>, C<type_rule>,
-and C<setup_model> methods ignore matching tables.
+C<each_column>, C<each_table>, C<type_rule>
 
 =head2 filters
 
@@ -2690,13 +2683,6 @@ See also L<DBIx::Custom::Where> to know how to create where clause.
   
 =back
 
-=head2 setup_model
-
-  $dbi->setup_model;
-
-Setup all model objects.
-C<columns> of model object is automatically set, parsing database information.
-
 =head2 type_rule
 
   $dbi->type_rule(
@@ -2987,6 +2973,7 @@ L<DBIx::Custom>
   DBIx::Custom::count method # will be removed at 2022/5/1
   DBIx::Custom::select,update,delete method's primary_key option is DEPRECATED! # will be removed at 2022/5/1
   DBIx::Custom::select,update,delete method's id option is DEPRECATED! # will be removed at 2022/5/1
+  DBIx::Custom::setup method is DEPRECATED! # will be removed at 2022/5/1
 
 L<DBIx::Custom::Result>
   
