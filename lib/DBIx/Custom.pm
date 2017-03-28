@@ -1524,7 +1524,7 @@ DBIx::Custom - DBI extension to execute insert, update, delete, and select easil
   );
   
   # Create model
-  $dbi->create_model({table => 'book'});
+  $dbi->create_model('book');
   
   # Insert 
   $dbi->model('book')->insert({title => 'Perl', author => 'Ken'});
