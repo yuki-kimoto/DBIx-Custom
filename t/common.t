@@ -240,48 +240,6 @@ my $model;
   sub list { shift->select; }
 }
 
-{
-  package MyDBI7;
-  
-  use base 'DBIx::Custom';
-  
-  sub connect {
-    my $self = shift->SUPER::connect(@_);
-    
-    $self->include_model('MyModel6');
-    
-    
-    return $self;
-  }
-}
-{
-  package MyDBI8;
-  
-  use base 'DBIx::Custom';
-  
-  sub connect {
-    my $self = shift->SUPER::connect(@_);
-    
-    $self->include_model('MyModel7');
-    
-    return $self;
-  }
-}
-
-{
-  package MyDBI9;
-  
-  use base 'DBIx::Custom';
-  
-  sub connect {
-    my $self = shift->SUPER::connect(@_);
-    
-    $self->include_model('MyModel8::MyModel1');
-    
-    return $self;
-  }
-}
-
 # get_columns_from_db
 {
   my $dbi = DBIx::Custom->connect;
@@ -1819,7 +1777,8 @@ my $model;
 
 # mycolumn and column
 {
-  my $dbi = MyDBI7->connect;
+  my $dbi = DBIx::Custom->connect;
+  $dbi->include_model('MyModel6');
   $dbi->user_table_info($user_table_info);
   eval { $dbi->execute("drop table $table1") };
   eval { $dbi->execute("drop table $table2") };
@@ -1907,7 +1866,8 @@ EOS
 
 # mycolumn
 {
-  my $dbi = MyDBI8->connect;
+  my $dbi = DBIx::Custom->connect;
+  $dbi->include_model('MyModel7');
   $dbi->user_table_info($user_table_info);
   eval { $dbi->execute("drop table $table1") };
   eval { $dbi->execute("drop table $table2") };
@@ -2414,7 +2374,8 @@ EOS
 }
 # column separator is default
 {
-  my $dbi = MyDBI7->connect;
+  my $dbi = DBIx::Custom->connect;
+  $dbi->include_model('MyModel6');
   $dbi->user_table_info($user_table_info);
   eval { $dbi->execute("drop table $table1") };
   eval { $dbi->execute("drop table $table2") };
@@ -3118,7 +3079,8 @@ EOS
 
 # dbi method from model
 {
-  my $dbi = MyDBI9->connect;
+  my $dbi = DBIx::Custom->connect;
+  $dbi->include_model('MyModel8::MyModel1');
   eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1);
   $dbi->setup_model;
@@ -3129,7 +3091,8 @@ EOS
 
 # column table option
 {
-  my $dbi = MyDBI9->connect;
+  my $dbi = DBIx::Custom->connect;
+  $dbi->include_model('MyModel8::MyModel1');
   $dbi->user_table_info($user_table_info);
   eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1);
