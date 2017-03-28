@@ -111,24 +111,6 @@ my $user_table_info;
 my $model;
 
 {
-  package MyDBI4;
-
-  use strict;
-  use warnings;
-
-  use base 'DBIx::Custom';
-
-  sub connect {
-    my $self = shift->SUPER::connect(@_);
-    
-    $self->include_model(
-      MyModel2 => [
-          $table1,
-          {class => $table2, name => $table2}
-      ]
-    );
-  }
-
   package MyModel2::Base1;
 
   use strict;
@@ -258,33 +240,6 @@ my $model;
   sub list { shift->select; }
 }
 
-{
-   package MyDBI5;
-
-  use strict;
-  use warnings;
-
-  use base 'DBIx::Custom';
-
-  sub connect {
-    my $self = shift->SUPER::connect(@_);
-    
-    $self->include_model('MyModel4');
-  }
-}
-{
-  package MyDBI6;
-  
-  use base 'DBIx::Custom';
-  
-  sub connect {
-    my $self = shift->SUPER::connect(@_);
-    
-    $self->include_model('MyModel5');
-    
-    return $self;
-  }
-}
 {
   package MyDBI7;
   
@@ -2269,7 +2224,9 @@ EOS
 # model insert id and primary_key option
 {
  {
-    my $dbi = MyDBI6->connect;
+    my $dbi = DBIx::Custom->connect;
+    $dbi->include_model('MyModel5');
+
     eval { $dbi->execute("drop table $table1") };
     $dbi->execute($create_table1_2);
     $dbi->model($table1)->insert(
@@ -2284,7 +2241,8 @@ EOS
   }
   
   {
-    my $dbi = MyDBI6->connect;
+    my $dbi = DBIx::Custom->connect;
+    $dbi->include_model('MyModel5');
     eval { $dbi->execute("drop table $table1") };
     $dbi->execute($create_table1_2);
     $dbi->model($table1)->insert(
@@ -2344,9 +2302,12 @@ EOS
     is($dbi->select(table => $table1)->one->{$key2}, 2);
     is($dbi->select(table => $table1)->one->{$key3}, 4);
 
-
+  }
+  
+  {
     # model update and id option
-    $dbi = MyDBI6->connect;
+    my $dbi = DBIx::Custom->connect;
+    $dbi->include_model('MyModel5');
     eval { $dbi->execute("drop table $table1") };
     $dbi->execute($create_table1_2);
     $dbi->insert({$key1 => 1, $key2 => 2, $key3 => 3}, table => $table1);
@@ -2386,7 +2347,8 @@ EOS
 
 # model delete and id option
 {
-  my $dbi = MyDBI6->connect;
+  my $dbi = DBIx::Custom->connect;
+  $dbi->include_model('MyModel5');
   eval { $dbi->execute("drop table $table1") };
   eval { $dbi->execute("drop table $table2") };
   eval { $dbi->execute("drop table $table3") };
@@ -3343,7 +3305,14 @@ EOS
   }
   
   {
-    my $dbi = MyDBI4->connect;
+    my $dbi = DBIx::Custom->connect;
+    $dbi->include_model(
+      MyModel2 => [
+          $table1,
+          {class => $table2, name => $table2}
+      ]
+    );
+
     {
       eval { $dbi->execute("drop table $table1") };
       $dbi->execute($create_table1);
@@ -3360,7 +3329,8 @@ EOS
     }
   }
   {
-    my $dbi = MyDBI5->connect;
+    my $dbi = DBIx::Custom->connect;
+    $dbi->include_model('MyModel4');
     {
       eval { $dbi->execute("drop table $table1") };
       eval { $dbi->execute("drop table $table2") };
