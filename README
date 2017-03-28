@@ -8,21 +8,55 @@ EXAMPLE
   use DBIx::Custom;
   
   # Connect
-  my $dbi = DBIx::Custom->connect(dsn => "dbi:SQLite:dbname=$database");
-
+  my $dbi = DBIx::Custom->connect(
+    "dbi:mysql:database=dbname",
+    'ken',
+    '!LFKD%$&',
+    {mysql_enable_utf8 => 1}
+  );
+  
+  # Create model
+  $dbi->create_model({table => 'book'});
+  
   # Insert 
-  $dbi->insert({title => 'Perl', author => 'Ken'}, table  => 'book');
+  $dbi->model('book')->insert({title => 'Perl', author => 'Ken'});
   
   # Update 
-  $dbi->update({title => 'Perl', author => 'Ken'}, table  => 'book',
-    where  => {id => 5});
+  $dbi->model('book')->update({title => 'Perl', author => 'Ken'}, where  => {id => 5});
   
   # Delete
-  $dbi->delete(table  => 'book', where => {author => 'Ken'});
-
+  $dbi->model('book')->delete(where => {author => 'Ken'});
+  
   # Select
-  my $result = $dbi->select(table => 'book');
+  my $result = $dbi->model('book')->select(['title', 'author'], where  => {author => 'Ken'});
+  
+  # Select, more complex
+  #   select book.title as book.title,
+  #     book.author as book.author,
+  #     comnapy.name as company.name
+  #   form book
+  #     left outer join company on book.company_id = company.id
+  #   where book.author = ?
+  #   order by id limit 0, 5
+  my $result = $dbi->model('book')->select(
+    [
+      {book => [qw/title author/]},
+      {company => ['name']}
+    ],
+    where  => {'book.author' => 'Ken'},
+    join => ['left outer join company on book.company_id = company.id'],
+    append => 'order by id limit 0, 5'
+  );
+  
+  # Get all rows or only one row
   my $rows = $result->all;
+  my $row = $result->one;
+  
+  # Execute SQL with named place holder
+  my $result = $dbi->execute(
+    "select id from book where author = :author and title like :title",
+    {author => 'ken', title => '%Perl%'}
+  );
 
 INSTALLATION
 
