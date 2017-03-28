@@ -18,6 +18,16 @@ WriteMakefile(
         'DBIx::Connector' => '0.56',
         'DBI' => '1.605'
     },
+    META_MERGE => {
+        'meta-spec' => { version => 2 },
+        resources => {
+            repository => {
+                type => 'git',
+                url  => 'https://github.com/yuki-kimoto/DBIx-Custom.git',
+                web  => 'https://github.com/yuki-kimoto/DBIx-Custom',
+            },
+        },
+    },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'DBIx-Custom-*' },
     test => {TESTS => 't/*.t t/next/*.t'}
