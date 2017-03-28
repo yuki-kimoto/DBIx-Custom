@@ -225,14 +225,6 @@ L<DBIx::Custom::Model> inherits all methods from L<Object::Simple>,
 and you can use all methods of L<DBIx::Custom> and L<DBI>
 and implements the following new ones.
 
-=head2 count
-
-  my $count = $model->count(...);
-
-Get rows count.
-
-Options is same as C<select> method's ones.
-
 =head2 delete
 
   $model->delete(...);

@@ -1904,14 +1904,6 @@ L<DBIx::Custom> is a wrapper of L<DBI>.
 C<AutoCommit> and C<RaiseError> options are true, 
 and C<PrintError> option is false by default.
 
-=head2 count
-
-  my $count = $dbi->count(table => 'book');
-
-Get rows count.
-
-Options is same as C<select> method's ones.
-
 =head2 create_model
   
   $dbi->create_model('book');
