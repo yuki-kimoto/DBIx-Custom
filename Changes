@@ -1,6 +1,6 @@
 0.39 2017-3-28
   ---------------------------------------------------
-  NOTE: This release add many DEPRECATED warnings.
+  NOTE: This release add some DEPRECATED warnings.
   Maybe after these DEPRECATED period, DBIx::Custom will be more stable.
   ---------------------------------------------------
   - DBIx::Custom::helper method is DEPRECATED!
@@ -17,18 +17,30 @@
   - DBIx::Custom::setup method is DEPRECATED!
     this method has no meaning because
     columns is automatically set when create_model or include_model is called.
+  ------------------------
+  Performance down
+  ------------------------
   - DBIx::Custom::insert method which have array argument(For example, [{foo => 1, bar => 2}, {foo => 3, bar => 4}])
     become slow. (Performance down 1)
   - DBIx::Custom::execute method's reuse option become no more meaning. (Performance down 2)
-  - add EXPERIMENTAL DBIx::Custom::execute query option again. This method return DBIx::Custom::Query object.
-    If you use this option, you can resolve "Performance down 1" and "Performance down 2".
-  - add EXPERIMENTAL DBIx::Custom::create_result method to create result class from statement handle
-  - remove EXPERIMENTAL execute method's async option
-  - remove EXPERIMENTAL async_conf attribute
+  
+  You can resolve above two problem by using query option
+  ------------------------
+  remove EXPERIMENTAL
+  ------------------------
+  - remove EXPERIMENTAL DBIx::Custom::execute method's async option
+  - remove EXPERIMENTAL DBIx::Custom::async_conf attribute
     From this release, DBIx::Custom support only syncronous query,
     but from this release, you can create sql and bind values by excute method's query option
     you can pass sql and bind values to any asyncronous support database module,
     (for example, AnyEvent::DBI or Mojo::Pg)
+  - remove EXPERIMENTAL DBIx::Custom::default_schema attribute
+  -----------------------
+  New features
+  -----------------------
+  - add EXPERIMENTAL DBIx::Custom::execute query option again. This method return DBIx::Custom::Query object.
+    If you use this option, you can resolve "Performance down 1" and "Performance down 2".
+  - add EXPERIMENTAL DBIx::Custom::create_result method to create result class from statement handle
   - DBIx::Connector become enable by default
   - Model columns is automatically set when DBIx::Custome::create_model and DBIx::Custome::include_model called
   - DBIx::Custom::connect method support DBI compatible arguments

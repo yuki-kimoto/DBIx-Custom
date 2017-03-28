@@ -19,7 +19,7 @@ use DBIx::Connector;
 use Encode qw/encode encode_utf8 decode_utf8/;
 use Scalar::Util qw/weaken/;
 
-has [qw/dsn default_schema password quote user exclude_table user_table_info
+has [qw/dsn password quote user exclude_table user_table_info
      user_column_info safety_character/];
 has connector => 1;
 has option => sub { {} };
@@ -930,11 +930,8 @@ sub type_rule {
           }
           
           my $schema = $column_info->{TABLE_SCHEM};
-          my $default_schema = $self->default_schema;
-          if (!defined $default_schema || $default_schema eq $schema) {
-            $self->{"_$into"}{key}{$table}{$column} = $filter;
-            $self->{"_$into"}{dot}{"$table.$column"} = $filter;
-          }
+          $self->{"_$into"}{key}{$table}{$column} = $filter;
+          $self->{"_$into"}{dot}{"$table.$column"} = $filter;
           
           $self->{"_$into"}{key}{"$schema.$table"}{$column} = $filter;
           $self->{"_$into"}{dot}{"$schema.$table.$column"} = $filter;
@@ -2877,16 +2874,6 @@ You can use this in insert statement.
 
 Create a new L<DBIx::Custom::Where> object.
 See L<DBIx::Custom::Where> to know how to create where clause.
-
-=head2 default_schema EXPERIMETNAL
-
-  my $default_schema = $self->default_schema;
-  $dbi = $self->default_schema('public');
-
-schema name. if database has multiple schema,
-type_rule->{into} filter don't work well.
-
-If you set C<default_schema>, type_rule->{into} filter work well.
 
 =head2 create_result EXPERIMENTAL
 
