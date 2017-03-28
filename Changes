@@ -31,7 +31,14 @@
     (for example, AnyEvent::DBI or Mojo::Pg)
   - DBIx::Connector become enable by default
   - Model columns is automatically set when DBIx::Custome::create_model and DBIx::Custome::include_model called
-  
+  - DBIx::Custom::connect method support DBI compatible arguments
+    DBIx::Custom->connect($dsn, $user, $password, $dbh_attrs);
+  - DBIx::Custom::create_model can receive model name only
+    $dbi->create_model('book');
+  - Model name is indepenet from table name.
+    You can write the following
+    $dbi->create_model(name => 'book1', table => 'book');
+
 0.38 2017-3-18
   ---------------------------------------------------
   NOTE: This release remove many DEPRECATED features. 

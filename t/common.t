@@ -107,9 +107,6 @@ my $user_table_info;
   $datetime_datatype = $dbi->datetime_datatype;
 }
 
-# Variables
-my $model;
-
 {
   package MyModel2::Base1;
 
@@ -238,6 +235,54 @@ my $model;
   }
 
   sub list { shift->select; }
+}
+
+# model
+{
+  # model - table name is different
+  {
+    my $dbi = DBIx::Custom->connect;
+    eval { $dbi->execute("drop table $table1") };
+    $dbi->execute($create_table1);
+    $dbi->create_model(name => 'foo', table => $table1);
+
+    $dbi->model('foo')->insert({$key1 => 1, $key2 => 2});
+    is_deeply($dbi->model('foo')->select->all, [{$key1 => 1, $key2 => 2}]);
+  }
+  
+  # model - one argument is table name
+  {
+    my $dbi = DBIx::Custom->connect;
+    eval { $dbi->execute("drop table $table1") };
+    $dbi->execute($create_table1);
+    $dbi->create_model($table1, join => ['aaa']);
+    is_deeply($dbi->model($table1)->join, ['aaa']);
+    $dbi->model($table1)->join([]);
+
+    $dbi->model($table1)->insert({$key1 => 1, $key2 => 2});
+    is_deeply($dbi->model($table1)->select->all, [{$key1 => 1, $key2 => 2}]);
+  }
+}
+
+# DBI compatible connect arguments
+{
+  my $dbi_tmp = DBIx::Custom->new;
+  
+  my $dbi = DBIx::Custom->connect($dbi_tmp->dsn, $dbi_tmp->user, $dbi_tmp->password, {RaiseError => 0}, {last_sql => 'A'});
+  
+  is($dbi->last_sql, 'A');
+  ok(!$dbi->dbh->{RaiseError});
+  
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1);
+  $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+  $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
+  
+  {
+    my $rows = $dbi->select(table => $table1)->all;
+    is_deeply($rows, [{$key1 => 1, $key2 => 2},
+      {$key1 => 3, $key2 => 4}], "table");
+  }
 }
 
 # mycolumn and column

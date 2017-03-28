@@ -184,8 +184,16 @@ sub delete_all { shift->delete(@_, allow_delete_all => 1) }
 sub create_model {
   my $self = shift;
   
+  my $opt;
+  if (@_ % 2 != 0 && !ref $_[0]) {
+    $DB::single = 1;
+    $opt = {table => shift, @_};
+  }
+  else {
+    $opt = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+  }
+  
   # Options
-  my $opt = ref $_[0] eq 'HASH' ? $_[0] : {@_};
   $opt->{dbi} = $self;
   my $model_class = delete $opt->{model_class} || 'DBIx::Custom::Model';
   my $model_name  = delete $opt->{name};
@@ -196,15 +204,16 @@ sub create_model {
   my $model = $model_class->new($opt);
   weaken $model->{dbi};
   $model->table($model_table) unless $model->table;
+  $model->name($model_name);
 
   if (!$model->columns || !@{$model->columns}) {
     $model->columns($self->get_columns_from_db($model->table));
   }
   
   # Set model
-  $self->model($model->table, $model);
+  $self->model($model_name, $model);
   
-  return $self->model($model->table);
+  return $self->model($model->name);
 }
 
 sub execute {
@@ -511,7 +520,7 @@ sub model {
   }
   
   # Check model existence
-  croak qq{Model "$name" is not included } . _subname
+  croak qq{Model "$name" is not yet created } . _subname
     unless $self->models->{$name};
   
   # Get model
@@ -534,8 +543,23 @@ sub mycolumn {
 }
 
 sub new {
-
-  my $self = shift->SUPER::new(@_);
+  my $self = shift;
+  
+  # Same as DBI connect argument
+  if (@_ > 0 && !ref $_[0] && $_[0] =~ /:/) {
+    my $dsn = shift;
+    my $user = shift;
+    my $paddword = shift;
+    my $dbi_option = shift;
+    my $attrs = shift || {};
+    $attrs->{dsn} = $dsn;
+    $attrs->{user} = $user;
+    $attrs->{option} = $dbi_option;
+    $self = $self->SUPER::new($attrs);
+  }
+  else {
+    $self = $self->SUPER::new(@_);
+  }
   
   # Check attributes
   my @attrs = keys %$self;
@@ -1496,10 +1520,10 @@ DBIx::Custom - DBI extension to execute insert, update, delete, and select easil
   
   # Connect
   my $dbi = DBIx::Custom->connect(
-    dsn => "dbi:mysql:database=dbname",
-    user => 'ken',
-    password => '!LFKD%$&',
-    option => {mysql_enable_utf8 => 1}
+    "dbi:mysql:database=dbname",
+    'ken',
+    '!LFKD%$&',
+    {mysql_enable_utf8 => 1}
   );
   
   # Create model
@@ -1857,7 +1881,16 @@ You can change separator by C<separator> attribute.
   book.title as "book-title"
   
 =head2 connect
-
+  
+  # DBI compatible arguments
+  my $dbi = DBIx::Custom->connect(
+    "dbi:mysql:database=dbname",
+    'ken',
+    '!LFKD%$&',
+    {mysql_enable_utf8 => 1}
+  );
+  
+  # pass DBIx::Custom attributes
   my $dbi = DBIx::Custom->connect(
     dsn => "dbi:mysql:database=dbname",
     user => 'ken',
@@ -1880,20 +1913,32 @@ Get rows count.
 Options is same as C<select> method's ones.
 
 =head2 create_model
-
-  my $model = $dbi->create_model(
+  
+  $dbi->create_model('book');
+  $dbi->create_model(
+    'book',
+    join => [
+      'inner join company on book.comparny_id = company.id'
+    ]
+  );
+  $dbi->create_model(
     table => 'book',
-    primary_key => 'id',
     join => [
       'inner join company on book.comparny_id = company.id'
     ],
   );
 
 Create L<DBIx::Custom::Model> object and initialize model.
-the module is also used from C<model> method.
+Model columns attribute is automatically set.
+You can use this model by using C<model> method.
 
- $dbi->model('book')->select(...);
+  $dbi->model('book')->select(...);
 
+You can use model name which different from table name
+
+  $dbi->create_model(name => 'book1', table => 'book');
+  $dbi->model('book1')->select(...);
+  
 =head2 dbh
 
   my $dbh = $dbi->dbh;
@@ -1915,24 +1960,6 @@ C<delete> method use all of C<execute> method's options,
 and use the following new ones.
 
 =over 4
-
-=item id
-
-  id => 4
-  id => [4, 5]
-
-ID corresponding to C<primary_key>.
-You can delete rows by C<id> and C<primary_key>.
-
-  $dbi->delete(
-    primary_key => ['id1', 'id2'],
-    id => [4, 5],
-    table => 'book',
-  );
-
-The above is same as the following one.
-
-  $dbi->delete(where => {id1 => 4, id2 => 5}, table => 'book');
 
 =item prefix
 
@@ -2131,13 +2158,6 @@ Reuse query object if the hash reference variable is set.
 This will improved performance when you want to execute same query repeatedly
 because generally creating query object is slow.
 
-=item primary_key
-
-  primary_key => 'id'
-  primary_key => ['id1', 'id2']
-
-Priamry key. This is used for C<id> option.
-
 =item table
   
   table => 'author'
@@ -2302,28 +2322,6 @@ The SQL like the following one is executed.
 Created time column name. time when row is created is set to the column.
 default time format is "YYYY-mm-dd HH:MM:SS", which can be changed by
 C<now> attribute.
-
-=item id
-
-  id => 4
-  id => [4, 5]
-
-ID corresponding to C<primary_key>.
-You can insert a row by C<id> and C<primary_key>.
-
-  $dbi->insert(
-    {title => 'Perl', author => 'Ken'}
-    primary_key => ['id1', 'id2'],
-    id => [4, 5],
-    table => 'book'
-  );
-
-The above is same as the following one.
-
-  $dbi->insert(
-    {id1 => 4, id2 => 5, title => 'Perl', author => 'Ken'},
-    table => 'book'
-  );
 
 =item prefix
 
@@ -2561,27 +2559,6 @@ This is expanded to the following one by using C<mycolomn> method.
 
 C<__MY__> can be changed by C<mytable_symbol> attribute.
 
-=item id
-
-  id => 4
-  id => [4, 5]
-
-ID corresponding to C<primary_key>.
-You can select rows by C<id> and C<primary_key>.
-
-  $dbi->select(
-    primary_key => ['id1', 'id2'],
-    id => [4, 5],
-    table => 'book'
-  );
-
-The above is same as the following one.
-
-  $dbi->select(
-    where => {id1 => 4, id2 => 5},
-    table => 'book'
-  );
-  
 =item param
 
   param => {'table2.key3' => 5}
@@ -2779,29 +2756,6 @@ and use the following new ones.
 
 =over 4
 
-=item id
-
-  id => 4
-  id => [4, 5]
-
-ID corresponding to C<primary_key>.
-You can update rows by C<id> and C<primary_key>.
-
-  $dbi->update(
-    {title => 'Perl', author => 'Ken'}
-    primary_key => ['id1', 'id2'],
-    id => [4, 5],
-    table => 'book'
-  );
-
-The above is same as the following one.
-
-  $dbi->update(
-    {title => 'Perl', author => 'Ken'}
-    where => {id1 => 4, id2 => 5},
-    table => 'book'
-  );
-
 =item prefix
 
   prefix => 'or replace'
@@ -2947,7 +2901,6 @@ If you set C<default_schema>, type_rule->{into} filter work well.
   my $result = $dbi->create_result($sth);
 
 Create L<DBIx::Custom::Result> object.
-
 
 =head1 ENVIRONMENTAL VARIABLES
 

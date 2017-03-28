@@ -4,7 +4,7 @@ use Object::Simple -base;
 use Carp 'croak';
 use DBIx::Custom::Util qw/_subname _deprecate/;
 
-has [qw/dbi table ctime mtime bind_type join/];
+has [qw/dbi table name ctime mtime bind_type join/];
 has columns => sub { [] };
 
 our $AUTOLOAD;
@@ -158,12 +158,19 @@ my $model = DBIx::Custom::Model->new(table => 'books');
 
 =head1 ATTRIBUTES
 
+=head2 name
+
+  my $name = $model->name;
+  $model = $model->name('book');
+
+Model name.
+
 =head2 table
 
-  my $model = $model->table;
+  my $table = $model->table;
   $model = $model->table('book');
 
-Table name, this is passed to C<select> method.
+Table name, this is passed to C<insert>, C<update>, C<update_all>, C<delete>, C<delete_all>, C<select> method.
 
 =head2 join
 
