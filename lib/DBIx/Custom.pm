@@ -2347,8 +2347,6 @@ is executed, the following SQL is executed.
 
 =back
 
-=over 4
-
 =head2 include_model
 
   $dbi->include_model('MyModel');
@@ -2822,6 +2820,10 @@ you can use C<option> option.
 
 select method option,
 select method is used to check the row is already exists.
+
+=back
+
+=back
 
 =head2 show_datatype
 
