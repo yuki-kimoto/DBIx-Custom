@@ -89,7 +89,14 @@ sub column {
 }
 
 sub connect {
-  my $self = ref $_[0] ? shift : shift->new(@_);
+  my $self;
+  
+  if (ref $_[0]) {
+    $self = shift;
+  }
+  else {
+    $self = shift->new(@_);
+  }
   
   my $connector = $self->connector;
   
@@ -527,6 +534,7 @@ sub mycolumn {
 }
 
 sub new {
+
   my $self = shift->SUPER::new(@_);
   
   # Check attributes
