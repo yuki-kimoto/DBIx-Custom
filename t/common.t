@@ -110,7 +110,6 @@ my $user_table_info;
 # Variables
 my $model;
 
-require MyDBI1;
 {
   package MyDBI4;
 
@@ -3317,7 +3316,14 @@ EOS
 # Model class
 {
   {
-    my $dbi = MyDBI1->connect;
+    my $dbi = DBIx::Custom->connect;
+    $dbi->include_model(
+      MyModel1 => [
+        $dbi->table1,
+        $dbi->table2
+      ]
+    );
+    
     {
       eval { $dbi->execute("drop table $table1") };
       $dbi->execute($create_table1);
@@ -3373,7 +3379,13 @@ EOS
 }
 # primary_key
 {
-  my $dbi = MyDBI1->connect;
+  my $dbi = DBIx::Custom->connect;
+  $dbi->include_model(
+    MyModel1 => [
+      $dbi->table1,
+      $dbi->table2
+    ]
+  );
   my $model = $dbi->model($table1);
   $model->primary_key([$key1, $key2]);
   is_deeply($model->primary_key, [$key1, $key2]);
@@ -3381,7 +3393,13 @@ EOS
 
 # columns
 {
-  my $dbi = MyDBI1->connect;
+  my $dbi = DBIx::Custom->connect;
+  $dbi->include_model(
+    MyModel1 => [
+      $dbi->table1,
+      $dbi->table2
+    ]
+  );
   my $model = $dbi->model($table1);
   $model->columns([$key1, $key2]);
   is_deeply($model->columns, [$key1, $key2]);
@@ -3389,7 +3407,13 @@ EOS
 
 # columns
 {
-  my $dbi = MyDBI1->connect;
+  my $dbi = DBIx::Custom->connect;
+  $dbi->include_model(
+    MyModel1 => [
+      $dbi->table1,
+      $dbi->table2
+    ]
+  );
   my $model = $dbi->model($table1);
   $model->columns([$key1, $key2]);
   is_deeply($model->columns, [$key1, $key2]);
@@ -3397,7 +3421,14 @@ EOS
 
 # setup_model
 {
-  my $dbi = MyDBI1->connect;
+  my $dbi = DBIx::Custom->connect;
+  $dbi->include_model(
+    MyModel1 => [
+      $dbi->table1,
+      $dbi->table2
+    ]
+  );
+
   $dbi->user_table_info($user_table_info);
   eval { $dbi->execute("drop table $table1") };
   eval { $dbi->execute("drop table $table2") };
@@ -4263,7 +4294,13 @@ EOS
 
 # columns
 {
-  my $dbi = MyDBI1->connect;
+  my $dbi = DBIx::Custom->connect;
+  $dbi->include_model(
+    MyModel1 => [
+      $dbi->table1,
+      $dbi->table2
+    ]
+  );
   my $model = $dbi->model($table1);
 }
 
