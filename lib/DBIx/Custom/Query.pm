@@ -52,9 +52,11 @@ sub build {
     else { push @bind_values, $value }
     
     # Filter
-    if (defined $filter->{$column}) {
-      my $f = $filter->{$column};
-      $bind_values[-1] = $f->($bind_values[-1]);
+    if ($filter) {
+      if (defined $filter->{$column}) {
+        my $f = $filter->{$column};
+        $bind_values[-1] = $f->($bind_values[-1]);
+      }
     }
     
     # Type rule

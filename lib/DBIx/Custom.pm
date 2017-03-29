@@ -283,15 +283,18 @@ sub execute {
   # Replace filter name to code
   my $filter = ref $opt{filter} eq 'ARRAY' ?
     _array_to_hash($opt{filter}) : $opt{filter};
-  for my $column (keys %$filter) {
-    my $name = $filter->{$column};
-    if (!defined $name) {
-      $filter->{$column} = undef;
-    }
-    elsif (ref $name ne 'CODE') {
-      croak qq{Filter "$name" is not registered" } . _subname
-        unless exists $self->filters->{$name};
-      $filter->{$column} = $self->filters->{$name};
+  
+  if ($filter) {
+    for my $column (keys %$filter) {
+      my $name = $filter->{$column};
+      if (!defined $name) {
+        $filter->{$column} = undef;
+      }
+      elsif (ref $name ne 'CODE') {
+        croak qq{Filter "$name" is not registered" } . _subname
+          unless exists $self->filters->{$name};
+        $filter->{$column} = $self->filters->{$name};
+      }
     }
   }
 
