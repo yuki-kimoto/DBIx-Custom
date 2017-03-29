@@ -113,8 +113,6 @@ sub _parse {
     my $param = $self->{param};
     if (ref $param eq 'HASH') {
       if (exists $param->{$column}) {
-        my $if = $self->{_if};
-        
         if (ref $param->{$column} eq 'ARRAY') {
           $pushed = 1 if exists $param->{$column}->[$count - 1]
             && ref $param->{$column}->[$count - 1] ne 'DBIx::Custom::NotExists'

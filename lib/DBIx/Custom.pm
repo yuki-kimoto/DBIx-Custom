@@ -497,7 +497,7 @@ sub merge_param {
       $merged_param->{$column} = [$merged_param->{$column}]
         unless ref $merged_param->{$column} eq 'ARRAY';
       push @{$merged_param->{$column}},
-        ref $param2->{$column} ? @{$param2->{$column}} : $param2->{$column};
+        ref $param2->{$column} eq 'ARRAY' ? @{$param2->{$column}} : $param2->{$column};
     }
     else { $merged_param->{$column} = $param2->{$column} }
   }
