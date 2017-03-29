@@ -1198,14 +1198,14 @@ sub _multi_values_clause {
 sub _id_to_param {
   my ($self, $id, $primary_keys, $table) = @_;
   
-  _deprecate('0.39', "DBIx::Custom::select,update,delete method's id option is DEPRECATED!");
-  _deprecate('0.39', "DBIx::Custom::select,update,delete method's primary_key option is DEPRECATED!");
-  
   # Check primary key
   croak "primary_key option " .
         "must be specified when id option is used" . _subname
     unless defined $primary_keys;
   $primary_keys = [$primary_keys] unless ref $primary_keys eq 'ARRAY';
+  
+  _deprecate('0.39', "DBIx::Custom::select,update,delete method's id option is DEPRECATED!");
+  _deprecate('0.39', "DBIx::Custom::select,update,delete method's primary_key option is DEPRECATED!");
   
   # Create parameter
   my $param = {};
