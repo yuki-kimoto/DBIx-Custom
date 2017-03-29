@@ -17,8 +17,6 @@ sub build {
   
   my $param = $self->param;
   my $columns = $self->columns;
-  my $filter = $self->{_filter};
-  my $type_filters = $self->{_type_filters};
   my $bind_type = $self->bind_type || {};
   
   $bind_type = _array_to_hash($bind_type) if ref $bind_type eq 'ARRAY';
@@ -51,29 +49,37 @@ sub build {
     }
     else { push @bind_values, $value }
     
-    # Filter
-    if ($filter) {
-      if (defined $filter->{$column}) {
-        my $f = $filter->{$column};
-        $bind_values[-1] = $f->($bind_values[-1]);
-      }
-    }
-    
-    # Type rule
-    if ($self->{_type_rule_is_called}) {
-      my $tf1 = $self->{"_into1"}->{dot}->{$column}
-        || $type_filters->{1}->{$column};
-      $bind_values[-1] = $tf1->($bind_values[-1]) if $tf1;
-      my $tf2 = $self->{"_into2"}->{dot}->{$column}
-        || $type_filters->{2}->{$column};
-      $bind_values[-1] = $tf2->($bind_values[-1]) if $tf2;
-    }
-   
     # Bind value types
     push @bind_value_types, $bind_type->{$column};
     
     # Count up 
     $count{$column}++;
+  }
+  
+  # Has filter
+  if ($self->{_f}) {
+    my $filter = $self->{_filter};
+    my $type_filters = $self->{_type_filters};
+    
+    for (my $i = 0; $i < @$columns; $i++) {
+      my $column = $columns->[$i];
+      
+      # Filter
+      if ($filter) {
+        if (defined $filter->{$column}) {
+          my $f = $filter->{$column};
+          $bind_values[$i] = $f->($bind_values[$i]);
+        }
+      }
+      
+      # Type rule
+      my $tf1 = $self->{"_into1"}->{dot}->{$column}
+        || $type_filters->{1}->{$column};
+      $bind_values[$i] = $tf1->($bind_values[$i]) if $tf1;
+      my $tf2 = $self->{"_into2"}->{dot}->{$column}
+        || $type_filters->{2}->{$column};
+      $bind_values[$i] = $tf2->($bind_values[$i]) if $tf2;
+    }
   }
   
   $self->bind_values(\@bind_values);

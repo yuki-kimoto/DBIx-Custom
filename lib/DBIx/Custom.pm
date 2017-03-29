@@ -311,9 +311,11 @@ sub execute {
   
   $query->{_filter} = $filter;
   $query->{_type_filters} = $type_filters;
-  $query->{_type_rule_is_called} = $self->{_type_rule_is_called};
   $query->{_into1} = $self->{_into1};
   $query->{_into2} = $self->{_into2};
+  
+  # Has filter
+  $query->{_f} = defined $filter || defined $type_filters;
   
   # Build bind values
   $query->build;
