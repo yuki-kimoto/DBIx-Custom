@@ -218,7 +218,7 @@ sub create_model {
 sub execute {
   my $self = shift;
   my $sql = shift;
-
+  
   # Options
   my $param;
   $param = shift if @_ % 2;
@@ -250,32 +250,34 @@ sub execute {
   $parsed_sql = $after_build_sql->($parsed_sql) if $after_build_sql;
   
   # Type rule
-  my $type_filters = {};
-  my $type_rule_off = !$self->{_type_rule_is_called} || $opt{type_rule_off};
-  unless ($type_rule_off) {
-    my $tables = $opt{table} || [];
-    $tables = [$tables] unless ref $tables eq 'ARRAY';
+  my $type_filters;
+  if ($self->{_type_rule_is_called}) {
+    $type_filters = {};
+    unless ($opt{type_rule_off}) {
+      my $tables = $opt{table} || [];
+      $tables = [$tables] unless ref $tables eq 'ARRAY';
 
-    # Tables
-    my $main_table = @{$tables}[-1];
-    
-    my $type_rule_off_parts = {
-      1 => $opt{type_rule1_off},
-      2 => $opt{type_rule2_off}
-    };
-    for my $i (1, 2) {
-      unless ($type_rule_off_parts->{$i}) {
-        $type_filters->{$i} = {};
-        my $table_alias = $opt{table_alias} || {};
-        for my $alias (keys %$table_alias) {
-          my $table = $table_alias->{$alias};
-          
-          for my $column (keys %{$self->{"_into$i"}{key}{$table} || {}}) {
-            $type_filters->{$i}->{"$alias.$column"} = $self->{"_into$i"}{key}{$table}{$column};
+      # Tables
+      my $main_table = @{$tables}[-1];
+      
+      my $type_rule_off_parts = {
+        1 => $opt{type_rule1_off},
+        2 => $opt{type_rule2_off}
+      };
+      for my $i (1, 2) {
+        unless ($type_rule_off_parts->{$i}) {
+          $type_filters->{$i} = {};
+          my $table_alias = $opt{table_alias} || {};
+          for my $alias (keys %$table_alias) {
+            my $table = $table_alias->{$alias};
+            
+            for my $column (keys %{$self->{"_into$i"}{key}{$table} || {}}) {
+              $type_filters->{$i}->{"$alias.$column"} = $self->{"_into$i"}{key}{$table}{$column};
+            }
           }
+          $type_filters->{$i} = {%{$type_filters->{$i}}, %{$self->{"_into$i"}{key}{$main_table} || {}}}
+            if $main_table;
         }
-        $type_filters->{$i} = {%{$type_filters->{$i}}, %{$self->{"_into$i"}{key}{$main_table} || {}}}
-          if $main_table;
       }
     }
   }
