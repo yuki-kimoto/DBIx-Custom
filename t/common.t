@@ -1976,11 +1976,11 @@ EOS
   
   {
     my $params = [
-      {$key1 => [1, 2], $key2 => 1, $key3 => [1, 2]},
-      {$key1 => [3, 4], $key2 => [2, 3], $key3 => 3}
+      {$key1 => [1, 2], $key2 => $dbi->not_exists, $key3 => [1, 2]},
+      {$key1 => [3, 4], $key2 => [2, 3], $key3 => $dbi->not_exists}
     ];
     my $param = $dbi->merge_param($params->[0], $params->[1]);
-    is_deeply($param, {$key1 => [1, 2, 3, 4], $key2 => [1, 2, 3], $key3 => [1, 2, 3]});
+    is_deeply($param, {$key1 => [1, 2, 3, 4], $key2 => [$dbi->not_exists, 2, 3], $key3 => [1, 2, $dbi->not_exists]});
   }
 }
 
