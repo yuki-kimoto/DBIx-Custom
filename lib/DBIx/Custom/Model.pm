@@ -41,9 +41,8 @@ for my $method (@methods) {
   croak $code if $@;
 }
 
+# DEPRECATED
 sub primary_key {
-  _deprecate('0.39', "DBIx::Custom::Model::primary_key attribute is DEPRECATED!");
-
   if (@_ == 1) {
     return $_[0]{'primary_key'};
   }

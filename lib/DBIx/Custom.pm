@@ -186,7 +186,6 @@ sub create_model {
   
   my $opt;
   if (@_ % 2 != 0 && !ref $_[0]) {
-    $DB::single = 1;
     $opt = {table => shift, @_};
   }
   else {
