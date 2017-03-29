@@ -30,24 +30,26 @@ sub build {
   my %not_exists;
   for my $column (@$columns) {
     
+    my $value = $param->{$column};
+    
     # Bind value
-    if(ref $param->{$column} eq 'ARRAY') {
+    if(ref $value eq 'ARRAY') {
       my $i = $count{$column} || 0;
       $i += $not_exists{$column} || 0;
       my $found;
-      for (my $k = $i; $i < @{$param->{$column}}; $k++) {
-        if (ref $param->{$column}->[$k] eq 'DBIx::Custom::NotExists') {
+      for (my $k = $i; $i < @$value; $k++) {
+        if (ref $value->[$k] eq 'DBIx::Custom::NotExists') {
             $not_exists{$column}++;
         }
         else  {
-          push @bind, $param->{$column}->[$k];
+          push @bind, $value->[$k];
           $found = 1;
           last
         }
       }
       next unless $found;
     }
-    else { push @bind, $param->{$column} }
+    else { push @bind, $value }
     
     # Filter
     if (defined $filter->{$column}) {
