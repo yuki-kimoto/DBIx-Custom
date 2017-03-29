@@ -1969,10 +1969,9 @@ EOS
     my $params = [
       {$key1 => 1, $key2 => 2, $key3 => 3},
       {$key1 => 1, $key2 => 2},
-      {$key1 => 1}
     ];
-    my $param = $dbi->merge_param($params->[0], $params->[1], $params->[2]);
-    is_deeply($param, {$key1 => [1, 1, 1], $key2 => [2, 2], $key3 => 3});
+    my $param = $dbi->merge_param($params->[0], $params->[1]);
+    is_deeply($param, {$key1 => [1, 1], $key2 => [2, 2], $key3 => 3});
   }
   
   {

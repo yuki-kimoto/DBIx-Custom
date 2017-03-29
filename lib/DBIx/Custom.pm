@@ -488,25 +488,21 @@ sub mapper {
 }
 
 sub merge_param {
-  my ($self, @params) = @_;
+  my ($self, $param1, $param2) = @_;
   
   # Merge parameters
-  my $merge = {};
-  for my $param (@params) {
-    for my $column (keys %$param) {
-      my $param_is_array = ref $param->{$column} eq 'ARRAY' ? 1 : 0;
-      
-      if (exists $merge->{$column}) {
-        $merge->{$column} = [$merge->{$column}]
-          unless ref $merge->{$column} eq 'ARRAY';
-        push @{$merge->{$column}},
-          ref $param->{$column} ? @{$param->{$column}} : $param->{$column};
-      }
-      else { $merge->{$column} = $param->{$column} }
+  my $merged_param = {%$param1};
+  for my $column (keys %$param2) {
+    if (exists $merged_param->{$column}) {
+      $merged_param->{$column} = [$merged_param->{$column}]
+        unless ref $merged_param->{$column} eq 'ARRAY';
+      push @{$merged_param->{$column}},
+        ref $param2->{$column} ? @{$param2->{$column}} : $param2->{$column};
     }
+    else { $merged_param->{$column} = $param2->{$column} }
   }
   
-  return $merge;
+  return $merged_param;
 }
 
 sub model {
