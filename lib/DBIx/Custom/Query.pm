@@ -17,15 +17,12 @@ sub build {
   
   my $param = $self->param;
   my $columns = $self->columns;
-  my $bind_type = $self->bind_type || {};
   
   # Create bind values
   my @bind_values;
-  my @bind_value_types;
   my %count;
   my %not_exists;
   for my $column (@$columns) {
-    
     my $value = $param->{$column};
     
     # Bind value
@@ -47,11 +44,22 @@ sub build {
     }
     else { push @bind_values, $value }
     
-    # Bind value types
-    push @bind_value_types, $bind_type->{$column};
-    
     # Count up 
     $count{$column}++;
+  }
+  
+  # Bind type
+  if ($self->{bind_type}) {
+    my @bind_value_types;
+    my $bind_type = $self->bind_type || {};
+    for (my $i = 0; $i < @$columns; $i++) {
+      my $column = $columns->[$i];
+      push @bind_value_types, $bind_type->{$column};
+    }
+    $self->bind_value_types(\@bind_value_types);
+  }
+  else {
+    $self->{bind_value_types} = undef;
   }
   
   # Has filter
@@ -81,7 +89,6 @@ sub build {
   }
   
   $self->bind_values(\@bind_values);
-  $self->bind_value_types(\@bind_value_types);
 }
 
 1;
