@@ -50,7 +50,8 @@ sub build {
     else { push @bind, $param->{$column} }
     
     # Filter
-    if (my $f = $filter->{$column} || '') {
+    if (defined $filter->{$column}) {
+      my $f = $filter->{$column};
       $bind[-1] = $f->($bind[-1]);
     }
     
