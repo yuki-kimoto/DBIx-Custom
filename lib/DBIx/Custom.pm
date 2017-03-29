@@ -1204,8 +1204,7 @@ sub _id_to_param {
     unless defined $primary_keys;
   $primary_keys = [$primary_keys] unless ref $primary_keys eq 'ARRAY';
   
-  _deprecate('0.39', "DBIx::Custom::select,update,delete method's id option is DEPRECATED!");
-  _deprecate('0.39', "DBIx::Custom::select,update,delete method's primary_key option is DEPRECATED!");
+  _deprecate('0.39', "DBIx::Custom::select,update,delete method's id and primary_key option is DEPRECATED!");
   
   # Create parameter
   my $param = {};
