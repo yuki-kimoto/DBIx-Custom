@@ -24,7 +24,7 @@ sub build {
   $bind_type = _array_to_hash($bind_type) if ref $bind_type eq 'ARRAY';
   
   # Create bind values
-  my @bind;
+  my @bind_values;
   my @bind_value_types;
   my %count;
   my %not_exists;
@@ -42,29 +42,29 @@ sub build {
             $not_exists{$column}++;
         }
         else  {
-          push @bind, $value->[$k];
+          push @bind_values, $value->[$k];
           $found = 1;
           last
         }
       }
       next unless $found;
     }
-    else { push @bind, $value }
+    else { push @bind_values, $value }
     
     # Filter
     if (defined $filter->{$column}) {
       my $f = $filter->{$column};
-      $bind[-1] = $f->($bind[-1]);
+      $bind_values[-1] = $f->($bind_values[-1]);
     }
     
     # Type rule
     if ($self->{_type_rule_is_called}) {
       my $tf1 = $self->{"_into1"}->{dot}->{$column}
         || $type_filters->{1}->{$column};
-      $bind[-1] = $tf1->($bind[-1]) if $tf1;
+      $bind_values[-1] = $tf1->($bind_values[-1]) if $tf1;
       my $tf2 = $self->{"_into2"}->{dot}->{$column}
         || $type_filters->{2}->{$column};
-      $bind[-1] = $tf2->($bind[-1]) if $tf2;
+      $bind_values[-1] = $tf2->($bind_values[-1]) if $tf2;
     }
    
     # Bind value types
@@ -74,7 +74,7 @@ sub build {
     $count{$column}++;
   }
   
-  $self->bind_values(\@bind);
+  $self->bind_values(\@bind_values);
   $self->bind_value_types(\@bind_value_types);
 }
 
