@@ -15,8 +15,8 @@ has 'bind_value_types';
 sub build {
   my $self = shift;
   
-  my $param = $self->param;
-  my $columns = $self->columns;
+  my $param = $self->{param};
+  my $columns = $self->{columns};
   
   # Create bind values
   my @bind_values;
