@@ -88,7 +88,7 @@ sub build {
     }
   }
   
-  $self->bind_values(\@bind_values);
+  $self->{bind_values} = \@bind_values;
 }
 
 1;
