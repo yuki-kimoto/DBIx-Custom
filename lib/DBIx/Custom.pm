@@ -281,10 +281,12 @@ sub execute {
   }
   
   # Replace filter name to code
-  my $filter = ref $opt{filter} eq 'ARRAY' ?
-    _array_to_hash($opt{filter}) : $opt{filter};
-  
-  if ($filter) {
+  my $filter = $opt{filter};
+  if (defined $filter) {
+    if (ref $opt{filter} eq 'ARRAY') {
+      $filter = _array_to_hash($filter);
+    }
+    
     for my $column (keys %$filter) {
       my $name = $filter->{$column};
       if (!defined $name) {
@@ -295,14 +297,6 @@ sub execute {
           unless exists $self->filters->{$name};
         $filter->{$column} = $self->filters->{$name};
       }
-    }
-  }
-
-  # Check unsafe param names
-  unless ((join('', keys %$param) || '') =~ /^[$safe_char\.]+$/) {
-    for my $column (keys %$param) {
-      croak qq{"$column" is not safety column name } . _subname
-        unless $column =~ /^[$safe_char\.]+$/;
     }
   }
   

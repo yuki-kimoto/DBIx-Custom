@@ -1,4 +1,7 @@
-0.39 2017-3-28
+0.40 2017-03-29
+  - Parameter name safety check become user responsible.
+  
+0.39 2017-03-28
   ---------------------------------------------------
   NOTE: This release add some DEPRECATED warnings.
   Maybe after these DEPRECATED period, DBIx::Custom will be more stable.
@@ -51,7 +54,7 @@
     You can write the following
     $dbi->create_model(name => 'book1', table => 'book');
 
-0.38 2017-3-18
+0.38 2017-03-18
   ---------------------------------------------------
   NOTE: This release remove many DEPRECATED features. 
   ---------------------------------------------------

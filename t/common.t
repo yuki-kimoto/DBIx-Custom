@@ -438,18 +438,6 @@ my $user_table_info;
   my $dbi = DBIx::Custom->connect;
   eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1);
-  $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1, append => '   ');
-  my $rows = $dbi->select(table => $table1)->all;
-  is_deeply($rows, [{$key1 => 1, $key2 => 2}], 'insert append');
-
-  eval{$dbi->insert({';' => 1}, table => 'table')};
-  like($@, qr/safety/);
-}
-
-{
-  my $dbi = DBIx::Custom->connect;
-  eval { $dbi->execute("drop table $table1") };
-  $dbi->execute($create_table1);
   $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
   $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
   my $result = $dbi->execute("select * from $table1");
@@ -993,15 +981,6 @@ my $user_table_info;
     is_deeply($result->all, [{$key1 => 3, $key2 => 2}], 'update() where');
   }
   
-  eval{$dbi->update({';' => 1}, table => $table1, where => {$key1 => 1})};
-  like($@, qr/safety/);
-
-  eval{$dbi->update({$key1 => 1}, table => $table1, where => {';' => 1})};
-  like($@, qr/safety/);
-
-  eval {$dbi->update_all({';' => 2}, table => 'table') };
-  like($@, qr/safety/);
-  
   {
     eval { $dbi->execute("drop table $table1") };
     $dbi->execute($create_table1_2);
@@ -1223,9 +1202,6 @@ my $user_table_info;
   $dbi->execute($create_table1);
   eval{$dbi->delete(table => $table1)};
   like($@, qr/where/, "where key-value pairs not specified");
-
-  eval{$dbi->delete(table => $table1, where => {';' => 1})};
-  like($@, qr/safety/);
 }
 
 # delete_all
@@ -1286,9 +1262,6 @@ my $user_table_info;
     my $row = $dbi->select($key1, table => $table1)->one;
     is_deeply($row, {$key1 => 1});
   }
-  
-  eval { $dbi->select(table => $table1, where => {';' => 1}) };
-  like($@, qr/safety/);
 
   eval { $dbi->execute("drop table $table1") };
   $dbi->execute($create_table1);
