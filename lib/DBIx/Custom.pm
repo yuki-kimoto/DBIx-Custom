@@ -302,12 +302,16 @@ sub execute {
     }
   }
   
+  # Bind type
+  my $bind_type = $opt{bind_type};
+  $bind_type = _array_to_hash($bind_type) if ref $bind_type eq 'ARRAY';
+  
   # Create query
   my $query = DBIx::Custom::Query->new;
   $query->param($param);
   $query->sql($parsed_sql);
   $query->columns($columns);
-  $query->bind_type($opt{bind_type});
+  $query->bind_type($bind_type);
   
   $query->{_filter} = $filter;
   $query->{_type_filters} = $type_filters;
@@ -338,7 +342,7 @@ sub execute {
   my $affected;
   eval {
     my $bind_values = $query->bind_values;
-    if ($opt{bind_type}) {
+    if ($bind_type) {
       my $bind_value_types = $query->bind_value_types;
       $sth->bind_param($_ + 1, $bind_values->[$_],
           $bind_value_types->[$_] ? $bind_value_types->[$_] : ())

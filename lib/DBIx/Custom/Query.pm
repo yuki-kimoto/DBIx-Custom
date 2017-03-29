@@ -19,8 +19,6 @@ sub build {
   my $columns = $self->columns;
   my $bind_type = $self->bind_type || {};
   
-  $bind_type = _array_to_hash($bind_type) if ref $bind_type eq 'ARRAY';
-  
   # Create bind values
   my @bind_values;
   my @bind_value_types;
