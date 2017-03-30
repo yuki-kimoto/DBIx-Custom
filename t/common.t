@@ -237,6 +237,19 @@ my $user_table_info;
   sub list { shift->select; }
 }
 
+# Check safety character
+{
+  my $dbi = DBIx::Custom->connect;
+  
+  # Check safety character - insert
+  eval{$dbi->insert({';' => 1}, table => $table1)};
+  like($@, qr/";" is not safety column name in values clause/);
+  
+  # Check safety character - update
+  eval{$dbi->update({';' => 1}, table => $table1, where => {$key1 => 1})};
+  like($@, qr/";" is not safety column name in assign clause/);
+}
+
 # model
 {
   # model - table name is different

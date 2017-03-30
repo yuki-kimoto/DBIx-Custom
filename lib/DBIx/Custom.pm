@@ -855,9 +855,14 @@ sub values_clause {
   # Create insert parameter tag
   my ($q, $p) = $self->_qp;
   
+  my $safety_character = $self->safety_character;
+  
   my @columns;
   my @place_holders;
   for my $column (keys %$param) {
+    croak qq{"$column" is not safety column name in values clause} . _subname
+      unless $column =~ /^[$safety_character\.]+$/;
+
     push @columns, "$q$column$p";
     push @place_holders, ref $param->{$column} eq 'SCALAR' ? ${$param->{$column}} :
       $wrap->{$column} ? $wrap->{$column}->(":$column") :
@@ -874,9 +879,14 @@ sub assign_clause {
   
   my $wrap = $opts->{wrap} || {};
   my ($q, $p) = $self->_qp;
-  
+
+  my $safety_character = $self->safety_character;
+
   my @set_values;
   for my $column (keys %$param) {
+    croak qq{"$column" is not safety column name in assign clause} . _subname
+      unless $column =~ /^[$safety_character\.]+$/;
+      
     push @set_values, ref $param->{$column} eq 'SCALAR' ? "$q$column$p = " . ${$param->{$column}}
       : $wrap->{$column} ? "$q$column$p = " . $wrap->{$column}->(":$column")
       : "$q$column$p = :$column";
