@@ -875,15 +875,16 @@ sub assign_clause {
   my $wrap = $opts->{wrap} || {};
   my ($q, $p) = $self->_qp;
   
-  # Assign clause (performance is important)
-  join(
-    ', ',
-    map {
-      ref $param->{$_} eq 'SCALAR' ? "$q$_$p = " . ${$param->{$_}}
-      : $wrap->{$_} ? "$q$_$p = " . $wrap->{$_}->(":$_")
-      : "$q$_$p = :$_";
-    } sort keys %$param
-  );
+  my @set_values;
+  for my $column (keys %$param) {
+    push @set_values, ref $param->{$column} eq 'SCALAR' ? "$q$column$p = " . ${$param->{$column}}
+      : $wrap->{$column} ? "$q$column$p = " . $wrap->{$column}->(":$column")
+      : "$q$column$p = :$column";
+  }
+  
+  my $assign_clause = join(', ', @set_values);
+  
+  return $assign_clause;
 }
 
 sub where { DBIx::Custom::Where->new(dbi => shift, @_) }
