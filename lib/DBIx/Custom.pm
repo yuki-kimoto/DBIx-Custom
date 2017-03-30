@@ -1187,19 +1187,29 @@ sub _multi_values_clause {
   # Create insert parameter tag
   my ($q, $p) = $self->_qp;
   
-  # Multi values clause
-  my $clause = '(' . join(', ', map { "$q$_$p" } sort keys %{$params->[0]}) . ') values ';
+  my $first_param = $params->[0];
   
-  for (1 .. @$params) {
-    $clause .= '(' . join(', ', 
-      map {
-        ref $params->[0]->{$_} eq 'SCALAR' ? ${$params->[0]->{$_}} :
-        $wrap->{$_} ? $wrap->{$_}->(":$_") :
-        ":$_";
-      } sort keys %{$params->[0]}
-    ) . '), '
+  my @columns;
+  my @columns_quoted;
+  for my $column (keys %$first_param) {
+    push @columns, $column;
+    push @columns_quoted, "$q$column$p";
+  }
+
+  # Multi values clause
+  my $clause = '(' . join(', ', @columns_quoted) . ') values ';
+
+  for my $param (@$params) {
+    my @place_holders;
+    for my $column (@columns) {
+      push @place_holders, ref $param->{$column} eq 'SCALAR' ? ${$param->{$column}} :
+        $wrap->{$column} ? $wrap->{$column}->(":$column") :
+        ":$column";
+    }
+    $clause .= '(' . join(', ', @place_holders) . '), ';
   }
   $clause =~ s/, $//;
+  
   return $clause;
 }
 
