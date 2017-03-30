@@ -1187,17 +1187,22 @@ sub _multi_values_clause {
   # Create insert parameter tag
   my ($q, $p) = $self->_qp;
   
+  my $safety_character = $self->safety_character;
+  
   my $first_param = $params->[0];
   
   my @columns;
   my @columns_quoted;
   for my $column (keys %$first_param) {
+    croak qq{"$column" is not safety column name in multi values clause} . _subname
+      unless $column =~ /^[$safety_character\.]+$/;
+    
     push @columns, $column;
     push @columns_quoted, "$q$column$p";
   }
 
   # Multi values clause
-  my $clause = '(' . join(', ', @columns_quoted) . ') values ';
+  my $multi_values_clause = '(' . join(', ', @columns_quoted) . ') values ';
 
   for my $param (@$params) {
     my @place_holders;
@@ -1206,11 +1211,11 @@ sub _multi_values_clause {
         $wrap->{$column} ? $wrap->{$column}->(":$column") :
         ":$column";
     }
-    $clause .= '(' . join(', ', @place_holders) . '), ';
+    $multi_values_clause .= '(' . join(', ', @place_holders) . '), ';
   }
-  $clause =~ s/, $//;
+  $multi_values_clause =~ s/, $//;
   
-  return $clause;
+  return $multi_values_clause;
 }
 
 sub _id_to_param {

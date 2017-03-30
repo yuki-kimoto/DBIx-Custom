@@ -37,6 +37,20 @@ ok(!$@);
 eval { $dbi->do('drop table table1') };
 $dbi->do('create table table1 (key1 varchar(255), key2 varchar(255)) engine=InnoDB');
 
+# Check safety character
+{
+  # Check safety character - bulk_insert
+  eval {
+    $dbi->insert(
+      [{';' => 1, key2 => 2}, {key1 => 3, key2 => 4}],
+      table => 'table1',
+      bulk_insert => 1
+    );
+  };
+  like($@, qr/";" is not safety column name in multi values clause/);
+}
+
+
 # bulk_insert
 {
   $dbi->delete_all(table => 'table1');
