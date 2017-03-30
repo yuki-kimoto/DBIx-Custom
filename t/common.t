@@ -248,6 +248,10 @@ my $user_table_info;
   # Check safety character - update
   eval{$dbi->update({';' => 1}, table => $table1, where => {$key1 => 1})};
   like($@, qr/";" is not safety column name in assign clause/);
+  
+  # Check safety character - select
+  eval { $dbi->select(table => $table1, where => {';' => 1}) };
+  like($@, qr/";" is not safety column name in where clause/);
 }
 
 # model

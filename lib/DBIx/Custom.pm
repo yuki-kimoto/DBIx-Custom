@@ -1405,11 +1405,17 @@ sub _where_clause_and_param {
   
   $where ||= {};
   my $w = {};
-
+  
   if (ref $where eq 'HASH') {
+    my $safety_character = $self->safety_character;
+    
     my $clause = [];
     my $column_join = '';
     for my $column (keys %$where) {
+      
+      croak qq{"$column" is not safety column name in where clause} . _subname
+        unless $column =~ /^[$safety_character\.]+$/;
+      
       $column_join .= $column;
       my $table;
       my $c;
