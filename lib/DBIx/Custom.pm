@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.39';
+our $VERSION = '0.40';
 
 use Carp 'croak';
 use DBI;
@@ -305,6 +305,8 @@ sub execute {
   # Bind type
   my $bind_type = $opt{bind_type};
   $bind_type = _array_to_hash($bind_type) if ref $bind_type eq 'ARRAY';
+  
+  # Fix param
   
   # Create query
   my $query = DBIx::Custom::Query->new;
