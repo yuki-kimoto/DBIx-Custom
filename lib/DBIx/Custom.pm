@@ -855,22 +855,18 @@ sub values_clause {
   # Create insert parameter tag
   my ($q, $p) = $self->_qp;
   
-  # values clause(performance is important)
-  '(' .
-  join(
-    ', ',
-    map { "$q$_$p" } sort keys %$param
-  ) .
-  ') values (' .
-  join(
-    ', ',
-    map {
-      ref $param->{$_} eq 'SCALAR' ? ${$param->{$_}} :
-      $wrap->{$_} ? $wrap->{$_}->(":$_") :
-      ":$_";
-    } sort keys %$param
-  ) .
-  ')'
+  my @columns;
+  my @place_holders;
+  for my $column (keys %$param) {
+    push @columns, "$q$column$p";
+    push @place_holders, ref $param->{$column} eq 'SCALAR' ? ${$param->{$column}} :
+      $wrap->{$column} ? $wrap->{$column}->(":$column") :
+      ":$column";
+  }
+  
+  my $values_clause = '(' . join(', ', @columns) . ') values (' . join(', ', @place_holders) . ')';
+  
+  return $values_clause;
 }
 
 sub assign_clause {
