@@ -1657,7 +1657,7 @@ L<DBIx::Custom API reference|http://search.cpan.org/~kimoto/DBIx-Custom/>
   $dbi = $dbi->connector($connector);
 
 Connection manager object. if C<connector> is set, you can get C<dbh>
-through connection manager. Conection manager object must have C<dbh> method.
+through connection manager. Connection manager object must have C<dbh> method.
 
 This is L<DBIx::Connector> example. Please pass
 C<default_option> to L<DBIx::Connector> C<new> method.
