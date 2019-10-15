@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.40';
+our $VERSION = '0.41';
 
 use Carp 'croak';
 use DBI;
@@ -551,11 +551,12 @@ sub new {
   if (@_ > 0 && !ref $_[0] && $_[0] =~ /:/) {
     my $dsn = shift;
     my $user = shift;
-    my $paddword = shift;
-    my $dbi_option = shift;
+    my $password = shift;
+    my $dbi_option = shift || {};
     my $attrs = shift || {};
     $attrs->{dsn} = $dsn;
     $attrs->{user} = $user;
+    $attrs->{password} = $password;
     $attrs->{option} = $dbi_option;
     $self = $self->SUPER::new($attrs);
   }
@@ -1449,7 +1450,7 @@ sub _where_clause_and_param {
 
     if (ref $where eq 'DBIx::Custom::Where') { $obj = $where }
     elsif (ref $where eq 'ARRAY') {
-      $obj = $self->where(clause => $where->[0], param => $where->[1]);
+      $obj = $self->where(clause => $where->[0], param => $where->[1], join => $where->[2]);
     }
     
     # Check where argument
@@ -2659,10 +2660,11 @@ Table name.
   )
   # -> where author = 'Ken' and title like '%Perl%'
   
-  # (3) Array reference[Array refenrece, Hash reference]
+  # (3) Array reference[where clause, parameters, join(optional)]
   where => [
     ['and', ':author{=}', ':title{like}'],
-    {author => 'Ken', title => '%Perl%'}
+    {author => 'Ken', title => '%Perl%'},
+    ["left outer join table2 on table1.key1 = table2.key1"]
   ]
   # -> where author = 'Ken' and title like '%Perl%'
   
@@ -2979,7 +2981,7 @@ Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009-2017 Yuki Kimoto, all rights reserved.
+Copyright 2009-2019 Yuki Kimoto, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

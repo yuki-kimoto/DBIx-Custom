@@ -4423,3 +4423,57 @@ EOS
     is_deeply($rows, [{u2"${table1}__$key1" => 1}]);
   }
 }
+
+# DBIx::Custom::Where join third arguments
+{
+  my $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1);
+  $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+  $dbi->insert({$key1 => 3, $key2 => 4}, table => $table1);
+  eval { $dbi->execute("drop table $table2") };
+  $dbi->execute($create_table2);
+  $dbi->insert({$key1 => 1, $key3 => 5}, table => $table2);
+  eval { $dbi->execute("drop table $table3") };
+  $dbi->execute("create table $table3 ($key3 int, $key4 int)");
+  $dbi->insert({$key3 => 5, $key4 => 4}, table => $table3);
+  
+  {
+    my $rows = $dbi->select(
+      table => $table1,
+      where   => [
+        ":${key1}{=}",
+        {$key1 => 1},
+        ["left outer join $table3 on $table2.$key3 = $table3.$key3"]
+      ],
+      join  => ["left outer join $table2 on $table1.$key1 = $table2.$key1"]
+    )->all;
+    is_deeply($rows, [{$key1 => 1, $key2 => 2}]);
+  }
+  {
+    my $rows = $dbi->select(
+      column => "$table3.$key4 as " . u2("${table3}__$key4"),
+      table => $table1,
+      where   => [
+        ":$table1.${key1}{=}",
+        {"$table1.$key1" => 1},
+        ["left outer join $table3 on $table2.$key3 = $table3.$key3"]
+      ],
+      join  => ["left outer join $table2 on $table1.$key1 = $table2.$key1"]
+    )->all;
+    is_deeply($rows, [{u2"${table3}__$key4" => 4}]);
+  }
+  {
+    my $rows = $dbi->select(
+      column => "$table1.$key1 as " . u2("${table1}__$key1"),
+      table => $table1,
+      where   => [
+        ":$table3.${key4}{=}",
+        {"$table3.$key4" => 4},
+        ["left outer join $table3 on $table2.$key3 = $table3.$key3"]
+      ],
+      join  => ["left outer join $table2 on $table1.$key1 = $table2.$key1"]
+    )->all;
+    is_deeply($rows, [{u2"${table1}__$key1" => 1}]);
+  }
+}

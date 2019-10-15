@@ -24,12 +24,29 @@ $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /DEPRECATED/};
 
 require DBIx::Connector;
 
+  $dbi = DBIx::Custom->connect(
+    "dbi:mysql:database=$database;host=localhost;port=10000",
+    $user,
+    $password
+  );
+
+
 # connect
 eval {
   $dbi = DBIx::Custom->connect(
     dsn => "dbi:mysql:database=$database;host=localhost;port=10000",
     user => $user,
     password => $password
+  );
+};
+ok(!$@);
+
+# connect
+eval {
+  $dbi = DBIx::Custom->connect(
+    "dbi:mysql:database=$database;host=localhost;port=10000",
+    $user,
+    $password
   );
 };
 ok(!$@);

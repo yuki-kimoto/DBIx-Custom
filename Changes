@@ -1,3 +1,15 @@
+0.42 2019-10-15
+  - add where option new syntax support for join clause
+
+    # (3) Array reference[where clause, parameters, join(optional)]
+    where => [
+      ['and', ':author{=}', ':title{like}'],
+      {author => 'Ken', title => '%Perl%'},
+      ["left outer join table2 on table1.key1 = table2.key1"]
+    ]
+
+0.41 2017-11-07
+  - fix connect method bug that password can't be specified.
 0.40 2017-03-30
   - improve performance of DBIx::Custom::Query::bind method
 0.39 2017-03-28
