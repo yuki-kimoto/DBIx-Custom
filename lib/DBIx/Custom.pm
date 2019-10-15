@@ -4,7 +4,7 @@ use Object::Simple -base;
 
 our $VERSION = '0.41';
 
-use Carp 'croak';
+use Carp 'confess';
 use DBI;
 use DBIx::Custom::Result;
 use DBIx::Custom::Where;
@@ -130,7 +130,7 @@ sub dbh {
   else {
     # From Connction manager
     if (my $connector = $self->connector) {
-      croak "connector must have dbh() method " . _subname
+      confess "connector must have dbh() method " . _subname
         unless ref $connector && $connector->can('dbh');
         
       $self->{dbh} = $connector->dbh;
@@ -157,7 +157,7 @@ sub delete {
   my ($self, %opt) = @_;
   
   # Don't allow delete all rows
-  croak qq{delete method where or id option must be specified } . _subname
+  confess qq{delete method where or id option must be specified } . _subname
     if !$opt{where} && !defined $opt{id} && !$opt{allow_delete_all};
   
   # Where
@@ -295,7 +295,7 @@ sub execute {
         $filter->{$column} = undef;
       }
       elsif (ref $name ne 'CODE') {
-        croak qq{Filter "$name" is not registered" } . _subname
+        confess qq{Filter "$name" is not registered" } . _subname
           unless exists $self->filters->{$name};
         $filter->{$column} = $self->filters->{$name};
       }
@@ -336,7 +336,7 @@ sub execute {
   my $prepare_attr = $opt{prepare_attr} || {};
   eval { $sth = $self->dbh->prepare($parsed_sql, $prepare_attr) };
   if ($@) {
-    $self->_croak($@, qq{. Following SQL is executed.\n}
+    $self->_confess($@, qq{. Following SQL is executed.\n}
                     . qq{$parsed_sql\n} . _subname);
   }
   
@@ -370,7 +370,7 @@ sub execute {
     }
   };
   
-  $self->_croak($@, qq{. Following SQL is executed.\n}
+  $self->_confess($@, qq{. Following SQL is executed.\n}
     . qq{$parsed_sql\n} . _subname) if $@;
   
   # Reulst of select statement
@@ -407,10 +407,10 @@ sub include_model {
   unless ($model_infos) {
 
     # Load name space module
-    croak qq{"$name_space" is invalid class name } . _subname
+    confess qq{"$name_space" is invalid class name } . _subname
       if $name_space =~ /[^\w:]/;
     eval "use $name_space";
-    croak qq{Name space module "$name_space.pm" is needed. $@ } . _subname
+    confess qq{Name space module "$name_space.pm" is needed. $@ } . _subname
       if $@;
     
     # Search model modules
@@ -419,14 +419,14 @@ sub include_model {
     my $path = $INC{"$name_space_dir.pm"};
     $path =~ s/\.pm$//;
     opendir my $dh, $path
-      or croak qq{Can't open directory "$path": $! } . _subname
+      or confess qq{Can't open directory "$path": $! } . _subname
     my @modules;
     while (my $file = readdir $dh) {
       my $file_abs = "$path/$file";
       if (-d $file_abs) {
         next if $file eq '.' || $file eq '..';
         opendir my $fq_dh, $file_abs
-          or croak qq{Can't open directory "$file_abs": $! } . _subname;
+          or confess qq{Can't open directory "$file_abs": $! } . _subname;
         while (my $fq_file = readdir $fq_dh) {
           my $fq_file_abs = "$file_abs/$fq_file";
           push @modules, "${file}::$fq_file" if -f $fq_file_abs;
@@ -467,11 +467,11 @@ sub include_model {
     $model_table =~ s/::/./;
 
     my $mclass = "${name_space}::$model_class";
-    croak qq{"$mclass" is invalid class name } . _subname
+    confess qq{"$mclass" is invalid class name } . _subname
       if $mclass =~ /[^\w:]/;
     unless ($mclass->can('new')) {
       eval "require $mclass";
-      croak "$@ " . _subname if $@;
+      confess "$@ " . _subname if $@;
     }
     
     # Create model
@@ -522,7 +522,7 @@ sub model {
   }
   
   # Check model existence
-  croak qq{Model "$name" is not yet created } . _subname
+  confess qq{Model "$name" is not yet created } . _subname
     unless $self->models->{$name};
   
   # Get model
@@ -567,7 +567,7 @@ sub new {
   # Check attributes
   my @attrs = keys %$self;
   for my $attr (@attrs) {
-    croak qq{Invalid attribute: "$attr" } . _subname
+    confess qq{Invalid attribute: "$attr" } . _subname
       unless $self->can($attr);
   }
   
@@ -772,7 +772,7 @@ sub insert {
       $param = {%$param};
     }
     
-    croak "insert id option must be specified with primary_key option"
+    confess "insert id option must be specified with primary_key option"
       unless $opt{primary_key};
     $opt{primary_key} = [$opt{primary_key}] unless ref $opt{primary_key} eq 'ARRAY';
     $opt{id} = [$opt{id}] unless ref $opt{id} eq 'ARRAY';
@@ -816,7 +816,7 @@ sub update {
   $param ||= {};
   
   # Don't allow update all rows
-  croak qq{update method where option must be specified } . _subname
+  confess qq{update method where option must be specified } . _subname
     if !$opt{where} && !defined $opt{id} && !$opt{allow_update_all};
   
   # Created time and updated time
@@ -868,7 +868,7 @@ sub values_clause {
   my @columns;
   my @place_holders;
   for my $column (keys %$param) {
-    croak qq{"$column" is not safety column name in values clause} . _subname
+    confess qq{"$column" is not safety column name in values clause} . _subname
       unless $column =~ /^[$safety_character\.]+$/;
 
     push @columns, "$q$column$p";
@@ -892,7 +892,7 @@ sub assign_clause {
 
   my @set_values;
   for my $column (keys %$param) {
-    croak qq{"$column" is not safety column name in assign clause} . _subname
+    confess qq{"$column" is not safety column name in assign clause} . _subname
       unless $column =~ /^[$safety_character\.]+$/;
       
     push @set_values, ref $param->{$column} eq 'SCALAR' ? "$q$column$p = " . ${$param->{$column}}
@@ -923,7 +923,7 @@ sub type_rule {
       $self->{type_rule} = $type_rule;
       $self->{"_$into"} = {};
       for my $type_name (keys %{$type_rule->{$into} || {}}) {
-        croak qq{type name of $into section must be lower case}
+        confess qq{type name of $into section must be lower case}
           if $type_name =~ /[A-Z]/;
       }
       
@@ -938,7 +938,7 @@ sub type_rule {
           if (defined $filter && ref $filter ne 'CODE') 
           {
             my $fname = $filter;
-            croak qq{Filter "$fname" is not registered" } . _subname
+            confess qq{Filter "$fname" is not registered" } . _subname
               unless exists $self->filters->{$fname};
             
             $filter = $self->filters->{$fname};
@@ -958,11 +958,11 @@ sub type_rule {
     for my $i (1 .. 2) {
       $type_rule->{"from$i"} = _array_to_hash($type_rule->{"from$i"});
       for my $data_type (keys %{$type_rule->{"from$i"} || {}}) {
-        croak qq{data type of from$i section must be lower case or number}
+        confess qq{data type of from$i section must be lower case or number}
           if $data_type =~ /[A-Z]/;
         my $fname = $type_rule->{"from$i"}{$data_type};
         if (defined $fname && ref $fname ne 'CODE') {
-          croak qq{Filter "$fname" is not registered" } . _subname
+          confess qq{Filter "$fname" is not registered" } . _subname
             unless exists $self->filters->{$fname};
           
           $type_rule->{"from$i"}{$data_type} = $self->filters->{$fname};
@@ -980,7 +980,7 @@ sub get_table_info {
   my ($self, %opt) = @_;
   
   my $exclude = delete $opt{exclude};
-  croak qq/"$_" is wrong option/ for keys %opt;
+  confess qq/"$_" is wrong option/ for keys %opt;
   
   my $table_info = [];
   $self->each_table(
@@ -995,7 +995,7 @@ sub get_column_info {
   my ($self, %opt) = @_;
   
   my $exclude_table = delete $opt{exclude_table};
-  croak qq/"$_" is wrong option/ for keys %opt;
+  confess qq/"$_" is wrong option/ for keys %opt;
   
   my $column_info = [];
   $self->each_column(
@@ -1127,7 +1127,7 @@ sub available_typename {
 
 sub show_datatype {
   my ($self, $table) = @_;
-  croak "Table name must be specified" unless defined $table;
+  confess "Table name must be specified" unless defined $table;
   print "$table\n";
   
   my $result = $self->select(table => $table, where => "'0' <> '0'");
@@ -1145,7 +1145,7 @@ sub show_datatype {
 
 sub show_typename {
   my ($self, $t) = @_;
-  croak "Table name must be specified" unless defined $t;
+  confess "Table name must be specified" unless defined $t;
   print "$t\n";
   
   $self->each_column(sub {
@@ -1202,7 +1202,7 @@ sub _multi_values_clause {
   my @columns;
   my @columns_quoted;
   for my $column (keys %$first_param) {
-    croak qq{"$column" is not safety column name in multi values clause} . _subname
+    confess qq{"$column" is not safety column name in multi values clause} . _subname
       unless $column =~ /^[$safety_character\.]+$/;
     
     push @columns, $column;
@@ -1230,7 +1230,7 @@ sub _id_to_param {
   my ($self, $id, $primary_keys, $table) = @_;
   
   # Check primary key
-  croak "primary_key option " .
+  confess "primary_key option " .
         "must be specified when id option is used" . _subname
     unless defined $primary_keys;
   $primary_keys = [$primary_keys] unless ref $primary_keys eq 'ARRAY';
@@ -1256,7 +1256,7 @@ sub _connect {
   
   # Attributes
   my $dsn = $self->dsn;
-  croak qq{"dsn" must be specified } . _subname
+  confess qq{"dsn" must be specified } . _subname
     unless $dsn;
   my $user        = $self->user;
   my $password    = $self->password;
@@ -1268,19 +1268,19 @@ sub _connect {
   eval { $dbh = DBI->connect($dsn, $user, $password, $option) };
   
   # Connect error
-  croak "$@ " . _subname if $@;
+  confess "$@ " . _subname if $@;
   
   return $dbh;
 }
 
-sub _croak {
+sub _confess {
   my ($self, $error, $append) = @_;
   
   # Append
   $append ||= "";
   
   # Verbose
-  if ($Carp::Verbose) { croak $error }
+  if ($Carp::Verbose) { confess $error }
   
   # Not verbose
   else {
@@ -1288,7 +1288,7 @@ sub _croak {
     my $at_pos = rindex($error, ' at ');
     $error = substr($error, 0, $at_pos);
     $error =~ s/\s+$//;
-    croak "$error$append";
+    confess "$error$append";
   }
 }
 
@@ -1350,12 +1350,12 @@ sub _push_join {
         }                
       }
     }
-    croak qq{join clause must have two table name after "on" keyword. } .
+    confess qq{join clause must have two table name after "on" keyword. } .
         qq{"$join_clause" is passed }  . _subname
       unless defined $table1 && defined $table2;
-    croak qq{right side table of "$join_clause" must be unique } . _subname
+    confess qq{right side table of "$join_clause" must be unique } . _subname
       if exists $tree->{$table2};
-    croak qq{Same table "$table1" is specified} . _subname
+    confess qq{Same table "$table1" is specified} . _subname
       if $table1 eq $table2;
     $tree->{$table2}
       = {position => $i, parent => $table1, join => $join_clause};
@@ -1421,7 +1421,7 @@ sub _where_clause_and_param {
     my $column_join = '';
     for my $column (keys %$where) {
       
-      croak qq{"$column" is not safety column name in where clause} . _subname
+      confess qq{"$column" is not safety column name in where clause} . _subname
         unless $column =~ /^[$safety_character\.]+$/;
       
       $column_join .= $column;
@@ -1459,7 +1459,7 @@ sub _where_clause_and_param {
     }
     
     # Check where argument
-    croak qq{"where" must be hash reference or DBIx::Custom::Where object}
+    confess qq{"where" must be hash reference or DBIx::Custom::Where object}
         . qq{or array reference, which contains where clause and parameter}
         . _subname
       unless ref $obj eq 'DBIx::Custom::Where';
@@ -1494,7 +1494,7 @@ sub AUTOLOAD {
     $self->dbh->$dbh_method(@_);
   }
   else {
-    croak qq{Can't locate object method "$mname" via "$package" }
+    confess qq{Can't locate object method "$mname" via "$package" }
       . _subname;
   }
 }
@@ -1519,7 +1519,7 @@ sub update_or_insert {
   _deprecate('0.39', "DBIx::Custom::update_or_insert method is DEPRECATED!");
 
   my ($self, $param, %opt) = @_;
-  croak "update_or_insert method need primary_key and id option "
+  confess "update_or_insert method need primary_key and id option "
     unless defined $opt{id} && defined $opt{primary_key};
   my $statement_opt = $opt{option} || {};
 
@@ -1531,7 +1531,7 @@ sub update_or_insert {
     return 0 unless keys %$param;
     return $self->update($param, %opt, %{$statement_opt->{update} || {}});
   }
-  else { croak "selected row must be one " . _subname }
+  else { confess "selected row must be one " . _subname }
 }
 
 # DEPRECATED

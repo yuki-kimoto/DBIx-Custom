@@ -1,7 +1,7 @@
 package DBIx::Custom::Where;
 use Object::Simple -base;
 
-use Carp 'croak';
+use Carp 'confess';
 use DBIx::Custom::Util '_subname';
 use overload 'bool' => sub {1}, fallback => 1;
 use overload '""' => sub { shift->to_string }, fallback => 1;
@@ -20,7 +20,7 @@ sub new {
   # Check attribute names
   my @attrs = keys %$self;
   for my $attr (@attrs) {
-    croak qq{"$attr" is invalid attribute name (} . _subname . ")"
+    confess qq{"$attr" is invalid attribute name (} . _subname . ")"
       unless $self->can($attr);
   }
   
@@ -63,7 +63,7 @@ sub _parse {
     
     # Operation
     my $op = $clause->[0] || '';
-    croak qq{First argument must be "and" or "or" in where clause } .
+    confess qq{First argument must be "and" or "or" in where clause } .
         qq{"$op" is passed} . _subname . ")"
       unless $VALID_OPERATIONS{$op};
     
@@ -126,7 +126,7 @@ sub _parse {
       $pushed = 1;
     }
     else {
-      croak "Parameter must be hash reference or undfined value ("
+      confess "Parameter must be hash reference or undfined value ("
           . _subname . ")"
     }
     return $pushed;

@@ -3,7 +3,7 @@ use Object::Simple -base;
 
 use DBIx::Custom::NotExists;
 
-use Carp 'croak';
+use Carp 'confess';
 use DBIx::Custom::Util qw/_subname _deprecate/;
 
 # Carp trust relationship
@@ -97,7 +97,7 @@ sub map {
         }
       }
     }
-    else { croak qq/Condition must be code reference or "exists" / . _subname }
+    else { confess qq/Condition must be code reference or "exists" / . _subname }
   }
   
   return $new_param;
@@ -109,7 +109,7 @@ sub new {
   # Check attribute names
   my @attrs = keys %$self;
   for my $attr (@attrs) {
-    croak qq{"$attr" is invalid attribute name (} . _subname . ")"
+    confess qq{"$attr" is invalid attribute name (} . _subname . ")"
       unless $self->can($attr);
   }
   
@@ -125,7 +125,7 @@ sub _condition_to_sub {
     : ref $if eq 'CODE' ? $if
     : undef;
 
-  croak "You can must specify right value to C<condition> " . _subname
+  confess "You can must specify right value to C<condition> " . _subname
     unless $if;
   
   return $if;

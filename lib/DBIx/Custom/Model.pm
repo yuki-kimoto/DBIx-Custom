@@ -1,7 +1,7 @@
 package DBIx::Custom::Model;
 use Object::Simple -base;
 
-use Carp 'croak';
+use Carp 'confess';
 use DBIx::Custom::Util qw/_subname _deprecate/;
 
 has [qw/dbi table name ctime mtime bind_type join/];
@@ -38,7 +38,7 @@ for my $method (@methods) {
   
   no strict 'refs';
   *{__PACKAGE__ . "::$method"} = eval $code;
-  croak $code if $@;
+  confess $code if $@;
 }
 
 # DEPRECATED
@@ -56,7 +56,7 @@ sub update_or_insert {
 
   _deprecate('0.39', "DBIx::Custom::Model::update_or_insert method is DEPRECATED!");
 
-  croak "update_or_insert method need primary_key and id option "
+  confess "update_or_insert method need primary_key and id option "
     unless (defined $opt{id} || defined $self->{id})
         && (defined $opt{primary_key} || defined $self->{primary_key});
   
@@ -68,7 +68,7 @@ sub update_or_insert {
   elsif (@$rows == 1) {
     return $self->update($param, %opt, %{$statement_opt->{update} || {}});
   }
-  else { croak "selected row must be one " . _subname }
+  else { confess "selected row must be one " . _subname }
 }
 
 # DEPRECATED
@@ -92,7 +92,7 @@ sub AUTOLOAD {
     $self->dbi->dbh->$dbh_method(@_);
   }
   else {
-    croak qq{Can't locate object method "$mname" via "$package" }
+    confess qq{Can't locate object method "$mname" via "$package" }
       . _subname;
   }
 }
@@ -129,7 +129,7 @@ sub new {
   # Check attribute names
   my @attrs = keys %$self;
   for my $attr (@attrs) {
-    croak qq{"$attr" is invalid attribute name } . _subname
+    confess qq{"$attr" is invalid attribute name } . _subname
       unless $self->can($attr);
   }
   
