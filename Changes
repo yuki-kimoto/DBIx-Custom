@@ -7,7 +7,7 @@
       {author => 'Ken', title => '%Perl%'},
       ["left outer join table2 on table1.key1 = table2.key1"]
     ]
-
+  - Search table names in select method's append option
 0.41 2017-11-07
   - fix connect method bug that password can't be specified.
 0.40 2017-03-30

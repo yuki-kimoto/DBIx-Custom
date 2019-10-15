@@ -4477,3 +4477,28 @@ EOS
     is_deeply($rows, [{u2"${table1}__$key1" => 1}]);
   }
 }
+
+# join success in append table name
+{
+  my $dbi = DBIx::Custom->connect;
+  eval { $dbi->execute("drop table $table1") };
+  $dbi->execute($create_table1);
+  $dbi->insert({$key1 => 1, $key2 => 2}, table => $table1);
+  $dbi->insert({$key1 => 2, $key2 => 4}, table => $table1);
+  eval { $dbi->execute("drop table $table2") };
+  $dbi->execute($create_table2);
+  $dbi->insert({$key1 => 1, $key3 => 5}, table => $table2);
+  $dbi->insert({$key1 => 2, $key3 => 4}, table => $table2);
+  
+  {
+    my $rows = $dbi->select(
+      column => [
+        {$table1 => [$key1, $key2]},
+      ],
+      table => $table1,
+      join  => ["left outer join $table2 on $table1.$key1 = $table2.$key1"],
+      append => "order by $table2.$key3"
+    )->all;
+    is_deeply($rows, [{"$table1.$key1" => 2, "$table1.$key2" => 4}, {"$table1.$key1" => 1, "$table1.$key2" => 2}]);
+  }
+}

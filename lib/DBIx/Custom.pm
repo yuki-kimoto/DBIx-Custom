@@ -692,6 +692,11 @@ sub select {
   # Search table names in where clause
   unshift @$found_tables, @{$self->_search_tables($w->{clause})};
   
+  # Search table names in append option
+  if (defined(my $append = $opt{append})) {
+    unshift @$found_tables, @{$self->_search_tables($append)};
+  }
+  
   # Join statement
   my $join = [];
   if (defined $opt{join}) {
@@ -1657,7 +1662,7 @@ L<DBIx::Custom API reference|http://search.cpan.org/~kimoto/DBIx-Custom/>
   $dbi = $dbi->connector($connector);
 
 Connection manager object. if C<connector> is set, you can get C<dbh>
-through connection manager. Connection manager object must have C<dbh> method.
+through connection manager. Conection manager object must have C<dbh> method.
 
 This is L<DBIx::Connector> example. Please pass
 C<default_option> to L<DBIx::Connector> C<new> method.
