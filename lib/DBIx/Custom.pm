@@ -2382,8 +2382,6 @@ is executed, the following SQL is executed.
 
 =back
 
-=over 4
-
 =head2 include_model
 
   $dbi->include_model('MyModel');
@@ -2850,14 +2848,14 @@ Options is same as C<update> method.
 If you want to pass option to each method,
 you can use C<option> option.
 
-=over 4
-
 =item select_option
 
   select_option => {append => 'for update'}
 
 select method option,
 select method is used to check the row is already exists.
+
+=back
 
 =head2 show_datatype
 
