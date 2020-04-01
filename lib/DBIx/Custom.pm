@@ -2219,7 +2219,7 @@ Turn C<into1> type rule off.
 
 Turn C<into2> type rule off.
 
-=item prepare_attr EXPERIMENTAL
+=item prepare_attr
 
   prepare_attr => {mysql_use_result => 1}
 

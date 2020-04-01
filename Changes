@@ -1,4 +1,5 @@
 0.43 2020-04-01
+  - remove EXPERIMENTAL status from execute method prepare_attr option.
   - remove EXPERIMENTAL exceute method query option because implementation is too buggy.
   - remove EXPERIMENTAL create_result method because this is needed for exceute method query option.
 0.42 2019-10-15
