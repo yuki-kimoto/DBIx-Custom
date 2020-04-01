@@ -390,29 +390,6 @@ my $user_table_info;
   is_deeply($columns, [$key1, $key2, $key3, $key4, $key5]);
 }
 
-# query option
-{
-  my $dbi = DBIx::Custom->connect;
-  
-  eval { $dbi->execute("drop table $table1") };
-  $dbi->execute($create_table1);
-  
-  my $param = {$key1 => 1, $key2 => 2};
-  my $query = $dbi->insert($param, table => $table1, query => 1);
-  
-  my $sth = $dbi->dbh->prepare($query->sql);
-  $sth->execute(@{$query->bind_values});
-  
-  $param = {$key1 => 3, $key2 => 4};
-  $query->param($param);
-  $query->build;
-  $sth->execute(@{$query->bind_values});
-  
-  my $result = $dbi->select(table => $table1);
-  my $rows = $result->all;
-  is_deeply($rows, [{$key1 => 1, $key2 => 2}, {$key1 => 3, $key2 => 4}]);
-}
-
 # insert
 {
   my $dbi = DBIx::Custom->connect;

@@ -326,11 +326,6 @@ sub execute {
   # Build bind values
   $query->build;
 
-  # Return query
-  if ($opt{query}) {
-    return $query;
-  }
-  
   # Prepare statement handle
   my $sth;
   my $prepare_attr = $opt{prepare_attr} || {};
@@ -2231,48 +2226,6 @@ Turn C<into2> type rule off.
 Statemend handle attributes,
 this is L<DBI>'s C<prepare> method second argument.
 
-=item query EXPERIMENTAL
-
-  query => 1
-
-If you want to get SQL information only except execution,
-You can get L<DBIx::Custom::Query> object by this option.
-
-  my $query = $dbi->execute(
-    "insert into book (id, name) values (:id, :name)",
-    {id => 1, name => 'Perl'},
-    query => 1
-  );
-
-L<DBIx::Custom::Query> have the following information
-
-  my $sql = $query->sql;
-  my $param = $query->param;
-  my $columns $query->columns;
-
-You can get bind values and the types by the following way.
-  
-  # Build bind values and types
-  $query->build;
-  
-  # Get bind values
-  my $bind_values = $query->bind_values;
-  
-  # Get bind types
-  my $bind_value_types = $query->bind_value_types;
-
-You can prepare sql and execute SQL by L<DBI> directry.
-  
-  my $sth = $dbi->dbh->prepare($sql);
-  $sth->execute($sql, @$bind_values);
-
-If you know parameters have no duplicate column name, have no filter,
-you get bind values in the following fastest way.
-
-my $bind_values = [map { $param->{$_} } @columns]
-
-=back
-
 =head2 get_column_info
 
   my $column_infos = $dbi->get_column_info(exclude_table => qr/^system_/);
@@ -2910,12 +2863,6 @@ You can use this in insert statement.
 
 Create a new L<DBIx::Custom::Where> object.
 See L<DBIx::Custom::Where> to know how to create where clause.
-
-=head2 create_result EXPERIMENTAL
-
-  my $result = $dbi->create_result($sth);
-
-Create L<DBIx::Custom::Result> object.
 
 =head1 ENVIRONMENTAL VARIABLES
 
