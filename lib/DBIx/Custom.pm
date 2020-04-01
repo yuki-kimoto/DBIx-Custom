@@ -306,8 +306,6 @@ sub execute {
   my $bind_type = $opt{bind_type};
   $bind_type = _array_to_hash($bind_type) if ref $bind_type eq 'ARRAY';
   
-  # Fix param
-  
   # Create query
   my $query = DBIx::Custom::Query->new;
   $query->param($param);
@@ -325,14 +323,22 @@ sub execute {
   
   # Build bind values
   $query->build;
-
-  # Prepare statement handle
+  
+  # Statement handle
   my $sth;
-  my $prepare_attr = $opt{prepare_attr} || {};
-  eval { $sth = $self->dbh->prepare($parsed_sql, $prepare_attr) };
-  if ($@) {
-    $self->_confess($@, qq{. Following SQL is executed.\n}
-                    . qq{$parsed_sql\n} . _subname);
+  my $reuse_sth;
+  $reuse_sth = $opt{reuse}->{$parsed_sql} if $opt{reuse};
+  if ($reuse_sth) {
+    $sth = $reuse_sth;
+  }
+  else {
+    # Prepare statement handle
+    eval { $sth = $self->dbh->prepare($parsed_sql) };
+    if ($@) {
+      $self->_confess($@, qq{. Following SQL is executed.\n}
+                      . qq{$parsed_sql\n} . _subname);
+    }
+    $opt{reuse}->{$parsed_sql} = $sth if $opt{reuse};
   }
   
   # Execute
@@ -862,7 +868,7 @@ sub values_clause {
   
   my @columns;
   my @place_holders;
-  for my $column (keys %$param) {
+  for my $column (sort keys %$param) {
     confess qq{"$column" is not safety column name in values clause} . _subname
       unless $column =~ /^[$safety_character\.]+$/;
 
@@ -886,7 +892,7 @@ sub assign_clause {
   my $safety_character = $self->safety_character;
 
   my @set_values;
-  for my $column (keys %$param) {
+  for my $column (sort keys %$param) {
     confess qq{"$column" is not safety column name in assign clause} . _subname
       unless $column =~ /^[$safety_character\.]+$/;
       
@@ -1414,7 +1420,7 @@ sub _where_clause_and_param {
     
     my $clause = [];
     my $column_join = '';
-    for my $column (keys %$where) {
+    for my $column (sort keys %$where) {
       
       confess qq{"$column" is not safety column name in where clause} . _subname
         unless $column =~ /^[$safety_character\.]+$/;
@@ -2169,13 +2175,12 @@ and before type rule filter is executed.
   
   reuse => $hash_ref
 
-Reuse query object if the hash reference variable is set.
+Reuse statement handle in same SQL.
   
-  my $queries = {};
-  $dbi->execute($sql, $param, reuse => $queries);
+  my $reuse = {};
+  $dbi->execute($sql, $param, reuse => $reuse);
 
-This will improved performance when you want to execute same query repeatedly
-because generally creating query object is slow.
+This will improved performance when you want to execute same sql repeatedly.
 
 =item table
   
