@@ -2,7 +2,7 @@ use 5.008007;
 package DBIx::Custom;
 use Object::Simple -base;
 
-our $VERSION = '0.43';
+our $VERSION = '0.44';
 
 use Carp 'confess';
 use DBI;
