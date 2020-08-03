@@ -2249,13 +2249,6 @@ Turn C<into1> type rule off.
 
 Turn C<into2> type rule off.
 
-=item prepare_attr
-
-  prepare_attr => {mysql_use_result => 1}
-
-Statemend handle attributes,
-this is L<DBI>'s C<prepare> method second argument.
-
 =head2 get_column_info
 
   my $column_infos = $dbi->get_column_info(exclude_table => qr/^system_/);
