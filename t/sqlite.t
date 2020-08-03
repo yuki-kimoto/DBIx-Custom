@@ -403,3 +403,14 @@ my $p = '"';
   my $result = $dbi->select('3');
   is($result->fetch_one->[0], 3);
 }
+
+# create_table column_name_lc option
+{
+  my $dbi = DBIx::Custom->connect(
+    dsn => 'dbi:SQLite:dbname=:memory:',
+  );
+  $dbi->execute('create table book (ID, NAME)');
+  $dbi->create_model(table => 'book', column_name_lc => 1);
+  my $columns = [sort @{$dbi->model('book')->columns}];
+  is_deeply($columns, ['id', 'name']);
+}

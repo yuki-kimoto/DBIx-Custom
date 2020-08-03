@@ -1,3 +1,5 @@
+0.44 2020-08-03
+  - add column_name_lc option to create_table method. This option change column names to lower case.
 0.43 2020-04-01
   - fix insert, update, select columns key order
   - reimplement reuse option. In this implementation, only statement handle is cached in same sql.

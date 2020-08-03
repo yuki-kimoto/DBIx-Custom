@@ -198,6 +198,7 @@ sub create_model {
   my $model_name  = delete $opt->{name};
   my $model_table = delete $opt->{table};
   $model_name ||= $model_table;
+  my $column_name_lc = delete $opt->{column_name_lc};
   
   # Create model
   my $model = $model_class->new($opt);
@@ -206,7 +207,7 @@ sub create_model {
   $model->name($model_name);
 
   if (!$model->columns || !@{$model->columns}) {
-    $model->columns($self->get_columns_from_db($model->table));
+    $model->columns($self->get_columns_from_db($model->table, {column_name_lc => $column_name_lc}));
   }
   
   # Set model
@@ -1045,7 +1046,11 @@ sub each_column {
 }
 
 sub get_columns_from_db {
-  my ($self, $schema_table) = @_;
+  my ($self, $schema_table, $opt) = @_;
+
+  $opt ||= {};
+  
+  my $column_name_lc = $opt->{column_name_lc};
   
   my $schema;
   my $table;
@@ -1068,6 +1073,9 @@ sub get_columns_from_db {
   while (my $column_info = $sth_columns->fetchrow_hashref) {
     $columns ||= [];
     my $column = $column_info->{COLUMN_NAME};
+    if ($column_name_lc) {
+      $column = lc $column;
+    }
     push @$columns, $column;
   }
   
@@ -1963,7 +1971,24 @@ You can use model name which different from table name
 
   $dbi->create_model(name => 'book1', table => 'book');
   $dbi->model('book1')->select(...);
-  
+
+  $dbi->create_model(
+    table => 'book',
+    join => [
+      'inner join company on book.comparny_id = company.id'
+    ],
+  );
+
+C<column_name_lc> option change column names to lower case.
+
+  $dbi->create_model(
+    table => 'book',
+    join => [
+      'inner join company on book.comparny_id = company.id'
+    ],
+    column_name_lc => 1,
+  );
+
 =head2 dbh
 
   my $dbh = $dbi->dbh;
