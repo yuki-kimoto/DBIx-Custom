@@ -1,3 +1,5 @@
+0.45 2021-12-16
+  - fix DBD::mysql statement handle Unknown SQL Error when SQL statement have more spaces.
 0.44 2020-08-03
   - add column_name_lc option to create_table method. This option change column names to lower case.
 0.43 2020-04-01

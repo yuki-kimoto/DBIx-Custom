@@ -243,7 +243,7 @@ sub execute {
   while ($source_sql =~ /$place_holder_re/) {
     push @$columns, $2;
     ($parsed_sql, $source_sql) = defined $3 ?
-      ($parsed_sql . "$1$2 $3 ?", " $4") : ($parsed_sql . "$1?", " $4");
+      ($parsed_sql . "$1$2 $3 ?", "$4") : ($parsed_sql . "$1?", "$4");
   }
   $parsed_sql .= $source_sql;
   $parsed_sql =~ s/\\:/:/g if index($parsed_sql, "\\:") != -1;
