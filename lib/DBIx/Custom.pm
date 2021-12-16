@@ -53,6 +53,8 @@ has separator => '.';
 
 has mytable_symbol => '__MY__';
 
+has 'column_name_lc';
+
 sub create_result {
   my ($self, $sth) = @_;
   
@@ -1769,6 +1771,10 @@ Models, included by C<include_model> method.
 Symbol to specify own columns in select method column option, default to '__MY__'.
 
   $dbi->table('book')->select({__MY__ => '*'});
+
+=head2 column_name_lc;
+
+Set NAME_lc in the Statement Handle Attributes to true when the DBI statement handle is created.
 
 =head2 option
 
