@@ -16,7 +16,7 @@ jobs:
     - uses: shogo82148/actions-setup-perl@v1
       with:
         perl-version: '5.8.9'
-    - run: cpanm DBD-SQLite DBI DBIx::Connector Object::Simple
+    - run: cpanm DBD::SQLite DBI DBIx::Connector Object::Simple
     - name: perl Makefile.PL
       run: perl Makefile.PL
     - name: make
